@@ -11,68 +11,99 @@
 
 ---
 
-## Epic 概覽
+## Epic 概覽 - 🚨 重新排序後執行計畫
 
-| Epic | 名稱 | 預估時間 | 優先級 | 風險級別 | 依賴關係 |
-|------|------|----------|--------|----------|----------|
-| Epic 1 | Discord Bot 重構與事件驅動改造 | 2週 | 高 | 中 | 無 |
-| Epic 2 | 獨立 Crawler 服務建立 | 3週 | 高 | 高 | Epic 1 |
-| Epic 3 | Coordinator 服務實作與監控整合 | 2.5週 | 中 | 中 | Epic 2 (部分平行) |
+| 階段 | Epic | 名稱 | 新執行順序 | 預估時間 | 優先級 | 風險級別 | 新依賴關係 |
+|------|------|------|------------|----------|--------|----------|------------|
+| **Phase 1** | Epic 2 (部分) | Crawler 服務基礎建立 | **優先執行** | 1.5週 | **極高** | 低 | 無 |
+| **Phase 2** | Epic 1 + Epic 2 | 漸進式爬蟲邏輯轉移 | **並行執行** | 2.5週 | 高 | 中 | Phase 1 完成 |
+| **Phase 3** | Epic 3 | Coordinator 實作與監控 | **最後完成** | 2.5週 | 中 | 低 | Phase 2 完成 |
 
-**總預估時間**: 7.5週  
-**關鍵里程碑**: Week 2, Week 5, Week 7.5
+**總預估時間**: 7.5週（不變）  
+**關鍵里程碑**: Week 1.5, Week 4, Week 7.5
+
+### 🎯 新執行順序關鍵改進
+- ✅ **消除服務中斷風險**: Crawler 服務優先建立
+- ✅ **雙軌運行保證**: 新舊架構並行期間確保功能連續性  
+- ✅ **漸進式安全轉移**: 每步驗證，避免功能空窗期
 
 ---
 
-## Epic 1: Discord Bot 重構與事件驅動改造
+## Epic 1: Discord Bot 重構與事件驅動改造 (Phase 2 執行)
 
 ### Epic 1 描述
-**目標**: 移除現有 Discord Bot 中的爬蟲邏輯，將其重構為純事件驅動架構，專注於 Discord 使用者互動和通知發送功能。
+**⚠️ 執行順序調整**: 此 Epic 現在於 Phase 2 執行，在 Crawler 服務基礎建立後進行
+
+**目標**: 在確保 Crawler 服務穩定運行後，漸進式移除 Discord Bot 中的爬蟲邏輯，轉換為純事件驅動架構。
 
 **商業價值**: 
+- 安全的架構轉換，確保服務連續性
 - 提升系統模組化程度，降低維護複雜度
-- 為後續 Crawler 服務分離奠定基礎
 - 改善使用者體驗（Discord Embed 回應）
 
+**新執行策略**:
+- 🔄 **雙軌運行**: 新舊架構並行期間確保功能不中斷
+- 📊 **漸進式驗證**: 每個平台轉移後立即驗證功能完整性
+- 🛡️ **安全移除**: 確認 Crawler 完全接管後才移除舊邏輯
+
 **成功標準**:
-- Discord Bot 不再執行任何爬蟲邏輯
+- Crawler 服務已穩定接管所有爬蟲功能  
+- Discord Bot 成功轉換為純事件驅動架構
 - 所有使用者指令正常運作並使用 Embed 回應
-- 成功監聽並處理 Redis PubSub 事件
-- 單元測試覆蓋率 > 80%
+- 服務轉移期間零功能中斷
 
 ---
 
-### Story 1.1: SharedService 爬蟲邏輯移除
+### Story 1.1: SharedService 爬蟲邏輯移除 (Phase 2)
 
 **Story ID**: DSNT-1.1  
 **優先級**: 高  
 **工作量**: 3 天  
 **負責人**: [待分配]
 
+**⚠️ 執行順序調整**: 此 Story 現在於 Phase 2 執行，在 Crawler 服務建立後進行
+
 #### 任務描述
-移除 SharedService/ 目錄中所有平台的爬蟲相關程式碼，為事件驅動架構做準備。
+**更新策略**: 在 Crawler 服務穩定運行後，安全移除 SharedService/ 目錄中所有平台的爬蟲相關程式碼，確保平滑轉換為事件驅動架構。
+
+**執行前提條件**:
+- ✅ **必備條件**: Crawler 服務已建立並穩定運行 (Epic 2 完成)
+- ✅ **驗證條件**: Redis PubSub 事件監聽已就位 (Story 1.2 完成)
+- ✅ **安全條件**: 新舊系統並行期間完成功能驗證
 
 #### 驗收標準
-- [ ] 移除 `SharedService/Youtube/YoutubeStreamService.cs` 中的 Timer 和爬蟲邏輯
-  - 保留 YouTube API 調用方法（供 Crawler 服務重用）
-  - 移除所有定時執行的背景任務
-- [ ] 移除 `SharedService/Twitch/TwitchService.cs` 中的定時監控程式碼
-  - 保留 Twitch API 整合邏輯
-  - 移除 EventSub 訂閱管理（轉移至 Crawler）
-- [ ] 移除 `SharedService/Twitter/TwitterSpacesService.cs` 中的輪詢機制
+**階段式移除策略** (每階段完成後立即驗證):
+- [ ] **Phase 2a - YouTube 移除**:
+  - 移除 `SharedService/Youtube/YoutubeStreamService.cs` 中的 Timer 和爬蟲邏輯
+  - 保留 YouTube API 調用方法（供事件處理使用）
+  - ✅ **驗證**: 確認 Crawler 正常接管 YouTube 監控
+- [ ] **Phase 2b - Twitch 移除**:
+  - 移除 `SharedService/Twitch/TwitchService.cs` 中的定時監控程式碼
+  - 保留 Twitch API 整合邏輯（供 Discord 回應使用）
+  - ✅ **驗證**: 確認 Twitch 事件正常接收和處理
+- [ ] **Phase 2c - Twitter 移除**:
+  - 移除 `SharedService/Twitter/TwitterSpacesService.cs` 中的輪詢機制
   - 保留 Twitter API 基礎方法
-  - 移除定時檢查 Spaces 狀態的邏輯
-- [ ] 移除 `SharedService/Twitcasting/TwitcastingService.cs` 中的爬蟲功能
+  - ✅ **驗證**: 確認 Twitter Spaces 監控轉移成功
+- [ ] **Phase 2d - TwitCasting 移除**:
+  - 移除 `SharedService/Twitcasting/TwitcastingService.cs` 中的爬蟲功能
   - 保留 API 調用封裝
-  - 移除背景監控任務
-- [ ] 保留 `EmojiService.cs` 和其他輔助服務
-- [ ] 更新依賴注入配置，移除已刪除服務的註冊
-- [ ] 確保移除程式碼不影響現有 Discord 指令功能
+  - ✅ **驗證**: 確認 TwitCasting 事件處理正常
+- [ ] **Phase 2e - 清理完成**:
+  - 保留 `EmojiService.cs` 和其他輔助服務
+  - 更新依賴注入配置，移除已刪除服務的註冊
+  - 確保所有 Discord 指令功能正常運作
+
+**安全執行策略**:
+1. **雙軌驗證**: 每個平台移除前先確認 Crawler 接管
+2. **回滾準備**: 保持程式碼備份，隨時可以回滾
+3. **漸進測試**: 每階段完成立即進行完整功能測試
 
 #### 技術需求
 - 程式碼重構經驗
 - 熟悉現有 SharedService 架構
 - 依賴注入 (DI) 配置管理
+- **新增**: 跨服務協調經驗和 Redis 事件處理理解
 
 #### 風險與緩解
 - **風險**: 意外移除必要的共用邏輯
@@ -80,37 +111,55 @@
 
 ---
 
-### Story 1.2: Redis PubSub 事件監聽器建立
+### Story 1.2: Redis PubSub 事件監聽器建立 (Phase 2)
 
 **Story ID**: DSNT-1.2  
 **優先級**: 高  
 **工作量**: 4 天  
 **負責人**: [待分配]  
-**前置依賴**: Story 1.1
+**前置依賴**: ⚠️ **依賴更新** - Epic 2 (Crawler 服務建立)
+
+**⚠️ 執行順序調整**: 此 Story 現在於 Phase 2 與 Story 1.1 **並行執行**，在 Crawler 服務建立後同時進行
 
 #### 任務描述
-建立統一的 Redis PubSub 事件監聽和處理系統，為接收 Crawler 服務事件做準備。
+**更新策略**: 在 Crawler 服務運行後，建立統一的 Redis PubSub 事件監聽和處理系統，為平滑接收 Crawler 服務事件做準備。
+
+**執行前提條件**:
+- ✅ **必備條件**: Crawler 服務已建立 (Epic 2 完成)
+- ✅ **並行條件**: 可與 Story 1.1 同時進行，提高效率
 
 #### 驗收標準
-- [ ] 建立 `EventHandlers/StreamEventListener.cs` 監聽直播狀態事件
+**Phase 2 並行執行策略**:
+- [ ] **建立核心事件監聽器**:
+  - 建立 `EventHandlers/StreamEventListener.cs` 監聽直播狀態事件
   - 實作 `streams.online` 事件處理器
   - 實作 `streams.offline` 事件處理器
   - 支援批量事件處理（多個直播同時開關台）
-- [ ] 建立 `EventHandlers/ShardRequestHandler.cs` 處理 Crawler 的 API 請求
+- [ ] **建立 Shard 請求處理器**:
+  - 建立 `EventHandlers/ShardRequestHandler.cs` 處理 Crawler 的 API 請求
   - 監聽 `shard-request:{shardId}` 頻道
   - 實作 Discord API 代理執行機制
   - 支援會員驗證相關的 Guild 操作
-- [ ] 建立事件路由邏輯，根據 Guild 判斷是否需要發送通知
+- [ ] **事件路由與過濾邏輯**:
+  - 建立事件路由邏輯，根據 Guild 判斷是否需要發送通知
   - 檢查 Guild 是否屬於當前 Shard
   - 查詢 Guild 的通知設定
   - 過濾不需要通知的事件
-- [ ] 實作事件反序列化和錯誤處理
-  - JSON 事件資料反序列化
-  - 處理格式錯誤的事件
+- [ ] **錯誤處理與連接管理**:
+  - 實作事件反序列化和錯誤處理
+  - JSON 事件資料反序列化，處理格式錯誤的事件
   - 記錄事件處理失敗的詳細日誌
-- [ ] 建立 Redis 連接管理和重連機制
-  - Redis 連接中斷自動重連
-  - PubSub 訂閱失敗重試
+  - 建立 Redis 連接管理和重連機制
+  - Redis 連接中斷自動重連，PubSub 訂閱失敗重試
+- [ ] **Phase 2 整合測試**:
+  - 與 Crawler 服務進行事件通信測試
+  - 驗證事件監聽器能正確接收和處理各平台事件
+  - 確保與 Story 1.1 的移除工作協調一致
+
+**並行執行優勢**:
+- 🔄 **效率提升**: Story 1.1 移除邏輯同時，事件監聽器已就位
+- 🛡️ **安全保障**: 雙重確保事件處理能力
+- ⚡ **快速切換**: 移除完成立即可使用新事件系統
   - 連接狀態監控
 
 #### 技術需求
@@ -126,7 +175,7 @@
 
 ---
 
-### Story 1.3: Discord 指令系統 Embed 回應重構
+### Story 1.3: Discord 指令系統 Embed 回應重構 (Phase 2)
 
 **Story ID**: DSNT-1.3  
 **優先級**: 中  
@@ -189,7 +238,7 @@ public static class EmbedStyles
 
 ---
 
-### Story 1.4: 追蹤管理指令 PubSub 整合
+### Story 1.4: 追蹤管理指令 PubSub 整合 (Phase 2)
 
 **Story ID**: DSNT-1.4  
 **優先級**: 高  
@@ -251,31 +300,42 @@ public class StreamFollowEvent
 
 ---
 
-## Epic 2: 獨立 Crawler 服務建立
+## Epic 2: 獨立 Crawler 服務建立 (Phase 1 基礎 + Phase 2 完善)
 
 ### Epic 2 描述
+**⚠️ 執行順序調整**: 此 Epic 分為兩個階段執行
+- **Phase 1**: 建立 Crawler 服務基礎架構和核心功能 (優先執行)
+- **Phase 2**: 完善進階功能和整合測試 (與 Epic 1 並行)
+
 **目標**: 建立專責的 StreamNotifyBot.Crawler 獨立服務，統一管理所有平台的直播監控、會員驗證和 API 管理。
 
 **商業價值**:
 - 實現服務職責分離，提升系統模組化
-- 支援獨立擴展和資源優化
+- 支援獨立擴展和資源優化  
 - 降低 Discord Bot 負載，提升穩定性
+- **新增**: 為 Epic 1 的安全執行提供穩定基礎
 
 **成功標準**:
+- **Phase 1**: Crawler 基礎服務穩定運行，能接管核心監控功能
 - 成功監控所有平台的直播狀態
 - 會員驗證功能正常運作，無 shard 路由錯誤
 - 事件廣播機制運作正常
 - API 錯誤處理和重試機制完善
+- **Phase 2**: 與 Epic 1 完美整合，實現平滑轉換
+
+**階段式執行策略**:
+- 🚀 **Phase 1 重點**: 建立穩定的監控能力，確保系統連續性
+- 🔄 **Phase 2 重點**: 完善功能並支援 Epic 1 的漸進式轉移
 
 ---
 
-### Story 2.1: Crawler 專案架構建立
+### Story 2.1: Crawler 專案架構建立 (Phase 1 - 首要)
 
 **Story ID**: DSNT-2.1  
 **優先級**: 高  
 **工作量**: 2 天  
 **負責人**: [待分配]  
-**前置依賴**: Epic 1 完成
+**前置依賴**: ⚠️ **依賴更新** - 無 (Phase 1 首要任務)
 
 #### 任務描述
 建立新的 StreamNotifyBot.Crawler 專案和基礎架構，準備承接爬蟲邏輯。
@@ -324,7 +384,7 @@ public class StreamFollowEvent
 
 ---
 
-### Story 2.2: YouTube 爬蟲邏輯遷移
+### Story 2.2: YouTube 爬蟲邏輯遷移 (Phase 1)
 
 **Story ID**: DSNT-2.2  
 **優先級**: 高  
@@ -375,7 +435,7 @@ public class StreamFollowEvent
 
 ---
 
-### Story 2.3: 其他平台爬蟲邏輯遷移
+### Story 2.3: 其他平台爬蟲邏輯遷移 (Phase 1)
 
 **Story ID**: DSNT-2.3  
 **優先級**: 高  
@@ -438,7 +498,7 @@ public interface IPlatformMonitor
 
 ---
 
-### Story 2.4: 會員驗證跨服務協調系統
+### Story 2.4: 會員驗證跨服務協調系統 (Phase 2)
 
 **Story ID**: DSNT-2.4  
 **優先級**: 高  
@@ -516,7 +576,7 @@ public class ShardRoutingService
 
 ---
 
-### Story 2.5: 事件廣播和追蹤管理系統
+### Story 2.5: 事件廣播和追蹤管理系統 (Phase 2)
 
 **Story ID**: DSNT-2.5  
 **優先級**: 高  
@@ -608,7 +668,7 @@ public class TrackingManager
 
 ---
 
-### Story 2.6: gRPC 客戶端和健康檢查
+### Story 2.6: gRPC 客戶端和健康檢查 (Phase 2)
 
 **Story ID**: DSNT-2.6  
 **優先級**: 中  
@@ -682,25 +742,34 @@ public class CrawlerHealthCheck : IHealthCheck
 
 ---
 
-## Epic 3: Coordinator 服務實作
+## Epic 3: Coordinator 服務實作 (Phase 3)
 
 ### Epic 3 描述
+**⚠️ 執行順序調整**: 此 Epic 現在於 **Phase 3** 執行，在 Epic 1 和 Epic 2 完成後進行
+
 **目標**: 實作統一的服務生命週期管理和監控系統，負責 Crawler 和多個 Discord Shard 的協調管理。
 
 **商業價值**:
 - 實現自動化服務管理，減少人工介入
 - 提供系統整體監控，提升運維效率
 - 支援故障自動恢復，提升系統可用性
+- **新增**: 完善整體架構，提供生產級系統管理能力
+
+**執行前提條件**:
+- ✅ **必備條件**: Epic 1 (Discord Bot 事件驅動改造) 完成
+- ✅ **必備條件**: Epic 2 (Crawler 服務) 完全建立並穩定運行
+- ✅ **驗證條件**: 所有服務間的通信正常運作
 
 **成功標準**:
 - Coordinator 能成功管理所有服務生命週期
 - 服務故障時能自動檢測和重啟
 - 配置管理系統運作正常
 - 監控日誌清楚記錄系統狀態
+- **Phase 3**: 整體系統達到生產級穩定性和可維護性
 
 ---
 
-### Story 3.1: Coordinator gRPC 服務建立
+### Story 3.1: Coordinator gRPC 服務建立 (Phase 3)
 
 **Story ID**: DSNT-3.1  
 **優先級**: 高  
@@ -745,7 +814,7 @@ public class CrawlerHealthCheck : IHealthCheck
 
 ---
 
-### Story 3.2: 進程生命週期管理系統
+### Story 3.2: 進程生命週期管理系統 (Phase 3)
 
 **Story ID**: DSNT-3.2  
 **優先級**: 高  
@@ -833,7 +902,7 @@ public class ProcessManager
 
 ---
 
-### Story 3.3: YAML 配置管理系統
+### Story 3.3: YAML 配置管理系統 (Phase 3)
 
 **Story ID**: DSNT-3.3  
 **優先級**: 中  
@@ -923,7 +992,7 @@ notifications:
 
 ---
 
-### Story 3.4: tmux 部署腳本和監控介面
+### Story 3.4: tmux 部署腳本和監控介面 (Phase 3)
 
 **Story ID**: DSNT-3.4  
 **優先級**: 中  
@@ -1052,7 +1121,7 @@ public class ConsoleMonitoringService : BackgroundService
 
 ---
 
-### Story 3.5: Prometheus 指標監控整合
+### Story 3.5: Prometheus 指標監控整合 (Phase 3)
 
 **Story ID**: DSNT-3.5  
 **優先級**: 中  
