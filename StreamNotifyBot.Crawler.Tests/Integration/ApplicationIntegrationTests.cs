@@ -1,11 +1,14 @@
+using DiscordStreamNotifyBot.DataBase;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Xunit;
-using FluentAssertions;
+using StackExchange.Redis;
 using StreamNotifyBot.Crawler;
 using StreamNotifyBot.Crawler.Configuration;
+using Xunit;
 
 namespace StreamNotifyBot.Crawler.Tests.Integration;
 
@@ -29,6 +32,27 @@ public class ApplicationIntegrationTests : IDisposable
             .ConfigureServices((context, services) =>
             {
                 services.Configure<CrawlerConfig>(context.Configuration);
+
+                // 註冊資料庫服務
+                var connectionString = context.Configuration.GetConnectionString("Database");
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    throw new InvalidOperationException("Database connection string is not configured");
+                }
+
+                services.AddDbContext<MainDbContext>(options =>
+                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+                           .UseSnakeCaseNamingConvention()
+                );
+
+                // 註冊 Redis 服務
+                var redisConnection = context.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+                services.AddSingleton<IConnectionMultiplexer>(provider =>
+                {
+                    var configuration = ConfigurationOptions.Parse(redisConnection);
+                    return ConnectionMultiplexer.Connect(configuration);
+                });
+
                 services.AddLogging(builder => 
                     builder.SetMinimumLevel(LogLevel.Warning)); // 減少測試輸出
                 services.AddHostedService<CrawlerService>();

@@ -43,6 +43,11 @@ public class RedisConfig
     public int SyncTimeoutMs { get; set; } = 1000;
     public int MaxRetryCount { get; set; } = 3;
     public bool AbortOnConnectFail { get; set; } = false;
+    
+    /// <summary>
+    /// Redis 鍵值前綴，用於事件廣播
+    /// </summary>
+    public string KeyPrefix { get; set; } = "crawler";
 
     public void Validate()
     {
@@ -75,6 +80,16 @@ public class YouTubeConfig
     public int MaxConcurrentRequests { get; set; } = 10;
     public string WebhookSecret { get; set; } = "";
     public string WebhookCallbackUrl { get; set; } = "";
+    
+    // 新增的配置選項
+    public int MonitorIntervalMinutes { get; set; } = 5;
+    public bool EnablePubSubHubbub { get; set; } = true;
+    public int MaxRetryAttempts { get; set; } = 3;
+    public int ChannelTitleCheckIntervalHours { get; set; } = 24;
+    public int PubSubResubscribeIntervalMinutes { get; set; } = 30;
+    public int ScheduleCheckIntervalMinutes { get; set; } = 15;
+    public bool EnableBatchEventProcessing { get; set; } = true;
+    public int BatchEventBufferSeconds { get; set; } = 30;
 
     public void Validate()
     {
@@ -83,6 +98,12 @@ public class YouTubeConfig
 
         if (CheckIntervalSeconds <= 0)
             throw new InvalidOperationException("YouTube check interval must be positive");
+            
+        if (MonitorIntervalMinutes <= 0)
+            throw new InvalidOperationException("YouTube monitor interval must be positive");
+            
+        if (MaxRetryAttempts < 0)
+            throw new InvalidOperationException("YouTube max retry attempts must be non-negative");
     }
 }
 

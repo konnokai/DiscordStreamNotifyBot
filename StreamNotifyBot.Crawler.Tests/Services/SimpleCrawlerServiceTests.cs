@@ -10,6 +10,7 @@ using StreamNotifyBot.Crawler.Configuration;
 using StreamNotifyBot.Crawler.Services;
 using Xunit;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 
 namespace StreamNotifyBot.Crawler.Tests.Services;
 
@@ -37,10 +38,13 @@ public class SimpleCrawlerServiceTests
     public void MainDbContext_ShouldBeCreated_WithConnectionString()
     {
         // Arrange
-        var connectionString = "Data Source=:memory:";
+        var options = new DbContextOptionsBuilder<MainDbContext>()
+            .UseInMemoryDatabase("StreamBotTestDb")
+            .UseSnakeCaseNamingConvention()
+            .Options;
 
         // Act
-        using var context = new MainDbContext(connectionString);
+        using var context = new MainDbContext(options);
 
         // Assert
         context.Should().NotBeNull();
@@ -57,8 +61,13 @@ public class SimpleCrawlerServiceTests
         var mockServiceProvider = new Mock<IServiceProvider>();
         var mockLogger = new Mock<ILogger<CrawlerService>>();
         var mockConnectionMultiplexer = new Mock<IConnectionMultiplexer>();
-        var mockDbContext = new Mock<MainDbContext>("test_connection_string");
-        
+
+        // Create mock DbContext with proper options
+        var options = new DbContextOptionsBuilder<MainDbContext>()
+            .UseInMemoryDatabase("TestDb")
+            .Options;
+        var mockDbContext = new Mock<MainDbContext>(options);
+
         var crawlerConfig = new CrawlerConfig();
         var mockOptions = new Mock<Microsoft.Extensions.Options.IOptions<CrawlerConfig>>();
         mockOptions.Setup(x => x.Value).Returns(crawlerConfig);

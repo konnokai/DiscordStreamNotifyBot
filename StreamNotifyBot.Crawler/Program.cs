@@ -27,9 +27,13 @@ public class Program
             {
                 // 配置設定
                 services.Configure<CrawlerConfig>(context.Configuration.GetSection("CrawlerConfig"));
-
-                // 註冊核心服務
-                services.AddHostedService<CrawlerService>();
+                
+                // 註冊 Redis 配置，為 YouTubeEventService 提供配置
+                services.AddSingleton<RedisConfig>(provider =>
+                {
+                    var config = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<CrawlerConfig>>().Value;
+                    return config.Redis ?? new RedisConfig();
+                });
 
                 // 註冊資料庫服務
                 var connectionString = context.Configuration.GetConnectionString("Database");
@@ -38,10 +42,10 @@ public class Program
                     throw new InvalidOperationException("Database connection string is not configured");
                 }
 
-                services.AddTransient<MainDbContext>(provider =>
-                {
-                    return new MainDbContext(connectionString);
-                });
+                services.AddDbContext<MainDbContext>(options =>
+                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+                           .UseSnakeCaseNamingConvention()
+                );
 
                 // 註冊 Redis 服務
                 var redisConnection = context.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
@@ -51,6 +55,9 @@ public class Program
                     return ConnectionMultiplexer.Connect(configuration);
                 });
 
+                // 註冊核心服務
+                services.AddHostedService<CrawlerService>();
+
                 // 註冊 HTTP 客戶端
                 services.AddHttpClient();
 
@@ -59,6 +66,17 @@ public class Program
                 services.AddTransient<ITwitchMonitor, TwitchMonitor>();
                 services.AddTransient<ITwitterMonitor, TwitterMonitor>();
                 services.AddTransient<ITwitCastingMonitor, TwitCastingMonitor>();
+
+                // 註冊 YouTube 相關服務
+                services.AddSingleton<YouTubeQuotaManager>();
+                services.AddSingleton<YouTubeApiErrorHandler>();
+                services.AddTransient<YouTubeApiService>();
+                services.AddSingleton<YouTubeEventService>();
+                services.AddSingleton<YouTubeTrackingManager>();
+                services.AddSingleton<YouTubePubSubSubscriptionManager>();
+                services.AddSingleton<YouTubePubSubEventProcessor>();
+                services.AddSingleton<YouTubeStreamMonitorService>();
+                services.AddSingleton<YouTubeBatchEventProcessor>();
 
                 // 註冊共用服務
                 services.AddSingleton<IStreamTracker, StreamTrackerService>();
@@ -86,8 +104,8 @@ public class Program
         }
         catch (Exception ex)
         {
-            //var logger = host.Services.GetService<ILogger<Program>>();
-            //logger?.LogCritical(ex, "Application terminated unexpectedly");
+            var logger = host.Services.GetService<ILogger<Program>>();
+            logger?.LogCritical(ex, "Application terminated unexpectedly");
             throw;
         }
         //finally

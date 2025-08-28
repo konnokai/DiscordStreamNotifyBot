@@ -1,6 +1,133 @@
 namespace StreamNotifyBot.Crawler.Models;
 
 /// <summary>
+/// YouTube 影片資訊
+/// </summary>
+public class YouTubeVideoInfo
+{
+    /// <summary>
+    /// 影片 ID
+    /// </summary>
+    public string VideoId { get; set; } = "";
+
+    /// <summary>
+    /// 頻道 ID
+    /// </summary>
+    public string ChannelId { get; set; } = "";
+
+    /// <summary>
+    /// 影片標題
+    /// </summary>
+    public string Title { get; set; } = "";
+
+    /// <summary>
+    /// 頻道標題
+    /// </summary>
+    public string ChannelTitle { get; set; } = "";
+
+    /// <summary>
+    /// 影片描述
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// 縮圖 URL
+    /// </summary>
+    public string? ThumbnailUrl { get; set; }
+
+    /// <summary>
+    /// 實際開始時間
+    /// </summary>
+    public DateTime? ActualStartTime { get; set; }
+
+    /// <summary>
+    /// 實際結束時間
+    /// </summary>
+    public DateTime? ActualEndTime { get; set; }
+
+    /// <summary>
+    /// 排程開始時間
+    /// </summary>
+    public DateTime? ScheduledStartTime { get; set; }
+
+    /// <summary>
+    /// 觀看人數
+    /// </summary>
+    public long? ViewerCount { get; set; }
+
+    /// <summary>
+    /// 是否為直播內容
+    /// </summary>
+    public bool IsLiveContent { get; set; }
+
+    /// <summary>
+    /// 直播廣播內容狀態 (live, upcoming, none)
+    /// </summary>
+    public string? LiveBroadcastContent { get; set; }
+
+    /// <summary>
+    /// 影片隱私狀態 (public, unlisted, private)
+    /// </summary>
+    public string? PrivacyStatus { get; set; }
+
+    /// <summary>
+    /// 影片類別
+    /// </summary>
+    public string? Category { get; set; }
+
+    /// <summary>
+    /// 發布時間
+    /// </summary>
+    public DateTime? PublishedAt { get; set; }
+
+    /// <summary>
+    /// 額外的元數據
+    /// </summary>
+    public Dictionary<string, object> Metadata { get; set; } = new();
+
+    /// <summary>
+    /// 從 Google YouTube API 影片資料轉換
+    /// </summary>
+    public static YouTubeVideoInfo FromGoogleVideo(Google.Apis.YouTube.v3.Data.Video video)
+    {
+        var info = new YouTubeVideoInfo
+        {
+            VideoId = video.Id ?? "",
+            Title = video.Snippet?.Title ?? "",
+            ChannelId = video.Snippet?.ChannelId ?? "",
+            ChannelTitle = video.Snippet?.ChannelTitle ?? "",
+            Description = video.Snippet?.Description,
+            ThumbnailUrl = video.Snippet?.Thumbnails?.High?.Url ?? video.Snippet?.Thumbnails?.Default__?.Url,
+            PublishedAt = video.Snippet?.PublishedAtDateTimeOffset?.DateTime,
+            Category = video.Snippet?.CategoryId,
+            PrivacyStatus = video.Status?.PrivacyStatus,
+            IsLiveContent = video.Snippet?.LiveBroadcastContent != "none"
+        };
+
+        // 設定直播相關資訊
+        if (video.Snippet != null)
+        {
+            info.LiveBroadcastContent = video.Snippet.LiveBroadcastContent;
+        }
+
+        if (video.LiveStreamingDetails != null)
+        {
+            info.ActualStartTime = video.LiveStreamingDetails.ActualStartTimeDateTimeOffset?.DateTime;
+            info.ActualEndTime = video.LiveStreamingDetails.ActualEndTimeDateTimeOffset?.DateTime;
+            info.ScheduledStartTime = video.LiveStreamingDetails.ScheduledStartTimeDateTimeOffset?.DateTime;
+            
+            // 觀看人數
+            if (video.LiveStreamingDetails.ConcurrentViewers.HasValue)
+            {
+                info.ViewerCount = (long)video.LiveStreamingDetails.ConcurrentViewers.Value;
+            }
+        }
+
+        return info;
+    }
+}
+
+/// <summary>
 /// 平台監控器狀態資訊
 /// </summary>
 public class PlatformMonitorStatus
@@ -121,7 +248,7 @@ public class StreamData
     /// <summary>
     /// 頻道/使用者 ID
     /// </summary>
-    public string ChannelId { get; set; } = "";
+    public string DiscordChannelId { get; set; } = "";
 
     /// <summary>
     /// 頻道/使用者名稱
@@ -208,7 +335,7 @@ public class StreamFollowEvent
     /// <summary>
     /// Discord Channel ID
     /// </summary>
-    public ulong ChannelId { get; set; }
+    public ulong DiscordChannelId { get; set; }
 
     /// <summary>
     /// 發起追蹤的使用者 ID

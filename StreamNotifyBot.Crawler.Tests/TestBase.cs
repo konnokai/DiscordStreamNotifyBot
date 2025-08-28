@@ -77,10 +77,10 @@ namespace StreamNotifyBot.Crawler.Tests
             });
 
             // Add DbContext with connection string parameter using factory
-            var connectionString = Configuration["Database:ConnectionString"] ?? "Data Source=:memory:";
-            _services.AddTransient<MainDbContext>(provider => 
+            _services.AddDbContext<MainDbContext>(options =>
             {
-                return new MainDbContext(connectionString);
+                options.UseInMemoryDatabase("StreamBotTestDb");
+                options.UseSnakeCaseNamingConvention();
             });
 
             // Mock Redis Connection

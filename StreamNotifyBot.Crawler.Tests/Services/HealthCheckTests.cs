@@ -1,12 +1,13 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Xunit;
-using FluentAssertions;
-using StreamNotifyBot.Crawler.Services;
 using DiscordStreamNotifyBot.DataBase;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
+using StackExchange.Redis;
+using StreamNotifyBot.Crawler.Services;
+using Xunit;
 
 namespace StreamNotifyBot.Crawler.Tests.Services;
 
@@ -31,7 +32,15 @@ public class HealthCheckTests : IDisposable
                 // 使用 InMemory 資料庫進行測試
                 services.AddDbContext<MainDbContext>(options =>
                     options.UseInMemoryDatabase($"HealthTestDb_{Guid.NewGuid()}"));
-                
+
+                // 註冊 Redis 服務
+                var redisConnection = context.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+                services.AddSingleton<IConnectionMultiplexer>(provider =>
+                {
+                    var configuration = ConfigurationOptions.Parse(redisConnection);
+                    return ConnectionMultiplexer.Connect(configuration);
+                });
+
                 services.AddLogging();
                 
                 // 註冊健康檢查

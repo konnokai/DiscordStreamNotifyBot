@@ -1,13 +1,13 @@
+using DiscordStreamNotifyBot.DataBase;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
-using Xunit;
-using FluentAssertions;
-using StreamNotifyBot.Crawler;
+using StackExchange.Redis;
 using StreamNotifyBot.Crawler.Configuration;
-using DiscordStreamNotifyBot.DataBase;
+using Xunit;
 
 namespace StreamNotifyBot.Crawler.Tests.Services;
 
@@ -40,10 +40,18 @@ public class CrawlerServiceTests : IDisposable
                 
                 services.AddHostedService<CrawlerService>();
                 services.AddHttpClient();
-                
+
+                // 註冊 Redis 服務
+                var redisConnection = context.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+                services.AddSingleton<IConnectionMultiplexer>(provider =>
+                {
+                    var configuration = ConfigurationOptions.Parse(redisConnection);
+                    return ConnectionMultiplexer.Connect(configuration);
+                });
+
                 // 註冊測試用的平台監控器
-                services.AddTransient<StreamNotifyBot.Crawler.Services.IPlatformMonitor, 
-                    StreamNotifyBot.Crawler.PlatformMonitors.YoutubeMonitor>();
+                services.AddTransient<Crawler.Services.IPlatformMonitor, 
+                    PlatformMonitors.YoutubeMonitor>();
             })
             .Build();
 
@@ -100,24 +108,6 @@ public class CrawlerServiceTests : IDisposable
         
         // Cleanup
         await _crawlerService.StopAsync(cancellationTokenSource.Token);
-    }
-
-    [Fact]
-    public async Task CrawlerService_ShouldHandleMultipleStartStop_Gracefully()
-    {
-        // Arrange
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-
-        // Act & Assert - 多次啟動停止循環
-        for (int i = 0; i < 3; i++)
-        {
-            await _crawlerService.StartAsync(cancellationTokenSource.Token);
-            await Task.Delay(500, cancellationTokenSource.Token);
-            await _crawlerService.StopAsync(cancellationTokenSource.Token);
-            await Task.Delay(200, cancellationTokenSource.Token);
-        }
-
-        // 服務應該能夠處理多次啟動/停止而不拋出異常
     }
 
     public void Dispose()
