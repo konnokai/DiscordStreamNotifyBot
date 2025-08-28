@@ -4,14 +4,8 @@ namespace DiscordStreamNotifyBot.DataBase
 {
     public class MainDbContext : DbContext
     {
-        private readonly string _connectionString;
-
-        public MainDbContext(string connectionString
-            // 要新增 Migration 的時候再把下面的連線字串註解拿掉
-            //= "Server=localhost;Port=3306;User Id=stream_bot;Password=Ch@nge_Me;Database=discord_stream_bot"
-            )
+        public MainDbContext(DbContextOptions<MainDbContext> options) : base(options)
         {
-            _connectionString = connectionString;
         }
 
         public DbSet<BannerChange> BannerChange { get; set; }
@@ -40,14 +34,6 @@ namespace DiscordStreamNotifyBot.DataBase
         public DbSet<TwitcastingStream> TwitcastingStreams { get; set; }
         public DbSet<TwitchStream> TwitchStreams { get; set; }
         #endregion
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-            optionsBuilder
-                .UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString))
-                .UseSnakeCaseNamingConvention();
-        }
 
         public bool UpdateAndSave(Table.Video video)
         {
