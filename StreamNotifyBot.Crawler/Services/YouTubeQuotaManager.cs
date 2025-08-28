@@ -20,7 +20,6 @@ public class YouTubeQuotaManager
     // API 金鑰配額追蹤
     private readonly ConcurrentDictionary<string, ApiKeyInfo> _apiKeyInfos = new();
     private readonly object _keyRotationLock = new object();
-    private int _currentKeyIndex = 0;
 
     // 配額消耗常數 (基於 YouTube API 文件)
     private const int COST_VIDEOS_LIST = 1;

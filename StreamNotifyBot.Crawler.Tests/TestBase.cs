@@ -14,9 +14,9 @@ namespace StreamNotifyBot.Crawler.Tests
 {
     public abstract class TestBase : IDisposable
     {
-        protected IServiceProvider ServiceProvider { get; private set; }
-        protected IConfiguration Configuration { get; private set; }
-        private ServiceCollection _services;
+        protected IServiceProvider ServiceProvider { get; private set; } = default!;
+        protected IConfiguration Configuration { get; private set; } = default!;
+        private ServiceCollection _services = default!;
         private bool _disposed = false;
 
         protected TestBase()

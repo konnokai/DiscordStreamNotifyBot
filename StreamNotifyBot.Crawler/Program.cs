@@ -81,6 +81,11 @@ public class Program
                 // 註冊共用服務
                 services.AddSingleton<IStreamTracker, StreamTrackerService>();
                 services.AddSingleton<ICrawlerHealthCheck, CrawlerHealthCheck>();
+                
+                // 註冊新的統一服務
+                services.AddSingleton<StreamEventBroadcaster>();
+                services.AddSingleton<ErrorHandlingService>();
+                services.AddSingleton<PlatformMonitorManager>();
 
                 // 註冊健康檢查
                 services.AddHealthChecks()

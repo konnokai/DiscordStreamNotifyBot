@@ -81,6 +81,11 @@ public class YouTubeConfig
     public string WebhookSecret { get; set; } = "";
     public string WebhookCallbackUrl { get; set; } = "";
     
+    /// <summary>
+    /// 是否啟用 YouTube 監控器
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+    
     // 新增的配置選項
     public int MonitorIntervalMinutes { get; set; } = 5;
     public bool EnablePubSubHubbub { get; set; } = true;
@@ -115,6 +120,11 @@ public class TwitchConfig
     public int MaxConcurrentRequests { get; set; } = 10;
     public string WebhookSecret { get; set; } = "";
     public string WebhookCallbackUrl { get; set; } = "";
+    
+    /// <summary>
+    /// 是否啟用 Twitch 監控器
+    /// </summary>
+    public bool Enabled { get; set; } = true;
 
     public void Validate()
     {
@@ -138,6 +148,11 @@ public class TwitterConfig
     public int MaxConcurrentRequests { get; set; } = 5;
     public int RateLimitPerWindowRequests { get; set; } = 75;
     public int RateLimitWindowMinutes { get; set; } = 15;
+    
+    /// <summary>
+    /// 是否啟用 Twitter 監控器
+    /// </summary>
+    public bool Enabled { get; set; } = true;
 
     public void Validate()
     {
@@ -157,6 +172,12 @@ public class TwitCastingConfig
     public int CheckIntervalSeconds { get; set; } = 30;
     public int MaxConcurrentRequests { get; set; } = 10;
     public int RateLimitPerHourRequests { get; set; } = 1000;
+    public int RateLimitDelayMs { get; set; } = 1000; // 每次 API 呼叫間隔延遲
+    
+    /// <summary>
+    /// 是否啟用 TwitCasting 監控器
+    /// </summary>
+    public bool Enabled { get; set; } = true;
 
     public void Validate()
     {
@@ -165,6 +186,9 @@ public class TwitCastingConfig
 
         if (CheckIntervalSeconds <= 0)
             throw new InvalidOperationException("TwitCasting check interval must be positive");
+            
+        if (RateLimitDelayMs < 0)
+            throw new InvalidOperationException("TwitCasting rate limit delay must be non-negative");
     }
 }
 
@@ -175,6 +199,11 @@ public class MonitoringConfig
     public int RetryDelaySeconds { get; set; } = 5;
     public int BatchSize { get; set; } = 100;
     public bool EnableDetailedLogging { get; set; } = false;
+    
+    /// <summary>
+    /// 監控器狀態檢查間隔 (分鐘)
+    /// </summary>
+    public int MonitorStatusCheckIntervalMinutes { get; set; } = 5;
 
     public void Validate()
     {
