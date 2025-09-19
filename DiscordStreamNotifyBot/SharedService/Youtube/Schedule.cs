@@ -454,9 +454,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                             Regex regex;
                             if (response.Contains("window[\"ytInitialData\"]"))
-                                regex = new Regex("window\\[\"ytInitialData\"\\] = (.*);");
+                                regex = OldYtInitialDataRegex();
                             else
-                                regex = new Regex(">var ytInitialData = (.*?);</script>");
+                                regex = NewYtInitialDataRegex();
 
                             var group = regex.Match(response).Groups[1];
                             var jObject = JObject.Parse(group.Value);
@@ -469,14 +469,21 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                     var alertRenderer = alert["alertRenderer"];
                                     if (alertRenderer["type"].ToString() == "ERROR")
                                     {
+                                        if (alertRenderer["text"]["simpleText"].ToString().Contains("未知的錯誤"))
+                                        {
+                                            Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}，可能是暫時性的錯誤，跳過");
+                                            continue;   
+                                        }
+
                                         try
                                         {
                                             Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
 
                                             await Bot.ApplicatonOwner.SendMessageAsync($"`{item.ChannelTitle}` ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
 
-                                            db.YoutubeChannelSpider.Remove(item);
-                                            db.SaveChanges();
+                                            // Todo: 頻道錯誤通知後移除爬蟲
+                                            //db.YoutubeChannelSpider.Remove(item);
+                                            //db.SaveChanges();
                                         }
                                         catch (Exception ex)
                                         {
@@ -488,9 +495,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 break;
                             }
 
-                            List<JToken> videoList = new List<JToken>();
-                            videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")));
-                            videoList.AddRange(jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")));
+                            List<JToken> videoList =
+                            [
+                                .. jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")),
+                                .. jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")),
+                            ];
 
                             if (!otherVideoDic.ContainsKey(item.ChannelId))
                             {
@@ -975,5 +984,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             if (saveNum != 0)
                 Log.Info($"資料庫已儲存完畢: {saveNum} 筆");
         }
+
+        [GeneratedRegex("window\\[\"ytInitialData\"\\] = (.*);")]
+        private static partial Regex OldYtInitialDataRegex();
+
+        [GeneratedRegex(">var ytInitialData = (.*?);</script>")]
+        private static partial Regex NewYtInitialDataRegex();
     }
 }
