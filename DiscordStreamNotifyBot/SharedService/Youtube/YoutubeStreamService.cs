@@ -590,10 +590,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
             reScheduleTime = new Timer((objState) => ReScheduleReminder(), null, TimeSpan.FromSeconds(5), TimeSpan.FromDays(1));
 
-            foreach (var item in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
-            {
-                Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(item));
-            }
+            //foreach (var item in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
+            //{
+            //    Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(item));
+            //}
 
             holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 

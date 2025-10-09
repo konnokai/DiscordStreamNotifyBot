@@ -249,72 +249,77 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     if (item.Type != "youtube_event")
                         continue;
 
-                    string videoId = item.Attributes.Url.Split("?v=")[1].Trim(), channelTitle = "", liverId = null, externalId = null;
+                    string videoId = item.Attributes.Url.Split("?v=")[1].Trim()/*, channelTitle = "", liverId = null, externalId = null*/;
                     if (newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId) || Extensions.HasStreamVideoByVideoId(videoId)) continue;
                     newStreamList.Add(videoId);
 
-                    var youtubeChannelData = datas.FirstOrDefault((x) => x.Type == "youtube_channel" && x.Id == item.Relationships.YoutubeChannel.Data.Id);
-                    if (youtubeChannelData != null)
-                    {
-                        channelTitle = youtubeChannelData.Attributes.Name;
-                        liverId = youtubeChannelData.Relationships?.Liver?.Data?.Id;
-                        externalId = datas.FirstOrDefault((x) => x.Type == "liver" && x.Id == liverId).Attributes.ExternalId;
-                    }
+                    //var youtubeChannelData = datas.FirstOrDefault((x) => x.Type == "youtube_channel" && x.Id == item.Relationships.YoutubeChannel.Data.Id);
+                    //if (youtubeChannelData != null)
+                    //{
+                    //    channelTitle = youtubeChannelData.Attributes.Name;
+                    //    liverId = youtubeChannelData.Relationships?.Liver?.Data?.Id;
+                    //    externalId = datas.FirstOrDefault((x) => x.Type == "liver" && x.Id == liverId).Attributes.ExternalId;
+                    //}
 
-                    DataBase.Table.Video streamVideo = null;
-                    if (!string.IsNullOrEmpty(externalId))
-                    {
-                        var channelData = NijisanjiLiverContents.FirstOrDefault((x) => x.id == externalId);
-                        if (channelData != null)
-                        {
-                            if (string.IsNullOrEmpty(channelTitle))
-                                channelTitle = $"{channelData.name} / {channelData.enName}";
+                    //if (!string.IsNullOrEmpty(externalId))
+                    //{
+                    //    var channelData = NijisanjiLiverContents.FirstOrDefault((x) => x.Id == externalId);
+                    //    if (channelData != null)
+                    //    {
+                    //        if (string.IsNullOrEmpty(channelTitle))
+                    //            channelTitle = $"{channelData.Name} / {channelData.EnName}";
 
-                            string channelId = "";
-                            try
-                            {
-                                channelId = await GetChannelIdAsync(channelData.socialLinks.youtube);
+                    //        string channelId = "";
+                    //        try
+                    //        {
+                    //            channelId = await GetChannelIdAsync(channelData.SocialLinks.Youtube);
 
-                                streamVideo = new DataBase.Table.Video()
-                                {
-                                    ChannelId = channelId,
-                                    ChannelTitle = channelTitle,
-                                    VideoId = videoId,
-                                    VideoTitle = item.Attributes.Title,
-                                    ScheduledStartTime = item.Attributes.StartAt.Value,
-                                    ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
-                                };
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex.Demystify(), $"channelData 解析失敗: {channelData.socialLinks.youtube}");
-                            }
-                        }
-                    }
+                    //            streamVideo = new DataBase.Table.Video()
+                    //            {
+                    //                ChannelId = channelId,
+                    //                ChannelTitle = channelTitle,
+                    //                VideoId = videoId,
+                    //                VideoTitle = item.Attributes.Title,
+                    //                ScheduledStartTime = item.Attributes.StartAt.Value,
+                    //                ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                    //            };
+                    //        }
+                    //        catch (Exception ex)
+                    //        {
+                    //            Log.Error(ex.Demystify(), $"channelData 解析失敗: {channelData.SocialLinks.Youtube}");
+                    //        }
+                    //    }
+                    //}
+
+                    // 由於現在 2434 不會設定 SocialLinks 資料了，所以直接用 API 撈到的頻道 ID 去設定
 
                     Log.Info($"Nijisanji Id: {videoId}");
-                    if (streamVideo == null)
+                    var video = await GetVideoAsync(videoId);
+                    if (video == null)
                     {
-                        var video = await GetVideoAsync(videoId);
-                        streamVideo = new DataBase.Table.Video()
-                        {
-                            ChannelId = video.Snippet.ChannelId,
-                            ChannelTitle = video.Snippet.ChannelTitle,
-                            VideoId = videoId,
-                            VideoTitle = item.Attributes.Title,
-                            ScheduledStartTime = item.Attributes.StartAt.Value,
-                            ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
-                        };
-
-                        Log.Warn($"檢測到無 Liver 資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.Attributes.Title}");
-                        Log.Warn("重新刷新 Liver 資料清單");
-
-                        NijisanjiLiverContents.Clear();
-                        foreach (var affiliation in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
-                        {
-                            await Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(affiliation, true));
-                        }
+                        Log.Warn($"NijisanjiScheduleAsync: 取得直播資料失敗 {videoId}");
+                        continue;
                     }
+
+                    var startTime = DateTime.Parse(video.LiveStreamingDetails.ScheduledStartTimeRaw);
+                    DataBase.Table.Video streamVideo = new DataBase.Table.Video()
+                    {
+                        ChannelId = video.Snippet.ChannelId,
+                        ChannelTitle = video.Snippet.ChannelTitle,
+                        VideoId = videoId,
+                        VideoTitle = video.Snippet.Title,
+                        ScheduledStartTime = startTime,
+                        ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
+                    };
+
+                    //Log.Warn($"檢測到無 Liver 資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.Attributes.Title}");
+                    //Log.Warn("重新刷新 Liver 資料清單");
+
+                    //NijisanjiLiverContents.Clear();
+                    //foreach (var affiliation in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
+                    //{
+                    //    await Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(affiliation, true));
+                    //}
 
                     if (item.Attributes.Status == "on_air") // 已開台
                     {
@@ -472,7 +477,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                         if (alertRenderer["text"]["simpleText"].ToString().Contains("未知的錯誤"))
                                         {
                                             Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}，可能是暫時性的錯誤，跳過");
-                                            continue;   
+                                            continue;
                                         }
 
                                         try

@@ -2,65 +2,65 @@
 {
     public class NijisanjiLiverJson
     {
-        public string slug { get; set; }
-        public bool? hidden { get; set; }
-        public string name { get; set; }
-        public string enName { get; set; }
-        public Images images { get; set; }
-        public SocialLinks socialLinks { get; set; }
-        public SiteColor siteColor { get; set; }
-        public string id { get; set; }
-        public int? subscriberCount { get; set; }
-    }
+        [JsonProperty("slug")]
+        public string Slug { get; set; }
 
-    public class Fullbody
-    {
-        public string url { get; set; }
-        public int? height { get; set; }
-        public int? width { get; set; }
-    }
+        [JsonProperty("hidden")]
+        public bool Hidden { get; set; }
 
-    public class Halfbody
-    {
-        public string url { get; set; }
-        public int? height { get; set; }
-        public int? width { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("enName")]
+        public string EnName { get; set; }
+
+        [JsonProperty("images")]
+        public Images Images { get; set; }
+
+        [Obsolete("官方目前已不再提供此資訊")]
+        [JsonProperty("socialLinks")]
+        public SocialLinks SocialLinks { get; set; }
+
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("subscriberCount")]
+        public int SubscriberCount { get; set; }
     }
 
     public class Head
     {
-        public string url { get; set; }
-        public int? height { get; set; }
-        public int? width { get; set; }
+        [JsonProperty("url")]
+        public string Url { get; set; }
+
+        [JsonProperty("height")]
+        public int Height { get; set; }
+
+        [JsonProperty("width")]
+        public int Width { get; set; }
     }
 
     public class Images
     {
-        public string fieldId { get; set; }
-        public Fullbody fullbody { get; set; }
-        public Halfbody halfbody { get; set; }
-        public Head head { get; set; }
-        public List<object> variation { get; set; }
-    }
-
-    public class SiteColor
-    {
-        public string id { get; set; }
-        public DateTime? createdAt { get; set; }
-        public DateTime? updatedAt { get; set; }
-        public DateTime? publishedAt { get; set; }
-        public DateTime? revisedAt { get; set; }
-        public string name { get; set; }
-        public string color1 { get; set; }
-        public string color2 { get; set; }
+        [JsonProperty("head")]
+        public Head Head { get; set; }
     }
 
     public class SocialLinks
     {
-        public string fieldId { get; set; }
-        public string twitter { get; set; }
-        public string youtube { get; set; }
-        public string twitch { get; set; }
-        public string reddit { get; set; }
+        [JsonProperty("fieldId")]
+        public string FieldId { get; set; }
+
+        [JsonProperty("twitter")]
+        public string Twitter { get; set; }
+
+        [JsonProperty("youtube")]
+        public string Youtube { get; set; }
+
+        [JsonProperty("twitch")]
+        public string Twitch { get; set; }
+
+        [JsonProperty("reddit")]
+        public string Reddit { get; set; }
     }
 }
