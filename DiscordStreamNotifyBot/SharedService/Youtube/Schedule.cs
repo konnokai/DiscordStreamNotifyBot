@@ -301,14 +301,13 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         continue;
                     }
 
-                    var startTime = DateTime.Parse(video.LiveStreamingDetails.ScheduledStartTimeRaw);
                     DataBase.Table.Video streamVideo = new DataBase.Table.Video()
                     {
                         ChannelId = video.Snippet.ChannelId,
                         ChannelTitle = video.Snippet.ChannelTitle,
                         VideoId = videoId,
                         VideoTitle = video.Snippet.Title,
-                        ScheduledStartTime = startTime,
+                        ScheduledStartTime = item.Attributes.StartAt.Value,
                         ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
                     };
 
