@@ -2,6 +2,7 @@
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 {
@@ -412,7 +413,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             catch (Exception ex)
                             {
                                 Log.Warn($"無法傳送紀錄訊息: {guild.Id} / {logChannel.Id}");
-                                Log.Error($"無法傳送紀錄訊息: {ex}");
+                                Log.Error(ex, $"無法傳送紀錄訊息: {guild.Id} / {logChannel.Id}");
                             }
 
                             try
@@ -422,21 +423,53 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             catch (Exception ex)
                             {
                                 Log.Warn($"無法傳送私訊: {guild.Id} / {member.UserId}");
-                                Log.Error($"無法傳送私訊: {ex}");
+                                Log.Error(ex, $"無法傳送私訊: {guild.Id} / {member.UserId}");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"MemberCheckUpdateDb: {guildYoutubeMemberConfig.GuildId} - {member.UserId} 資料庫更新失敗");
-                        Log.Error($"{ex}");
+                        Log.Error(ex, $"MemberCheckUpdateDb: {guildYoutubeMemberConfig.GuildId} - {member.UserId} 資料庫更新失敗");
                     }
                 }
 
                 await logChannel.SendConfirmMessageAsync((isOldCheck ? "舊" : "新") + "會限驗證完成", $"檢查頻道: {guildYoutubeMemberConfig.MemberCheckChannelTitle}\n" +
                     $"本次驗證 {totalCheckCount} 位成員，共 {checkedMemberCount} 位驗證成功");
 
-                await db.SaveChangesAsync();
+                var saveTime = DateTime.Now;
+                bool saveFailed = false;
+                int retryCount = 0;
+                const int maxRetryCount = 5;
+
+                do
+                {
+                    try
+                    {
+                        await db.SaveChangesAsync();
+                    }
+                    catch (DbUpdateConcurrencyException ex)
+                    {
+                        saveFailed = true;
+                        retryCount++;
+                        foreach (var item in ex.Entries)
+                        {
+                            try
+                            {
+                                item.Reload();
+                            }
+                            catch (Exception ex2)
+                            {
+                                Log.Error(ex2.Demystify(), $"MainDb-CheckMemberShip-SaveChanges-Reload");
+                                Log.Error(item.DebugView.ToString());
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), $"MainDb-CheckMemberShip-SaveChanges");
+                        Log.Error(db.ChangeTracker.DebugView.LongView);
+                    }
+                } while (saveFailed && retryCount < maxRetryCount && DateTime.Now.Subtract(saveTime) <= TimeSpan.FromMinutes(1));
             }
 
             if (totalCheckMemberCount > 0)

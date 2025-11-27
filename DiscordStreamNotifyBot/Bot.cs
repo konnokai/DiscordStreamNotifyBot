@@ -278,7 +278,7 @@ namespace DiscordStreamNotifyBot
                     InteractionService interactionService = serviceProvider.GetService<InteractionService>();
 #if DEBUG
                     if (_botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(_botConfig.TestSlashCommandGuildId) == null)
-                        Log.Warn("未設定測試Slash指令的伺服器或伺服器不存在，略過");
+                        Log.Warn("未設定測試 Slash 指令的伺服器或伺服器不存在，略過");
                     else
                     {
                         try
@@ -291,7 +291,7 @@ namespace DiscordStreamNotifyBot
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, "註冊伺服器專用Slash指令失敗");
+                            Log.Error(ex, "註冊伺服器專用 Slash 指令失敗");
                         }
                     }
 #elif RELEASE
@@ -321,7 +321,7 @@ namespace DiscordStreamNotifyBot
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, "註冊伺服器專用Slash指令失敗");
+                            Log.Error(ex, "註冊伺服器專用 Slash 指令失敗");
                         }
 
                         await interactionService.RegisterCommandsGloballyAsync();
@@ -329,7 +329,7 @@ namespace DiscordStreamNotifyBot
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "取得指令數量失敗，請確認Redis伺服器是否可以存取");
+                        Log.Error(ex, "取得指令數量失敗，請確認 Redis 伺服器是否可以存取");
                         IsDisconnect = true;
                     }
 #endif
@@ -337,8 +337,7 @@ namespace DiscordStreamNotifyBot
             }
             catch (Exception ex)
             {
-                Log.Error("註冊Slash指令失敗，關閉中...");
-                Log.Error(ex.ToString());
+                Log.Error(ex.Demystify(), "註冊 Slash 指令失敗，關閉中...");
                 IsDisconnect = true;
             }
             #endregion

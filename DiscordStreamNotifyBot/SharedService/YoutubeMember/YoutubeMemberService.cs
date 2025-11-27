@@ -226,11 +226,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
                 if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
                 {
-                    Log.Warn($"接收到 Remove 請求但不存在於資料庫內: {userId}");
+                    Log.Warn($"YoutubeMemberCheck 資料表找不到該使用者，忽略: {userId}");
                     return;
                 }
 
-                Log.Info($"接收到 Remove 請求: {userId}");
+                Log.Info($"搜尋資料庫並移除此使用者的 MemberCheck 資料: {userId}");
 
                 var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId);
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));

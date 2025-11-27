@@ -227,10 +227,10 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     case "token":
                     case "userCert":
                     case "channel":
-                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道", true);
+                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此 Google 帳號是否存在 Youtube 頻道", true);
                         break;
                     default:
-                        await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道\n" +
+                        await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號是否存在 Youtube 頻道\n" +
                             $"如有疑問請向 `{Bot.ApplicatonOwner}` 詢問", true);
                         Log.Error(nullEx.ToString());
                         break;
@@ -238,7 +238,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
             catch (Exception ex)
             {
-                await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號存在 Youtube 頻道\n" +
+                await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號是否存在 Youtube 頻道\n" +
                     $"如有疑問請向 `{Bot.ApplicatonOwner}` 詢問", true);
                 Log.Error(ex.ToString());
             }
