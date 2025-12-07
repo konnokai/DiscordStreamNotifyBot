@@ -365,13 +365,15 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             try
             {
                 using var db = _dbService.GetDbContext();
+                var twitchSpiderChunk = db.TwitchSpider.Distinct((x) => x.UserId).Chunk(100);
 
-                foreach (var twitchSpiders in db.TwitchSpider.Distinct((x) => x.UserId).Chunk(100))
+                foreach (var twitchSpiders in twitchSpiderChunk)
                 {
                     var streams = await GetNowStreamsAsync(twitchSpiders.Select((x) => x.UserId).ToArray());
                     if (!streams.Any())
                         continue;
 
+                    using var db2 = _dbService.GetDbContext();
                     foreach (var stream in streams)
                     {
                         if (string.IsNullOrEmpty(stream.Id))
@@ -382,7 +384,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
                         _hashSet.Add(stream.Id);
 
-                        if (db.TwitchStreams.AsNoTracking().Any((x) => x.StreamId == stream.Id))
+                        if (db2.TwitchStreams.AsNoTracking().Any((x) => x.StreamId == stream.Id))
                             continue;
 
                         var twitchSpider = twitchSpiders.Single((x) => x.UserId == stream.UserId);
@@ -390,7 +392,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         twitchSpider.OfflineImageUrl = userData.OfflineImageUrl;
                         twitchSpider.ProfileImageUrl = userData.ProfileImageUrl;
                         twitchSpider.UserName = userData.DisplayName;
-                        db.TwitchSpider.Update(twitchSpider);
+                        db2.TwitchSpider.Update(twitchSpider);
 
                         try
                         {
@@ -406,7 +408,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                                 StreamStartAt = stream.StartedAt
                             };
 
-                            db.TwitchStreams.Add(twitchStream);
+                            db2.TwitchStreams.Add(twitchStream);
 
                             // 如果有設定離線提醒，則移除舊的 Timer 並不發送開始直播通知
                             if (_streamOfflineReminders.TryRemove(stream.UserId, out Timer timer))
@@ -456,15 +458,15 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         }
                         catch (Exception ex) { Log.Error(ex.Demystify(), $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
                     }
-                }
 
-                try
-                {
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "TwitchService-Timer: SaveDb Error");
+                    try
+                    {
+                        await db2.SaveChangesAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), "TwitchService-Timer: SaveDb Error");
+                    }
                 }
             }
             catch (Exception ex) { Log.Error(ex.Demystify(), "TwitchService-Timer"); }
@@ -718,7 +720,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 foreach (var item in twitchUserIds.Chunk(100))
                 {
                     var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: [.. twitchUserIds]);
-                    if (streams.Streams.Any())
+                    if (streams.Streams.Length != 0)
                     {
                         result.AddRange(streams.Streams);
                     }
