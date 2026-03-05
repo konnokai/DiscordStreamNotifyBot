@@ -646,14 +646,14 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     await listComment.ExecuteAsync().ConfigureAwait(false);
                     return false;
                 }
-                catch (GoogleApiException apiEx) when (apiEx.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
+                catch (GoogleApiException apiEx) when ((apiEx.HttpStatusCode == System.Net.HttpStatusCode.Forbidden) || (apiEx.HttpStatusCode == System.Net.HttpStatusCode.BadRequest))
                 {
                     return true;
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex, $"GetCommentThreadsIsDisabledAsync: {videoId} 未知的錯誤");
-                    return false;
+                    return true;
                 }
             });
         }
