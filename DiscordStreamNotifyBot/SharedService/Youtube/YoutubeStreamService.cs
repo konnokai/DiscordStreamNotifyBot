@@ -948,35 +948,32 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         {
             if (isSubscribing)
                 return;
+
             isSubscribing = true;
 
             try
             {
                 using var db = _dbService.GetDbContext();
                 var list = await db.YoutubeChannelSpider
+                    .AsNoTracking()
                     .Where(x => x.LastSubscribeTime < DateTime.Now.AddDays(-7))
                     .ToListAsync();
 
-                int i = 0;
-
                 if (list.Count != 0)
                 {
+                    int i = 0;
                     foreach (var item in list)
                     {
                         i++;
                         if (await PostSubscribeRequestAsync(item.ChannelId))
                         {
                             Log.Info($"已註冊 YT PubSub: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
-                            item.LastSubscribeTime = DateTime.Now;
-                            db.Update(item);
                         }
                         else
                         {
                             Log.Warn($"註冊 YT PubSub 失敗: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
                         }
                     }
-
-                    await db.SaveChangesAsync();
                 }
             }
             catch (Exception ex)
