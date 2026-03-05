@@ -4,7 +4,8 @@ using DiscordStreamNotifyBot.Interaction;
 using Polly;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
-using DiscordStreamNotifyBot.SharedService.Youtube; // for EmbedBuilderFactory
+using DiscordStreamNotifyBot.SharedService.Youtube;
+using Google; // for EmbedBuilderFactory
 
 namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
@@ -590,7 +591,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 .WaitAndRetryAsync(3, (retryAttempt) =>
                 {
                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                    Log.Warn($"YouTube GetVideoAsync ({videoIds.Count()}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    Log.Warn($"YouTube GetVideosAsync ({videoIds.Count()}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                     return timeSpan;
                 });
 
@@ -601,6 +602,60 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
                 if (videoResult.Items.Count == 0) return null;
                 return videoResult.Items;
+            });
+        }
+
+        public async Task<YTApiVideo> GetVideoDurationAsync(string videoId)
+        {
+            var pBreaker = Policy<YTApiVideo>
+                .Handle<Exception>()
+                .WaitAndRetryAsync(3, (retryAttempt) =>
+                {
+                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    Log.Warn($"YouTube GetVideoDurationAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    return timeSpan;
+                });
+
+            return await pBreaker.ExecuteAsync(async () =>
+            {
+                var video = YouTubeService.Videos.List("contentDetails");
+                video.Id = videoId;
+                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
+                if (videoResult.Items.Count == 0) return null;
+                return videoResult.Items[0];
+            });
+        }
+
+        public async Task<bool> GetCommentThreadsIsDisabledAsync(string videoId)
+        {
+            var pBreaker = Policy<bool>
+                .Handle<Exception>()
+                .WaitAndRetryAsync(3, (retryAttempt) =>
+                {
+                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                    Log.Warn($"YouTube GetCommentThreadsIsDisabledAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    return timeSpan;
+                });
+
+            return await pBreaker.ExecuteAsync(async () =>
+            {
+                var listComment = YouTubeService.CommentThreads.List("id");
+                listComment.VideoId = videoId;
+
+                try
+                {
+                    await listComment.ExecuteAsync().ConfigureAwait(false);
+                    return false;
+                }
+                catch (GoogleApiException apiEx) when (apiEx.HttpStatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, $"GetCommentThreadsIsDisabledAsync: {videoId} 未知的錯誤");
+                    return false;
+                }
             });
         }
     }
