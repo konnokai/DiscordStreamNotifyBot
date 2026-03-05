@@ -406,6 +406,17 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 }
                                 else
                                 {
+                                    var videoContent = await GetVideoDurationAsync(youtubePubSubNotification.VideoId);
+                                    if (videoContent.ContentDetails.Duration == "PT15S")
+                                    {
+                                        var isCommentDisabled = await GetCommentThreadsIsDisabledAsync(youtubePubSubNotification.VideoId);
+                                        if (isCommentDisabled)
+                                        {
+                                            Log.Warn($"(新偽裝貼文) | {db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId)} ({youtubePubSubNotification.VideoId})");
+                                            return;
+                                        }
+                                    }
+
                                     streamVideo = new DataBase.Table.Video()
                                     {
                                         ChannelId = youtubePubSubNotification.ChannelId,
