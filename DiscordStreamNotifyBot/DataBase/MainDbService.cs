@@ -11,7 +11,7 @@
 
             var optionsBuilder = new DbContextOptionsBuilder<MainDbContext>();
             optionsBuilder.UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));
-            optionsBuilder.UseSnakeCaseNamingConvention();            
+            optionsBuilder.UseSnakeCaseNamingConvention();
             _options = optionsBuilder.Options;
         }
 

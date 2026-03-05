@@ -1,5 +1,4 @@
 ﻿using DiscordStreamNotifyBot.DataBase;
-using TwitchLib.Communication.Interfaces;
 
 namespace DiscordStreamNotifyBot.Command.Admin
 {

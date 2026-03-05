@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace DiscordStreamNotifyBot.HttpClients.Twitcasting.Model
 {
     public class GetUserInfoResponse

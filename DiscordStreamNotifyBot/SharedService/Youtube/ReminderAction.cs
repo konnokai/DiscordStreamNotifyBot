@@ -1,11 +1,10 @@
 ﻿using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
+using Google; // for EmbedBuilderFactory
 using Polly;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
-using DiscordStreamNotifyBot.SharedService.Youtube;
-using Google; // for EmbedBuilderFactory
 
 namespace DiscordStreamNotifyBot.SharedService.Youtube
 {

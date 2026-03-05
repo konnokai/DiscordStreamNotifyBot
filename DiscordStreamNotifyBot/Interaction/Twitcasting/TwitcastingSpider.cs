@@ -241,7 +241,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                     GuildId = Context.Guild.Id,
                     ChannelId = channelData.Id,
                     ScreenId = channelData.ScreenId,
-                    ChannelTitle = channelData.Name  
+                    ChannelTitle = channelData.Name
                 };
 
                 if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))

@@ -166,7 +166,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                         guildConfig = new DataBase.Table.GuildConfig() { GuildId = Context.Guild.Id };
                         db.GuildConfig.Add(guildConfig);
                     }
-                    
+
                     int maxCount = 5;
                     if (guildConfig != null && guildConfig.MaxYouTubeMemberCheckCount > 0)
                         maxCount = (int)guildConfig.MaxYouTubeMemberCheckCount;
