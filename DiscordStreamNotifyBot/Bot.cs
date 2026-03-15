@@ -143,10 +143,6 @@ namespace DiscordStreamNotifyBot
                         if ((bannerChange = db.BannerChange.Where(x => x.GuildId == guild.Id)).Any())
                             db.BannerChange.RemoveRange(bannerChange);
 
-                        IEnumerable<NoticeTwitterSpaceChannel> noticeTwitterSpaceChannels;
-                        if ((noticeTwitterSpaceChannels = db.NoticeTwitterSpaceChannel.Where(x => x.GuildId == guild.Id)).Any())
-                            db.NoticeTwitterSpaceChannel.RemoveRange(noticeTwitterSpaceChannels);
-
                         IEnumerable<NoticeTwitcastingStreamChannel> noticeTwitCastingStreamChannels;
                         if ((noticeTwitCastingStreamChannels = db.NoticeTwitcastingStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeTwitcastingStreamChannels.RemoveRange(noticeTwitCastingStreamChannels);
@@ -232,7 +228,6 @@ namespace DiscordStreamNotifyBot
             var services = new ServiceCollection()
                 .AddHttpClient()
                 .AddSingleton(DbService)
-                .AddSingleton<SharedService.Twitter.TwitterSpacesService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
@@ -255,7 +250,6 @@ namespace DiscordStreamNotifyBot
             //https://blog.darkthread.net/blog/polly/
             //HandleTransientHttpError 包含 5xx 及 408 錯誤
             services.AddHttpClient<DiscordWebhookClient>();
-            services.AddHttpClient<TwitterClient>();
             services.AddHttpClient<TwitcastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                 .HandleTransientHttpError()

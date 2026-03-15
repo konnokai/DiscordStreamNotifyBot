@@ -27,10 +27,6 @@ public class BotConfig
     public string TwitchClientId { get; set; } = "";
     public string TwitchClientSecret { get; set; } = "";
 
-    public string TwitterAuthToken { get; set; } = "";
-    public string TwitterCSRFToken { get; set; } = "";
-    public string TwitterSpaceRecordPath { get; set; } = "";
-
     public ulong YouTubeEmoteId { get; set; } = 1265158558299848827;
     public ulong PayPalEmoteId { get; set; } = 1265158658015236107;
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
@@ -96,9 +92,6 @@ public class BotConfig
             TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;
             TwitchClientSecret = config.TwitchClientSecret;
-            TwitterAuthToken = config.TwitterAuthToken;
-            TwitterCSRFToken = config.TwitterCSRFToken;
-            TwitterSpaceRecordPath = config.TwitterSpaceRecordPath;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;

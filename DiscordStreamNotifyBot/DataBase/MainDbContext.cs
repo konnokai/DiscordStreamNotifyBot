@@ -13,13 +13,10 @@ namespace DiscordStreamNotifyBot.DataBase
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
         public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
-        public DbSet<NoticeTwitterSpaceChannel> NoticeTwitterSpaceChannel { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
         public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
         public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
         public DbSet<TwitchSpider> TwitchSpider { get; set; }
-        public DbSet<TwitterSpace> TwitterSpace { get; set; }
-        public DbSet<TwitterSpaceSpider> TwitterSpaceSpider { get; set; }
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }

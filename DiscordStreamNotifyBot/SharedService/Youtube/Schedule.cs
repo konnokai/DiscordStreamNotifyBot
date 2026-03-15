@@ -749,7 +749,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     var isCommentDisabled = await GetCommentThreadsIsDisabledAsync(item.Id);
                     if (isCommentDisabled)
                     {
-                        Log.Warn($"(新偽裝貼文) | {item.Snippet.ChannelTitle} ({item.Id})");
+                        Log.Error($"(新偽裝貼文) | {item.Snippet.ChannelTitle} ({item.Id})");
                         return;
                     }
                 }

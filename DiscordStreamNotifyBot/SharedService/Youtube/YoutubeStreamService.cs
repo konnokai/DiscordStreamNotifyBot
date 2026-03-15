@@ -412,7 +412,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                         var isCommentDisabled = await GetCommentThreadsIsDisabledAsync(youtubePubSubNotification.VideoId);
                                         if (isCommentDisabled)
                                         {
-                                            Log.Warn($"(新偽裝貼文) | {db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId)} ({youtubePubSubNotification.VideoId})");
+                                            Log.Error($"(新偽裝貼文) | {db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId)} ({youtubePubSubNotification.VideoId})");
                                             return;
                                         }
                                     }

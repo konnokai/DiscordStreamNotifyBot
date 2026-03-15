@@ -313,30 +313,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
                         result += $"設定 Twitch 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                     }
 
-                    var twitterSpiders = db.TwitterSpaceSpider.AsNoTracking().Where((x) => x.GuildId == gid);
-                    if (twitterSpiders.Any())
-                    {
-                        result += $"設定的 Twitter 爬蟲: \n```{string.Join('\n', twitterSpiders.Select((x) => $"{x.UserName}: {x.UserScreenName}"))}```\n";
-                    }
-
-                    var twitterChannelList = db.NoticeTwitterSpaceChannel.AsNoTracking().Where((x) => x.GuildId == guild.Id);
-                    if (twitterChannelList.Any())
-                    {
-                        List<string> channelListResult = new List<string>();
-
-                        foreach (var item in twitterChannelList)
-                        {
-                            var noticeChannel = guild.GetChannel(item.DiscordChannelId);
-
-                            if (noticeChannel != null)
-                                channelListResult.Add($"{noticeChannel}: {item.NoticeTwitterSpaceUserScreenName}");
-                            else
-                                channelListResult.Add($"(不存在) {item.DiscordChannelId}: {item.NoticeTwitterSpaceUserScreenName}");
-                        }
-
-                        result += $"設定 Twitter 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
-                    }
-
                     await Context.Channel.SendConfirmAsync(result).ConfigureAwait(false);
                 }
             }
