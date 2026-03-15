@@ -33,12 +33,12 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                 foreach (var streamVideo in db.NijisanjiVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
+                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
                 }
 
                 foreach (var streamVideo in db.OtherVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
+                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Other);
                 }
             }
         }
