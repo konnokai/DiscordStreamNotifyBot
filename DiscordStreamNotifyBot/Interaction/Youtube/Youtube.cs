@@ -81,46 +81,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             _dbService = dbService;
         }
 
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
-        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
-        [SlashCommand("list-record-channel", "顯示直播記錄頻道")]
-        public async Task ListRecordChannel([Summary("頁數")] int page = 0)
-        {
-            using (var db = _dbService.GetDbContext())
-            {
-                if (db.RecordYoutubeChannel.Any())
-                {
-                    var list = new List<string>();
-
-                    foreach (var item in db.RecordYoutubeChannel.ToList().Chunk(50))
-                    {
-                        list.AddRange(await _service.GetChannelTitle(item.Select((x) => x.YoutubeChannelId), true));
-                    }
-
-                    list.Sort();
-                    await Context.SendPaginatedConfirmAsync(page, page =>
-                    {
-                        return new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("直播記錄清單")
-                            .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                            .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count} 個頻道");
-                    }, list.Count, 20, false);
-                }
-                else await Context.Interaction.SendErrorAsync($"直播記錄清單中沒有任何頻道").ConfigureAwait(false);
-            }
-        }
-
-        [SlashCommand("now-streaming", "取得現在直播的成員")]
-        public async Task NowStreaming(YoutubeStreamService.NowStreamingHost host)
-        {
-            var embed = await _service.GetNowStreamingChannel(host).ConfigureAwait(false);
-
-            if (embed == null) await Context.Interaction.SendErrorAsync("無法取得直播清單").ConfigureAwait(false);
-            else await Context.Interaction.RespondAsync(embed: embed).ConfigureAwait(false);
-        }
-
         [SlashCommand("coming-soon-stream", "顯示接下來直播的清單")]
         public async Task ComingSoonStream([Summary("頁數")] int page = 0)
         {
@@ -146,8 +106,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                            result.Skip(act * 7).Take(7)
                            .Select((x) => $"{Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}" +
                            $"\n{Format.Url(x.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{x.Snippet.ChannelId}")}" +
-                           $"\n直播時間: {DateTime.Parse(x.LiveStreamingDetails.ScheduledStartTimeRaw)}" +
-                           "\n是否在直播錄影清單內: " + (db.RecordYoutubeChannel.Any((x2) => x2.YoutubeChannelId.Trim() == x.Snippet.ChannelId) ? "是" : "否"))));
+                           $"\n直播時間: {DateTime.Parse(x.LiveStreamingDetails.ScheduledStartTimeRaw)}")));
                     }, result.Count, 7).ConfigureAwait(false);
                 }
             }
@@ -764,11 +723,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                     result += $"已設定 `{channelTitle}` 的 `{noticeTypeString}` 通知訊息為:\n" +
                             $"{message}";
 
-                    if (noticeType == YoutubeStreamService.NoticeType.End && !db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId))
-                    {
-                        result += $"\n\n(注意: 該頻道目前不會有結束直播通知)";
-                    }
-                    else if (!db.YoutubeChannelSpider.FirstOrDefault((x) => x.IsTrustedChannel)?.IsTrustedChannel ?? false &&
+                    if (!db.YoutubeChannelSpider.FirstOrDefault((x) => x.IsTrustedChannel)?.IsTrustedChannel ?? false &&
                         (channelId != "holo" && channelId != "2434" && channelId != "other"))
                     {
                         result += $"\n\n(注意: 該頻道目前僅會有影片上傳通知)";

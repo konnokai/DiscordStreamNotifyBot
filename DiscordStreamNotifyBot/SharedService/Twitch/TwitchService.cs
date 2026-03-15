@@ -43,7 +43,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         private readonly MainDbService _dbService;
         private readonly Timer _timer;
         private readonly HashSet<string> _hashSet = new();
-        private readonly MessageComponent _messageComponent;
         private readonly string _apiServerUrl, _twitchOAuthToken, _twitchWebHookSecret;
         private readonly ConcurrentDictionary<string, DebounceChannelUpdateMessage> _debounceChannelUpdateMessage = new();
         private readonly ConcurrentDictionary<string, Timer> _streamOfflineReminders = new();
@@ -101,11 +100,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     }
                 }
             });
-
-            _messageComponent = new ComponentBuilder()
-                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
 #nullable enable
 
@@ -549,7 +543,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, components: noticeType == NoticeType.StartStream ? _messageComponent : null, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {

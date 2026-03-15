@@ -128,7 +128,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
         private async Task HandleStreamStartAsync(TableVideo streamVideo, YTApiVideo videoResult, MainDbContext db)
         {
-            bool isRecord = false;
             streamVideo.VideoTitle = videoResult.Snippet.Title;
             var video = GetDbVideoByType(db, streamVideo);
             try
@@ -152,38 +151,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
             }
 
-#if RELEASE
-            try
-            {
-                if (CanRecord(streamVideo))
-                {
-                    if (Bot.Redis != null)
-                    {
-                        if (await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), streamVideo.VideoId) != 0)
-                        {
-                            Log.Info($"已發送 YouTube 錄影請求: {streamVideo.VideoId}");
-                            isRecord = true;
-                        }
-                        else
-                        {
-                            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {streamVideo.VideoId}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"ReminderTimerAction-Record: {streamVideo.VideoId}\n{ex}");
-            }
-#endif
 
             await ChangeGuildBannerAsync(streamVideo.ChannelId, streamVideo.VideoId);
 
-            if (!isRecord)
-            {
-                var embedBuilder = EmbedBuilderFactory.CreateStreamStarted(streamVideo);
-                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
-            }
+            var embedBuilder = EmbedBuilderFactory.CreateStreamStarted(streamVideo);
+            await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
 
             if (Reminders.TryRemove(streamVideo.VideoId, out var t))
                 t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -229,8 +201,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         {
             return streamVideo.ChannelType switch
             {
-                TableVideo.YTChannelType.Holo => db.HoloVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId),
-                TableVideo.YTChannelType.Nijisanji => db.NijisanjiVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId),
                 TableVideo.YTChannelType.Other => db.OtherVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId),
                 _ => null
             };
@@ -286,20 +256,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             if (!Bot.IsConnect)
                 return;
 
-            string type;
-            switch (streamVideo.ChannelType)
-            {
-                case TableVideo.YTChannelType.Holo:
-                    type = "holo";
-                    break;
-                case TableVideo.YTChannelType.Nijisanji:
-                    type = "2434";
-                    break;
-                default:
-                    type = "other";
-                    break;
-            }
-
             List<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels = new List<NoticeYoutubeStreamChannel>();
             using (var db = _dbService.GetDbContext())
             {
@@ -317,11 +273,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 //類型檢查，其他類型的頻道要特別檢查，確保必須是認可的頻道才可被添加到其他類型通知
                 try
                 {
-                    if (type != "other" || //如果不是其他類的頻道，直接添加到對應的類型通知即可
-                        !db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
+                    if (!db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
                         db.YoutubeChannelSpider.AsNoTracking().First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
-                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == type));
+                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == "other"));
                     }
                 }
                 catch (Exception ex)
@@ -519,7 +474,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, components: noticeType == NoticeType.Start ? _messageComponent : null, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {

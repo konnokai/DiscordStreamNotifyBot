@@ -79,30 +79,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
                         guilds.Remove(guild);
                 });
 
-            db.NoticeTwitcastingStreamChannels
-                .AsEnumerable()
-                .DistinctBy((x) => x.GuildId)
-                .Select((x) => x.GuildId)
-                .ToList()
-                .ForEach((x) =>
-                {
-                    var guild = guilds.SingleOrDefault((x2) => x2.Id == x);
-                    if (guild != null)
-                        guilds.Remove(guild);
-                });
-
-            db.GuildYoutubeMemberConfig
-                .AsEnumerable()
-                .DistinctBy((x) => x.GuildId)
-                .Select((x) => x.GuildId)
-                .ToList()
-                .ForEach((x) =>
-                {
-                    var guild = guilds.SingleOrDefault((x2) => x2.Id == x);
-                    if (guild != null)
-                        guilds.Remove(guild);
-                });
-
             Utility.OfficialGuildList
                 .ToList()
                 .ForEach((x) =>

@@ -19,16 +19,15 @@ namespace DiscordStreamNotifyBot.Command
             long UTCTime = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
             return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
         }
+
         public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
-                channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
+               "其他";
 
         public static bool HasStreamVideoByVideoId(string videoId)
         {
             videoId = videoId.Trim();
 
             using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
             if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
 
@@ -40,10 +39,6 @@ namespace DiscordStreamNotifyBot.Command
             videoId = videoId.Trim();
 
             using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
             if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
                 return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))

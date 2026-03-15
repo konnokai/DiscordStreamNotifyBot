@@ -10,25 +10,16 @@ namespace DiscordStreamNotifyBot.DataBase
 
         public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
-        public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
-        public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
-        public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
-        public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
         public DbSet<TwitchSpider> TwitchSpider { get; set; }
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
-        public DbSet<YoutubeMemberAccessToken> YoutubeMemberAccessToken { get; set; }
-        public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
         #region Video
-        public DbSet<HoloVideos> HoloVideos { get; set; }
-        public DbSet<NijisanjiVideos> NijisanjiVideos { get; set; }
         public DbSet<OtherVideos> OtherVideos { get; set; }
         public DbSet<NonApprovedVideos> NonApprovedVideos { get; set; }
-        public DbSet<TwitcastingStream> TwitcastingStreams { get; set; }
         public DbSet<TwitchStream> TwitchStreams { get; set; }
         #endregion
 
@@ -36,8 +27,6 @@ namespace DiscordStreamNotifyBot.DataBase
         {
             Table.Video updatedVideo = video switch
             {
-                { ChannelType: Table.Video.YTChannelType.Holo } => video as HoloVideos,
-                { ChannelType: Table.Video.YTChannelType.Nijisanji } => video as NijisanjiVideos,
                 { ChannelType: Table.Video.YTChannelType.Other } => video as OtherVideos,
                 { ChannelType: Table.Video.YTChannelType.NonApproved } => video as NonApprovedVideos,
                 _ => null

@@ -107,36 +107,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
                         await button.SendConfirmAsync($"已設定 {youtubeChannelSpider.ChannelTitle} 為`" + (youtubeChannelSpider.IsTrustedChannel ? "已" : "未") + "`認可頻道", true);
                     }
-                    else if (buttonData[1].Contains("record"))
-                    {
-                        if (buttonData[1] == "record")
-                        {
-                            if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]))
-                            {
-                                await button.SendErrorAsync("該頻道已存在於錄影清單內", true);
-                                return;
-                            }
-                            else
-                            {
-                                db.RecordYoutubeChannel.Add(new DataBase.Table.RecordYoutubeChannel() { YoutubeChannelId = buttonData[2] });
-                                await button.SendConfirmAsync("已新增到錄影清單內", true);
-                                db.SaveChanges();
-                            }
-                        }
-                        else if (buttonData[1] == "unrecord")
-                        {
-                            if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]))
-                            {
-                                await button.SendErrorAsync("該頻道未存在於錄影清單內", true);
-                                return;
-                            }
-                            else
-                            {
-                                db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == buttonData[2]));
-                                await button.SendConfirmAsync("已於錄影清單移除", true);
-                            }
-                        }
-                    }
 
                     db.SaveChanges();
 
@@ -150,8 +120,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                             .AddField("頻道", Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"), false)
                             .AddField("伺服器", guild, false)
                             .AddField("執行者", user, false)
-                            .AddField("認可頻道", youtubeChannelSpider.IsTrustedChannel ? "是" : "否", true)
-                            .AddField("錄影頻道", db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == buttonData[2]) ? "是" : "否", true).Build();
+                            .AddField("認可頻道", youtubeChannelSpider.IsTrustedChannel ? "是" : "否", true).Build();
 
                         try
                         {
@@ -208,16 +177,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                bool isTwoBox = false;
-                if (db.HoloVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
-                else if (db.NijisanjiVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
-
-                if (isTwoBox && !db.YoutubeChannelOwnedType.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                {
-                    await Context.Interaction.SendErrorAsync($"不可新增兩大箱的頻道", true).ConfigureAwait(false);
-                    return;
-                }
-
                 // 取得最大數量設定
                 var guildConfig = db.GuildConfig.AsNoTracking().FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
                 int maxCount = 3;
@@ -294,13 +253,10 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                             .AddField("頻道", Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
                             .AddField("伺服器", spider.GuildId != 0 ? $"{Context.Guild.Name} ({Context.Guild.Id})" : "擁有者", false)
                             .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false)
-                            .AddField("認可頻道", "否", true)
-                            .AddField("錄影頻道", "否", true).Build(),
+                            .AddField("認可頻道", "否", true).Build(),
                         components: new ComponentBuilder()
                             .WithButton("加入認可頻道", $"spider_youtube:trusted:{channelId}", ButtonStyle.Success)
-                            .WithButton("移除認可頻道", $"spider_youtube:untrusted:{channelId}", ButtonStyle.Danger)
-                            .WithButton("加入錄影頻道", $"spider_youtube:record:{channelId}", ButtonStyle.Success, row: 1)
-                            .WithButton("移除錄影頻道", $"spider_youtube:unrecord:{channelId}", ButtonStyle.Danger, row: 1).Build());
+                            .WithButton("移除認可頻道", $"spider_youtube:untrusted:{channelId}", ButtonStyle.Danger).Build());
                 }
                 catch (Exception ex) { Log.Error(ex.ToString()); }
             }

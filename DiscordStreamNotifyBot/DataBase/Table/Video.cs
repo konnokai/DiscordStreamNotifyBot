@@ -6,7 +6,7 @@ namespace DiscordStreamNotifyBot.DataBase.Table
     {
         public enum YTChannelType
         {
-            Holo, Nijisanji, Other, NonApproved
+            Other, NonApproved
         }
 
         public string ChannelId { get; set; }

@@ -126,8 +126,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
         public async Task DieAsync()
         {
             Bot.IsDisconnect = true;
-            Bot.IsHoloChannelSpider = false;
-            Bot.IsNijisanjiChannelSpider = false;
             Bot.IsOtherChannelSpider = false;
             await Context.Channel.SendConfirmAsync("關閉中");
         }
@@ -233,16 +231,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
 
                 using (var db = _dbService.GetDbContext())
                 {
-                    var guildConfig = await db.GuildConfig.AsNoTracking().FirstOrDefaultAsync((x) => x.GuildId == gid);
-                    if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)
-                    {
-                        var channel = guild.GetChannel(guildConfig.LogMemberStatusChannelId);
-                        if (channel != null)
-                            result += $"伺服器會限記錄頻道: {channel.Name} ({channel.Id})\n";
-                        else
-                            result += $"伺服器會限記錄頻道: (不存在) {guildConfig.LogMemberStatusChannelId}\n";
-                    }
-
                     var youtubeChannelSpiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (youtubeChannelSpiders.Any())
                     {
@@ -281,12 +269,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
                         {
                             result += $"設定 YouTube 通知的頻道: \n```{string.Join('\n', channelListResult)}```\n";
                         }
-                    }
-
-                    var memberChcekList = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == guild.Id);
-                    if (memberChcekList.Any())
-                    {
-                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```\n";
                     }
 
                     var twitchSpiders = db.TwitchSpider.AsNoTracking().Where((x) => x.GuildId == gid);

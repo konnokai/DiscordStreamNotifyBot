@@ -40,17 +40,14 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
         public ConcurrentBag<NijisanjiLiverJson> NijisanjiLiverContents { get; } = new ConcurrentBag<NijisanjiLiverJson>();
         public ConcurrentDictionary<string, ReminderItem> Reminders { get; } = new ConcurrentDictionary<string, ReminderItem>();
-        public bool IsRecord { get; set; } = true;
         public YouTubeService YouTubeService { get; set; }
 
         private bool isSubscribing = false;
-        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
+        private Timer otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
         private readonly DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
         private readonly string _apiServerUrl;
-        private readonly MessageComponent _messageComponent;
         private readonly MainDbService _dbService;
         private Timer channelTitleCheckTimer;
 
@@ -60,9 +57,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
 
-            _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
-            _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-
             YouTubeService = new YouTubeService(new BaseClientService.Initializer
             {
                 ApplicationName = "DiscordStreamBot",
@@ -70,11 +64,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             });
 
             _apiServerUrl = botConfig.ApiServerDomain;
-
-            _messageComponent = new ComponentBuilder()
-                        .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                        .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
             if (Bot.Redis != null)
             {
@@ -265,43 +254,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     }
                 });
 
-                Bot.RedisSub.Subscribe(new RedisChannel("youtube.unarchived", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
-                {
-                    Log.Info($"{channel} - {videoId}");
-
-                    _endLiveBag.TryAdd(videoId, 1);
-
-                    using (var db = _dbService.GetDbContext())
-                    {
-                        try
-                        {
-                            if (Extensions.HasStreamVideoByVideoId(videoId))
-                            {
-                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithTitle(streamVideo.VideoTitle)
-                                .WithOkColor()
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "已關台並變更為私人存檔")
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-
-                                if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("已關台並變更為私人存檔", false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error($"Record-UnArchived {ex}");
-                        }
-                    }
-                });
-
                 Bot.RedisSub.Subscribe(new RedisChannel("youtube.429error", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
                 {
                     Log.Info($"{channel} - {videoId}");
-                    IsRecord = false;
 
                     using (var db = _dbService.GetDbContext())
                     {
@@ -381,64 +336,20 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             {
                                 Log.Info($"{channel} - (新影片) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
 
-                                DataBase.Table.Video streamVideo;
-                                var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
-
-                                if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) // 錄影頻道一律允許
-                                    || db.NijisanjiVideos.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || // 可能是 2434 的頻道，允許
-                                    (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel)) // 否則就確認這是不是允許的爬蟲
+                                var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
+                                if (item == null)
                                 {
-                                    var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
-                                    if (item == null)
-                                    {
-                                        Log.Warn($"{youtubePubSubNotification.VideoId} Delete");
-                                        return;
-                                    }
-
-                                    try
-                                    {
-                                        await AddOtherDataAsync(item);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Error(ex.Demystify(), $"PubSub_AddData_CreateOrUpdate: {item.Id}");
-                                    }
+                                    Log.Warn($"{youtubePubSubNotification.VideoId} Delete");
+                                    return;
                                 }
-                                else
+
+                                try
                                 {
-                                    var videoContent = await GetVideoDurationAsync(youtubePubSubNotification.VideoId);
-                                    if (videoContent.ContentDetails.Duration == "PT15S")
-                                    {
-                                        var isCommentDisabled = await GetCommentThreadsIsDisabledAsync(youtubePubSubNotification.VideoId);
-                                        if (isCommentDisabled)
-                                        {
-                                            Log.Error($"(新偽裝貼文) | {db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId)} ({youtubePubSubNotification.VideoId})");
-                                            return;
-                                        }
-                                    }
-
-                                    streamVideo = new DataBase.Table.Video()
-                                    {
-                                        ChannelId = youtubePubSubNotification.ChannelId,
-                                        ChannelTitle = db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId),
-                                        VideoId = youtubePubSubNotification.VideoId,
-                                        VideoTitle = youtubePubSubNotification.Title,
-                                        ScheduledStartTime = youtubePubSubNotification.Published,
-                                        ChannelType = DataBase.Table.Video.YTChannelType.NonApproved
-                                    };
-
-                                    Log.New($"(非已認可的新影片) | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
-
-                                    EmbedBuilder embedBuilder = new EmbedBuilder();
-                                    embedBuilder.WithOkColor()
-                                    .WithTitle(streamVideo.VideoTitle)
-                                    .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                    .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                    .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                    .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-
-                                    if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
-                                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
+                                    await AddOtherDataAsync(item);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex.Demystify(), $"PubSub_AddData_CreateOrUpdate: {item.Id}");
                                 }
                             }
                             else Log.Info($"{channel} - (編輯或關台) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
@@ -601,15 +512,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
             reScheduleTime = new Timer((objState) => ReScheduleReminder(), null, TimeSpan.FromSeconds(5), TimeSpan.FromDays(1));
 
-            //foreach (var item in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
-            //{
-            //    Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(item));
-            //}
-
-            holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
-
-            nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
-
             otherSchedule = new Timer(async (objState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
 
             checkScheduleTime = new Timer(async (objState) => await CheckScheduleTime(), null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
@@ -627,93 +529,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             var nextMidnight = now.Date.AddDays(1);
             var dueTime = nextMidnight - now;
             channelTitleCheckTimer = new Timer(async _ => await CheckAndUpdateYoutubeChannelTitlesAsync(), null, dueTime, TimeSpan.FromDays(1));
-        }
-
-        private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation, bool forceRefresh = false)
-        {
-            if (!forceRefresh)
-            {
-                try
-                {
-                    if (await Bot.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
-                    {
-                        var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Bot.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
-                        foreach (var item in liver)
-                        {
-                            NijisanjiLiverContents.Add(item);
-                        }
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}");
-                }
-            }
-
-            try
-            {
-                var json = await _nijisanjiApiHttpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&orderKey=subscriber_count&order=asc&affiliation={affiliation}&locale=ja&includeAll=true");
-                var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(json);
-                await Bot.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
-                foreach (var item in liver)
-                {
-                    NijisanjiLiverContents.Add(item);
-                }
-                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation} 已刷新");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}");
-            }
-        }
-
-        public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)
-        {
-            try
-            {
-                List<string> idList = new List<string>();
-                switch (host)
-                {
-                    case NowStreamingHost.Holo:
-                        {
-                            HtmlWeb htmlWeb = new HtmlWeb();
-                            HtmlDocument htmlDocument = htmlWeb.Load("https://schedule.hololive.tv/lives/all");
-                            idList.AddRange(htmlDocument.DocumentNode.Descendants()
-                                .Where((x) => x.Name == "a" &&
-                                    x.Attributes["href"].Value.StartsWith("https://www.youtube.com/watch") &&
-                                    x.Attributes["style"].Value.Contains("border: 3px"))
-                                .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
-                        }
-                        break;
-                        //case NowStreamingHost.Niji: //Todo: 實作2434現正直播查詢
-                        //    return null;
-                        //    break;
-                }
-
-                var video = YouTubeService.Videos.List("snippet");
-                video.Id = string.Join(",", idList);
-                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-
-                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                    .WithTitle("正在直播的清單")
-                    .WithThumbnailUrl("https://schedule.hololive.tv/dist/images/logo.png")
-                    .WithCurrentTimestamp()
-                    .WithDescription(string.Join("\n", videoResult.Items.Select((x) => $"{x.Snippet.ChannelTitle} - {Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}")));
-
-                return embedBuilder.Build();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"GetNowStreamingChannel: {host}");
-                return null;
-            }
-        }
-
-        private bool CanRecord(DataBase.Table.Video streamVideo)
-        {
-            using var db = _dbService.GetDbContext();
-            return IsRecord && db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
         }
 
         public async Task<string> GetChannelIdAsync(string channelUrl)

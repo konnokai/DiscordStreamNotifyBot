@@ -25,8 +25,6 @@ namespace DiscordStreamNotifyBot
 
         public static bool IsConnect { get; set; } = false;
         public static bool IsDisconnect { get; set; } = false;
-        public static bool IsHoloChannelSpider { get; set; } = false;
-        public static bool IsNijisanjiChannelSpider { get; set; } = false;
         public static bool IsOtherChannelSpider { get; set; } = false;
 
         private static DiscordSocketClient client;
@@ -109,18 +107,6 @@ namespace DiscordStreamNotifyBot
 
                 ApplicatonOwner = (await client.GetApplicationInfoAsync()).Owner;
                 IsConnect = true;
-
-                using (var db = DbService.GetDbContext())
-                {
-                    foreach (var guild in client.Guilds)
-                    {
-                        if (!await db.GuildConfig.AnyAsync(x => x.GuildId == guild.Id))
-                        {
-                            db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
-                            await db.SaveChangesAsync();
-                        }
-                    }
-                }
             };
 
             client.LeftGuild += (guild) =>
@@ -131,21 +117,9 @@ namespace DiscordStreamNotifyBot
 
                     using (var db = DbService.GetDbContext())
                     {
-                        GuildConfig guildConfig;
-                        if ((guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
-                            db.GuildConfig.Remove(guildConfig);
-
-                        IEnumerable<GuildYoutubeMemberConfig> guildYoutubeMemberConfigs;
-                        if ((guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where(x => x.GuildId == guild.Id)).Any())
-                            db.GuildYoutubeMemberConfig.RemoveRange(guildYoutubeMemberConfigs);
-
                         IEnumerable<BannerChange> bannerChange;
                         if ((bannerChange = db.BannerChange.Where(x => x.GuildId == guild.Id)).Any())
                             db.BannerChange.RemoveRange(bannerChange);
-
-                        IEnumerable<NoticeTwitcastingStreamChannel> noticeTwitCastingStreamChannels;
-                        if ((noticeTwitCastingStreamChannels = db.NoticeTwitcastingStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
-                            db.NoticeTwitcastingStreamChannels.RemoveRange(noticeTwitCastingStreamChannels);
 
                         IEnumerable<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels;
                         if ((NoticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
@@ -154,10 +128,6 @@ namespace DiscordStreamNotifyBot
                         IEnumerable<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels;
                         if ((noticeYoutubeStreamChannels = db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guild.Id)).Any())
                             db.NoticeYoutubeStreamChannel.RemoveRange(noticeYoutubeStreamChannels);
-
-                        IEnumerable<YoutubeMemberCheck> youtubeMemberChecks;
-                        if ((youtubeMemberChecks = db.YoutubeMemberCheck.Where(x => x.GuildId == guild.Id)).Any())
-                            db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
 
                         var saveTime = DateTime.Now;
                         bool saveFailed;
@@ -230,7 +200,6 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton(DbService)
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
-                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
                 .AddSingleton(client)
                 .AddSingleton(_botConfig)
                 .AddSingleton(new InteractionService(client, new InteractionServiceConfig()
@@ -250,10 +219,6 @@ namespace DiscordStreamNotifyBot
             //https://blog.darkthread.net/blog/polly/
             //HandleTransientHttpError 包含 5xx 及 408 錯誤
             services.AddHttpClient<DiscordWebhookClient>();
-            services.AddHttpClient<TwitcastingClient>()
-                .AddPolicyHandler(HttpPolicyExtensions
-                .HandleTransientHttpError()
-                .RetryAsync(3));
 
             services.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             services.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
@@ -354,15 +319,6 @@ namespace DiscordStreamNotifyBot
                 serviceProvider.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name}({guild.Id})\n" +
                     $"擁有者: {guild.OwnerId}");
 
-                using (var db = DbService.GetDbContext())
-                {
-                    if (!db.GuildConfig.Any(x => x.GuildId == guild.Id))
-                    {
-                        db.GuildConfig.Add(new GuildConfig() { GuildId = guild.Id });
-                        db.SaveChanges();
-                    }
-                }
-
                 return Task.CompletedTask;
             };
 
@@ -371,14 +327,9 @@ namespace DiscordStreamNotifyBot
             do { await Task.Delay(1000); }
             while (!IsDisconnect);
 
-            while (IsHoloChannelSpider || IsOtherChannelSpider)
+            while (IsOtherChannelSpider)
             {
-                List<string> str = new List<string>();
-
-                if (IsHoloChannelSpider) str.Add("Holo");
-                if (IsOtherChannelSpider) str.Add("Other");
-
-                Log.Info($"等待 {string.Join(", ", str)} 完成");
+                Log.Info("等待 Other 完成");
                 await Task.Delay(5000);
             }
 
@@ -419,19 +370,7 @@ namespace DiscordStreamNotifyBot
                         {
                             using var db = DbService.GetDbContext();
 
-                            List<DataBase.Table.Video> list = null;
-                            switch (new Random().Next(0, 2))
-                            {
-                                case 0:
-                                    list = db.HoloVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
-                                    break;
-                                case 1:
-                                    list = db.NijisanjiVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
-                                    break;
-                                case 2:
-                                    list = db.OtherVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
-                                    break;
-                            }
+                            List<DataBase.Table.Video> list = db.OtherVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
 
                             var item = list[new Random().Next(0, list.Count)];
                             await client.SetGameAsync(item.VideoTitle, $"https://www.youtube.com/watch?v={item.VideoId}", ActivityType.Streaming);

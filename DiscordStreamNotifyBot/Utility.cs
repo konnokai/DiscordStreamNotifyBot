@@ -31,8 +31,6 @@ namespace DiscordStreamNotifyBot
                 int total = 0;
 
                 using var db = Bot.DbService.GetDbContext();
-                total += db.HoloVideos.AsNoTracking().Count();
-                total += db.NijisanjiVideos.AsNoTracking().Count();
                 total += db.OtherVideos.AsNoTracking().Count();
 
                 return total;
