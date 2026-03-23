@@ -69,6 +69,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 ApiKey = botConfig.GoogleApiKey,
             });
 
+#if DEBUG_API
+            var test = GetCommentThreadsIsDisabledAsync("").Result;
+            return;
+#endif
+
             _apiServerUrl = botConfig.ApiServerDomain;
 
             _messageComponent = new ComponentBuilder()

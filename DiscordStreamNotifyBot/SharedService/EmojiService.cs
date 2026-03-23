@@ -14,7 +14,7 @@ namespace DiscordStreamNotifyBot.SharedService
         {
             _client = client;
 
-#if DEBUG
+#if !RELEASE
             return;
 #endif
 

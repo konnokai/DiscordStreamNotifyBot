@@ -5,8 +5,7 @@ using DiscordStreamNotifyBot.Interaction;
 using System.Runtime.InteropServices;
 using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
 
-
-#if RELEASE
+#if !DEBUG
 using Polly;
 #endif
 

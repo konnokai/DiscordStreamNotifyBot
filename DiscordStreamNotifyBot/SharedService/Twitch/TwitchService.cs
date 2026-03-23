@@ -13,7 +13,7 @@ using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
 using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
 using DiscordStreamNotifyBot.SharedService.Twitch.Debounce;
 
-#if RELEASE
+#if !DEBUG
 using Polly;
 #endif
 
