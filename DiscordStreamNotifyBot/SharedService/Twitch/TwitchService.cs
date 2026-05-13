@@ -17,7 +17,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 
-#if RELEASE
+#if !DEBUG
 using Polly;
 #endif
 
