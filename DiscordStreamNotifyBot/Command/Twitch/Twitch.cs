@@ -153,6 +153,51 @@ namespace DiscordStreamNotifyBot.Command.Twitch
 
         [RequireContext(ContextType.DM)]
         [RequireOwner]
+        [Command("GetEventSubSubscriptions")]
+        [Summary("取得事件訂閱頻道")]
+        [CommandExample("", "174268844")]
+        [Alias("gess")]
+        public async Task GetEventSubSubscriptionsAsync(string broadcasterUserId = "")
+        {
+            await Context.Channel.TriggerTypingAsync();
+
+            var list = await _service.GetEventSubSubscriptionsAsync(broadcasterUserId);
+            if (list != null && list.Count > 0)
+            {
+                var embedBuilder = new EmbedBuilder()
+                    .WithOkColor()
+                    .WithTitle("EventSub Subscriptions")
+                    .WithDescription(string.Join('\n', list.Select((x) => $"`{x.Id}`: `{x.Type}` ({x.Version}) for `{x.Condition["broadcaster_user_id"]}` ({x.Status})")));
+                await Context.Channel.SendMessageAsync(embed: embedBuilder.Build());
+            }
+            else
+            {
+                await Context.Channel.SendErrorAsync($"沒有找到事件訂閱頻道");
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
+        [Command("DeleteEventSubSubscription")]
+        [Summary("刪除事件訂閱頻道")]
+        [CommandExample("174268844")]
+        [Alias("dess")]
+        public async Task DeleteEventSubSubscriptionAsync(string broadcasterUserId)
+        {
+            await Context.Channel.TriggerTypingAsync();
+
+            if (await _service.DeleteEventSubSubscriptionAsync(broadcasterUserId))
+            {
+                await Context.Channel.SendConfirmAsync($"已刪除圖奇事件通知: {broadcasterUserId}");
+            }
+            else
+            {
+                await Context.Channel.SendErrorAsync($"圖奇事件通知刪除失敗");
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
+        [RequireOwner]
         [Command("TwitchGetLatestVOD")]
         [Summary("取得 Twitch 頻道最新的 VOD 資訊")]
         [CommandExample("https://twitch.tv/998rrr")]

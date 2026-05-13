@@ -12,6 +12,10 @@ using Stream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
 using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
 using DiscordStreamNotifyBot.SharedService.Twitch.Debounce;
+using DiscordStreamNotifyBot.SharedService.Youtube.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
+
 
 #if RELEASE
 using Polly;
@@ -478,11 +482,19 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         {
             try
             {
-                await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", broadcasterUserId } },
-                      EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+                var eventSubList = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: broadcasterUserId);
 
-                await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", broadcasterUserId } },
-                      EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+                if (!eventSubList.Subscriptions.Any((x) => x.Type == "channel.update"))
+                {
+                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", broadcasterUserId } },
+                        EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+                }
+
+                if (!eventSubList.Subscriptions.Any((x) => x.Type == "stream.offline"))
+                {
+                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", broadcasterUserId } },
+                        EventSubTransportMethod.Webhook, webhookCallback: $"https://{_apiServerUrl}/TwitchWebHooks", webhookSecret: _twitchWebHookSecret);
+                }
 
                 return true;
             }
@@ -732,6 +744,52 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             {
                 Log.Error(ex.Demystify(), $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
                 return Array.Empty<Stream>();
+            }
+        }
+
+        public async Task<IReadOnlyList<TwitchLib.Api.Helix.Models.EventSub.EventSubSubscription>> GetEventSubSubscriptionsAsync(string userId = null)
+        {
+            try
+            {
+                var eventSubList = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: userId);
+                if (eventSubList.Subscriptions.Length != 0)
+                {
+                    return eventSubList.Subscriptions;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (BadRequestException)
+            {
+                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {userId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {userId}");
+                return null;
+            }
+        }
+
+        public async Task<bool> DeleteEventSubSubscriptionAsync(string userId)
+        {
+            try
+            {
+                var list = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: userId);
+                foreach (var item in list.Subscriptions)
+                {
+                    Log.Info($"Delete EventSub: {item.Id} ({item.Type})");
+                    await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(item.Id);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"Event Delete Error: {userId}");
+                return false;
             }
         }
         #endregion
