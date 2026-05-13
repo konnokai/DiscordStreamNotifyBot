@@ -45,7 +45,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         private readonly DiscordSocketClient _client;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
-        private readonly Timer _timer;
+        private readonly Timer _timer, _removeVerificationFailedWebhookTimer;
         private readonly HashSet<string> _hashSet = new();
         private readonly MessageComponent _messageComponent;
         private readonly string _apiServerUrl, _twitchOAuthToken, _twitchWebHookSecret;
@@ -324,6 +324,38 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 #nullable disable
 
             _timer = new Timer(async (obj) => { await TimerHandel(); }, null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30));
+
+
+            // 每日 00:00 定時檢查驗證失敗的 WebHook 並移除
+            var now = DateTime.Now;
+            var nextMidnight = now.Date.AddDays(1);
+            var dueTime = nextMidnight - now;
+            _removeVerificationFailedWebhookTimer = new Timer(async (obj) =>
+            {
+                Log.Info("開始檢查 Twitch WebHook 驗證失敗的訂閱...");
+
+                try
+                {
+                    var getEventSubSubscriptionsResponse = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(status: "webhook_callback_verification_failed");
+                    if (getEventSubSubscriptionsResponse == null)
+                        return;
+
+                    if (getEventSubSubscriptionsResponse.Subscriptions == null || getEventSubSubscriptionsResponse.Subscriptions.Length == 0)
+                        return;
+
+                    foreach (var sub in getEventSubSubscriptionsResponse.Subscriptions)
+                    {
+                        Log.Info($"刪除驗證失敗的 Twitch WebHook 訂閱: {sub.Id} ({sub.Type})");
+                        await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(sub.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "檢查 Twitch WebHook 驗證失敗的訂閱時發生錯誤");
+                }
+
+                Log.Info("完成檢查 Twitch WebHook 驗證失敗的訂閱");
+            }, null, dueTime, TimeSpan.FromDays(1));
         }
 
         public string GetUserLoginByUrl(string url)
