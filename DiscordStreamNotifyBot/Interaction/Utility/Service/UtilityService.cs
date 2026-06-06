@@ -29,6 +29,14 @@
 
                             await Bot.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());
 
+                            if (modal.Data.Attachments.Count > 0)
+                            {
+                                foreach (var attachment in modal.Data.Attachments)
+                                {
+                                    await Bot.ApplicatonOwner.SendMessageAsync($"附加檔案: {attachment.Url}");
+                                }
+                            }
+
                             embedBuilder
                                 .WithTitle("")
                                 .WithDescription($"已收到訊息，請確保你填寫的聯絡資訊可讓 Bot 擁有者聯繫\n" +
@@ -47,15 +55,24 @@
 
                             try
                             {
-                                await (await client.Rest.GetUserAsync(userId))
-                                    .SendMessageAsync(embed: new EmbedBuilder()
+                                var user = await client.Rest.GetUserAsync(userId);
+                                await user.SendMessageAsync(embed: new EmbedBuilder()
                                         .WithOkColor()
                                         .WithTitle("來自擁有者的回覆")
                                         .WithDescription(message)
                                         .Build());
 
-                                await modal.SendConfirmAsync($"發送成功\n" +
-                                    $"回覆訊息: {message}", true);
+                                if (modal.Data.Attachments.Count > 0)
+                                {
+                                    foreach (var attachment in modal.Data.Attachments)
+                                    {
+                                        await user.SendMessageAsync($"附加檔案: {attachment.Url}");
+                                    }
+                                }
+
+                                await modal.SendConfirmAsync($"發送成功，回覆訊息:\n" +
+                                    $"{message}\n" +
+                                    $"({modal.Data.Attachments.Count} 個附加檔案)", true);
                             }
                             catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                             {
@@ -86,7 +103,8 @@
                 var modalBuilder = new ModalBuilder().WithTitle("回覆訊息給使用者")
                    .WithCustomId("send-reply-to-user")
                    .AddTextInput("UserId", "userId", TextInputStyle.Short, "", null, null, true, userId)
-                   .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "請輸入你要發送的訊息", null, null, true);
+                   .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "請輸入你要發送的訊息", null, null, true)
+                   .AddFileUpload("相關截圖或檔案", "file", maxValues: 4, isRequired: false);
 
                 await button.RespondWithModalAsync(modalBuilder.Build());
             };

@@ -65,6 +65,7 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
             var modalBuilder = new ModalBuilder().WithTitle("聯繫 Bot 擁有者")
                 .WithCustomId("send-message-to-bot-owner")
                 .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "請輸入你要發送的訊息", 10, null, true)
+                .AddFileUpload("相關截圖", "file", maxValues: 4, isRequired: false, description: "如果有相關的截圖需要提供給 Bot 擁有者，請在這裡上傳 (非必要)")
                 .AddTextInput("聯繫方式", "contact-method", TextInputStyle.Short, "請輸入可與你聯繫的方式及相關資訊 (推特、Discord、Facebook等)", 3, null, true);
 
             await RespondWithModalAsync(modalBuilder.Build());

@@ -17,7 +17,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Ben.Demystifier" Version="0.4.1" />
-		<PackageReference Include="Discord.Net" Version="3.18.0" />
+		<PackageReference Include="Discord.Net" Version="3.19.1" />
 		<PackageReference Include="Dorssel.Utilities.Debounce" Version="3.0.0" />
 		<PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
 		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.73.0.3981" />

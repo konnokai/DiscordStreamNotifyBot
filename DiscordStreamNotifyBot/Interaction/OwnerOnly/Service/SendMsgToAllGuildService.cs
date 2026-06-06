@@ -2,6 +2,7 @@
 using DiscordStreamNotifyBot.DataBase;
 using Polly;
 using System.Net;
+using System.Reflection;
 
 namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
 {
@@ -51,8 +52,10 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 await modal.DeferAsync(true);
 
                 List<SocketMessageComponentData> components = modal.Data.Components.ToList();
-                NoticeType noticeType = components.First(x => x.CustomId == "notice_type").Value == "工商" ? NoticeType.Sponsor : NoticeType.Normal;
-                string imageUrl = components.First(x => x.CustomId == "image_url").Value ?? "";
+
+                var noticeType = Enum.Parse<NoticeType>(modal.Data.Components
+                    .First(x => x.CustomId == "notice_type").Value);
+                string imageUrl = modal.Data.Attachments.Count == 1 ? modal.Data.Attachments.First().Url : "";
                 string message = components.First(x => x.CustomId == "message").Value;
 
                 Embed embed = new EmbedBuilder().WithOkColor()
@@ -68,7 +71,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                     .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
                     .WithButton("否", $"{guid}-no", ButtonStyle.Danger);
 
-                await modal.FollowupAsync(text: $"本次發送的類型為: {noticeType}", embed: embed, components: component.Build(), ephemeral: true);
+                await modal.FollowupAsync(text: $"本次發送的類型為: {GetNoticeTypeDisplayName(noticeType)}", embed: embed, components: component.Build(), ephemeral: true);
                 checkData = new ButtonCheckData(modal.User.Id, modal.ChannelId.Value, guid, noticeType, embed);
             };
 
@@ -468,6 +471,14 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 checkData = null;
                 isSending = false;
             }
+        }
+
+        internal string GetNoticeTypeDisplayName(NoticeType noticeType)
+        {
+            return noticeType.GetType()
+                .GetField(noticeType.ToString())
+                .GetCustomAttribute<ChoiceDisplayAttribute>()
+                .Name;
         }
     }
 }

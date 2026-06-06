@@ -12,14 +12,23 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly
         [SlashCommand("send-message", "傳送訊息到所有伺服器")]
         [RequireOwner]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
-        public async Task SendMessageToAllGuildAsync(NoticeType noticeType, Attachment attachment = null)
+        public async Task SendMessageToAllGuildAsync()
         {
+            var radioGroupBuilder = new RadioGroupBuilder()
+                .WithCustomId("notice_type")
+                .WithRequired(true);
+
+            foreach (var item in Enum.GetValues(typeof(NoticeType)))
+            {
+                radioGroupBuilder.AddOption(_service.GetNoticeTypeDisplayName((NoticeType)item), item.ToString());
+            }
+
             var mb = new ModalBuilder()
-            .WithTitle("傳送全球訊息")
-            .WithCustomId("send_message")
-            .AddTextInput("發送類型", "notice_type", placeholder: "一般 or 工商", value: noticeType == NoticeType.Normal ? "一般" : "工商", minLength: 2, maxLength: 2, required: true)
-            .AddTextInput("圖片網址", "image_url", placeholder: "https://...", value: attachment?.Url, required: false)
-            .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "內容...", required: true);
+                .WithTitle("傳送全球訊息")
+                .WithCustomId("send_message")
+                .AddRadioGroup("發送類型", radioGroupBuilder)
+                .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "內容...", required: true)
+                .AddFileUpload("圖片", "image_attachment", isRequired: false,maxValues: 1);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
         }
