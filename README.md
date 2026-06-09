@@ -8,13 +8,13 @@
 
 自行運行所需環境與參數
 -
-- .NET Core 6.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/6.0))
+- .NET 8.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+- MySQL Server，用於儲存直播與設定資料 (連線字串請填入 `bot_config.json` 的 `MySqlConnectionString`)
 - Redis Server ([Windows 下載網址](https://github.com/MicrosoftArchive/redis)，Linux 可直接透過 apt 或 yum 安裝)
 - Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
 - Discord Channel WebHook，做紀錄用
 - Google Console API 金鑰並確保已於程式庫開啟 Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
 - 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/YoutubeStreamRecord) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台) \*
-- Twitter AuthToken & CSRFToken，這需要從已登入的 Twitter 帳號中，由名稱為 `auth_token` 和 `ct0` 的 Cookie 來獲得 (如不需要推特語音通知則不需要) \*\*
 - Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用 \*\*
 - ApiServerDomain，搭配上面的網站後端做 YouTube 影片上傳接收 & Twitch 狀態更新使用，僅需填寫後端域名就好 (Ex: api.example.me) ([Google PubSubHubbub](https://pubsubhubbub.appspot.com)) ([Twitch Webhook Callback](https://dev.twitch.tv/docs/eventsub/handling-webhook-events/))
 - Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
@@ -35,9 +35,10 @@
 建置&測試環境
 - 
 - Visual Studio 2022
-- .NET SDK 6.0
+- .NET SDK 8.0
 - Windows 10 & 11 Pro
 - Debian 11
+- MySQL 8.0
 - Redis 7.0.4
 
 參考專案
