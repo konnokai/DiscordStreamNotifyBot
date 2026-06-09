@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "roslyn": {
+      "command": "dotnet",
+      "args": [
+        "tool",
+        "run",
+        "cwm-roslyn-navigator",
+        "--",
+        "DiscordStreamNotifyBot.sln"
+      ]
+    }
+  }
+}

@@ -2,94 +2,179 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What this is
+---
 
-「直播小幫手」(Discord Stream Notify Bot) — a Discord bot that notifies servers about Vtuber livestreams across YouTube, Twitch, TwitCasting (and historically Twitter/X spaces). Single .NET 8.0 console project (`DiscordStreamNotifyBot.csproj`), built on Discord.Net. The codebase, comments, log messages, and user-facing strings are almost entirely in 繁體中文 (Traditional Chinese) — match that when editing.
+## Project Overview
 
-It is part of a multi-process system and does not run standalone for full functionality:
-- **[YoutubeStreamRecord](https://github.com/konnokai/YoutubeStreamRecord)** — the recorder process. Communicates with the bot purely over **Redis pub/sub** (see channels below). Without it there are no "stream ended" notices and no real-time open-stream detection.
-- **[Discord-Stream-Bot-Backend](https://github.com/konnokai/Discord-Stream-Bot-Backend)** — web backend for YouTube membership OAuth verification, and the receiver for YouTube PubSubHubbub push + Twitch EventSub webhooks (configured via `ApiServerDomain`).
+**「直播小幫手」(Discord Stream Notify Bot)** — 通知 Discord 伺服器 Vtuber 直播的機器人，支援 YouTube、Twitch、TwitCasting。  
+單一 .NET 8.0 Console 專案（`DiscordStreamNotifyBot.csproj`），以 Discord.Net 建構。
 
-## Build & run
+> **語言規範**：程式碼、註解、Log 訊息、使用者介面字串一律使用**繁體中文**。
+
+### 相依的外部系統
+
+| 系統 | 用途 | 通訊方式 |
+|------|------|----------|
+| [YoutubeStreamRecord](https://github.com/konnokai/YoutubeStreamRecord) | 錄影；實時偵測開台 | Redis pub/sub |
+| [Discord-Stream-Bot-Backend](https://github.com/konnokai/Discord-Stream-Bot-Backend) | YouTube 會限 OAuth 驗證；接收 PubSubHubbub / Twitch EventSub webhook | HTTP (`ApiServerDomain`) |
+
+---
+
+## Build & Run
 
 ```powershell
-# Always build/run Release for real use — Debug intentionally #if-skips Discord login,
-# command registration, recording, banner changes, and more.
+# 正式使用一律 Release — Debug 組態會跳過 Discord 登入、指令註冊等大量功能
 dotnet build -c Release
-dotnet run -c Release
+dotnet run  -c Release
 
-# First run writes bot_config_example.json then exits if bot_config.json is missing.
-# Copy it to bot_config.json and fill in DiscordToken, WebHookUrl, GoogleApiKey, ApiServerDomain (all required).
+# 首次執行：若 bot_config.json 不存在，自動產生 bot_config_example.json 後退出
+# 複製並填入 DiscordToken、WebHookUrl、GoogleApiKey、ApiServerDomain（必填）
 
-# Sharding: pass shard id + total shard count (default 0 / 1). "run" is treated as no-arg.
+# Sharding（預設 0/1）
 dotnet run -c Release -- 0 4
 ```
 
-There are **no automated tests** and no test framework in this repo.
+> **無自動化測試**，此 repo 不含任何測試框架。
 
-### Build configurations (these change behavior via `#if`, not just optimization)
-- **`Release`** — full functionality; registers slash commands globally. Use this.
-- **`Debug`** — logs in, but registers slash commands only to `TestSlashCommandGuildId`; many features are guarded out.
-- **`Debug_DontRegisterCommand`** — skips command registration entirely (fast iteration on non-command code).
-- **`Debug_API`** — short-circuits in `YoutubeStreamService` constructor to exercise a single API call and return; for probing YouTube API behavior.
+### 組態旗標（`#if` 改變行為，非單純最佳化）
 
-When editing code, check surrounding `#if DEBUG / RELEASE / DEBUG_DONTREGISTERCOMMAND / DEBUG_API` blocks — logic genuinely diverges between configs.
+| 組態 | 行為 |
+|------|------|
+| `Release` | 完整功能；全球註冊 Slash 指令 |
+| `Debug` | 登入 Discord，但指令只註冊到 `TestSlashCommandGuildId` |
+| `Debug_DontRegisterCommand` | 略過指令註冊（快速迭代非指令邏輯用）|
+| `Debug_API` | 僅執行單次 YouTube API 呼叫後立即返回 |
 
-### Database migrations (EF Core, Pomelo MySQL, snake_case)
+修改程式碼時，**務必確認**周圍的 `#if` 區塊。
+
+### EF Core Migration
+
 ```powershell
 dotnet ef migrations add <Name>
-dotnet ef database update    # usually unnecessary: shard 0 calls EnsureCreated() on startup
+# dotnet ef database update  ← 通常不需要：Shard 0 啟動時呼叫 EnsureCreated()
 ```
-`MainDbService` builds `DbContextOptions` once with `UseMySql` + `UseSnakeCaseNamingConvention`. Every consumer calls `Bot.DbService.GetDbContext()` to get a **short-lived** context (`using var db = ...`) and uses `.AsNoTracking()` for reads. Do not hold contexts long-lived.
 
-## Runtime prerequisites
-
-- **MySQL** (connection string in `bot_config.json` → `MySqlConnectionString`)
-- **Redis** — mandatory; the bot fails fast if it can't connect. Used both as a cache/store and as the IPC bus to the recorder.
-- Optional external tools for recording: `ffmpeg`, `streamlink` (on PATH).
-- Credentials are all in `bot_config.json` (see `BotConfig.cs` for the full list: Google/YouTube, Twitch, TwitCasting, OAuth client id/secret, Uptime Kuma push URL, etc.). `RedisTokenKey` is auto-generated and written back if missing.
+---
 
 ## Architecture
 
-### Startup flow (`Program.cs` → `Bot.cs`)
-`Program.Main` parses shard args and constructs `Bot`. `Bot` ctor: loads config, opens MySQL service + Redis, (shard 0) `EnsureCreated()`. `Bot.StartAndBlockAsync()` then: creates `DiscordSocketClient` → wires `Ready`/`JoinedGuild`/`LeftGuild` (these auto-create/clean up `GuildConfig` and related rows) → logs in → **builds the DI container** → loads command & interaction modules → registers slash commands → blocks until `IsDisconnect`, then drains spider flags and saves DB state.
+### 啟動流程
 
-Most cross-cutting state lives as **static members on `Bot`** (`Redis`, `RedisSub`, `RedisDb`, `DbService`, `client`, connection flags). New code typically reaches global services through these statics or through constructor DI.
+```
+Program.Main
+  └─ Bot(shardId, totalShards)
+       ├─ BotConfig.InitBotConfig()          # 讀 bot_config.json，auto-gen RedisTokenKey
+       ├─ MainDbService(connectionString)
+       ├─ RedisConnection.Init()             # 失敗立即 throw
+       ├─ (shard 0) db.EnsureCreated()
+       └─ StartAndBlockAsync()
+            ├─ DiscordSocketClient 建立 & 事件綁定 (Ready / JoinedGuild / LeftGuild)
+            ├─ Discord Login + 等待 IsConnect
+            ├─ ServiceCollection 組裝 (見下)
+            ├─ InteractionHandler / CommandHandler 初始化
+            ├─ Slash 指令註冊 (Debug=test guild / Release=global)
+            └─ 阻塞直到 IsDisconnect，再清理 spider flags & 儲存 DB
+```
 
-### Dependency injection & module auto-loading
-The container is assembled in `StartAndBlockAsync`. The key trick is reflection-based registration in `Interaction/Extensions.cs` (`LoadInteractionFrom`) and `Command/Extensions.cs` (`LoadCommandFrom`): every concrete type implementing the **marker interfaces** `IInteractionService` / `ICommandService` is auto-registered as a singleton (mapped to its interface if it has one). So `SharedService` classes implement `IInteractionService` to become injectable singletons. To add a new shared service, implement the marker interface and it gets picked up automatically — no manual registration.
+### 全域靜態狀態（`Bot` 類別）
 
-`HttpClient`s are registered via `IHttpClientFactory`; `TwitcastingClient` uses a Polly retry policy (`HandleTransientHttpError().RetryAsync(3)`).
+| 成員 | 說明 |
+|------|------|
+| `Bot.Redis` / `Bot.RedisSub` / `Bot.RedisDb` | StackExchange.Redis 連線 |
+| `Bot.DbService` | `MainDbService`（DbContextOptions 工廠） |
+| `Bot.client` | `DiscordSocketClient` |
+| `Bot.IsConnect` / `Bot.IsDisconnect` | 啟動 / 關閉旗標 |
+| `Bot.IsHoloChannelSpider` / ... | Spider 執行中旗標（關閉前等待完成）|
 
-### Two parallel command systems
-1. **Prefix commands** — `Command/` folder, prefix `s!` (`CommandHandler`). Legacy/owner-oriented.
-2. **Slash + interaction commands** — `Interaction/` folder (`InteractionHandler`), the primary user surface. Registration logic in `Bot.cs` differs by build config (test guild in Debug, global + per-guild `[RequireGuild]` modules in Release). Command count is cached in Redis (`discord_stream_bot:command_count`) so re-registration only happens when the set changes.
+### DI 自動載入（反射）
 
-Both folders mirror each other structurally (per-platform subfolders: `Youtube`, `Twitch`, `TwitCasting`, `YoutubeMember`, plus `Attribute/`, `Help/`, `Extensions.cs`, `TopLevelModule.cs`). `Interaction/Extensions.cs` is the grab-bag of shared helpers — embed color conventions (`WithOkColor`/`WithErrorColor`/`WithRecordColor`), `SendConfirmAsync`/`SendErrorAsync`, paginated embeds with reaction navigation, and DB lookup helpers spanning the video tables.
+`Interaction/Extensions.cs` → `LoadInteractionFrom`  
+`Command/Extensions.cs` → `LoadCommandFrom`
 
-### SharedService — the actual work
-Background polling/notification logic lives in `SharedService/{Youtube,Twitch,Twitcasting,YoutubeMember}/`. These are the largest, most important files. Pattern: a service class (e.g. `YoutubeStreamService`) is a singleton holding multiple `System.Threading.Timer`s for scheduled scraping/checking, plus Redis subscriptions reacting to recorder events. `YoutubeStreamService` is `partial` and split across several files (`Schedule.cs`, `ReminderAction.cs`, `ChangeGuildBanner.cs`, `EmbedBuilderFactory.cs`, etc.).
+掃描 Assembly，找出所有實作 `IInteractionService` / `ICommandService` 的具體類別，自動註冊為 Singleton。**新增 SharedService 只需實作 `IInteractionService`，不需手動 DI 登記。**
 
-### Data model (`DataBase/Table/`)
-YouTube streams are split across **four tables sharing the abstract `Video` base**: `HoloVideos`, `NijisanjiVideos`, `OtherVideos`, `NonApprovedVideos` — distinguished by `Video.YTChannelType`. Lookups that "find a video by id" typically probe all four tables in sequence (see helpers in `Interaction/Extensions.cs`). Channel ownership can be overridden via `YoutubeChannelOwnedType`. Other tables cover notice configs per guild/platform, spider (channel-tracking) configs, and YouTube membership tokens/checks.
+### 雙指令系統
 
-### Redis pub/sub channels (IPC with the recorder & backend)
-The bot and recorder coordinate entirely through these channels (literal mode). When touching notification/recording flow, trace the corresponding channel:
-- YouTube: `youtube.startstream`, `youtube.endstream`, `youtube.addstream`, `youtube.deletestream`, `youtube.unarchived`, `youtube.memberonly`, `youtube.record`, `youtube.429error`, `youtube.test`, `youtube.pubsub.{CreateOrUpdate,Deleted,NeedRegister}`
-- Twitch: `twitch.record`, `twitch:channel_update`, `twitch:stream_offline`
-- TwitCasting: `twitcasting.pubsub.startlive`
-- Membership: `member.revokeToken`, `member.syncRedisToken`
+| | 前綴指令（Legacy） | Slash 指令（主要）|
+|-|-------------------|------------------|
+| 目錄 | `Command/` | `Interaction/` |
+| 前綴 | `s!` | `/` |
+| Handler | `CommandHandler` | `InteractionHandler` |
+| 用途 | 擁有者/管理 | 一般使用者 |
 
-### Auth (`Auth/`)
-`TokenManager` + `TokenCrypto` implement an AES-encrypt + HMAC-SHA256-sign token format (`iv.payload.signature`) using `RedisTokenKey`, shared with the backend for membership OAuth.
+兩個目錄結構完全對稱（`Youtube/`、`Twitch/`、`TwitCasting/`、`YoutubeMember/`、`Attribute/`、`Help/`）。
 
-## Command documentation
+### SharedService（核心業務邏輯）
 
-The authoritative, up-to-date usage docs for every command live in Notion: https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37. CLAUDE.md deliberately does **not** duplicate the command list — to understand a specific command's behavior, read its module under `Interaction/` or `Command/` (plus `Data/HelpDescription.txt`), and treat Notion as the source of truth for user-facing descriptions.
+`SharedService/{Youtube,Twitch,Twitcasting,YoutubeMember}/` 是最重要的檔案。  
+模式：Singleton + 多個 `System.Threading.Timer` + Redis pub/sub 訂閱。
 
-## Conventions
+`YoutubeStreamService` 是 `partial` class，分散在：
 
-- Logging goes through the static `Log` class (`Log.Info/Warn/Error`, colorized console output). Exceptions are usually `.Demystify()`'d (Ben.Demystifier) before logging.
-- Implicit usings are enabled and several namespaces are globally `Using`'d in the csproj (`Discord`, `Discord.WebSocket`, `Newtonsoft.Json`, `StackExchange.Redis`, `Microsoft.EntityFrameworkCore`, `System.Diagnostics`, `Google.Apis.YouTube.v3.Data`) — they won't appear in individual files.
-- JSON is **Newtonsoft.Json** (`JsonConvert`), not System.Text.Json.
-- Code style is enforced by the root `.editorconfig`.
+| 檔案 | 內容 |
+|------|------|
+| `YoutubeStreamService.cs` | 建構子、Redis 訂閱、YouTube API 存取 |
+| `Schedule.cs` | 定時爬取排程 |
+| `ReminderAction.cs` | 到點提醒動作 |
+| `ChangeGuildBanner.cs` | 開台時更換伺服器橫幅 |
+| `EmbedBuilderFactory.cs` | 建立通知 Embed |
+
+### 資料庫（`DataBase/`）
+
+`MainDbContext` 透過 `MainDbService.GetDbContext()` 取得**短生命週期** context（`using var db = ...`），讀取一律加 `.AsNoTracking()`。
+
+**YouTube 影片四表共同繼承 `Video` 基底類別：**
+
+| Table | `YTChannelType` |
+|-------|-----------------|
+| `HoloVideos` | `Holo` |
+| `NijisanjiVideos` | `Nijisanji` |
+| `OtherVideos` | `Other` |
+| `NonApprovedVideos` | `NonApproved` |
+
+依 video id 查詢時需依序探查四張表（參見 `Interaction/Extensions.cs` 中的 helper 方法）。頻道歸屬可透過 `YoutubeChannelOwnedType` 覆寫。
+
+### Redis Pub/Sub 頻道（與錄影工具 IPC）
+
+| 分類 | 頻道 |
+|------|------|
+| YouTube | `youtube.startstream` `youtube.endstream` `youtube.addstream` `youtube.deletestream` `youtube.unarchived` `youtube.memberonly` `youtube.record` `youtube.429error` `youtube.test` `youtube.pubsub.{CreateOrUpdate,Deleted,NeedRegister}` |
+| Twitch | `twitch.record` `twitch:channel_update` `twitch:stream_offline` |
+| TwitCasting | `twitcasting.pubsub.startlive` |
+| 會限 | `member.revokeToken` `member.syncRedisToken` |
+
+### Auth（`Auth/`）
+
+`TokenManager` + `TokenCrypto`：`AES-CBC 加密 + HMAC-SHA256 簽章`，格式 `iv.payload.signature`，使用 `RedisTokenKey` 作為金鑰，與後端共享用於 YouTube 會限 OAuth。
+
+---
+
+## Key Conventions
+
+- **Log**：`Log.Info/Warn/Error`（靜態類別，彩色 Console 輸出）。例外一律 `.Demystify()` 後再 Log。
+- **JSON**：`Newtonsoft.Json`（`JsonConvert`），**不使用** `System.Text.Json`。
+- **Global Usings**（csproj 已宣告，不會出現在個別檔案）：`Discord`、`Discord.WebSocket`、`Newtonsoft.Json`、`StackExchange.Redis`、`Microsoft.EntityFrameworkCore`、`System.Diagnostics`、`Google.Apis.YouTube.v3.Data`
+- **程式碼風格**：遵循根目錄 `.editorconfig`。
+- **Embed 顏色**：`WithOkColor()`（綠）/ `WithErrorColor()`（深灰）/ `WithRecordColor()`（紅）。
+
+---
+
+## Command Documentation
+
+各指令的權威使用說明維護在 Notion：<https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37>  
+CLAUDE.md 刻意不重複維護指令清單。指令行為請讀 `Interaction/` 或 `Command/` 下的模組（及 `Data/HelpDescription.txt`）。
+
+---
+
+## Applicable dotnet-claude-kit Skills
+
+| Skill | 使用時機 |
+|-------|----------|
+| `/migrate` | 新增或修改 EF Core 資料表欄位後 |
+| `/health-check` | 定期程式碼品質審查 |
+| `/code-review` | PR 或重構後的審閱 |
+| `/security-scan` | Auth 模組或加密邏輯有變更時 |
+| `/checkpoint` | 儲存進度、切換任務前 |
+| `/de-sloppify` | PR 前的程式碼清理 |
+
+> **不適用**：`/scaffold`（無 VSA/Clean Arch）、`/tdd`（無測試框架）、`/api-versioning`（無 Web API）、`/aspire`。
