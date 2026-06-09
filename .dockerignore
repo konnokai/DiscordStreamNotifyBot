@@ -1,0 +1,18 @@
+# 縮小 build context，避免把建置產物 / 機密帶進 image
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.github/
+.idea/
+*.user
+*.suo
+
+# 機密與本機設定，絕不進 image（改由 .env / volume 注入）
+.env
+bot_config.json
+**/bot_config.json
+
+# 文件 / 雜項
+*.md
+*.log

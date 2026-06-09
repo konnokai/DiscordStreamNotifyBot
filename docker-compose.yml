@@ -1,0 +1,86 @@
+# 直播小幫手 — 水平擴展（三層拆分）應用程式 compose（計畫 §6，方式 A 固定 shard）
+#
+# 本 stack 只跑應用程式（coordinator / scraper / notifier-N）。
+# MySQL / Redis / RabbitMQ 為外部獨立服務，透過 host.docker.internal（或主機 IP）連入，連線資訊放 .env。
+#
+# 啟動前置：
+#   1. 外部 MySQL / Redis / RabbitMQ 已啟動且容器可達（bind 0.0.0.0 或主機 IP、防火牆放行）。
+#   2. 複製 .env.example -> .env 並填入連線資訊與 Token。
+#   3. 準備 bot_config.json（含 RedisTokenKey〔與後端共用〕、WebHookUrl、ApiServerDomain 等非 env 設定）。
+#
+# 首次建置 / 啟動：
+#   docker compose build
+#   docker compose up -d
+
+# 讓容器都能用 host.docker.internal 連回主機（Linux 必要；Docker Desktop 可省）
+x-host: &host-gateway
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+# 各角色共用設定錨點
+x-app: &app-common
+  restart: unless-stopped
+  env_file: .env
+  volumes:
+    # InitBotConfig 需要 bot_config.json 存在；RedisTokenKey 等非 env 設定由此提供（rw 以便首次自動補金鑰）
+    - ./bot_config.json:/app/bot_config.json
+  <<: *host-gateway
+
+services:
+  coordinator:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: src/DiscordStreamNotifyBot.Coordinator/Dockerfile
+    environment:
+      ROLE: coordinator
+
+  scraper:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: src/DiscordStreamNotifyBot.Scraper/Dockerfile
+    environment:
+      ROLE: scraper
+    depends_on: [coordinator]
+
+  # 方式 A：固定 shard，每個 shard 一個服務、ShardId 寫死於 command；total 必須與 .env 的 TOTAL_SHARDS 一致
+  notifier-0:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
+    command: ["0", "4"]
+    environment:
+      ROLE: notifier
+    depends_on: [coordinator]
+
+  notifier-1:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
+    command: ["1", "4"]
+    environment:
+      ROLE: notifier
+    depends_on: [coordinator]
+
+  notifier-2:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
+    command: ["2", "4"]
+    environment:
+      ROLE: notifier
+    depends_on: [coordinator]
+
+  notifier-3:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
+    command: ["3", "4"]
+    environment:
+      ROLE: notifier
+    depends_on: [coordinator]

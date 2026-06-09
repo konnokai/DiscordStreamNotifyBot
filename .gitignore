@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# 水平擴展部署：敏感連線資訊，勿提交（計畫 §10.2）
+.env
+bot_config.json
+
 # User-specific files
 *.rsuser
 *.suo
