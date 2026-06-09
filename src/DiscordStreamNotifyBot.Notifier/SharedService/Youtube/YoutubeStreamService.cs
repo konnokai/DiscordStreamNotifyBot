@@ -117,16 +117,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         else
                             startTime = DateTime.Parse(item.LiveStreamingDetails.ScheduledStartTimeRaw);
 
-                        EmbedBuilder embedBuilder = new EmbedBuilder()
-                        .WithTitle(item.Snippet.Title)
-                        .WithDescription(Format.Url(item.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{item.Snippet.ChannelId}"))
-                        .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
-                        .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
-                        .AddField("直播狀態", "開台中")
-                        .AddField("開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
-
-                        if (isMemberOnly) embedBuilder.WithOkColor();
-                        else embedBuilder.WithRecordColor();
+                        EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateRecordStreamStarted(item, startTime, isMemberOnly);
 
                         await SendStreamMessageAsync(item.Id, embedBuilder, NoticeType.Start).ConfigureAwait(false);
                         await ChangeGuildBannerAsync(item.Snippet.ChannelId, item.Id);
@@ -168,15 +159,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
                         var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
 
-                        EmbedBuilder embedBuilder = new EmbedBuilder();
-                        embedBuilder.WithErrorColor()
-                        .WithTitle(item.Snippet.Title)
-                        .WithDescription(Format.Url(item.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{item.Snippet.ChannelId}"))
-                        .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
-                        .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
-                        .AddField("直播狀態", "已關台")
-                        .AddField("直播時長", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
-                        .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
+                        EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateRecordStreamEnded(item, startTime, endTime);
 
                         await SendStreamMessageAsync(item.Id, embedBuilder, NoticeType.End).ConfigureAwait(false);
                     }
@@ -217,15 +200,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
                                 var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
 
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithErrorColor()
-                                .WithTitle(streamVideo.VideoTitle)
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "已關台並變更為會限影片")
-                                .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
-                                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
+                                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamEndedAsMemberOnly(streamVideo, startTime, endTime);
 
                                 if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("已關台並變更為會限影片", false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.End).ConfigureAwait(false);
@@ -252,13 +227,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             {
                                 var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
 
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithErrorColor()
-                                .WithTitle(streamVideo.VideoTitle)
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "已刪除直播")
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamDeleted(streamVideo);
 
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                             }
@@ -283,14 +252,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             if (Extensions.HasStreamVideoByVideoId(videoId))
                             {
                                 var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithTitle(streamVideo.VideoTitle)
-                                .WithOkColor()
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "已關台並變更為私人存檔")
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamUnarchived(streamVideo);
 
                                 if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("已關台並變更為私人存檔", false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
@@ -315,14 +277,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             if (Extensions.HasStreamVideoByVideoId(videoId))
                             {
                                 var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
-                                EmbedBuilder embedBuilder = new EmbedBuilder();
-                                embedBuilder.WithTitle(streamVideo.VideoTitle)
-                                .WithOkColor()
-                                .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                .AddField("直播狀態", "開台中")
-                                .AddField("排定開台時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamStarted(streamVideo);
 
                                 if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
                                 await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
@@ -434,13 +389,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                                     Log.New($"(非已認可的新影片) | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
-                                    EmbedBuilder embedBuilder = new EmbedBuilder();
-                                    embedBuilder.WithOkColor()
-                                    .WithTitle(streamVideo.VideoTitle)
-                                    .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                    .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                    .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                    .AddField("上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                    EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateNewVideo(streamVideo);
 
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
                                         await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
@@ -470,14 +419,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 DataBase.Table.Video streamVideo = Extensions.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
                                 if (streamVideo == null)
                                 {
-                                    EmbedBuilder embedBuilder = new EmbedBuilder();
-                                    embedBuilder.WithOkColor()
-                                    .WithTitle(streamVideo.VideoTitle)
-                                    .WithDescription(Format.Url(streamVideo.ChannelTitle, $"https://www.youtube.com/channel/{streamVideo.ChannelId}"))
-                                    .WithImageUrl($"https://i.ytimg.com/vi/{streamVideo.VideoId}/maxresdefault.jpg")
-                                    .WithUrl($"https://www.youtube.com/watch?v={streamVideo.VideoId}")
-                                    .AddField("狀態", "已刪除")
-                                    .AddField("排定開台/上傳時間", streamVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                                    EmbedBuilder embedBuilder = EmbedBuilderFactory.CreatePubSubVideoDeleted(streamVideo);
 
                                     await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
                                 }
