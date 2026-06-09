@@ -27,7 +27,6 @@ namespace DiscordStreamNotifyBot.Shared
             checks.Add(("Redis", () => ProbeRedisAsync(cfg.RedisOption)));
 
             // RabbitMQ：scraper(publish) / notifier(consume) 需要
-            // TODO(階段 3)：RabbitMqService 上線後改為實際建立連線並宣告 bot.notify exchange / queue
             if (role is BotRole.Scraper or BotRole.Notifier)
                 checks.Add(("RabbitMQ", () => ProbeRabbitMqAsync(cfg.RabbitMQ)));
 
@@ -54,11 +53,11 @@ namespace DiscordStreamNotifyBot.Shared
             await db.PingAsync();
         }
 
-        private static Task ProbeRabbitMqAsync(BotConfig.RabbitMqConfig _)
+        private static async Task ProbeRabbitMqAsync(BotConfig.RabbitMqConfig rabbitConfig)
         {
-            // 佔位：階段 3 引入 RabbitMQ.Client 後，於此建立連線並完成 topology 初始化。
-            // 目前尚未引入 RabbitMQ 基礎設施，故先視為通過，避免阻擋階段 1/2 的啟動流程。
-            return Task.CompletedTask;
+            // 建立連線並宣告 bot.notify exchange / DLX，順便完成 topology 初始化 (§5.3)
+            await using var rabbit = new RabbitMqService(rabbitConfig);
+            await rabbit.InitializeAsync();
         }
 
         private static async Task RetryWithBackoffAsync(string name, Func<Task> probe, TimeSpan timeout)
