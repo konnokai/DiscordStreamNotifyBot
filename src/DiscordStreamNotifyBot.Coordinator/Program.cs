@@ -8,6 +8,9 @@ namespace DiscordStreamNotifyBot.Coordinator
 
         private static async Task<int> Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            GracefulShutdown.Init();
+
             var config = new BotConfig();
             config.InitBotConfig(Role);
 
@@ -17,12 +20,12 @@ namespace DiscordStreamNotifyBot.Coordinator
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                Log.Error(ex.Demystify(), "StartupPreflight 失敗");
                 return 1;
             }
 
-            // 階段 0/1：空殼。後續階段 4 將實作心跳監控、leader 續租觀察、shard 租約分配與叢集狀態回報。
-            Log.Info($"[{Role}] 啟動連線檢查完成；主邏輯尚未實作。");
+            var service = new CoordinatorService(config);
+            await service.RunAsync(GracefulShutdown.Token);
             return 0;
         }
     }

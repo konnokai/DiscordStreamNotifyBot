@@ -8,6 +8,9 @@ namespace DiscordStreamNotifyBot.Scraper
 
         private static async Task<int> Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            GracefulShutdown.Init();
+
             var config = new BotConfig();
             config.InitBotConfig(Role);
 
@@ -17,12 +20,12 @@ namespace DiscordStreamNotifyBot.Scraper
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                Log.Error(ex.Demystify(), "StartupPreflight 失敗");
                 return 1;
             }
 
-            // 階段 0/1：空殼。後續階段 3 將搬入偵測 Timer、錄影 Redis 訂閱、PubSub 維護與 RabbitMQ publish。
-            Log.Info($"[{Role}] 啟動連線檢查完成；主邏輯尚未實作。");
+            var service = new ScraperService(config);
+            await service.RunAsync(GracefulShutdown.Token);
             return 0;
         }
     }
