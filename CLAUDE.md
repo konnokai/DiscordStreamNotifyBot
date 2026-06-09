@@ -83,6 +83,10 @@ The bot and recorder coordinate entirely through these channels (literal mode). 
 ### Auth (`Auth/`)
 `TokenManager` + `TokenCrypto` implement an AES-encrypt + HMAC-SHA256-sign token format (`iv.payload.signature`) using `RedisTokenKey`, shared with the backend for membership OAuth.
 
+## Command documentation
+
+The authoritative, up-to-date usage docs for every command live in Notion: https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37. CLAUDE.md deliberately does **not** duplicate the command list — to understand a specific command's behavior, read its module under `Interaction/` or `Command/` (plus `Data/HelpDescription.txt`), and treat Notion as the source of truth for user-facing descriptions.
+
 ## Conventions
 
 - Logging goes through the static `Log` class (`Log.Info/Warn/Error`, colorized console output). Exceptions are usually `.Demystify()`'d (Ben.Demystifier) before logging.
