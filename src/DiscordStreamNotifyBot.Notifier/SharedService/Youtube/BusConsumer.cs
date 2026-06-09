@@ -30,8 +30,56 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             };
 
             var embed = BuildEmbedForBus(dto, streamVideo);
-            await SendStreamMessageAsync(streamVideo, embed, MapNoticeType(dto.NoticeType)).ConfigureAwait(false);
+            // fromBus: true → 實際送出，不再 publish（再進入防護）
+            await SendStreamMessageAsync(streamVideo, embed, MapNoticeType(dto.NoticeType), fromBus: true).ConfigureAwait(false);
         }
+
+        /// <summary>偵測端：將通知改為 publish 至匯流排（取代直接送 Discord）。</summary>
+        private async Task PublishYoutubeNotificationAsync(TableVideo streamVideo, NoticeType noticeType)
+        {
+            try
+            {
+                await EnsureBusPublisherAsync().ConfigureAwait(false);
+                var dto = BuildNotification(streamVideo, MapToBusNoticeType(noticeType));
+                var body = System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(dto));
+                await _busPublisher.PublishAsync(NotifyRoutingKeys.Youtube, body).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"PublishYoutubeNotificationAsync: {streamVideo.VideoId} / {noticeType}");
+            }
+        }
+
+        private async Task EnsureBusPublisherAsync()
+        {
+            if (_busPublisher != null) return;
+            await _busPublisherInitLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (_busPublisher == null)
+                {
+                    var publisher = new Shared.RabbitMqService(_botConfig.RabbitMQ);
+                    await publisher.InitializeAsync().ConfigureAwait(false);
+                    _busPublisher = publisher;
+                }
+            }
+            finally
+            {
+                _busPublisherInitLock.Release();
+            }
+        }
+
+        private static YoutubeNoticeType MapToBusNoticeType(NoticeType noticeType)
+            => noticeType switch
+            {
+                NoticeType.NewStream => YoutubeNoticeType.NewStream,
+                NoticeType.NewVideo => YoutubeNoticeType.NewVideo,
+                NoticeType.Start => YoutubeNoticeType.Start,
+                NoticeType.End => YoutubeNoticeType.End,
+                NoticeType.ChangeTime => YoutubeNoticeType.ChangeTime,
+                NoticeType.Delete => YoutubeNoticeType.Delete,
+                _ => YoutubeNoticeType.Start,
+            };
 
         private static Embed BuildEmbedForBus(YoutubeNotification dto, TableVideo video)
         {

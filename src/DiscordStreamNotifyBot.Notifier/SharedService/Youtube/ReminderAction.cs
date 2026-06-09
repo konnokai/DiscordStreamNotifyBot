@@ -281,8 +281,16 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
         }
 
-        private async Task SendStreamMessageAsync(TableVideo streamVideo, Embed embed, NoticeType noticeType)
+        private async Task SendStreamMessageAsync(TableVideo streamVideo, Embed embed, NoticeType noticeType, bool fromBus = false)
         {
+            // 通知匯流排 cutover（opt-in）：偵測端改 publish DTO，由消費端重建 embed 後送出。
+            // fromBus=true 代表本次呼叫來自消費端，必須實際送出、不可再 publish（避免無限再進入）。
+            if (_botConfig != null && _botConfig.EnableNotificationBus && !fromBus)
+            {
+                await PublishYoutubeNotificationAsync(streamVideo, noticeType).ConfigureAwait(false);
+                return;
+            }
+
             if (!Bot.IsConnect)
                 return;
 

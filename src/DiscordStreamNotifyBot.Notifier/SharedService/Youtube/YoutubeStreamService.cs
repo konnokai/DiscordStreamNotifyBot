@@ -52,13 +52,19 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly string _apiServerUrl;
         private readonly MessageComponent _messageComponent;
         private readonly MainDbService _dbService;
+        private readonly BotConfig _botConfig;
         private Timer channelTitleCheckTimer;
+
+        // 通知匯流排發布端（階段 3 cutover，dormant；僅 EnableNotificationBus 開啟時延遲建立）
+        private Shared.RabbitMqService _busPublisher;
+        private readonly SemaphoreSlim _busPublisherInitLock = new(1, 1);
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
+            _botConfig = botConfig;
 
             _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
             _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
