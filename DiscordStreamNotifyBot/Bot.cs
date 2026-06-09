@@ -474,7 +474,7 @@ namespace DiscordStreamNotifyBot
                         break;
                     case BotPlayingStatus.StreamCount:
                         Status = BotPlayingStatus.Info;
-                        await client.SetCustomStatusAsync($"看了 {Utility.GetDbStreamCount()} 個直播");
+                        await client.SetCustomStatusAsync($"看了 {Utility.GetDbStreamCount(DbService)} 個直播");
                         break;
                     case BotPlayingStatus.Info:
                         await client.SetCustomStatusAsync("去看你的直播啦");
