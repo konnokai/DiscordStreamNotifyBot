@@ -1,4 +1,5 @@
 ﻿using DiscordStreamNotifyBot;
+using DiscordStreamNotifyBot.Shared;
 
 public class BotConfig
 {
@@ -31,7 +32,44 @@ public class BotConfig
     public ulong PayPalEmoteId { get; set; } = 1265158658015236107;
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
 
-    public void InitBotConfig()
+    #region 水平擴展（三層拆分）設定 (計畫 §3)
+    /// <summary>程序角色：scraper / notifier / coordinator（可由環境變數 ROLE 覆寫）。</summary>
+    public string Role { get; set; } = "notifier";
+
+    /// <summary>叢集 shard 總數（可由環境變數 TOTAL_SHARDS 或 notifier 啟動參數覆寫）。</summary>
+    public int TotalShards { get; set; } = 1;
+
+    /// <summary>notifier 專用 shard id（用租約模式時可省略；可由啟動參數覆寫）。</summary>
+    public int ShardId { get; set; } = 0;
+
+    /// <summary>各程序寫入心跳鍵的間隔秒數。</summary>
+    public int HeartbeatIntervalSeconds { get; set; } = 10;
+
+    /// <summary>心跳鍵的 TTL 秒數（應明顯大於間隔，避免誤判離線）。</summary>
+    public int HeartbeatTtlSeconds { get; set; } = 30;
+
+    /// <summary>RabbitMQ 通知匯流排連線設定。</summary>
+    public RabbitMqConfig RabbitMQ { get; set; } = new RabbitMqConfig();
+
+    public class RabbitMqConfig
+    {
+        public string HostName { get; set; } = "rabbitmq";
+        public int Port { get; set; } = 5672;
+        public string UserName { get; set; } = "guest";
+        public string Password { get; set; } = "guest";
+        public string VirtualHost { get; set; } = "/";
+    }
+    #endregion
+
+    /// <summary>
+    /// 載入 bot_config.json、套用環境變數覆寫並驗證必填欄位。
+    /// </summary>
+    /// <param name="role">
+    /// 程序角色；決定哪些欄位為必填（計畫 §5.3）。
+    /// <c>null</c>（預設，單體 monolith 用）等同 notifier，維持原有「全部必填」行為。
+    /// coordinator 僅需 Redis；scraper 需 Google/ApiServerDomain 但不需 Discord。
+    /// </param>
+    public void InitBotConfig(BotRole? role = null)
     {
         try { File.WriteAllText("bot_config_example.json", JsonConvert.SerializeObject(new BotConfig(), Formatting.Indented)); } catch { }
         if (!File.Exists("bot_config.json"))
@@ -44,38 +82,29 @@ public class BotConfig
 
         var config = JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText("bot_config.json"));
 
+        // 先以環境變數覆寫（正式環境 / Docker Compose 用 .env 注入），再進行必填驗證 (計畫 §3)
+        config.ApplyEnvironmentOverrides();
+
+        // 角色覆寫：若呼叫端明確指定角色，以該角色為準（env/啟動參數已套用至 config.Role）
+        if (role.HasValue)
+            config.Role = role.Value.ToString().ToLowerInvariant();
+
         try
         {
-            if (string.IsNullOrWhiteSpace(config.DiscordToken))
+            // 依角色決定必填欄位：notifier(或 monolith) 需 Discord/WebHook；scraper/notifier 需 Google/ApiServerDomain；coordinator 皆不需
+            bool needsDiscord = role is null or BotRole.Notifier;
+            bool needsYoutube = role is null or BotRole.Notifier or BotRole.Scraper;
+
+            if (needsDiscord)
             {
-                Log.Error($"{nameof(DiscordToken)} 遺失，請輸入至 bot_config.json 後重開 Bot");
-                if (!Console.IsInputRedirected)
-                    Console.ReadKey();
-                Environment.Exit(3);
+                RequireField(config.DiscordToken, nameof(DiscordToken));
+                RequireField(config.WebHookUrl, nameof(WebHookUrl));
             }
 
-            if (string.IsNullOrWhiteSpace(config.WebHookUrl))
+            if (needsYoutube)
             {
-                Log.Error($"{nameof(WebHookUrl)} 遺失，請輸入至 bot_config.json 後重開 Bot");
-                if (!Console.IsInputRedirected)
-                    Console.ReadKey();
-                Environment.Exit(3);
-            }
-
-            if (string.IsNullOrWhiteSpace(config.GoogleApiKey))
-            {
-                Log.Error($"{nameof(GoogleApiKey)} 遺失，請輸入至 bot_config.json 後重開 Bot");
-                if (!Console.IsInputRedirected)
-                    Console.ReadKey();
-                Environment.Exit(3);
-            }
-
-            if (string.IsNullOrWhiteSpace(config.ApiServerDomain))
-            {
-                Log.Error($"{nameof(ApiServerDomain)} 遺失，請輸入至 bot_config.json 後重開 Bot");
-                if (!Console.IsInputRedirected)
-                    Console.ReadKey();
-                Environment.Exit(3);
+                RequireField(config.GoogleApiKey, nameof(GoogleApiKey));
+                RequireField(config.ApiServerDomain, nameof(ApiServerDomain));
             }
 
             MySqlConnectionString = config.MySqlConnectionString;
@@ -98,6 +127,12 @@ public class BotConfig
             YouTubeEmoteId = config.YouTubeEmoteId;
             PayPalEmoteId = config.PayPalEmoteId;
             ECPayEmoteId = config.ECPayEmoteId;
+            Role = config.Role;
+            TotalShards = config.TotalShards;
+            ShardId = config.ShardId;
+            HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
+            HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
+            RabbitMQ = config.RabbitMQ;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
@@ -120,6 +155,52 @@ public class BotConfig
         {
             Log.Error($"設定檔讀取失敗: {ex}");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 以環境變數覆寫設定（env 優先）。對應計畫 §3 的覆寫表；正式環境 / Docker Compose 透過 .env 注入，
+    /// 敏感值不入 image。未設定的環境變數則維持 bot_config.json 的值。
+    /// </summary>
+    public void ApplyEnvironmentOverrides()
+    {
+        SetIfPresent("MYSQL_CONNECTION_STRING", v => MySqlConnectionString = v);
+        SetIfPresent("REDIS_OPTION", v => RedisOption = v);
+        SetIfPresent("DISCORD_TOKEN", v => DiscordToken = v);
+        SetIfPresent("GOOGLE_API_KEY", v => GoogleApiKey = v);
+        SetIfPresent("ROLE", v => Role = v);
+        SetIfPresentInt("TOTAL_SHARDS", v => TotalShards = v);
+        SetIfPresentInt("SHARD_ID", v => ShardId = v);
+
+        SetIfPresent("RABBITMQ_HOST", v => RabbitMQ.HostName = v);
+        SetIfPresentInt("RABBITMQ_PORT", v => RabbitMQ.Port = v);
+        SetIfPresent("RABBITMQ_USER", v => RabbitMQ.UserName = v);
+        SetIfPresent("RABBITMQ_PASSWORD", v => RabbitMQ.Password = v);
+        SetIfPresent("RABBITMQ_VHOST", v => RabbitMQ.VirtualHost = v);
+    }
+
+    private static void SetIfPresent(string envName, Action<string> setter)
+    {
+        var value = Environment.GetEnvironmentVariable(envName);
+        if (!string.IsNullOrWhiteSpace(value))
+            setter(value);
+    }
+
+    private static void SetIfPresentInt(string envName, Action<int> setter)
+    {
+        var value = Environment.GetEnvironmentVariable(envName);
+        if (!string.IsNullOrWhiteSpace(value) && int.TryParse(value, out var parsed))
+            setter(parsed);
+    }
+
+    private static void RequireField(string value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            Log.Error($"{fieldName} 遺失，請輸入至 bot_config.json（或對應環境變數）後重開 Bot");
+            if (!Console.IsInputRedirected)
+                Console.ReadKey();
+            Environment.Exit(3);
         }
     }
 
