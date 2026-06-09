@@ -7,9 +7,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **「直播小幫手」(Discord Stream Notify Bot)** — 通知 Discord 伺服器 Vtuber 直播的機器人，支援 YouTube、Twitch、TwitCasting。  
-單一 .NET 8.0 Console 專案（`DiscordStreamNotifyBot.csproj`），以 Discord.Net 建構。
+以 Discord.Net 建構，.NET 8.0。**正在進行水平擴展（三層拆分）重構**，詳見 `HORIZONTAL_SCALING_PLAN.md`。
 
 > **語言規範**：程式碼、註解、Log 訊息、使用者介面字串一律使用**繁體中文**。
+
+### Solution 結構（`DiscordStreamNotifyBot.sln`）
+
+```
+src/
+├─ DiscordStreamNotifyBot.Shared/       (classlib) 共用基礎：DataBase/Auth/HttpClients/Log/Redis/BotConfig/Utility、
+│                                                   RedisChannels、ClusterService、RabbitMqService、Messages DTO、
+│                                                   StartupPreflight、GracefulShutdown、MainDbContextFactory(EF 設計工廠)
+├─ DiscordStreamNotifyBot.Notifier/     (exe) 通知層：Discord 連線 + Interaction/Command 指令樹 + SharedService
+│                                              （AssemblyName = DiscordStreamNotifyBot；目前偵測 Timer 仍暫留於此）
+├─ DiscordStreamNotifyBot.Scraper/      (exe) 爬蟲層：leader 鎖 + 心跳（偵測主邏輯尚未搬入 — 階段 3 核心）
+└─ DiscordStreamNotifyBot.Coordinator/  (exe) 主控層：心跳監控、leader 觀察、TOTAL_SHARDS 公告
+```
+
+> **重構進度**：§9 shard 守衛、階段 0（骨架）、階段 1（Shared 抽出）、階段 2（Notifier 整併）、
+> 階段 3 基礎（RabbitMqService/ClusterService）、階段 4（Coordinator）、階段 6（Docker）已完成且可建置。
+> **未完成（需有 RabbitMQ broker + 多程序實測）**：階段 3 核心（偵測 Timer/錄影 Redis 訂閱搬到 Scraper、
+> 偵測改 publish DTO、Notifier 改消費 RabbitMQ 發送）、階段 5（跨 shard 共享狀態）、YoutubeApiService 抽出。
+> 現況 Notifier 仍以單體方式運作（偵測+發送同程序），單 shard 行為與重構前相同。
 
 ### 相依的外部系統
 
@@ -23,18 +42,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Run
 
 ```powershell
-# 正式使用一律 Release — Debug 組態會跳過 Discord 登入、指令註冊等大量功能
-dotnet build -c Release
-dotnet run  -c Release
+# 建置整個方案（正式使用一律 Release — Debug 組態會跳過 Discord 登入、指令註冊等大量功能）
+dotnet build DiscordStreamNotifyBot.sln -c Release
 
+# 執行通知層（= 原本的 bot 主程式）
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier
 # 首次執行：若 bot_config.json 不存在，自動產生 bot_config_example.json 後退出
 # 複製並填入 DiscordToken、WebHookUrl、GoogleApiKey、ApiServerDomain（必填）
 
-# Sharding（預設 0/1）
-dotnet run -c Release -- 0 4
+# Notifier Sharding（啟動參數 [ShardId, TotalShards]，預設 0/1）
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier -- 0 4
+
+# 其他角色（重構中，偵測主邏輯尚未搬入）
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Scraper       # ROLE=scraper
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Coordinator   # ROLE=coordinator
 ```
 
-> **無自動化測試**，此 repo 不含任何測試框架。
+> 角色亦可由環境變數覆寫設定（`ROLE` / `TOTAL_SHARDS` / `MYSQL_CONNECTION_STRING` / `REDIS_OPTION` /
+> `DISCORD_TOKEN` / `GOOGLE_API_KEY` / `RABBITMQ_*`，見計畫 §3）。Docker 部署見 `docker-compose.yml`。
+
+> **無自動化測試**，此 repo 不含任何測試框架。重構驗證依賴多程序手動實測（計畫 §6.2 驗證清單）。
 
 ### 組態旗標（`#if` 改變行為，非單純最佳化）
 
@@ -49,9 +76,14 @@ dotnet run -c Release -- 0 4
 
 ### EF Core Migration
 
+EF 工具指向 **Shared** 專案（已提供 `MainDbContextFactory` 設計階段工廠，免 startup project）：
+
 ```powershell
-dotnet ef migrations add <Name>
-# dotnet ef database update  ← 通常不需要：Shard 0 啟動時呼叫 EnsureCreated()
+dotnet ef migrations add <Name> --project src/DiscordStreamNotifyBot.Shared
+# dotnet ef database update --project src/DiscordStreamNotifyBot.Shared
+#   ← 現況仍由 Notifier shard 0 啟動時呼叫 EnsureCreated()；
+#     注意既有 DB 由 EnsureCreated 建立、無 __EFMigrationsHistory，直接 database update 會衝突（計畫 §11-2）。
+#     has-pending-model-changes 目前回報 drift，屬既有狀況，Docker 化前需處理。
 ```
 
 ---
