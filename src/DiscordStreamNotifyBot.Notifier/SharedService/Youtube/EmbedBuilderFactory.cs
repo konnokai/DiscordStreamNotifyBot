@@ -75,6 +75,20 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
         }
 
+        /// <summary>關台通知（資料來自 DB；通知匯流排消費端重建用的標準版本）。</summary>
+        public static EmbedBuilder CreateStreamEnded(TableVideo video, DateTime startTime, DateTime endTime)
+        {
+            return new EmbedBuilder()
+                .WithErrorColor()
+                .WithTitle(video.VideoTitle)
+                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
+                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
+                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
+                .AddField("直播狀態", "已關台")
+                .AddField("直播時長", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
+                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
+        }
+
         /// <summary>關台並變更為會限影片通知（資料來自 DB）。</summary>
         public static EmbedBuilder CreateStreamEndedAsMemberOnly(TableVideo video, DateTime startTime, DateTime endTime)
         {
