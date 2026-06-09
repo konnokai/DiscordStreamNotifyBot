@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>DiscordStreamNotifyBot.Scraper</RootNamespace>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<Configurations>Debug;Release;Debug_DontRegisterCommand;Debug_API</Configurations>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\DiscordStreamNotifyBot.Shared\DiscordStreamNotifyBot.Shared.csproj" />
+	</ItemGroup>
+
+</Project>
