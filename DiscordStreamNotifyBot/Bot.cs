@@ -25,6 +25,11 @@ namespace DiscordStreamNotifyBot
 
         public static bool IsConnect { get; set; } = false;
         public static bool IsDisconnect { get; set; } = false;
+
+        /// <summary>本程序負責的 Shard Id</summary>
+        public static int ShardId { get; private set; }
+        /// <summary>叢集的 Shard 總數</summary>
+        public static int TotalShardCount { get; private set; }
         public static bool IsHoloChannelSpider { get; set; } = false;
         public static bool IsNijisanjiChannelSpider { get; set; } = false;
         public static bool IsOtherChannelSpider { get; set; } = false;
@@ -42,6 +47,8 @@ namespace DiscordStreamNotifyBot
         {
             _shardId = shardId;
             _totalShardCount = totalShardCount;
+            ShardId = shardId;
+            TotalShardCount = totalShardCount;
 
             _botConfig.InitBotConfig();
             DbService = new MainDbService(_botConfig.MySqlConnectionString);
@@ -80,6 +87,29 @@ namespace DiscordStreamNotifyBot
                     db.Database.EnsureCreated();
             }
         }
+
+        /// <summary>
+        /// 依 Discord 官方公式 <c>(guildId >> 22) % totalShards</c> 判斷該伺服器是否歸屬於本 Shard。
+        /// </summary>
+        public static bool IsServerOnThisShard(ulong guildId)
+        {
+            // 單 shard（或尚未設定總數）時，所有伺服器都歸屬於本程序
+            if (TotalShardCount <= 1)
+                return true;
+
+            return (int)((guildId >> 22) % (ulong)TotalShardCount) == ShardId;
+        }
+
+        /// <summary>
+        /// 在 <c>GetGuild(guildId) == null</c> 的情況下，判斷是否「真的」該刪除此伺服器的設定。
+        /// <para>
+        /// 只有同時滿足「該伺服器歸屬於本 Shard」與「本 Shard 已完成 Ready（IsConnect）」時才回傳 <c>true</c>
+        /// （代表機器人確實已離開該伺服器）。其餘情況（歸屬於其他 Shard、或尚未 Ready 可能只是暫時抓不到）
+        /// 一律回傳 <c>false</c>，避免多 Shard 環境下互相刪除彼此持有伺服器的通知設定。
+        /// </para>
+        /// </summary>
+        public static bool ShouldDeleteMissingGuild(ulong guildId)
+            => IsConnect && IsServerOnThisShard(guildId);
 
         public async Task StartAndBlockAsync()
         {

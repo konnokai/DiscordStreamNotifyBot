@@ -574,6 +574,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         var guild = _client.GetGuild(item.GuildId);
                         if (guild == null)
                         {
+                            // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
+                            if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
+                                continue;
+
                             Log.Warn($"Twitch 通知 ({twitchUserId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();

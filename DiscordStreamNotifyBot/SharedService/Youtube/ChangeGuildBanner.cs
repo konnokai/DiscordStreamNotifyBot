@@ -25,6 +25,10 @@
                     var guild = _client.GetGuild(item.GuildId);
                     if (guild == null)
                     {
+                        // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
+                        if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
+                            continue;
+
                         Log.Warn($"Guild not found: {item.GuildId} / {channelId} / {videoId}");
                         using (var db = _dbService.GetDbContext())
                         {
