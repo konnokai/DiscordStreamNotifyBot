@@ -37,16 +37,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch.Debounce
 
                 var description = string.Join("\n\n", messageQueue);
 
-                var embedBuilder = new EmbedBuilder()
-                    .WithOkColor()
-                    .WithTitle($"{_twitchUserName} 直播資料更新")
-                    .WithUrl($"https://twitch.tv/{_twitchUserLogin}")
-                    .WithDescription(description);
-
                 using var db = Bot.DbService.GetDbContext();
                 var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == _twitchUserId);
-                if (twitchSpider != null)
-                    embedBuilder.WithThumbnailUrl(twitchSpider.ProfileImageUrl);
+                var embedBuilder = TwitchEmbedBuilderFactory.CreateChannelUpdate(_twitchUserName, _twitchUserLogin, description, twitchSpider?.ProfileImageUrl);
 
                 Task.Run(async () => { await _twitchService.SendStreamMessageAsync(_twitchUserId, embedBuilder.Build(), NoticeType.ChangeStreamData); });
             }

@@ -454,23 +454,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             }
                             else
                             {
-                                EmbedBuilder embedBuilder = new EmbedBuilder()
-                                .WithTitle(twitchStream.StreamTitle)
-                                .WithDescription(Format.Url($"{twitchStream.UserName}", $"https://twitch.tv/{twitchStream.UserLogin}"))
-                                .WithUrl($"https://twitch.tv/{twitchStream.UserLogin}")
-                                .WithThumbnailUrl(twitchSpider.ProfileImageUrl)
-                                .WithImageUrl($"{twitchStream.ThumbnailUrl}?t={DateTime.Now.ToFileTime()}") // 新增參數避免預覽圖被 Discord 快取
-                                .AddField("直播狀態", "直播中");
-
-                                if (!string.IsNullOrEmpty(twitchStream.GameName))
-                                    embedBuilder.AddField("分類", twitchStream.GameName, true);
-
-                                embedBuilder.AddField("開始時間", twitchStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
-
-                                if (twitchSpider.IsRecord && await RecordTwitchAsync(twitchStream))
-                                    embedBuilder.WithRecordColor();
-                                else
-                                    embedBuilder.WithOkColor();
+                                bool isRecord = twitchSpider.IsRecord && await RecordTwitchAsync(twitchStream);
+                                EmbedBuilder embedBuilder = TwitchEmbedBuilderFactory.CreateStreamStarted(twitchStream, twitchSpider.ProfileImageUrl, isRecord);
 
                                 if (!twitchSpider.IsWarningUser)
                                 {

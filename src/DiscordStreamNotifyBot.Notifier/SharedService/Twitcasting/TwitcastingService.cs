@@ -188,21 +188,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 var noticeGuildList = db.NoticeTwitcastingStreamChannels.AsNoTracking().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
-                EmbedBuilder embedBuilder = new EmbedBuilder()
-                    .WithTitle(twitcastingStream.StreamTitle)
-                    .WithDescription(Format.Url($"{twitcastingStream.ChannelTitle}", $"https://twitcasting.tv/{twitcastingStream.ChannelId}"))
-                    .WithUrl($"https://twitcasting.tv/{twitcastingStream.ChannelId}/movie/{twitcastingStream.StreamId}")
-                    .WithImageUrl(twitcastingStream.ThumbnailUrl)
-                    .AddField("需要密碼的私人直播", isPrivate ? "是" : "否", true);
-
-                if (!string.IsNullOrEmpty(twitcastingStream.StreamSubTitle)) embedBuilder.AddField("副標題", twitcastingStream.StreamSubTitle, true);
-                if (!string.IsNullOrEmpty(twitcastingStream.Category)) embedBuilder.AddField("分類", twitcastingStream.Category, true);
-
-                embedBuilder.AddField("開始時間", twitcastingStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
-
-                if (isPrivate) embedBuilder.WithErrorColor();
-                if (isRecord) embedBuilder.WithRecordColor();
-                else embedBuilder.WithOkColor();
+                EmbedBuilder embedBuilder = TwitcastingEmbedBuilderFactory.CreateStreamStarted(twitcastingStream, isPrivate, isRecord);
 
                 MessageComponent comp = new ComponentBuilder()
                         .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
