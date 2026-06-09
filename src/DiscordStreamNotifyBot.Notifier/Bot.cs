@@ -36,6 +36,7 @@ namespace DiscordStreamNotifyBot
 
         private static DiscordSocketClient client;
         private static Timer timerUpdateStatus;
+        private static NotificationBusConsumer _busConsumer;
 
         public enum BotPlayingStatus { Guild, Member, Stream, StreamCount, Info }
 
@@ -291,6 +292,22 @@ namespace DiscordStreamNotifyBot
             IServiceProvider serviceProvider = services.BuildServiceProvider();
             await serviceProvider.GetService<InteractionHandler>().InitializeAsync();
             await serviceProvider.GetService<CommandHandler>().InitializeAsync();
+            #endregion
+
+            #region 通知匯流排消費（階段 3 cutover，opt-in；預設關閉時不影響單體行為）
+            if (_botConfig.EnableNotificationBus)
+            {
+                try
+                {
+                    _busConsumer = new NotificationBusConsumer(_botConfig,
+                        serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>());
+                    await _busConsumer.StartAsync(_shardId);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "通知匯流排消費啟動失敗");
+                }
+            }
             #endregion
 
             #region 註冊互動指令

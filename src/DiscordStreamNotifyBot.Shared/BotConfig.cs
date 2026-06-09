@@ -51,6 +51,12 @@ public class BotConfig
     /// <summary>RabbitMQ 通知匯流排連線設定。</summary>
     public RabbitMqConfig RabbitMQ { get; set; } = new RabbitMqConfig();
 
+    /// <summary>
+    /// 是否啟用 RabbitMQ 通知匯流排消費（階段 3 cutover）。預設 false＝維持單體行為（自行偵測並發送）。
+    /// 啟用後 notifier 會消費 notify.shard.{id} 並透過 DispatchFromBusAsync 發送。
+    /// </summary>
+    public bool EnableNotificationBus { get; set; } = false;
+
     public class RabbitMqConfig
     {
         public string HostName { get; set; } = "rabbitmq";
@@ -133,6 +139,7 @@ public class BotConfig
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
             RabbitMQ = config.RabbitMQ;
+            EnableNotificationBus = config.EnableNotificationBus;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
@@ -177,6 +184,7 @@ public class BotConfig
         SetIfPresent("RABBITMQ_USER", v => RabbitMQ.UserName = v);
         SetIfPresent("RABBITMQ_PASSWORD", v => RabbitMQ.Password = v);
         SetIfPresent("RABBITMQ_VHOST", v => RabbitMQ.VirtualHost = v);
+        SetIfPresent("ENABLE_NOTIFICATION_BUS", v => { if (bool.TryParse(v, out var b)) EnableNotificationBus = b; });
     }
 
     private static void SetIfPresent(string envName, Action<string> setter)
