@@ -1,0 +1,59 @@
+# 測試環境基礎設施 stack（MySQL + Redis + RabbitMQ）
+# 僅供本地開發/測試使用 —— 密碼為弱密碼、埠口綁定 127.0.0.1，勿用於正式環境。
+#
+# 啟動：docker compose -f docker-compose.infra.yml up -d
+# 停止：docker compose -f docker-compose.infra.yml down
+# 連同資料清掉：docker compose -f docker-compose.infra.yml down -v
+#
+# 對應的應用程式連線設定（本機直跑或 host.docker.internal）見 README / .env.example。
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: test_root
+      MYSQL_DATABASE: discord_stream_bot
+      MYSQL_USER: stream_bot
+      MYSQL_PASSWORD: test_bot
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-ptest_root"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5672:5672"     # AMQP
+      - "127.0.0.1:15672:15672"   # 管理介面 http://localhost:15672 (guest/guest)
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:
