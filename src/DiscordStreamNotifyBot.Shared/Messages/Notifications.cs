@@ -2,6 +2,11 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 {
     /// <summary>
     /// RabbitMQ 通知匯流排 routing key（綁定 <c>bot.notify</c> topic exchange，計畫 §4.1）。
+    /// <para>
+    /// 註：會限身分組（member）<b>不走匯流排</b> —— 會限檢查經 shard 守衛後天然按 shard 分區
+    /// （各 shard 只檢查自己持有伺服器的成員，OAuth quota 自動分攤），role 操作為 REST 不綁 gateway，
+    /// 且其多種檢查結果各對應不同 log/私訊內容，DTO 化高風險零收益。
+    /// </para>
     /// </summary>
     public static class NotifyRoutingKeys
     {
@@ -9,7 +14,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public const string Twitch = "twitch";
         public const string Twitcasting = "twitcasting";
         public const string Banner = "banner";
-        public const string Member = "member";
     }
 
     /// <summary>
@@ -110,17 +114,5 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     {
         public string ChannelId { get; set; }
         public string VideoId { get; set; }
-    }
-
-    /// <summary>跨層會員身分組事件（授予 / 移除，需 notifier 端 GetGuild）。</summary>
-    public class MemberNotification
-    {
-        /// <summary>動作：Grant / Revoke。</summary>
-        public string Action { get; set; }
-        public ulong GuildId { get; set; }
-        public ulong UserId { get; set; }
-        public ulong RoleId { get; set; }
-        public string MemberCheckChannelId { get; set; }
-        public string MemberCheckChannelTitle { get; set; }
     }
 }

@@ -11,7 +11,8 @@ namespace DiscordStreamNotifyBot
     /// 依 routing key 解析 DTO 並交給對應服務發送。預設關閉時完全不啟用，維持單體行為。
     /// </para>
     /// <para>
-    /// 已接線：YouTube / Twitch / Twitcasting / Banner；Member（會限身分組）待 YoutubeMemberService 重構後接線。
+    /// 已接線：YouTube / Twitch / Twitcasting / Banner。
+    /// Member（會限身分組）不走匯流排：會限檢查經 shard 守衛天然按 shard 分區，role 操作為 REST 不綁 gateway。
     /// </para>
     /// </summary>
     public sealed class NotificationBusConsumer : IAsyncDisposable
@@ -71,7 +72,6 @@ namespace DiscordStreamNotifyBot
                     await _youtubeStreamService.DispatchBannerFromBusAsync(bannerDto);
                     return true;
 
-                // TODO(階段 3)：member（會限身分組）待 YoutubeMemberService 重構後接線
                 default:
                     Log.Warn($"[NotificationBus] 尚未接線的 routing key: {routingKey}，暫時 ack 略過");
                     return true;

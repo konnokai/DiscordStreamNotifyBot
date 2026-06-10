@@ -74,7 +74,7 @@ namespace DiscordStreamNotifyBot.Shared
         /// <summary>
         /// 發佈一則通知事件到 <c>bot.notify</c> exchange。訊息為 persistent。
         /// </summary>
-        /// <param name="routingKey">routing key：youtube / twitch / twitcasting / banner / member（§4.1）。</param>
+        /// <param name="routingKey">routing key：youtube / twitch / twitcasting / banner（§4.1；member 不走匯流排，見 NotifyRoutingKeys 註解）。</param>
         /// <param name="body">訊息內容（建議為 Newtonsoft JSON 的 UTF-8 bytes）。</param>
         public async Task PublishAsync(string routingKey, ReadOnlyMemory<byte> body, CancellationToken cancellationToken = default)
         {
