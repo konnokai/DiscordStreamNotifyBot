@@ -19,16 +19,21 @@ src/
 │                                                   RedisChannels、ClusterService、RabbitMqService、Messages DTO、
 │                                                   StartupPreflight、GracefulShutdown、MainDbContextFactory(EF 設計工廠)
 ├─ DiscordStreamNotifyBot.Notifier/     (exe) 通知層：Discord 連線 + Interaction/Command 指令樹 + SharedService
-│                                              （AssemblyName = DiscordStreamNotifyBot；目前偵測 Timer 仍暫留於此）
-├─ DiscordStreamNotifyBot.Scraper/      (exe) 爬蟲層：leader 鎖 + 心跳（偵測主邏輯尚未搬入 — 階段 3 核心）
+│                                              （AssemblyName = DiscordStreamNotifyBot；偵測程式碼在此、
+│                                              由 EnableDetection 旗標控制是否啟動）
+├─ DiscordStreamNotifyBot.Scraper/      (exe) 爬蟲層：leader 鎖 + 心跳 + DetectionHost
+│                                              （參考 Notifier 組件、無頭模式實體執行偵測服務並發布至匯流排）
 └─ DiscordStreamNotifyBot.Coordinator/  (exe) 主控層：心跳監控、leader 觀察、TOTAL_SHARDS 公告
 ```
 
-> **重構進度**：§9 shard 守衛、階段 0（骨架）、階段 1（Shared 抽出）、階段 2（Notifier 整併）、
-> 階段 3 基礎（RabbitMqService/ClusterService）、階段 4（Coordinator）、階段 6（Docker）已完成且可建置。
-> **未完成（需有 RabbitMQ broker + 多程序實測）**：階段 3 核心（偵測 Timer/錄影 Redis 訂閱搬到 Scraper、
-> 偵測改 publish DTO、Notifier 改消費 RabbitMQ 發送）、階段 5（跨 shard 共享狀態）、YoutubeApiService 抽出。
-> 現況 Notifier 仍以單體方式運作（偵測+發送同程序），單 shard 行為與重構前相同。
+> **重構進度**：§9 shard 守衛（×6 處）、階段 0–4、階段 6（Docker）皆完成且可建置。
+> 階段 3 cutover：四條通知路徑（YouTube/Twitch/Twitcasting/Banner）的 publish/consume 完成
+> （`EnableNotificationBus`，預設關）；偵測由 `EnableDetection` 控制（預設開＝單體行為）；
+> Scraper 以無頭宿主（永不登入的 DiscordSocketClient）實體執行偵測 —— 偵測程式碼單一來源留在 Notifier 組件。
+> 會限（YoutubeMemberService）**不走匯流排**：按 shard 分區由各 Notifier 自行檢查。
+> **部署模式**：單體（預設旗標）／過渡多 shard（notifier-0 開偵測）／目標架構（scraper 偵測、全 notifier 關偵測），
+> 見 docker-compose.yml 註解。**待辦**：階段 5（跨 shard 共享狀態）、YoutubeApiService 抽出、§11-2 EF baseline、
+> 多程序實測（計畫 §6.2 驗證清單）。
 
 ### 相依的外部系統
 

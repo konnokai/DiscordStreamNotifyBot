@@ -5,12 +5,12 @@ namespace DiscordStreamNotifyBot.Scraper
     /// <summary>
     /// 爬蟲層核心邏輯（計畫 §2.2 / §5.2）。
     /// <para>
-    /// 啟動時取得 scraper leader 鎖（叢集單例保證），定期續租並寫心跳；關閉時釋放鎖。
+    /// 啟動時取得 scraper leader 鎖（叢集單例保證），取得後以 <see cref="DetectionHost"/>
+    /// 啟動偵測服務（事件發布至通知匯流排），定期續租並寫心跳；關閉時保存狀態並釋放鎖。
     /// </para>
     /// <para>
-    /// TODO(階段 3 核心)：取得 leader 後，於此啟動所有偵測 Timer、錄影程序 Redis 訂閱、PubSub 維護，
-    /// 並將偵測結果改以 <see cref="RabbitMqService"/> publish 結構化 DTO（取代直接呼叫 Discord）。
-    /// 該段為行為改動，需在有 RabbitMQ broker 的環境多程序驗證。
+    /// 失去 leader（續租失敗）視為致命錯誤立即結束程序 —— 偵測 Timer 啟動後無法收回，
+    /// 若另一實例已接手會造成雙重偵測（split-brain），交由 Compose restart 重新走取鎖流程。
     /// </para>
     /// </summary>
     public class ScraperService
@@ -31,18 +31,21 @@ namespace DiscordStreamNotifyBot.Scraper
             _leaderTtl = TimeSpan.FromSeconds(Math.Max(_config.HeartbeatTtlSeconds, config.HeartbeatIntervalSeconds * 3));
         }
 
-        public async Task RunAsync(CancellationToken cancellationToken)
+        /// <returns>程序退出碼：0＝正常關閉；1＝失去 leader（需重啟重新取鎖）。</returns>
+        public async Task<int> RunAsync(CancellationToken cancellationToken)
         {
             // 取得 leader 鎖（叢集唯一），拿不到則待命重試
             await AcquireLeadershipAsync(cancellationToken);
             if (cancellationToken.IsCancellationRequested)
-                return;
+                return 0;
 
             Log.Info($"[Scraper] 已取得 leader 鎖（{_instanceId}）");
 
-            // TODO(階段 3 核心)：StartDetectionTimers(); SubscribeRecordingRedis(); MaintainPubSub();
-            Log.Warn("[Scraper] 偵測主邏輯尚未搬入（階段 3 核心）；目前僅維持 leader 鎖與心跳。");
+            // 取得 leader 後才啟動偵測（叢集單例保證：同時只有一個程序在偵測與發布）
+            var detectionHost = new DetectionHost();
+            detectionHost.Start(_config);
 
+            int exitCode = 0;
             var heartbeatRole = BotRole.Scraper.ToString().ToLowerInvariant();
             using var timer = new PeriodicTimer(_heartbeatInterval);
             try
@@ -53,18 +56,22 @@ namespace DiscordStreamNotifyBot.Scraper
 
                     if (!await _cluster.RenewScraperLeaderAsync(_instanceId, _leaderTtl))
                     {
-                        // 失去 leader（理論上不該發生）；記錄並嘗試重新取得
-                        Log.Warn("[Scraper] leader 鎖續租失敗，嘗試重新取得…");
-                        await AcquireLeadershipAsync(cancellationToken);
+                        // 偵測 Timer 啟動後無法收回；失去鎖代表可能已有別的實例接手 → 立即結束避免雙重偵測
+                        Log.Error("[Scraper] leader 鎖續租失敗（可能已被其他實例接手），立即結束以避免雙重偵測");
+                        exitCode = 1;
+                        break;
                     }
                 }
                 while (await SafeWaitAsync(timer, cancellationToken));
             }
             finally
             {
+                detectionHost.SaveStateBeforeShutdown();
                 await _cluster.ReleaseScraperLeaderAsync(_instanceId);
                 Log.Info("[Scraper] 已釋放 leader 鎖");
             }
+
+            return exitCode;
         }
 
         private async Task AcquireLeadershipAsync(CancellationToken cancellationToken)

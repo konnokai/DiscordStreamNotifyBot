@@ -90,6 +90,22 @@ namespace DiscordStreamNotifyBot
         }
 
         /// <summary>
+        /// 無頭模式初始化（Scraper 宿主用，計畫階段 3）：不建立 Discord 連線，
+        /// 僅設定偵測服務所需的靜態相依（DbService / Redis）。
+        /// <para>Scraper 參考本組件並以未登入的 DiscordSocketClient 實體執行偵測服務；
+        /// 偵測路徑經 EnableNotificationBus seam 保證不觸碰 gateway。</para>
+        /// </summary>
+        public static void InitHeadlessHost(BotConfig botConfig)
+        {
+            DbService = new MainDbService(botConfig.MySqlConnectionString);
+
+            // RedisConnection 已由 StartupPreflight 完成 Init
+            Redis = RedisConnection.Instance.ConnectionMultiplexer;
+            RedisSub = Redis.GetSubscriber();
+            RedisDb = Redis.GetDatabase();
+        }
+
+        /// <summary>
         /// 依 Discord 官方公式 <c>(guildId >> 22) % totalShards</c> 判斷該伺服器是否歸屬於本 Shard。
         /// </summary>
         public static bool IsServerOnThisShard(ulong guildId)

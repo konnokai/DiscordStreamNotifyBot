@@ -43,9 +43,8 @@ services:
 
   # 方式 A：固定 shard，每個 shard 一個服務、ShardId 寫死於 command；total 必須與 .env 的 TOTAL_SHARDS 一致
   #
-  # 偵測單一化（階段 3 過渡）：偵測尚未搬入 Scraper 前，由 notifier-0 暫代偵測角色
-  # （ENABLE_DETECTION=true + .env 的 ENABLE_NOTIFICATION_BUS=true 發布事件），
-  # 其餘 notifier 關偵測、只消費自己的 notify.shard.{id}。偵測搬入 Scraper 後全部改 false。
+  # 偵測由 scraper（無頭宿主）負責並發布至匯流排；所有 notifier 一律關閉偵測、只消費自己的 notify.shard.{id}。
+  # （.env 需設 ENABLE_NOTIFICATION_BUS=true；若不跑 scraper 的過渡部署，可改回 notifier-0 ENABLE_DETECTION=true 暫代）
   notifier-0:
     <<: *app-common
     build:
@@ -53,7 +52,7 @@ services:
       dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
     command: ["0", "4"]
     environment:
-      ENABLE_DETECTION: "true"
+      ENABLE_DETECTION: "false"
     depends_on: [coordinator]
 
   notifier-1:

@@ -11,6 +11,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\DiscordStreamNotifyBot.Shared\DiscordStreamNotifyBot.Shared.csproj" />
+		<!-- 無頭宿主：參考 Notifier 組件以實體執行其偵測服務（單一程式碼來源，計畫階段 3），不建立 Discord 連線 -->
+		<ProjectReference Include="..\DiscordStreamNotifyBot.Notifier\DiscordStreamNotifyBot.Notifier.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

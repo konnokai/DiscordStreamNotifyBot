@@ -25,8 +25,7 @@ namespace DiscordStreamNotifyBot.Scraper
             }
 
             var service = new ScraperService(config);
-            await service.RunAsync(GracefulShutdown.Token);
-            return 0;
+            return await service.RunAsync(GracefulShutdown.Token);
         }
     }
 }
