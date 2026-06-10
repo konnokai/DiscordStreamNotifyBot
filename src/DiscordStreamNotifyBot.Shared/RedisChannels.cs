@@ -60,6 +60,19 @@ namespace DiscordStreamNotifyBot.Shared
             public const string SyncRedisToken = "member.syncRedisToken";
         }
 
+        /// <summary>跨 shard 共享狀態鍵（計畫階段 5）。</summary>
+        public static class SharedState
+        {
+            /// <summary>官方伺服器白名單（Redis SET，成員為 guildId）。取代原 OfficialList.json 檔案同步。</summary>
+            public const string OfficialGuildList = "DiscordStreamBot:OfficialGuildList";
+
+            /// <summary>各 shard 伺服器數（HASH，field = shardId）。狀態列彙總顯示用。</summary>
+            public const string GuildCountHash = "cluster:stats:guild_count";
+
+            /// <summary>各 shard 服務成員數（HASH，field = shardId）。狀態列彙總顯示用。</summary>
+            public const string MemberCountHash = "cluster:stats:member_count";
+        }
+
         /// <summary>叢集控制平面鍵（水平擴展新增，詳見計畫 §4.2）。</summary>
         public static class Cluster
         {

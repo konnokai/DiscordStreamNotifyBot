@@ -13,11 +13,13 @@ namespace DiscordStreamNotifyBot.Command.Admin
             _client = client;
             _dbService = service;
 
-            Bot.RedisSub.Subscribe(new RedisChannel(_reloadOfficialGuildListKey, RedisChannel.PatternMode.Literal), (_, _) =>
+            Bot.RedisSub.Subscribe(new RedisChannel(_reloadOfficialGuildListKey, RedisChannel.PatternMode.Literal), async (_, _) =>
             {
                 try
                 {
-                    Utility.OfficialGuildList = JsonConvert.DeserializeObject<HashSet<ulong>>(File.ReadAllText(Utility.GetDataFilePath("OfficialList.json")));
+                    // 階段 5：白名單存於 Redis（跨 shard 共享），收到變更通知後重新載入
+                    await Utility.LoadOfficialGuildListFromRedisAsync();
+                    Log.Info($"官方伺服器白名單已重新載入（{Utility.OfficialGuildList.Count} 筆）");
                 }
                 catch (Exception ex)
                 {
@@ -34,16 +36,19 @@ namespace DiscordStreamNotifyBot.Command.Admin
             await Task.WhenAll(Task.Delay(1000), textChannel.DeleteMessagesAsync(msgs)).ConfigureAwait(false);
         }
 
-        internal bool WriteAndReloadOfficialListFile()
+        /// <summary>儲存白名單至 Redis 並廣播變更，讓所有 shard 重新載入（階段 5）。</summary>
+        internal async Task<bool> SaveAndBroadcastOfficialGuildListAsync()
         {
             try
             {
-                File.WriteAllText(Utility.GetDataFilePath("OfficialList.json"), JsonConvert.SerializeObject(Utility.OfficialGuildList));
-                Bot.RedisSub.Publish(new RedisChannel(_reloadOfficialGuildListKey, RedisChannel.PatternMode.Literal), "");
+                if (!await Utility.SaveOfficialGuildListToRedisAsync())
+                    return false;
+
+                await Bot.RedisSub.PublishAsync(new RedisChannel(_reloadOfficialGuildListKey, RedisChannel.PatternMode.Literal), "");
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "WriteOfficialListFile Error");
+                Log.Error(ex.Demystify(), "SaveAndBroadcastOfficialGuildList Error");
                 return false;
             }
 

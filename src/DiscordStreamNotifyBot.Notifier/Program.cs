@@ -39,20 +39,6 @@ namespace DiscordStreamNotifyBot
             if (!Directory.Exists(Path.GetDirectoryName(Utility.GetDataFilePath(""))))
                 Directory.CreateDirectory(Path.GetDirectoryName(Utility.GetDataFilePath("")));
 
-            // Todo: 改 Shard 架構後需要同步清單給其他 Shard
-            if (File.Exists(Utility.GetDataFilePath("OfficialList.json")))
-            {
-                try
-                {
-                    Utility.OfficialGuildList = JsonConvert.DeserializeObject<HashSet<ulong>>(File.ReadAllText(Utility.GetDataFilePath("OfficialList.json")));
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "ReadOfficialListFile Error");
-                    return;
-                }
-            }
-
             int shardId = 0;
             int totalShards = 1;
             if (args.Length > 0 && args[0] != "run")
@@ -86,6 +72,26 @@ namespace DiscordStreamNotifyBot
             {
                 Log.Error(ex.Demystify(), "StartupPreflight 失敗");
                 Environment.Exit(1);
+            }
+
+            // 官方伺服器白名單改存 Redis（階段 5：跨 shard 共享）；首次啟動由舊 OfficialList.json 播種
+            try
+            {
+                var redisDb = RedisConnection.Instance.ConnectionMultiplexer.GetDatabase();
+                if (!await redisDb.KeyExistsAsync(Shared.RedisChannels.SharedState.OfficialGuildList) &&
+                    File.Exists(Utility.GetDataFilePath("OfficialList.json")))
+                {
+                    Utility.OfficialGuildList = JsonConvert.DeserializeObject<HashSet<ulong>>(File.ReadAllText(Utility.GetDataFilePath("OfficialList.json")));
+                    await Utility.SaveOfficialGuildListToRedisAsync();
+                    Log.Info($"已將 OfficialList.json（{Utility.OfficialGuildList.Count} 筆）播種至 Redis");
+                }
+
+                await Utility.LoadOfficialGuildListFromRedisAsync();
+                Log.Info($"官方伺服器白名單已自 Redis 載入（{Utility.OfficialGuildList.Count} 筆）");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "載入官方伺服器白名單失敗");
             }
 
             var bot = new Bot(shardId, totalShards);

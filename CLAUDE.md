@@ -31,8 +31,9 @@ src/
 > （`EnableNotificationBus`，預設關）；偵測由 `EnableDetection` 控制（預設開＝單體行為）；
 > Scraper 以無頭宿主（永不登入的 DiscordSocketClient）實體執行偵測 —— 偵測程式碼單一來源留在 Notifier 組件。
 > 會限（YoutubeMemberService）**不走匯流排**：按 shard 分區由各 Notifier 自行檢查。
+> 階段 5：官方伺服器白名單改存 Redis SET（首啟由 OfficialList.json 播種）、狀態列計數跨 shard 彙總（Redis HASH）。
 > **部署模式**：單體（預設旗標）／過渡多 shard（notifier-0 開偵測）／目標架構（scraper 偵測、全 notifier 關偵測），
-> 見 docker-compose.yml 註解。**待辦**：階段 5（跨 shard 共享狀態）、YoutubeApiService 抽出、§11-2 EF baseline、
+> 見 docker-compose.yml 註解。**待辦**：YoutubeApiService 抽出、§11-2 EF baseline、
 > 多程序實測（計畫 §6.2 驗證清單）。
 
 ### 相依的外部系統
