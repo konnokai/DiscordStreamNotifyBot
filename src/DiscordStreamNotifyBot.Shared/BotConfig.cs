@@ -33,8 +33,7 @@ public class BotConfig
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
 
     #region 水平擴展（三層拆分）設定 (計畫 §3)
-    /// <summary>程序角色：scraper / notifier / coordinator（可由環境變數 ROLE 覆寫）。</summary>
-    public string Role { get; set; } = "notifier";
+    // 註：程序角色由「執行哪個 exe」決定（各 Program.cs 寫死 BotRole），不設 Role 設定欄位。
 
     /// <summary>叢集 shard 總數（可由環境變數 TOTAL_SHARDS 或 notifier 啟動參數覆寫）。</summary>
     public int TotalShards { get; set; } = 1;
@@ -91,10 +90,6 @@ public class BotConfig
         // 先以環境變數覆寫（正式環境 / Docker Compose 用 .env 注入），再進行必填驗證 (計畫 §3)
         config.ApplyEnvironmentOverrides();
 
-        // 角色覆寫：若呼叫端明確指定角色，以該角色為準（env/啟動參數已套用至 config.Role）
-        if (role.HasValue)
-            config.Role = role.Value.ToString().ToLowerInvariant();
-
         try
         {
             // 依角色決定必填欄位：notifier(或 monolith) 需 Discord/WebHook；scraper/notifier 需 Google/ApiServerDomain；coordinator 皆不需
@@ -133,7 +128,6 @@ public class BotConfig
             YouTubeEmoteId = config.YouTubeEmoteId;
             PayPalEmoteId = config.PayPalEmoteId;
             ECPayEmoteId = config.ECPayEmoteId;
-            Role = config.Role;
             TotalShards = config.TotalShards;
             ShardId = config.ShardId;
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
@@ -175,7 +169,6 @@ public class BotConfig
         SetIfPresent("REDIS_OPTION", v => RedisOption = v);
         SetIfPresent("DISCORD_TOKEN", v => DiscordToken = v);
         SetIfPresent("GOOGLE_API_KEY", v => GoogleApiKey = v);
-        SetIfPresent("ROLE", v => Role = v);
         SetIfPresentInt("TOTAL_SHARDS", v => TotalShards = v);
         SetIfPresentInt("SHARD_ID", v => ShardId = v);
 

@@ -54,12 +54,14 @@ dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier
 dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier -- 0 4
 
 # 其他角色（重構中，偵測主邏輯尚未搬入）
-dotnet run -c Release --project src/DiscordStreamNotifyBot.Scraper       # ROLE=scraper
-dotnet run -c Release --project src/DiscordStreamNotifyBot.Coordinator   # ROLE=coordinator
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Scraper
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Coordinator
 ```
 
-> 角色亦可由環境變數覆寫設定（`ROLE` / `TOTAL_SHARDS` / `MYSQL_CONNECTION_STRING` / `REDIS_OPTION` /
-> `DISCORD_TOKEN` / `GOOGLE_API_KEY` / `RABBITMQ_*`，見計畫 §3）。Docker 部署見 `docker-compose.yml`。
+> **角色由執行哪個 exe 決定**（各 Program.cs 寫死 `BotRole`），無 `Role` 設定欄位。
+> 設定可由環境變數覆寫（`TOTAL_SHARDS` / `MYSQL_CONNECTION_STRING` / `REDIS_OPTION` /
+> `DISCORD_TOKEN` / `GOOGLE_API_KEY` / `RABBITMQ_*` / `ENABLE_NOTIFICATION_BUS`，見計畫 §3）。
+> Docker 部署見 `docker-compose.yml`。
 
 > **無自動化測試**，此 repo 不含任何測試框架。重構驗證依賴多程序手動實測（計畫 §6.2 驗證清單）。
 

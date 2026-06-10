@@ -26,22 +26,19 @@ x-app: &app-common
     - ./bot_config.json:/app/bot_config.json
   <<: *host-gateway
 
+# 角色由各服務的 image/執行檔決定（Dockerfile entrypoint），無需 ROLE 環境變數
 services:
   coordinator:
     <<: *app-common
     build:
       context: .
       dockerfile: src/DiscordStreamNotifyBot.Coordinator/Dockerfile
-    environment:
-      ROLE: coordinator
 
   scraper:
     <<: *app-common
     build:
       context: .
       dockerfile: src/DiscordStreamNotifyBot.Scraper/Dockerfile
-    environment:
-      ROLE: scraper
     depends_on: [coordinator]
 
   # 方式 A：固定 shard，每個 shard 一個服務、ShardId 寫死於 command；total 必須與 .env 的 TOTAL_SHARDS 一致
@@ -51,8 +48,6 @@ services:
       context: .
       dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
     command: ["0", "4"]
-    environment:
-      ROLE: notifier
     depends_on: [coordinator]
 
   notifier-1:
@@ -61,8 +56,6 @@ services:
       context: .
       dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
     command: ["1", "4"]
-    environment:
-      ROLE: notifier
     depends_on: [coordinator]
 
   notifier-2:
@@ -71,8 +64,6 @@ services:
       context: .
       dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
     command: ["2", "4"]
-    environment:
-      ROLE: notifier
     depends_on: [coordinator]
 
   notifier-3:
@@ -81,6 +72,4 @@ services:
       context: .
       dockerfile: src/DiscordStreamNotifyBot.Notifier/Dockerfile
     command: ["3", "4"]
-    environment:
-      ROLE: notifier
     depends_on: [coordinator]

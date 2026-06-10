@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DiscordStreamNotifyBot.Coordinator": {
+      "commandName": "Project",
+      "workingDirectory": "..\\..\\"
+    }
+  }
+}
