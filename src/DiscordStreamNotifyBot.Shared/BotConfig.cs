@@ -33,8 +33,6 @@ public class BotConfig
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
 
     #region 水平擴展（三層拆分）設定 (計畫 §3)
-    // 註：程序角色由「執行哪個 exe」決定（各 Program.cs 寫死 BotRole），不設 Role 設定欄位。
-
     /// <summary>叢集 shard 總數（可由環境變數 TOTAL_SHARDS 或 notifier 啟動參數覆寫）。</summary>
     public int TotalShards { get; set; } = 1;
 

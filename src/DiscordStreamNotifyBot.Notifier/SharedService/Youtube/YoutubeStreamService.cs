@@ -55,10 +55,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly BotConfig _botConfig;
         private Timer channelTitleCheckTimer;
 
-        // 通知匯流排發布端（階段 3 cutover，dormant；僅 EnableNotificationBus 開啟時延遲建立）
-        private Shared.RabbitMqService _busPublisher;
-        private readonly SemaphoreSlim _busPublisherInitLock = new(1, 1);
-
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
             _client = client;

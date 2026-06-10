@@ -39,10 +39,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         {
             try
             {
-                await EnsureBusPublisherAsync().ConfigureAwait(false);
                 var dto = BuildNotification(streamVideo, MapToBusNoticeType(noticeType));
-                var body = System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(dto));
-                await _busPublisher.PublishAsync(NotifyRoutingKeys.Youtube, body).ConfigureAwait(false);
+                await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ, NotifyRoutingKeys.Youtube, dto).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -50,24 +48,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
         }
 
-        private async Task EnsureBusPublisherAsync()
-        {
-            if (_busPublisher != null) return;
-            await _busPublisherInitLock.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                if (_busPublisher == null)
-                {
-                    var publisher = new Shared.RabbitMqService(_botConfig.RabbitMQ);
-                    await publisher.InitializeAsync().ConfigureAwait(false);
-                    _busPublisher = publisher;
-                }
-            }
-            finally
-            {
-                _busPublisherInitLock.Release();
-            }
-        }
+        /// <summary>通知匯流排消費端入口：伺服器橫幅變更事件。</summary>
+        public Task DispatchBannerFromBusAsync(BannerChangeNotification dto)
+            => ChangeGuildBannerAsync(dto.ChannelId, dto.VideoId, fromBus: true);
 
         private static YoutubeNoticeType MapToBusNoticeType(NoticeType noticeType)
             => noticeType switch

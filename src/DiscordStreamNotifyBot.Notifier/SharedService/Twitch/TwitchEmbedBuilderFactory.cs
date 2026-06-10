@@ -33,6 +33,48 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             return embedBuilder;
         }
 
+        /// <summary>
+        /// Twitch 關台通知。VOD/Clip 資料由偵測端先行取得（<paramref name="clipsValue"/> 為已組好的 Markdown）；
+        /// <paramref name="streamStartAtUtc"/> 為 null 時代表 Redis/VOD 皆無資料，略過標題與直播時長欄位。
+        /// </summary>
+        public static EmbedBuilder CreateStreamEnded(
+            string userName, string userLogin,
+            string streamTitle, DateTime? streamStartAtUtc, DateTime endAt,
+            string clipsValue, string profileImageUrl, string offlineImageUrl)
+        {
+            var embedBuilder = new EmbedBuilder()
+                .WithErrorColor()
+                .WithTitle("(找不到標題)")
+                .WithUrl($"https://twitch.tv/{userLogin}")
+                .WithDescription(Format.Url($"{userName}", $"https://twitch.tv/{userLogin}"))
+                .AddField("直播狀態", "已關台");
+
+            if (streamStartAtUtc.HasValue)
+            {
+                // StreamStartAt 是 UTC+0 時間，因此 endAt 也需要先轉換成 UTC+0 之後再做計算
+                var streamTime = endAt.ToUniversalTime().Subtract(streamStartAtUtc.Value);
+
+                embedBuilder
+                    .WithTitle(streamTitle)
+                    .AddField("直播時長", streamTime.TotalDays >= 1 ? $"{streamTime:d' 天 'h' 時 'm' 分 's' 秒'}" : $"{streamTime:h' 時 'm' 分 's' 秒'}");
+            }
+
+            embedBuilder.AddField("關台時間", endAt.ConvertDateTimeToDiscordMarkdown());
+
+            // 最後才新增 Clip 資訊
+            if (!string.IsNullOrEmpty(clipsValue))
+            {
+                embedBuilder.AddField("最多觀看的 Clip", clipsValue);
+            }
+
+            if (!string.IsNullOrEmpty(offlineImageUrl))
+                embedBuilder.WithImageUrl(offlineImageUrl);
+            if (!string.IsNullOrEmpty(profileImageUrl))
+                embedBuilder.WithThumbnailUrl(profileImageUrl);
+
+            return embedBuilder;
+        }
+
         /// <summary>Twitch 直播資料更新通知（去抖動後彙整）。</summary>
         public static EmbedBuilder CreateChannelUpdate(string userName, string userLogin, string description, string profileImageUrl)
         {

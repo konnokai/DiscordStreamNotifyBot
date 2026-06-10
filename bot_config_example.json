@@ -19,7 +19,6 @@
   "YouTubeEmoteId": 1265158558299848827,
   "PayPalEmoteId": 1265158658015236107,
   "ECPayEmoteId": 1379272194210795622,
-  "Role": "notifier",
   "TotalShards": 1,
   "ShardId": 0,
   "HeartbeatIntervalSeconds": 10,

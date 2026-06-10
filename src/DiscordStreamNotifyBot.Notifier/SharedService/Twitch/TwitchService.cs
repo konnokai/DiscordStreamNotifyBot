@@ -45,6 +45,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         private readonly DiscordSocketClient _client;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
+        private readonly BotConfig _botConfig;
         private readonly Timer _timer, _removeVerificationFailedWebhookTimer;
         private readonly HashSet<string> _hashSet = new();
         private readonly MessageComponent _messageComponent;
@@ -93,6 +94,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             _client = client;
             _emojiService = emojiService;
             _dbService = dbService;
+            _botConfig = botConfig;
 
             TwitchApi = new(() => new()
             {
@@ -160,13 +162,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         Log.Error(ex.Demystify(), $"Twitch Get Redis Data Error: {data.BroadcasterUserId}");
                     }
 
-                    var embedBuilder = new EmbedBuilder()
-                        .WithErrorColor()
-                        .WithTitle("(找不到標題)")
-                        .WithUrl($"https://twitch.tv/{data.BroadcasterUserLogin}")
-                        .WithDescription(Format.Url($"{data.BroadcasterUserName}", $"https://twitch.tv/{data.BroadcasterUserLogin}"))
-                        .AddField("直播狀態", "已關台");
-
                     string clipsValue = string.Empty;
 
                     // Todo: 可能需要驗證 VOD 的開始直播時間，很多頻道不會開 VOD 紀錄，有時候會導致小幫手的通知資訊異常
@@ -200,34 +195,49 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         };
                     }
 
-                    // twitchStream 最後還是會有為 null 的可能 (Redis 沒資料然後也沒開 VOD 保存)
-                    if (twitchStream != null)
+                    // 通知匯流排 cutover（opt-in）：偵測端組好結構化資料後 publish，由消費端重建 embed 發送
+                    // （twitchStream 最後還是會有為 null 的可能：Redis 沒資料然後也沒開 VOD 保存）
+                    if (_botConfig != null && _botConfig.EnableNotificationBus)
                     {
-                        // StreamStartAt 是 UTC+0 時間，因此 endAt 也需要先轉換成 UTC+0 之後再做計算
-                        var streamTime = endAt.ToUniversalTime().Subtract(twitchStream.StreamStartAt);
-
-                        embedBuilder
-                            .WithTitle(twitchStream.StreamTitle)
-                            .AddField("直播時長", streamTime.TotalDays >= 1 ? $"{streamTime:d' 天 'h' 時 'm' 分 's' 秒'}" : $"{streamTime:h' 時 'm' 分 's' 秒'}");
+                        try
+                        {
+                            await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                                Shared.Messages.NotifyRoutingKeys.Twitch,
+                                new Shared.Messages.TwitchNotification
+                                {
+                                    NoticeType = Shared.Messages.TwitchNoticeType.EndStream,
+                                    UserId = data.BroadcasterUserId,
+                                    UserLogin = data.BroadcasterUserLogin,
+                                    UserName = data.BroadcasterUserName,
+                                    StreamTitle = twitchStream?.StreamTitle,
+                                    StreamStartAt = twitchStream?.StreamStartAt,
+                                    StreamEndAt = endAt,
+                                    ClipsValue = clipsValue,
+                                });
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex.Demystify(), $"PublishTwitchEndStream: {data.BroadcasterUserId}");
+                        }
                     }
-
-                    embedBuilder.AddField("關台時間", endAt.ConvertDateTimeToDiscordMarkdown());
-
-                    // 最後才新增 Clip 資訊
-                    if (!string.IsNullOrEmpty(clipsValue))
+                    else
                     {
-                        embedBuilder.AddField("最多觀看的 Clip", clipsValue);
-                    }
+                        string? profileImageUrl = null, offlineImageUrl = null;
+                        using var db = _dbService.GetDbContext();
+                        var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
+                        if (twitchSpider != null)
+                        {
+                            profileImageUrl = twitchSpider.ProfileImageUrl;
+                            offlineImageUrl = twitchSpider.OfflineImageUrl;
+                        }
 
-                    using var db = _dbService.GetDbContext();
-                    var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
-                    if (twitchSpider != null)
-                    {
-                        embedBuilder.WithImageUrl(twitchSpider.OfflineImageUrl)
-                            .WithThumbnailUrl(twitchSpider.ProfileImageUrl);
-                    }
+                        var embedBuilder = TwitchEmbedBuilderFactory.CreateStreamEnded(
+                            data.BroadcasterUserName, data.BroadcasterUserLogin,
+                            twitchStream?.StreamTitle, twitchStream?.StreamStartAt, endAt,
+                            clipsValue, profileImageUrl, offlineImageUrl);
 
-                    await Task.Run(() => SendStreamMessageAsync(data.BroadcasterUserId, embedBuilder.Build(), NoticeType.EndStream));
+                        await Task.Run(() => SendStreamMessageAsync(data.BroadcasterUserId, embedBuilder.Build(), NoticeType.EndStream));
+                    }
 
                     // 移除 Reminder
                     if (_streamOfflineReminders.TryRemove(data.BroadcasterUserId, out var newTimer))
@@ -454,8 +464,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             }
                             else
                             {
+                                // 錄影副作用維持在偵測端執行，結果以 isRecord 傳遞
                                 bool isRecord = twitchSpider.IsRecord && await RecordTwitchAsync(twitchStream);
-                                EmbedBuilder embedBuilder = TwitchEmbedBuilderFactory.CreateStreamStarted(twitchStream, twitchSpider.ProfileImageUrl, isRecord);
 
                                 if (!twitchSpider.IsWarningUser)
                                 {
@@ -474,7 +484,36 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                                     }
                                 }
 
-                                await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
+                                // 通知匯流排 cutover（opt-in）：publish DTO，由消費端重建 embed 發送
+                                if (_botConfig != null && _botConfig.EnableNotificationBus)
+                                {
+                                    try
+                                    {
+                                        await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                                            Shared.Messages.NotifyRoutingKeys.Twitch,
+                                            new Shared.Messages.TwitchNotification
+                                            {
+                                                NoticeType = Shared.Messages.TwitchNoticeType.StartStream,
+                                                UserId = twitchStream.UserId,
+                                                UserLogin = twitchStream.UserLogin,
+                                                UserName = twitchStream.UserName,
+                                                StreamTitle = twitchStream.StreamTitle,
+                                                GameName = twitchStream.GameName,
+                                                ThumbnailUrl = twitchStream.ThumbnailUrl,
+                                                StreamStartAt = twitchStream.StreamStartAt,
+                                                IsRecord = isRecord,
+                                            });
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex.Demystify(), $"PublishTwitchStartStream: {twitchStream.UserId}");
+                                    }
+                                }
+                                else
+                                {
+                                    EmbedBuilder embedBuilder = TwitchEmbedBuilderFactory.CreateStreamStarted(twitchStream, twitchSpider.ProfileImageUrl, isRecord);
+                                    await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
+                                }
                             }
                         }
                         catch (Exception ex) { Log.Error(ex.Demystify(), $"TwitchService-GetData: {twitchSpider.UserLogin}"); }
@@ -521,6 +560,90 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// 直播資料更新通知的發送入口（去抖動彙整後由 <see cref="Debounce.DebounceChannelUpdateMessage"/> 呼叫）。
+        /// 匯流排開啟時改 publish DTO，否則本地重建 embed 後發送。
+        /// </summary>
+        internal async Task SendOrPublishChannelUpdateAsync(string userId, string userName, string userLogin, string description)
+        {
+            if (_botConfig != null && _botConfig.EnableNotificationBus)
+            {
+                try
+                {
+                    await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                        Shared.Messages.NotifyRoutingKeys.Twitch,
+                        new Shared.Messages.TwitchNotification
+                        {
+                            NoticeType = Shared.Messages.TwitchNoticeType.ChangeStreamData,
+                            UserId = userId,
+                            UserLogin = userLogin,
+                            UserName = userName,
+                            Description = description,
+                        });
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), $"PublishTwitchChannelUpdate: {userId}");
+                }
+                return;
+            }
+
+            using var db = _dbService.GetDbContext();
+            var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == userId);
+            var embedBuilder = TwitchEmbedBuilderFactory.CreateChannelUpdate(userName, userLogin, description, twitchSpider?.ProfileImageUrl);
+            await SendStreamMessageAsync(userId, embedBuilder.Build(), NoticeType.ChangeStreamData);
+        }
+
+        /// <summary>
+        /// 通知匯流排消費端入口（階段 3 cutover）：依 DTO 類型以工廠重建 embed 後，
+        /// 走既有 <see cref="SendStreamMessageAsync"/> 發送（shard 過濾沿用既有守衛）。
+        /// Profile/Offline 圖片由本端 DB（TwitchSpider）補齊。
+        /// </summary>
+        public async Task DispatchFromBusAsync(Shared.Messages.TwitchNotification dto)
+        {
+            DataBase.Table.TwitchSpider twitchSpider;
+            using (var db = _dbService.GetDbContext())
+                twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == dto.UserId);
+
+            Embed embed;
+            NoticeType noticeType;
+            switch (dto.NoticeType)
+            {
+                case Shared.Messages.TwitchNoticeType.StartStream:
+                    var twitchStream = new DataBase.Table.TwitchStream
+                    {
+                        UserId = dto.UserId,
+                        UserLogin = dto.UserLogin,
+                        UserName = dto.UserName,
+                        StreamTitle = dto.StreamTitle,
+                        GameName = dto.GameName,
+                        ThumbnailUrl = dto.ThumbnailUrl,
+                        StreamStartAt = dto.StreamStartAt ?? DateTime.Now,
+                    };
+                    embed = TwitchEmbedBuilderFactory.CreateStreamStarted(twitchStream, twitchSpider?.ProfileImageUrl, dto.IsRecord).Build();
+                    noticeType = NoticeType.StartStream;
+                    break;
+
+                case Shared.Messages.TwitchNoticeType.EndStream:
+                    embed = TwitchEmbedBuilderFactory.CreateStreamEnded(
+                        dto.UserName, dto.UserLogin,
+                        dto.StreamTitle, dto.StreamStartAt, dto.StreamEndAt ?? DateTime.Now,
+                        dto.ClipsValue, twitchSpider?.ProfileImageUrl, twitchSpider?.OfflineImageUrl).Build();
+                    noticeType = NoticeType.EndStream;
+                    break;
+
+                case Shared.Messages.TwitchNoticeType.ChangeStreamData:
+                    embed = TwitchEmbedBuilderFactory.CreateChannelUpdate(dto.UserName, dto.UserLogin, dto.Description, twitchSpider?.ProfileImageUrl).Build();
+                    noticeType = NoticeType.ChangeStreamData;
+                    break;
+
+                default:
+                    return;
+            }
+
+            await SendStreamMessageAsync(dto.UserId, embed, noticeType).ConfigureAwait(false);
         }
 
         internal async Task SendStreamMessageAsync(string twitchUserId, Embed embed, NoticeType noticeType)

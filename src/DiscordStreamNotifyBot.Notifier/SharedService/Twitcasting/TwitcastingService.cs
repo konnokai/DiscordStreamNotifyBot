@@ -20,6 +20,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         private readonly TwitcastingClient _twitcastingClient;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
+        private readonly BotConfig _botConfig;
         private readonly Timer _refreshCategoriesTimer, _refreshWebHookTimer;
 
         private List<Category> categories;
@@ -38,6 +39,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             _client = client;
             _twitcastingClient = twitcastingClient;
             _emojiService = emojiService;
+            _botConfig = botConfig;
 
             twitcastingRecordPath = botConfig.TwitCastingRecordPath;
             if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Utility.GetDataFilePath("");
@@ -178,11 +180,55 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             await db.SaveChangesAsync();
         }
 
-        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
+        /// <summary>
+        /// 通知匯流排消費端入口（階段 3 cutover）：還原 TwitcastingStream 後以 fromBus 走實際發送。
+        /// </summary>
+        public Task DispatchFromBusAsync(Shared.Messages.TwitcastingNotification dto)
+            => SendStreamMessageAsync(new TwitcastingStream
+            {
+                ChannelId = dto.ChannelId,
+                ChannelTitle = dto.ChannelTitle,
+                StreamId = dto.StreamId,
+                StreamTitle = dto.StreamTitle,
+                StreamSubTitle = dto.StreamSubTitle,
+                Category = dto.Category,
+                ThumbnailUrl = dto.ThumbnailUrl,
+                StreamStartAt = dto.StreamStartAt,
+            }, dto.IsPrivate, dto.IsRecord, fromBus: true);
+
+        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false, bool fromBus = false)
         {
 #if DEBUG
             Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
+            // 通知匯流排 cutover（opt-in）：偵測端改 publish DTO；fromBus=true（消費端）才實際發送，避免再進入
+            if (_botConfig != null && _botConfig.EnableNotificationBus && !fromBus)
+            {
+                try
+                {
+                    await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                        Shared.Messages.NotifyRoutingKeys.Twitcasting,
+                        new Shared.Messages.TwitcastingNotification
+                        {
+                            ChannelId = twitcastingStream.ChannelId,
+                            ChannelTitle = twitcastingStream.ChannelTitle,
+                            StreamId = twitcastingStream.StreamId,
+                            StreamTitle = twitcastingStream.StreamTitle,
+                            StreamSubTitle = twitcastingStream.StreamSubTitle,
+                            Category = twitcastingStream.Category,
+                            ThumbnailUrl = twitcastingStream.ThumbnailUrl,
+                            StreamStartAt = twitcastingStream.StreamStartAt,
+                            IsPrivate = isPrivate,
+                            IsRecord = isRecord,
+                        }).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), $"PublishTwitcastingStartLive: {twitcastingStream.ChannelId} / {twitcastingStream.StreamId}");
+                }
+                return;
+            }
+
             using (var db = _dbService.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitcastingStreamChannels.AsNoTracking().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();

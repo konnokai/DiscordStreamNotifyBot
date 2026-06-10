@@ -37,11 +37,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch.Debounce
 
                 var description = string.Join("\n\n", messageQueue);
 
-                using var db = Bot.DbService.GetDbContext();
-                var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == _twitchUserId);
-                var embedBuilder = TwitchEmbedBuilderFactory.CreateChannelUpdate(_twitchUserName, _twitchUserLogin, description, twitchSpider?.ProfileImageUrl);
-
-                Task.Run(async () => { await _twitchService.SendStreamMessageAsync(_twitchUserId, embedBuilder.Build(), NoticeType.ChangeStreamData); });
+                // 匯流排開啟時 publish DTO、否則本地重建 embed 發送，統一由 TwitchService 處理
+                Task.Run(async () => { await _twitchService.SendOrPublishChannelUpdateAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, description); });
             }
             catch (Exception ex)
             {

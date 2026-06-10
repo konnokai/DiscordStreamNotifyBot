@@ -2,11 +2,27 @@
 {
     public partial class YoutubeStreamService
     {
-        private async Task ChangeGuildBannerAsync(string channelId, string videoId)
+        private async Task ChangeGuildBannerAsync(string channelId, string videoId, bool fromBus = false)
         {
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             return;
 #endif
+            // 通知匯流排 cutover（opt-in）：偵測端改 publish banner 事件，由消費端執行（需 GetGuild）
+            if (_botConfig != null && _botConfig.EnableNotificationBus && !fromBus)
+            {
+                try
+                {
+                    await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                        Shared.Messages.NotifyRoutingKeys.Banner,
+                        new Shared.Messages.BannerChangeNotification { ChannelId = channelId, VideoId = videoId }).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), $"PublishBannerChange: {channelId} / {videoId}");
+                }
+                return;
+            }
+
             List<DataBase.Table.BannerChange> list;
 
             using (var db = _dbService.GetDbContext())

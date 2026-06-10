@@ -300,7 +300,9 @@ namespace DiscordStreamNotifyBot
                 try
                 {
                     _busConsumer = new NotificationBusConsumer(_botConfig,
-                        serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>());
+                        serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>(),
+                        serviceProvider.GetService<SharedService.Twitch.TwitchService>(),
+                        serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>());
                     await _busConsumer.StartAsync(_shardId);
                 }
                 catch (Exception ex)
