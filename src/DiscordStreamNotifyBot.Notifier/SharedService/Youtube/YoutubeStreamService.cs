@@ -83,7 +83,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
                         .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
-            if (Bot.Redis != null)
+            // 偵測（錄影 Redis 訂閱）僅於 EnableDetection 開啟時註冊；多 shard 部署時僅偵測程序持有（計畫階段 3）
+            if (Bot.Redis != null && botConfig.EnableDetection)
             {
                 Bot.RedisSub.Subscribe(new RedisChannel("youtube.startstream", RedisChannel.PatternMode.Literal), async (channel, videoData) =>
                 {
@@ -546,6 +547,13 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 #endregion
 
                 Log.Info("已建立 Redis 訂閱");
+            }
+
+            // 偵測 Timer 僅於 EnableDetection 開啟時啟動；多 shard 部署時僅偵測程序持有（計畫階段 3）
+            if (!botConfig.EnableDetection)
+            {
+                Log.Warn("YouTube 偵測已停用 (EnableDetection=false)，本程序僅處理指令與通知發送");
+                return;
             }
 
             reScheduleTime = new Timer((objState) => ReScheduleReminder(), null, TimeSpan.FromSeconds(5), TimeSpan.FromDays(1));

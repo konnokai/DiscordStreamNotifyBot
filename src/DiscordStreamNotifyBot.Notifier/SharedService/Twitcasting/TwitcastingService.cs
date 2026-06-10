@@ -45,6 +45,16 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Utility.GetDataFilePath("");
             if (!twitcastingRecordPath.EndsWith(Utility.GetPlatformSlash())) twitcastingRecordPath += Utility.GetPlatformSlash();
 
+            _dbService = dbService;
+
+            // 偵測（分類/WebHook 輪詢、開台 Redis 訂閱）僅於 EnableDetection 開啟時啟動；
+            // 多 shard 部署時僅偵測程序持有（計畫階段 3）
+            if (!botConfig.EnableDetection)
+            {
+                Log.Warn("TwitCasting 偵測已停用 (EnableDetection=false)，本程序僅處理指令與通知發送");
+                return;
+            }
+
             _refreshCategoriesTimer = new Timer(async (_) =>
             {
                 try
@@ -59,8 +69,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 
             _refreshWebHookTimer = new Timer(async (_) => { await TimerHandel(); },
                 null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15));
-
-            _dbService = dbService;
 
             Bot.RedisSub.Subscribe(new RedisChannel("twitcasting.pubsub.startlive", RedisChannel.PatternMode.Literal), async (channel, message) =>
             {

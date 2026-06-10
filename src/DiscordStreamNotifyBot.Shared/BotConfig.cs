@@ -54,6 +54,16 @@ public class BotConfig
     /// </summary>
     public bool EnableNotificationBus { get; set; } = false;
 
+    /// <summary>
+    /// 是否啟動偵測（爬蟲 Timer、錄影 Redis 訂閱、PubSub/EventSub/WebHook 維護）。預設 true＝維持單體行為。
+    /// <para>
+    /// 多 shard 部署時，叢集內**只能有一個程序**啟用偵測（否則通知重複、API quota ×N）：
+    /// 偵測程序開 EnableDetection + EnableNotificationBus 發布事件，其餘 notifier 關偵測、只消費匯流排。
+    /// 此旗標日後由 Scraper 角色接手（偵測搬遷完成後 notifier 一律關閉）。
+    /// </para>
+    /// </summary>
+    public bool EnableDetection { get; set; } = true;
+
     public class RabbitMqConfig
     {
         public string HostName { get; set; } = "rabbitmq";
@@ -132,6 +142,7 @@ public class BotConfig
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
             RabbitMQ = config.RabbitMQ;
             EnableNotificationBus = config.EnableNotificationBus;
+            EnableDetection = config.EnableDetection;
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
@@ -176,6 +187,7 @@ public class BotConfig
         SetIfPresent("RABBITMQ_PASSWORD", v => RabbitMQ.Password = v);
         SetIfPresent("RABBITMQ_VHOST", v => RabbitMQ.VirtualHost = v);
         SetIfPresent("ENABLE_NOTIFICATION_BUS", v => { if (bool.TryParse(v, out var b)) EnableNotificationBus = b; });
+        SetIfPresent("ENABLE_DETECTION", v => { if (bool.TryParse(v, out var b)) EnableDetection = b; });
     }
 
     private static void SetIfPresent(string envName, Action<string> setter)

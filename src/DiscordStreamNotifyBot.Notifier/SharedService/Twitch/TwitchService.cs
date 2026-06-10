@@ -113,6 +113,14 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
                 .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
+            // 偵測（EventSub Redis 訂閱、輪詢 Timer、WebHook 維護）僅於 EnableDetection 開啟時啟動；
+            // 多 shard 部署時僅偵測程序持有（計畫階段 3）
+            if (!botConfig.EnableDetection)
+            {
+                Log.Warn("Twitch 偵測已停用 (EnableDetection=false)，本程序僅處理指令與通知發送");
+                return;
+            }
+
 #nullable enable
 
             Bot.RedisSub.Subscribe(new RedisChannel("twitch:stream_offline", RedisChannel.PatternMode.Literal), (channel, streamData) =>
