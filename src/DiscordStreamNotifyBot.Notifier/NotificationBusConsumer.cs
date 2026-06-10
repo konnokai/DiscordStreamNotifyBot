@@ -7,8 +7,8 @@ namespace DiscordStreamNotifyBot
     /// <summary>
     /// 通知匯流排消費端（階段 3 cutover，opt-in）。
     /// <para>
-    /// 由 <c>EnableNotificationBus</c> 旗標啟用；啟用後連上 RabbitMQ，消費本 shard 的 <c>notify.shard.{id}</c>，
-    /// 依 routing key 解析 DTO 並交給對應服務發送。預設關閉時完全不啟用，維持單體行為。
+    /// Notifier 的通知一律來自匯流排：連上 RabbitMQ、消費本 shard 的 <c>notify.shard.{id}</c>，
+    /// 依 routing key 解析 DTO 並交給對應服務發送（偵測與發布由 Scraper 負責）。
     /// </para>
     /// <para>
     /// 已接線：YouTube / Twitch / Twitcasting / Banner。

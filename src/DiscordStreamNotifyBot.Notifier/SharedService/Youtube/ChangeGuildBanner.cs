@@ -7,8 +7,8 @@
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             return;
 #endif
-            // 通知匯流排 cutover（opt-in）：偵測端改 publish banner 事件，由消費端執行（需 GetGuild）
-            if (_botConfig != null && _botConfig.EnableNotificationBus && !fromBus)
+            // 通知一律經匯流排：偵測端（Scraper）publish banner 事件，由消費端（Notifier）執行（需 GetGuild）
+            if (!fromBus)
             {
                 try
                 {

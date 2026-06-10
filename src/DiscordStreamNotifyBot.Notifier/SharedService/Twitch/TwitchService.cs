@@ -113,11 +113,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
                 .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
-            // 偵測（EventSub Redis 訂閱、輪詢 Timer、WebHook 維護）僅於 EnableDetection 開啟時啟動；
-            // 多 shard 部署時僅偵測程序持有（計畫階段 3）
-            if (!botConfig.EnableDetection)
+            // 偵測（EventSub Redis 訂閱、輪詢 Timer、WebHook 維護）僅於偵測宿主（Scraper）啟動
+            if (!Bot.IsDetectionHost)
             {
-                Log.Warn("Twitch 偵測已停用 (EnableDetection=false)，本程序僅處理指令與通知發送");
+                Log.Info("Twitch 偵測由 Scraper 程序負責，本程序僅處理指令與通知發送");
                 return;
             }
 
@@ -203,48 +202,27 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         };
                     }
 
-                    // 通知匯流排 cutover（opt-in）：偵測端組好結構化資料後 publish，由消費端重建 embed 發送
+                    // 通知一律經匯流排：偵測端組好結構化資料後 publish，由消費端重建 embed 發送
                     // （twitchStream 最後還是會有為 null 的可能：Redis 沒資料然後也沒開 VOD 保存）
-                    if (_botConfig != null && _botConfig.EnableNotificationBus)
+                    try
                     {
-                        try
-                        {
-                            await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
-                                Shared.Messages.NotifyRoutingKeys.Twitch,
-                                new Shared.Messages.TwitchNotification
-                                {
-                                    NoticeType = Shared.Messages.TwitchNoticeType.EndStream,
-                                    UserId = data.BroadcasterUserId,
-                                    UserLogin = data.BroadcasterUserLogin,
-                                    UserName = data.BroadcasterUserName,
-                                    StreamTitle = twitchStream?.StreamTitle,
-                                    StreamStartAt = twitchStream?.StreamStartAt,
-                                    StreamEndAt = endAt,
-                                    ClipsValue = clipsValue,
-                                });
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex.Demystify(), $"PublishTwitchEndStream: {data.BroadcasterUserId}");
-                        }
+                        await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                            Shared.Messages.NotifyRoutingKeys.Twitch,
+                            new Shared.Messages.TwitchNotification
+                            {
+                                NoticeType = Shared.Messages.TwitchNoticeType.EndStream,
+                                UserId = data.BroadcasterUserId,
+                                UserLogin = data.BroadcasterUserLogin,
+                                UserName = data.BroadcasterUserName,
+                                StreamTitle = twitchStream?.StreamTitle,
+                                StreamStartAt = twitchStream?.StreamStartAt,
+                                StreamEndAt = endAt,
+                                ClipsValue = clipsValue,
+                            });
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        string? profileImageUrl = null, offlineImageUrl = null;
-                        using var db = _dbService.GetDbContext();
-                        var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == data.BroadcasterUserId);
-                        if (twitchSpider != null)
-                        {
-                            profileImageUrl = twitchSpider.ProfileImageUrl;
-                            offlineImageUrl = twitchSpider.OfflineImageUrl;
-                        }
-
-                        var embedBuilder = TwitchEmbedBuilderFactory.CreateStreamEnded(
-                            data.BroadcasterUserName, data.BroadcasterUserLogin,
-                            twitchStream?.StreamTitle, twitchStream?.StreamStartAt, endAt,
-                            clipsValue, profileImageUrl, offlineImageUrl);
-
-                        await Task.Run(() => SendStreamMessageAsync(data.BroadcasterUserId, embedBuilder.Build(), NoticeType.EndStream));
+                        Log.Error(ex.Demystify(), $"PublishTwitchEndStream: {data.BroadcasterUserId}");
                     }
 
                     // 移除 Reminder
@@ -492,35 +470,27 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                                     }
                                 }
 
-                                // 通知匯流排 cutover（opt-in）：publish DTO，由消費端重建 embed 發送
-                                if (_botConfig != null && _botConfig.EnableNotificationBus)
+                                // 通知一律經匯流排：publish DTO，由消費端重建 embed 發送
+                                try
                                 {
-                                    try
-                                    {
-                                        await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
-                                            Shared.Messages.NotifyRoutingKeys.Twitch,
-                                            new Shared.Messages.TwitchNotification
-                                            {
-                                                NoticeType = Shared.Messages.TwitchNoticeType.StartStream,
-                                                UserId = twitchStream.UserId,
-                                                UserLogin = twitchStream.UserLogin,
-                                                UserName = twitchStream.UserName,
-                                                StreamTitle = twitchStream.StreamTitle,
-                                                GameName = twitchStream.GameName,
-                                                ThumbnailUrl = twitchStream.ThumbnailUrl,
-                                                StreamStartAt = twitchStream.StreamStartAt,
-                                                IsRecord = isRecord,
-                                            });
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Error(ex.Demystify(), $"PublishTwitchStartStream: {twitchStream.UserId}");
-                                    }
+                                    await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                                        Shared.Messages.NotifyRoutingKeys.Twitch,
+                                        new Shared.Messages.TwitchNotification
+                                        {
+                                            NoticeType = Shared.Messages.TwitchNoticeType.StartStream,
+                                            UserId = twitchStream.UserId,
+                                            UserLogin = twitchStream.UserLogin,
+                                            UserName = twitchStream.UserName,
+                                            StreamTitle = twitchStream.StreamTitle,
+                                            GameName = twitchStream.GameName,
+                                            ThumbnailUrl = twitchStream.ThumbnailUrl,
+                                            StreamStartAt = twitchStream.StreamStartAt,
+                                            IsRecord = isRecord,
+                                        });
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    EmbedBuilder embedBuilder = TwitchEmbedBuilderFactory.CreateStreamStarted(twitchStream, twitchSpider.ProfileImageUrl, isRecord);
-                                    await SendStreamMessageAsync(twitchStream.UserId, embedBuilder.Build(), NoticeType.StartStream);
+                                    Log.Error(ex.Demystify(), $"PublishTwitchStartStream: {twitchStream.UserId}");
                                 }
                             }
                         }
@@ -571,37 +541,28 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         }
 
         /// <summary>
-        /// 直播資料更新通知的發送入口（去抖動彙整後由 <see cref="Debounce.DebounceChannelUpdateMessage"/> 呼叫）。
-        /// 匯流排開啟時改 publish DTO，否則本地重建 embed 後發送。
+        /// 直播資料更新通知的發布入口（去抖動彙整後由 <see cref="Debounce.DebounceChannelUpdateMessage"/> 呼叫）。
+        /// publish DTO 至匯流排，由消費端（Notifier）重建 embed 後發送。
         /// </summary>
-        internal async Task SendOrPublishChannelUpdateAsync(string userId, string userName, string userLogin, string description)
+        internal async Task PublishChannelUpdateAsync(string userId, string userName, string userLogin, string description)
         {
-            if (_botConfig != null && _botConfig.EnableNotificationBus)
+            try
             {
-                try
-                {
-                    await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
-                        Shared.Messages.NotifyRoutingKeys.Twitch,
-                        new Shared.Messages.TwitchNotification
-                        {
-                            NoticeType = Shared.Messages.TwitchNoticeType.ChangeStreamData,
-                            UserId = userId,
-                            UserLogin = userLogin,
-                            UserName = userName,
-                            Description = description,
-                        });
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), $"PublishTwitchChannelUpdate: {userId}");
-                }
-                return;
+                await Shared.NotificationBusPublisher.PublishJsonAsync(_botConfig.RabbitMQ,
+                    Shared.Messages.NotifyRoutingKeys.Twitch,
+                    new Shared.Messages.TwitchNotification
+                    {
+                        NoticeType = Shared.Messages.TwitchNoticeType.ChangeStreamData,
+                        UserId = userId,
+                        UserLogin = userLogin,
+                        UserName = userName,
+                        Description = description,
+                    });
             }
-
-            using var db = _dbService.GetDbContext();
-            var twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == userId);
-            var embedBuilder = TwitchEmbedBuilderFactory.CreateChannelUpdate(userName, userLogin, description, twitchSpider?.ProfileImageUrl);
-            await SendStreamMessageAsync(userId, embedBuilder.Build(), NoticeType.ChangeStreamData);
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"PublishTwitchChannelUpdate: {userId}");
+            }
         }
 
         /// <summary>

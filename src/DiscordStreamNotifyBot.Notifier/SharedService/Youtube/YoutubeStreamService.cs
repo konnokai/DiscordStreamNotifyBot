@@ -83,8 +83,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
                         .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
 
-            // 偵測（錄影 Redis 訂閱）僅於 EnableDetection 開啟時註冊；多 shard 部署時僅偵測程序持有（計畫階段 3）
-            if (Bot.Redis != null && botConfig.EnableDetection)
+            // 偵測（錄影 Redis 訂閱）僅於偵測宿主（Scraper）註冊；Notifier 程序永不偵測
+            if (Bot.Redis != null && Bot.IsDetectionHost)
             {
                 Bot.RedisSub.Subscribe(new RedisChannel("youtube.startstream", RedisChannel.PatternMode.Literal), async (channel, videoData) =>
                 {
@@ -549,10 +549,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 Log.Info("已建立 Redis 訂閱");
             }
 
-            // 偵測 Timer 僅於 EnableDetection 開啟時啟動；多 shard 部署時僅偵測程序持有（計畫階段 3）
-            if (!botConfig.EnableDetection)
+            // 偵測 Timer 僅於偵測宿主（Scraper）啟動；Notifier 程序僅處理指令與通知發送
+            if (!Bot.IsDetectionHost)
             {
-                Log.Warn("YouTube 偵測已停用 (EnableDetection=false)，本程序僅處理指令與通知發送");
+                Log.Info("YouTube 偵測由 Scraper 程序負責，本程序僅處理指令與通知發送");
                 return;
             }
 

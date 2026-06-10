@@ -47,11 +47,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 
             _dbService = dbService;
 
-            // 偵測（分類/WebHook 輪詢、開台 Redis 訂閱）僅於 EnableDetection 開啟時啟動；
-            // 多 shard 部署時僅偵測程序持有（計畫階段 3）
-            if (!botConfig.EnableDetection)
+            // 偵測（分類/WebHook 輪詢、開台 Redis 訂閱）僅於偵測宿主（Scraper）啟動
+            if (!Bot.IsDetectionHost)
             {
-                Log.Warn("TwitCasting 偵測已停用 (EnableDetection=false)，本程序僅處理指令與通知發送");
+                Log.Info("TwitCasting 偵測由 Scraper 程序負責，本程序僅處理指令與通知發送");
                 return;
             }
 
@@ -209,8 +208,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 #if DEBUG
             Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
-            // 通知匯流排 cutover（opt-in）：偵測端改 publish DTO；fromBus=true（消費端）才實際發送，避免再進入
-            if (_botConfig != null && _botConfig.EnableNotificationBus && !fromBus)
+            // 通知一律經匯流排：偵測端（Scraper）publish DTO；fromBus=true（消費端）才實際發送，避免再進入
+            if (!fromBus)
             {
                 try
                 {

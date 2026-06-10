@@ -6,7 +6,7 @@ namespace DiscordStreamNotifyBot.Shared
     /// 通知匯流排發布端共用單例（階段 3 cutover）。
     /// <para>
     /// 同一程序內所有服務（YouTube/Twitch/Twitcasting/Banner…）共用一條 RabbitMQ 發布連線，
-    /// 延遲初始化、執行緒安全。僅在 <c>EnableNotificationBus</c> 開啟的程式路徑被呼叫。
+    /// 延遲初始化、執行緒安全。偵測路徑（Scraper）發布事件用。
     /// </para>
     /// </summary>
     public static class NotificationBusPublisher

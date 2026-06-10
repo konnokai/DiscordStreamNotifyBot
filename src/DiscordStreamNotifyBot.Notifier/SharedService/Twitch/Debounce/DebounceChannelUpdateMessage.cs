@@ -37,8 +37,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch.Debounce
 
                 var description = string.Join("\n\n", messageQueue);
 
-                // 匯流排開啟時 publish DTO、否則本地重建 embed 發送，統一由 TwitchService 處理
-                Task.Run(async () => { await _twitchService.SendOrPublishChannelUpdateAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, description); });
+                // publish DTO 至匯流排，由消費端（Notifier）重建 embed 發送
+                Task.Run(async () => { await _twitchService.PublishChannelUpdateAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, description); });
             }
             catch (Exception ex)
             {

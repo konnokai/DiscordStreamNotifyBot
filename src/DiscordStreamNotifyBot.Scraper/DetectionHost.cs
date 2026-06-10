@@ -15,12 +15,12 @@ namespace DiscordStreamNotifyBot.Scraper
     /// （YouTube / Twitch / Twitcasting 的輪詢 Timer、錄影 Redis 訂閱、PubSub/EventSub/WebHook 維護）。
     /// <para>
     /// 無頭模式＝建立一個<b>永不登入</b>的 DiscordSocketClient 作為相依佔位：
-    /// 偵測路徑經 <c>EnableNotificationBus</c> seam 一律 publish DTO（不觸碰 gateway）、
+    /// 偵測路徑一律 publish DTO 至匯流排（fromBus seam，不觸碰 gateway）、
     /// <c>Bot.ApplicatonOwner</c> 為 null 時相關私訊均有守衛、EmojiService 取不到 emote 時為 null（僅發送端使用）。
     /// </para>
     /// <para>
-    /// 注意：本宿主強制 <c>EnableDetection=true</c> 與 <c>EnableNotificationBus=true</c>
-    /// —— Scraper 的存在意義就是偵測並發布；對應的 Notifier 應全部關閉偵測。
+    /// 角色由執行檔決定：本宿主設定 <c>Bot.IsDetectionHost = true</c> 後偵測才會啟動；
+    /// Notifier 程序永不偵測、其通知一律來自匯流排消費。
     /// 會限檢查（YoutubeMemberService）不在此執行：它按 shard 分區，由各 Notifier 自行執行。
     /// </para>
     /// </summary>
@@ -31,13 +31,8 @@ namespace DiscordStreamNotifyBot.Scraper
         /// <summary>初始化靜態相依並啟動偵測服務（建構子內即啟動 Timer 與 Redis 訂閱）。</summary>
         public void Start(BotConfig config)
         {
-            // Scraper 必為「偵測 + 發布」；防止設定誤植造成不偵測或直送 Discord
-            if (!config.EnableDetection || !config.EnableNotificationBus)
-            {
-                Log.Warn("Scraper 強制啟用 EnableDetection 與 EnableNotificationBus（忽略設定值）");
-                config.EnableDetection = true;
-                config.EnableNotificationBus = true;
-            }
+            // 標記本程序為偵測宿主（服務建構子依此啟動偵測 Timer / Redis 訂閱）
+            Bot.IsDetectionHost = true;
 
             // 設定偵測服務所需的 Bot 靜態相依（DbService / Redis），不建立 Discord 連線
             Bot.InitHeadlessHost(config);

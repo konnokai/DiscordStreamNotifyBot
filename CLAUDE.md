@@ -19,22 +19,20 @@ src/
 │                                                   RedisChannels、ClusterService、RabbitMqService、Messages DTO、
 │                                                   StartupPreflight、GracefulShutdown、MainDbContextFactory(EF 設計工廠)
 ├─ DiscordStreamNotifyBot.Notifier/     (exe) 通知層：Discord 連線 + Interaction/Command 指令樹 + SharedService
-│                                              （AssemblyName = DiscordStreamNotifyBot；偵測程式碼在此、
-│                                              由 EnableDetection 旗標控制是否啟動）
+│                                              （AssemblyName = DiscordStreamNotifyBot；偵測程式碼在此組件
+│                                              但僅 Scraper 宿主會啟動；通知一律由匯流排消費而來）
 ├─ DiscordStreamNotifyBot.Scraper/      (exe) 爬蟲層：leader 鎖 + 心跳 + DetectionHost
 │                                              （參考 Notifier 組件、無頭模式實體執行偵測服務並發布至匯流排）
 └─ DiscordStreamNotifyBot.Coordinator/  (exe) 主控層：心跳監控、leader 觀察、TOTAL_SHARDS 公告
 ```
 
-> **重構進度**：§9 shard 守衛（×6 處）、階段 0–4、階段 6（Docker）皆完成且可建置。
-> 階段 3 cutover：四條通知路徑（YouTube/Twitch/Twitcasting/Banner）的 publish/consume 完成
-> （`EnableNotificationBus`，預設關）；偵測由 `EnableDetection` 控制（預設開＝單體行為）；
-> Scraper 以無頭宿主（永不登入的 DiscordSocketClient）實體執行偵測 —— 偵測程式碼單一來源留在 Notifier 組件。
+> **架構（角色由執行檔決定，無模式旗標）**：
+> Scraper＝唯一偵測者（leader 鎖單例；`Bot.IsDetectionHost` 由 DetectionHost 設定）→ publish DTO 到 RabbitMQ
+> `bot.notify`；Notifier shard＝消費 `notify.shard.{id}` → `EmbedBuilderFactory` 重建 embed → 只發給自己持有的
+> 伺服器（shard 守衛 ×6 處）。**Notifier 必須搭配 RabbitMQ + Scraper 才有通知**（指令系統獨立可用）。
 > 會限（YoutubeMemberService）**不走匯流排**：按 shard 分區由各 Notifier 自行檢查。
-> 階段 5：官方伺服器白名單改存 Redis SET（首啟由 OfficialList.json 播種）、狀態列計數跨 shard 彙總（Redis HASH）。
-> **部署模式**：單體（預設旗標）／過渡多 shard（notifier-0 開偵測）／目標架構（scraper 偵測、全 notifier 關偵測），
-> 見 docker-compose.yml 註解。**待辦**：YoutubeApiService 抽出、§11-2 EF baseline、
-> 多程序實測（計畫 §6.2 驗證清單）。
+> 階段 5：官方伺服器白名單存 Redis SET（首啟由 OfficialList.json 播種）、狀態列計數跨 shard 彙總（Redis HASH）。
+> **待辦**：YoutubeApiService 抽出、§11-2 EF baseline、多程序實測（計畫 §6.2 驗證清單）。
 
 ### 相依的外部系統
 
@@ -64,10 +62,10 @@ dotnet run -c Release --project src/DiscordStreamNotifyBot.Scraper
 dotnet run -c Release --project src/DiscordStreamNotifyBot.Coordinator
 ```
 
-> **角色由執行哪個 exe 決定**（各 Program.cs 寫死 `BotRole`），無 `Role` 設定欄位。
+> **角色由執行哪個 exe 決定**（各 Program.cs 寫死 `BotRole`），無 `Role`/偵測/匯流排設定欄位。
 > 設定可由環境變數覆寫（`TOTAL_SHARDS` / `MYSQL_CONNECTION_STRING` / `REDIS_OPTION` /
-> `DISCORD_TOKEN` / `GOOGLE_API_KEY` / `RABBITMQ_*` / `ENABLE_NOTIFICATION_BUS`，見計畫 §3）。
-> Docker 部署見 `docker-compose.yml`。
+> `DISCORD_TOKEN` / `GOOGLE_API_KEY` / `RABBITMQ_*`，見計畫 §3）。
+> Docker 部署見 `docker-compose.yml`。Notifier 的通知需 RabbitMQ + Scraper 運行。
 
 > **無自動化測試**，此 repo 不含任何測試框架。重構驗證依賴多程序手動實測（計畫 §6.2 驗證清單）。
 

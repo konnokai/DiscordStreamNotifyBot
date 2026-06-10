@@ -30,6 +30,12 @@ namespace DiscordStreamNotifyBot
         public static int ShardId { get; private set; }
         /// <summary>叢集的 Shard 總數</summary>
         public static int TotalShardCount { get; private set; }
+
+        /// <summary>
+        /// 本程序是否為偵測宿主。由 Scraper 的 DetectionHost 設為 true；Notifier 永遠為 false。
+        /// 偵測（爬蟲 Timer / 錄影 Redis 訂閱 / PubSub 維護）只在偵測宿主啟動 —— 角色由執行檔決定，不可設定。
+        /// </summary>
+        public static bool IsDetectionHost { get; set; } = false;
         public static bool IsHoloChannelSpider { get; set; } = false;
         public static bool IsNijisanjiChannelSpider { get; set; } = false;
         public static bool IsOtherChannelSpider { get; set; } = false;
@@ -93,7 +99,7 @@ namespace DiscordStreamNotifyBot
         /// 無頭模式初始化（Scraper 宿主用，計畫階段 3）：不建立 Discord 連線，
         /// 僅設定偵測服務所需的靜態相依（DbService / Redis）。
         /// <para>Scraper 參考本組件並以未登入的 DiscordSocketClient 實體執行偵測服務；
-        /// 偵測路徑經 EnableNotificationBus seam 保證不觸碰 gateway。</para>
+        /// 偵測路徑一律 publish 至匯流排（fromBus seam），保證不觸碰 gateway。</para>
         /// </summary>
         public static void InitHeadlessHost(BotConfig botConfig)
         {
@@ -310,21 +316,19 @@ namespace DiscordStreamNotifyBot
             await serviceProvider.GetService<CommandHandler>().InitializeAsync();
             #endregion
 
-            #region 通知匯流排消費（階段 3 cutover，opt-in；預設關閉時不影響單體行為）
-            if (_botConfig.EnableNotificationBus)
+            #region 通知匯流排消費（Notifier 的通知一律來自 RabbitMQ；消費失敗 = 無法服務，直接結束交由重啟）
+            try
             {
-                try
-                {
-                    _busConsumer = new NotificationBusConsumer(_botConfig,
-                        serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>(),
-                        serviceProvider.GetService<SharedService.Twitch.TwitchService>(),
-                        serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>());
-                    await _busConsumer.StartAsync(_shardId);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "通知匯流排消費啟動失敗");
-                }
+                _busConsumer = new NotificationBusConsumer(_botConfig,
+                    serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>(),
+                    serviceProvider.GetService<SharedService.Twitch.TwitchService>(),
+                    serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>());
+                await _busConsumer.StartAsync(_shardId);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "通知匯流排消費啟動失敗，Notifier 無法在沒有匯流排的情況下服務");
+                Environment.Exit(1);
             }
             #endregion
 
