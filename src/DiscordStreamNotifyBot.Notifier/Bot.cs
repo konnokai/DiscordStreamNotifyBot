@@ -300,6 +300,7 @@ namespace DiscordStreamNotifyBot
                 .AddHttpClient()
                 .AddSingleton(DbService)
                 .AddSingleton<Shared.YoutubeApiService>()
+                .AddSingleton<SharedService.EmojiService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
