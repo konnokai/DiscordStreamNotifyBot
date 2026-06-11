@@ -574,47 +574,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
         }
 
-        public async Task<YTApiVideo> GetVideoAsync(string videoId)
-        {
-            var pBreaker = Policy<YTApiVideo>
-                .Handle<Exception>()
-                .WaitAndRetryAsync(3, (retryAttempt) =>
-                {
-                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                    Log.Warn($"YouTube GetVideoAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                    return timeSpan;
-                });
+        // 委派至 Shared.YoutubeApiService（單一來源）
+        public Task<YTApiVideo> GetVideoAsync(string videoId) => _apiService.GetVideoAsync(videoId);
 
-            return await pBreaker.ExecuteAsync(async () =>
-             {
-                 var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
-                 video.Id = videoId;
-                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-                 if (videoResult.Items.Count == 0) return null;
-                 return videoResult.Items[0];
-             });
-        }
-
-        private async Task<IEnumerable<YTApiVideo>> GetVideosAsync(IEnumerable<string> videoIds, int retryCount = 0)
-        {
-            var pBreaker = Policy<IEnumerable<YTApiVideo>>
-                .Handle<Exception>()
-                .WaitAndRetryAsync(3, (retryAttempt) =>
-                {
-                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                    Log.Warn($"YouTube GetVideosAsync ({videoIds.Count()}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                    return timeSpan;
-                });
-
-            return await pBreaker.ExecuteAsync(async () =>
-            {
-                var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
-                video.Id = string.Join(',', videoIds);
-                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-                if (videoResult.Items.Count == 0) return null;
-                return videoResult.Items;
-            });
-        }
+        private Task<IEnumerable<YTApiVideo>> GetVideosAsync(IEnumerable<string> videoIds, int retryCount = 0)
+            => _apiService.GetVideosAsync(videoIds);
 
         public async Task<YTApiVideo> GetVideoDurationAsync(string videoId)
         {

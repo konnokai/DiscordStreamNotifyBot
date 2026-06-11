@@ -317,6 +317,7 @@ namespace DiscordStreamNotifyBot
             var services = new ServiceCollection()
                 .AddHttpClient()
                 .AddSingleton(DbService)
+                .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()

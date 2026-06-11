@@ -49,6 +49,7 @@ namespace DiscordStreamNotifyBot.Scraper
                 .AddSingleton(headlessClient)
                 .AddSingleton(config)
                 .AddSingleton(Bot.DbService)
+                .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton<EmojiService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()

@@ -41,7 +41,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         public ConcurrentBag<NijisanjiLiverJson> NijisanjiLiverContents { get; } = new ConcurrentBag<NijisanjiLiverJson>();
         public ConcurrentDictionary<string, ReminderItem> Reminders { get; } = new ConcurrentDictionary<string, ReminderItem>();
         public bool IsRecord { get; set; } = true;
-        public YouTubeService YouTubeService { get; set; }
+        /// <summary>YouTube API 用戶端，委派至 Shared 的 <see cref="Shared.YoutubeApiService"/>（單一來源）。</summary>
+        public YouTubeService YouTubeService => _apiService.YouTubeService;
 
         private bool isSubscribing = false;
         private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime/*, checkHoloNowStream, holoScheduleEmoji*/;
@@ -53,23 +54,19 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly MessageComponent _messageComponent;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
+        private readonly Shared.YoutubeApiService _apiService;
         private Timer channelTitleCheckTimer;
 
-        public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
+        public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService, Shared.YoutubeApiService apiService)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
             _botConfig = botConfig;
+            _apiService = apiService;
 
             _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
             _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-
-            YouTubeService = new YouTubeService(new BaseClientService.Initializer
-            {
-                ApplicationName = "DiscordStreamBot",
-                ApiKey = botConfig.GoogleApiKey,
-            });
 
 #if DEBUG_API
             var test = GetCommentThreadsIsDisabledAsync("").Result;
@@ -673,233 +670,15 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             return IsRecord && db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
         }
 
-        public async Task<string> GetChannelIdAsync(string channelUrl)
-        {
-            if (string.IsNullOrEmpty(channelUrl))
-                throw new ArgumentNullException(channelUrl);
+        // 委派至 Shared.YoutubeApiService（單一來源）
+        public Task<string> GetChannelIdAsync(string channelUrl) => _apiService.GetChannelIdAsync(channelUrl);
 
-            channelUrl = channelUrl.Trim();
+        // 委派至 Shared.YoutubeApiService（單一來源）
+        public string GetVideoId(string videoUrl) => _apiService.GetVideoId(videoUrl);
 
-            switch (channelUrl.ToLower())
-            {
-                case "all":
-                case "holo":
-                case "2434":
-                case "other":
-                    return channelUrl.ToLower();
-            }
+        public Task<string> GetChannelTitle(string channelId) => _apiService.GetChannelTitle(channelId);
 
-            if (channelUrl.StartsWith("UC") && channelUrl.Length == 24)
-                return channelUrl;
-
-            string channelId;
-
-            channelUrl = channelUrl.Replace("https://m.youtube.com", "https://www.youtube.com");
-            channelUrl = channelUrl.Split('?')[0]; // 移除網址上的參數
-
-            Regex regexNewFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
-            Regex regexOldFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
-            Match matchNewFormat = regexNewFormat.Match(channelUrl);
-            Match matchOldFormat = regexOldFormat.Match(channelUrl);
-
-            if (matchNewFormat.Success)
-            {
-                string channelName = matchNewFormat.Groups["CustomId"].Value.ToLower();
-
-                using (var db = _dbService.GetDbContext())
-                {
-                    try
-                    {
-                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                        if (string.IsNullOrEmpty(channelId))
-                        {
-                            try
-                            {
-                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
-                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                                await db.SaveChangesAsync();
-                            }
-                            catch (UriFormatException ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
-                                throw;
-                            }
-                        }
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-InvalidOperationException: {channelUrl}");
-                        throw new FormatException("網址格式化錯誤，請向 Bot 擁有者回報此問題");
-                    }
-                }
-            }
-            else if (matchOldFormat.Success)
-            {
-                string host = matchOldFormat.Groups["Host"].Value.ToLower();
-                if (host != "youtube.com")
-                    throw new FormatException("錯誤，請確認是否輸入 YouTube 頻道網址");
-
-                string type = matchOldFormat.Groups["Type"].Value.ToLower();
-                if (type == "channel")
-                {
-                    channelId = matchOldFormat.Groups["ChannelName"].Value;
-                    if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道 Id 格式不正確");
-                    if (channelId.Length != 24) throw new FormatException("錯誤，頻道 Id 字元數不正確");
-                }
-                else if (type == "c" || type == "user")
-                {
-                    string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
-
-                    using (var db = _dbService.GetDbContext())
-                    {
-                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                        if (string.IsNullOrEmpty(channelId))
-                        {
-                            try
-                            {
-                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
-                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                                await db.SaveChangesAsync();
-                            }
-                            catch (UriFormatException ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
-                                throw;
-                            }
-                        }
-                    }
-                }
-                else throw new FormatException("錯誤，網址格式不正確");
-            }
-            else
-            {
-                Log.Error($"GetChannelIdAsync-NoMatch: {channelUrl}");
-                throw new FormatException("錯誤，找不到對應的網址處理方式，請向 Bot 擁有者聯絡\n" +
-                    "若你是透過自動提示來輸入頻道名稱，請勿切換 Discord 頻道，這會導致自動代入的名稱錯誤");
-            }
-
-            return channelId;
-        }
-
-        private async Task<string> GetChannelIdByUrlAsync(string channelUrl)
-        {
-            try
-            {
-                string channelId = "";
-
-                //https://stackoverflow.com/a/36559834
-                HtmlWeb htmlWeb = new HtmlWeb();
-                var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
-                var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
-
-                // 已知阿喵喵的頻道 (https://www.youtube.com/@AmamiyaKokoro) 會被 YT 自動 303 轉址
-                // 但只會轉一半 (Location: https://www.youtube.com/UCkIimWZ9gBJRamKF0rmPU8w ， 缺少 channel)
-                // 這需要 HttpClient 把 Header 抓出來處理，等有頻道也會發生這情況時再處理
-
-                // Vox 的頻道也會，但他只是從 https://www.youtube.com/@VoxAkuma 變成 https://www.youtube.com/voxakuma
-                // 然後一樣 404 ，幹
-
-                if (node == null)
-                    throw new UriFormatException("錯誤，找不到節點\n" +
-                        "請確認是否輸入正確的 YouTube 頻道網址，或確認該頻道是否存在\n" +
-                        "部分頻道會有跳轉後遇到 404 錯誤的問題，你可以嘗試直接開啟連結確認是否會出現 404 錯誤\n" +
-                        "有需要可直接向 Bot 擁有者詢問\n" +
-                        "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
-
-                channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
-                if (string.IsNullOrEmpty(channelId))
-                    throw new UriFormatException("錯誤，找不到頻道 Id\n" +
-                        "正常來說不該遇到這問題才對，請直接向 Bot 擁有者詢問\n" +
-                        "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
-
-                return channelId;
-            }
-            catch { throw; }
-        }
-
-        public string GetVideoId(string videoUrl)
-        {
-            if (string.IsNullOrEmpty(videoUrl))
-                throw new ArgumentNullException(videoUrl);
-
-            videoUrl = videoUrl.Trim();
-
-            if (videoUrl.Contains("www.youtube.com/watch")) //https://www.youtube.com/watch?v=7DqDRE_SW34
-                videoUrl = videoUrl.Substring(videoUrl.IndexOf("?v=") + 3, 11);
-            else if (videoUrl.Contains("https://youtu.be")) //https://youtu.be/Z-UJbyLqioM
-                videoUrl = videoUrl.Substring(17, 11);
-            else if (videoUrl.Contains("https://www.youtube.com/live/")) //https://www.youtube.com/live/MdmQgxffY6k?feature=share
-                videoUrl = videoUrl.Substring(29, 11);
-
-            if (videoUrl.Length == 11)
-                return videoUrl;
-
-            Regex regex = new Regex(@"(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])(?'VideoId'[\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:['""][^<>]*>|<\/a>))[?=&+%\w.-]*"); //https://regex101.com/r/OY96XI/1
-            Match match = regex.Match(videoUrl);
-            if (!match.Success)
-                throw new UriFormatException("錯誤，請確認是否輸入 YouTube 影片網址");
-
-            return match.Groups["VideoId"].Value;
-        }
-
-        public async Task<string> GetChannelTitle(string channelId)
-        {
-            try
-            {
-                if (channelId.Length != 24)
-                    return "";
-
-                var channel = YouTubeService.Channels.List("snippet");
-                channel.Id = channelId;
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                return response.Items[0].Snippet.Title;
-            }
-            catch (NullReferenceException)
-            {
-                Log.Warn($"YouTube GetChannelTitle 可能已被刪除的頻道: {channelId}");
-                return "";
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"YouTube GetChannelTitle 未知的錯誤: {channelId}");
-                return "";
-            }
-        }
-
-        public async Task<List<string>> GetChannelTitle(IEnumerable<string> channelId, bool formatUrl)
-        {
-            try
-            {
-                var channel = YouTubeService.Channels.List("snippet");
-                channel.Id = string.Join(",", channelId);
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                if (formatUrl) return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
-                else return response.Items.Select((x) => x.Snippet.Title).ToList();
-            }
-
-            catch (NullReferenceException)
-            {
-                Log.Warn($"YouTube GetChannelTitle 可能已被刪除的頻道: {channelId}");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"YouTube GetChannelTitles 未知的錯誤: {string.Join(", ", channelId)}");
-                return null;
-            }
-        }
+        public Task<List<string>> GetChannelTitle(IEnumerable<string> channelId, bool formatUrl) => _apiService.GetChannelTitle(channelId, formatUrl);
 
         internal async Task SubscribePubSubAsync()
         {
@@ -943,46 +722,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
         }
 
-        //https://github.com/JulianusIV/PubSubHubBubReciever/blob/master/DefaultPlugins/YouTubeConsumer/YouTubeConsumerPlugin.cs
-        public async Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient();
-                using var request = new HttpRequestMessage();
-
-                request.RequestUri = new("https://pubsubhubbub.appspot.com/subscribe");
-                request.Method = HttpMethod.Post;
-                string guid = Guid.NewGuid().ToString();
-
-                var formList = new Dictionary<string, string>()
-                {
-                    { "hub.mode", subscribe ? "subscribe" : "unsubscribe" },
-                    { "hub.topic", $"https://www.youtube.com/xml/feeds/videos.xml?channel_id={channelId}" },
-                    { "hub.callback", $"https://{_apiServerUrl}/NotificationCallback" },
-                    { "hub.verify", "async" },
-                    { "hub.secret", guid },
-                    { "hub.verify_token", guid },
-                    { "hub.lease_seconds", "864000"}
-                };
-
-                request.Content = new FormUrlEncodedContent(formList);
-                var response = await httpClient.SendAsync(request);
-                var result = response.StatusCode == HttpStatusCode.Accepted;
-                if (!result)
-                {
-                    Log.Error($"{channelId} PubSub 註冊失敗");
-                    Log.Error(response.StatusCode + " - " + await response.Content.ReadAsStringAsync());
-                    return false;
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"{channelId} PubSub 註冊失敗");
-                return false;
-            }
-        }
+        // 委派至 Shared.YoutubeApiService（單一來源）
+        public Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true) => _apiService.PostSubscribeRequestAsync(channelId, subscribe);
 
         /// <summary>
         /// 每天 00:00 檢查所有 YoutubeChannelSpider 的頻道名稱，若有異動則自動更新。
