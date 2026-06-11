@@ -32,10 +32,10 @@ namespace DiscordStreamNotifyBot.Scraper
         public void Start(BotConfig config)
         {
             // 標記本程序為偵測宿主（服務建構子依此啟動偵測 Timer / Redis 訂閱）
-            Bot.IsDetectionHost = true;
+            BotState.IsDetectionHost = true;
 
-            // 設定偵測服務所需的 Bot 靜態相依（DbService / Redis），不建立 Discord 連線
-            Bot.InitHeadlessHost(config);
+            // 設定偵測服務所需的靜態相依（DbService / Redis），不建立 Discord 連線
+            BotState.InitHeadlessHost(config);
 
             // 永不登入的 client：純作建構子相依佔位，Ready 不會觸發、GetGuild 一律 null
             var headlessClient = new DiscordSocketClient(new DiscordSocketConfig()
@@ -48,7 +48,7 @@ namespace DiscordStreamNotifyBot.Scraper
                 .AddHttpClient()
                 .AddSingleton(headlessClient)
                 .AddSingleton(config)
-                .AddSingleton(Bot.DbService)
+                .AddSingleton(BotState.DbService)
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton<EmojiService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()

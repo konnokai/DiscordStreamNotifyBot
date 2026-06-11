@@ -5,6 +5,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Shared;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
@@ -16,30 +17,32 @@ namespace DiscordStreamNotifyBot
     public class Bot
     {
         public static Stopwatch StopWatch { get; private set; } = new Stopwatch();
-        public static ConnectionMultiplexer Redis { get; set; }
-        public static ISubscriber RedisSub { get; set; }
-        public static IDatabase RedisDb { get; set; }
-        public static MainDbService DbService { get; private set; }
 
-        public static IUser ApplicatonOwner { get; private set; } = null;
+        // 以下共用狀態委派至 Shared.BotState（單一來源），讓移入 Shared 的偵測服務與本層共享同一份狀態
+        public static ConnectionMultiplexer Redis { get => BotState.Redis; set => BotState.Redis = value; }
+        public static ISubscriber RedisSub { get => BotState.RedisSub; set => BotState.RedisSub = value; }
+        public static IDatabase RedisDb { get => BotState.RedisDb; set => BotState.RedisDb = value; }
+        public static MainDbService DbService { get => BotState.DbService; private set => BotState.DbService = value; }
+
+        public static IUser ApplicatonOwner { get => BotState.ApplicatonOwner; private set => BotState.ApplicatonOwner = value; }
         public static BotPlayingStatus Status { get; set; } = BotPlayingStatus.Guild;
 
-        public static bool IsConnect { get; set; } = false;
-        public static bool IsDisconnect { get; set; } = false;
+        public static bool IsConnect { get => BotState.IsConnect; set => BotState.IsConnect = value; }
+        public static bool IsDisconnect { get => BotState.IsDisconnect; set => BotState.IsDisconnect = value; }
 
         /// <summary>本程序負責的 Shard Id</summary>
-        public static int ShardId { get; private set; }
+        public static int ShardId { get => BotState.ShardId; private set => BotState.ShardId = value; }
         /// <summary>叢集的 Shard 總數</summary>
-        public static int TotalShardCount { get; private set; }
+        public static int TotalShardCount { get => BotState.TotalShardCount; private set => BotState.TotalShardCount = value; }
 
         /// <summary>
         /// 本程序是否為偵測宿主。由 Scraper 的 DetectionHost 設為 true；Notifier 永遠為 false。
         /// 偵測（爬蟲 Timer / 錄影 Redis 訂閱 / PubSub 維護）只在偵測宿主啟動 —— 角色由執行檔決定，不可設定。
         /// </summary>
-        public static bool IsDetectionHost { get; set; } = false;
-        public static bool IsHoloChannelSpider { get; set; } = false;
-        public static bool IsNijisanjiChannelSpider { get; set; } = false;
-        public static bool IsOtherChannelSpider { get; set; } = false;
+        public static bool IsDetectionHost { get => BotState.IsDetectionHost; set => BotState.IsDetectionHost = value; }
+        public static bool IsHoloChannelSpider { get => BotState.IsHoloChannelSpider; set => BotState.IsHoloChannelSpider = value; }
+        public static bool IsNijisanjiChannelSpider { get => BotState.IsNijisanjiChannelSpider; set => BotState.IsNijisanjiChannelSpider = value; }
+        public static bool IsOtherChannelSpider { get => BotState.IsOtherChannelSpider; set => BotState.IsOtherChannelSpider = value; }
 
         private static DiscordSocketClient client;
         private static Timer timerUpdateStatus;
@@ -138,37 +141,16 @@ namespace DiscordStreamNotifyBot
         /// 偵測路徑一律 publish 至匯流排（fromBus seam），保證不觸碰 gateway。</para>
         /// </summary>
         public static void InitHeadlessHost(BotConfig botConfig)
-        {
-            DbService = new MainDbService(botConfig.MySqlConnectionString);
+            => BotState.InitHeadlessHost(botConfig);
 
-            // RedisConnection 已由 StartupPreflight 完成 Init
-            Redis = RedisConnection.Instance.ConnectionMultiplexer;
-            RedisSub = Redis.GetSubscriber();
-            RedisDb = Redis.GetDatabase();
-        }
+        /// <summary>依 Discord 官方公式判斷該伺服器是否歸屬於本 Shard（委派 <see cref="BotState"/>）。</summary>
+        public static bool IsServerOnThisShard(ulong guildId) => BotState.IsServerOnThisShard(guildId);
 
         /// <summary>
-        /// 依 Discord 官方公式 <c>(guildId >> 22) % totalShards</c> 判斷該伺服器是否歸屬於本 Shard。
+        /// 在 <c>GetGuild(guildId) == null</c> 時判斷是否「真的」該刪除此伺服器的設定（委派 <see cref="BotState"/>）：
+        /// 僅「歸屬本 Shard」且「已 Ready」才回傳 true，避免多 Shard 互刪設定。
         /// </summary>
-        public static bool IsServerOnThisShard(ulong guildId)
-        {
-            // 單 shard（或尚未設定總數）時，所有伺服器都歸屬於本程序
-            if (TotalShardCount <= 1)
-                return true;
-
-            return (int)((guildId >> 22) % (ulong)TotalShardCount) == ShardId;
-        }
-
-        /// <summary>
-        /// 在 <c>GetGuild(guildId) == null</c> 的情況下，判斷是否「真的」該刪除此伺服器的設定。
-        /// <para>
-        /// 只有同時滿足「該伺服器歸屬於本 Shard」與「本 Shard 已完成 Ready（IsConnect）」時才回傳 <c>true</c>
-        /// （代表機器人確實已離開該伺服器）。其餘情況（歸屬於其他 Shard、或尚未 Ready 可能只是暫時抓不到）
-        /// 一律回傳 <c>false</c>，避免多 Shard 環境下互相刪除彼此持有伺服器的通知設定。
-        /// </para>
-        /// </summary>
-        public static bool ShouldDeleteMissingGuild(ulong guildId)
-            => IsConnect && IsServerOnThisShard(guildId);
+        public static bool ShouldDeleteMissingGuild(ulong guildId) => BotState.ShouldDeleteMissingGuild(guildId);
 
         public async Task StartAndBlockAsync()
         {
