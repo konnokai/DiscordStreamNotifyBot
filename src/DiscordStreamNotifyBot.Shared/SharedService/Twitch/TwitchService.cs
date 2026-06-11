@@ -17,9 +17,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 
-//#if !DEBUG
+#if !DEBUG
 using Polly;
-//#endif
+#endif
 
 using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
@@ -622,9 +622,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             if (!Bot.IsConnect)
                 return;
 
-//#if DEBUG || DEBUG_DONTREGISTERCOMMAND
-//            Log.New($"Twitch 通知: {twitchUserId} - {embed.Title} ({noticeType})");
-//#else
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
+            Log.New($"Twitch 通知: {twitchUserId} - {embed.Title} ({noticeType})");
+#else
             using (var db = _dbService.GetDbContext())
             {
                 var noticeGuildList = db.NoticeTwitchStreamChannels.Where((x) => x.NoticeTwitchUserId == twitchUserId).ToList();
@@ -716,7 +716,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     }
                 }
             }
-//#endif
+#endif
         }
 
         private async Task<bool> RecordTwitchAsync(TwitchStream twitchStream)

@@ -1,4 +1,4 @@
-﻿namespace DiscordStreamNotifyBot.SharedService.Twitcasting
+﻿namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
 {
     public class TwitCastingWebHookJson
     {
