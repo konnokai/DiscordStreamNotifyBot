@@ -52,7 +52,8 @@ namespace DiscordStreamNotifyBot.Scraper
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton<EmojiService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
-                .AddSingleton<SharedService.Twitch.TwitchService>()
+                .AddSingleton<SharedService.Twitch.TwitchApiService>()
+                .AddSingleton<Detection.Twitch.TwitchDetectionService>()
                 .AddSingleton<Detection.Twitcasting.TwitcastingDetectionService>();
 
             // 與 Notifier 端相同的 TwitcastingClient 設定（HandleTransientHttpError 含 5xx 及 408）
@@ -65,7 +66,7 @@ namespace DiscordStreamNotifyBot.Scraper
 
             // 實體化（各服務建構子內啟動偵測 Timer 與 Redis 訂閱）
             _serviceProvider.GetRequiredService<SharedService.Youtube.YoutubeStreamService>();
-            _serviceProvider.GetRequiredService<SharedService.Twitch.TwitchService>();
+            _serviceProvider.GetRequiredService<Detection.Twitch.TwitchDetectionService>();
             _serviceProvider.GetRequiredService<Detection.Twitcasting.TwitcastingDetectionService>();
 
             Log.Info("[Scraper] 偵測服務已啟動（YouTube / Twitch / Twitcasting），事件將發布至通知匯流排");

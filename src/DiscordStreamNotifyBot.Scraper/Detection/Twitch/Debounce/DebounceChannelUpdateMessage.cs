@@ -1,20 +1,18 @@
-﻿using DiscordStreamNotifyBot.Interaction;
-using Dorssel.Utilities;
+﻿using Dorssel.Utilities;
 using System.Collections.Concurrent;
-using static DiscordStreamNotifyBot.SharedService.Twitch.TwitchService;
 
-namespace DiscordStreamNotifyBot.SharedService.Twitch.Debounce
+namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
 {
     // https://blog.darkthread.net/blog/dotnet-debounce/
     // https://github.com/dorssel/dotnet-debounce
     internal class DebounceChannelUpdateMessage
     {
         private readonly Debouncer _debouncer;
-        private readonly TwitchService _twitchService;
+        private readonly TwitchDetectionService _twitchService;
         private readonly string _twitchUserName, _twitchUserLogin, _twitchUserId;
         private readonly ConcurrentQueue<string> messageQueue = new();
 
-        public DebounceChannelUpdateMessage(TwitchService twitchService, string twitchUserName, string twitchUserLogin, string twitchUserId)
+        public DebounceChannelUpdateMessage(TwitchDetectionService twitchService, string twitchUserName, string twitchUserLogin, string twitchUserId)
         {
             _twitchService = twitchService;
             _twitchUserName = twitchUserName;
