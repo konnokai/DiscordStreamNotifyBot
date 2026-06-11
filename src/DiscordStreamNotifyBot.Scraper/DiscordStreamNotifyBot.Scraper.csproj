@@ -10,9 +10,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- 偵測服務已位於 Shared，Scraper 不再參考 Notifier（各專案職責清楚） -->
 		<ProjectReference Include="..\DiscordStreamNotifyBot.Shared\DiscordStreamNotifyBot.Shared.csproj" />
-		<!-- 無頭宿主：參考 Notifier 組件以實體執行其偵測服務（單一程式碼來源，計畫階段 3），不建立 Discord 連線 -->
-		<ProjectReference Include="..\DiscordStreamNotifyBot.Notifier\DiscordStreamNotifyBot.Notifier.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

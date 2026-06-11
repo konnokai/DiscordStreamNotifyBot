@@ -10,6 +10,8 @@ using System.Data;
 using System.Net;
 using System.Text.RegularExpressions;
 
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
+
 namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
     public partial class YoutubeStreamService : IInteractionService

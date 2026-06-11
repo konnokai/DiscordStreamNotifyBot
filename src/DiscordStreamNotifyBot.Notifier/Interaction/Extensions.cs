@@ -62,21 +62,7 @@ namespace DiscordStreamNotifyBot.Interaction
             return channelId;
         }
 
-        public static string GetNonApprovedChannelTitleByChannelId(this MainDbContext _, string channelId)
-        {
-            channelId = channelId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-
-            YoutubeChannelSpider youtubeChannelSpider;
-            if ((youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
-                return youtubeChannelSpider.ChannelTitle;
-
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NonApprovedVideos.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
-
-            return channelId;
-        }
+        // GetNonApprovedChannelTitleByChannelId 已移至 Shared 的 SharedExtensions（偵測服務使用）。
 
         public static string GetTwitCastingChannelTitleByScreenId(this MainDbContext _, string screenId)
         {

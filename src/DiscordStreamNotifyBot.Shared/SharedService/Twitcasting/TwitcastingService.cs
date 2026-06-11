@@ -9,6 +9,8 @@ using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
 using Polly;
 #endif
 
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
+
 namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 {
     public class TwitcastingService : IInteractionService

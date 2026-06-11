@@ -21,6 +21,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using Polly;
 //#endif
 
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
+
 namespace DiscordStreamNotifyBot.SharedService.Twitch
 {
     public class TwitchService : IInteractionService
@@ -397,7 +399,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             try
             {
                 using var db = _dbService.GetDbContext();
-                var twitchSpiderChunk = db.TwitchSpider.Distinct((x) => x.UserId).Chunk(100);
+                var twitchSpiderChunk = db.TwitchSpider.AsEnumerable().DistinctBy((x) => x.UserId).Chunk(100);
 
                 foreach (var twitchSpiders in twitchSpiderChunk)
                 {

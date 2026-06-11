@@ -1,4 +1,5 @@
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Shared;
 
 namespace DiscordStreamNotifyBot.Interaction
@@ -101,6 +102,22 @@ namespace DiscordStreamNotifyBot.Interaction
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
 
             return false;
+        }
+
+        public static string GetNonApprovedChannelTitleByChannelId(this MainDbContext _, string channelId)
+        {
+            channelId = channelId.Trim();
+
+            using var db = BotState.DbService.GetDbContext();
+
+            YoutubeChannelSpider youtubeChannelSpider;
+            if ((youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
+                return youtubeChannelSpider.ChannelTitle;
+
+            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
+                return db.NonApprovedVideos.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
+
+            return channelId;
         }
     }
 }

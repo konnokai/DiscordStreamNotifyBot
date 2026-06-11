@@ -6,6 +6,8 @@ using Polly;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
 
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
+
 namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
     public partial class YoutubeStreamService

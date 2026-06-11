@@ -15,16 +15,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 src/
-├─ DiscordStreamNotifyBot.Shared/       (classlib) 共用基礎：DataBase/Auth/HttpClients/Log/Redis/BotConfig/Utility、
+├─ DiscordStreamNotifyBot.Shared/       (classlib) 共用基礎 + 偵測服務：
+│                                                   DataBase/Auth/HttpClients/Log/Redis/BotConfig/Utility、
 │                                                   RedisChannels、ClusterService、RabbitMqService、Messages DTO、
-│                                                   StartupPreflight、GracefulShutdown、MainDbContextFactory(EF 設計工廠)
-├─ DiscordStreamNotifyBot.Notifier/     (exe) 通知層：Discord 連線 + Interaction/Command 指令樹 + SharedService
-│                                              （AssemblyName = DiscordStreamNotifyBot；偵測程式碼在此組件
-│                                              但僅 Scraper 宿主會啟動；通知一律由匯流排消費而來）
-├─ DiscordStreamNotifyBot.Scraper/      (exe) 爬蟲層：leader 鎖 + 心跳 + DetectionHost
-│                                              （參考 Notifier 組件、無頭模式實體執行偵測服務並發布至匯流排）
+│                                                   StartupPreflight、GracefulShutdown、MainDbContextFactory、
+│                                                   YoutubeApiService、BotState（共用靜態狀態）、SharedExtensions、
+│                                                   EmojiService、IInteractionService、SharedService/{Youtube,Twitch,Twitcasting}（偵測服務）
+├─ DiscordStreamNotifyBot.Notifier/     (exe) 通知層：Discord 連線 + Interaction/Command 指令樹 + YoutubeMember 會限服務
+│                                              （AssemblyName = DiscordStreamNotifyBot；消費匯流排重建 embed 發送）
+├─ DiscordStreamNotifyBot.Scraper/      (exe) 爬蟲層：leader 鎖 + 心跳 + DetectionHost（只參考 Shared，不參考 Notifier）
+│                                              （無頭模式實體執行 Shared 的偵測服務並發布至匯流排）
 └─ DiscordStreamNotifyBot.Coordinator/  (exe) 主控層：心跳監控、leader 觀察、TOTAL_SHARDS 公告
 ```
+
+> **專案職責清楚（無循環/交叉參考）**：Notifier、Scraper、Coordinator 皆只參考 Shared。
+> 偵測服務（YoutubeStreamService/TwitchService/TwitcastingService）與其相依（EmbedBuilderFactory/EmojiService/
+> YoutubeApiService/BotState）位於 Shared，由 Scraper 的 DetectionHost 實體執行（`Bot.IsDetectionHost`）；
+> Notifier 透過 namespace 參考同一份服務做指令與通知消費。`Bot`(Notifier) 的共用靜態成員委派至 `BotState`(Shared)。
 
 > **架構（角色由執行檔決定，無模式旗標）**：
 > Scraper＝唯一偵測者（leader 鎖單例；`Bot.IsDetectionHost` 由 DetectionHost 設定）→ publish DTO 到 RabbitMQ

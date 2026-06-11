@@ -7,8 +7,9 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Net;
 using System.Text.RegularExpressions;
-using Extensions = DiscordStreamNotifyBot.Interaction.Extensions;
 using Video = Google.Apis.YouTube.v3.Data.Video;
+
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
 namespace DiscordStreamNotifyBot.SharedService.Youtube
 {

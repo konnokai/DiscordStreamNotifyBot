@@ -1,4 +1,6 @@
-﻿namespace DiscordStreamNotifyBot.SharedService.Youtube
+﻿using Bot = DiscordStreamNotifyBot.Shared.BotState;
+
+namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
     public partial class YoutubeStreamService
     {
