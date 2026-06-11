@@ -240,7 +240,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         {
             using (var db = _dbService.GetDbContext())
             {
-                TableVideo streamVideo = Extensions.GetStreamVideoByVideoId(videolId);
+                TableVideo streamVideo = SharedExtensions.GetStreamVideoByVideoId(videolId);
 
                 if (streamVideo == null)
                 {

@@ -80,7 +80,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     if (url.StartsWith("https://www.youtube.com/watch"))
                     {
                         string videoId = url.Split("?v=")[1].Trim();
-                        if (!newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId) && !Extensions.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
+                        if (!newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
                         newStreamList.Add(videoId);
                     }
                 }
@@ -237,7 +237,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         continue;
 
                     string videoId = item.Attributes.Url.Split("?v=")[1].Trim()/*, channelTitle = "", liverId = null, externalId = null*/;
-                    if (newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId) || Extensions.HasStreamVideoByVideoId(videoId)) continue;
+                    if (newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId)) continue;
                     newStreamList.Add(videoId);
 
                     //var youtubeChannelData = datas.FirstOrDefault((x) => x.Type == "youtube_channel" && x.Id == item.Relationships.YoutubeChannel.Data.Id);
@@ -499,7 +499,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                     if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                     {
                                         otherVideoDic[item.ChannelId].Add(videoId);
-                                        if (!newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId) && !Extensions.HasStreamVideoByVideoId(videoId))
+                                        if (!newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId))
                                             addVideoIdList.Add(videoId);
                                         newStreamList.Add(videoId);
                                     }

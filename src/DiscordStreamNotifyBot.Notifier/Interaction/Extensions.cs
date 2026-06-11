@@ -13,37 +13,8 @@ namespace DiscordStreamNotifyBot.Interaction
         private static readonly IEmote arrow_left = new Emoji("\u2B05");
         private static readonly IEmote arrow_right = new Emoji("\u27A1");
 
-        public static EmbedBuilder WithOkColor(this EmbedBuilder eb) =>
-           eb.WithColor(00, 229, 132);
-        public static EmbedBuilder WithErrorColor(this EmbedBuilder eb) =>
-           eb.WithColor(40, 40, 40);
-        public static EmbedBuilder WithRecordColor(this EmbedBuilder eb) =>
-           eb.WithColor(255, 0, 0);
-
-        public static string ConvertDateTimeToDiscordMarkdown(this DateTime dateTime)
-        {
-            long UTCTime = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
-            return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
-        }
-
-        public static DataBase.Table.Video.YTChannelType GetProductionType(this DataBase.Table.Video streamVideo)
-        {
-            using (var db = Bot.DbService.GetDbContext())
-            {
-                DataBase.Table.Video.YTChannelType type;
-                var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
-
-                if (channel != null)
-                    type = channel.ChannelType;
-                else
-                    type = streamVideo.ChannelType;
-
-                return type;
-            }
-        }
-
-        public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
-                channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
+        // WithOkColor/WithErrorColor/WithRecordColor、ConvertDateTimeToDiscordMarkdown、
+        // GetProductionType/GetProductionName 已移至 Shared 的 SharedExtensions（同命名空間，擴充方法解析不變）。
 
         public static string GetCommandLine(this Process process)
         {
@@ -68,66 +39,8 @@ namespace DiscordStreamNotifyBot.Interaction
             return source.Distinct(new CommonEqualityComparer<T, V>(keySelector));
         }
 
-        public static bool HasStreamVideoByVideoId(string videoId)
-        {
-            videoId = videoId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-
-            return false;
-        }
-
-        public static DataBase.Table.Video GetStreamVideoByVideoId(string videoId)
-        {
-            videoId = videoId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NonApprovedVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-
-            return null;
-        }
-
-        // 照開始直播時間排序好像會遇到聊天用待機室的問題，函數先保留起來可能之後會用到?
-        public static DataBase.Table.Video GetLastStreamVideoByChannelId(string channelId)
-        {
-            channelId = channelId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.HoloVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NijisanjiVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.OtherVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NonApprovedVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-
-            return null;
-        }
-
-        public static bool IsChannelInDb(string channelId)
-        {
-            channelId = channelId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-
-            return false;
-        }
+        // HasStreamVideoByVideoId / GetStreamVideoByVideoId / GetLastStreamVideoByChannelId / IsChannelInDb
+        // 已移至 Shared 的 SharedExtensions（呼叫端改用 SharedExtensions.）。
 
         public static string GetYoutubeChannelTitleByChannelId(this MainDbContext _, string channelId)
         {

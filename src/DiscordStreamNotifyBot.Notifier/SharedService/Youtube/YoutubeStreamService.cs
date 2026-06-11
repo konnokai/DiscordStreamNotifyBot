@@ -177,9 +177,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         try
                         {
-                            if (Extensions.HasStreamVideoByVideoId(videoId))
+                            if (SharedExtensions.HasStreamVideoByVideoId(videoId))
                             {
-                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+                                var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
                                 var item = await GetVideoAsync(videoId).ConfigureAwait(false);
 
                                 if (item == null)
@@ -223,9 +223,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         try
                         {
-                            if (Extensions.HasStreamVideoByVideoId(videoId))
+                            if (SharedExtensions.HasStreamVideoByVideoId(videoId))
                             {
-                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+                                var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
 
                                 EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamDeleted(streamVideo);
 
@@ -249,9 +249,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         try
                         {
-                            if (Extensions.HasStreamVideoByVideoId(videoId))
+                            if (SharedExtensions.HasStreamVideoByVideoId(videoId))
                             {
-                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+                                var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
                                 EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamUnarchived(streamVideo);
 
                                 if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("已關台並變更為私人存檔", false, embedBuilder.Build()).ConfigureAwait(false);
@@ -274,9 +274,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         try
                         {
-                            if (Extensions.HasStreamVideoByVideoId(videoId))
+                            if (SharedExtensions.HasStreamVideoByVideoId(videoId))
                             {
-                                var streamVideo = Extensions.GetStreamVideoByVideoId(videoId);
+                                var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
                                 EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamStarted(streamVideo);
 
                                 if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync("429錯誤", false, embedBuilder.Build()).ConfigureAwait(false);
@@ -299,7 +299,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         using (var db = _dbService.GetDbContext())
                         {
-                            if (!addNewStreamVideo.ContainsKey(videoId) && !Extensions.HasStreamVideoByVideoId(videoId))
+                            if (!addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId))
                             {
                                 var item = await GetVideoAsync(videoId).ConfigureAwait(false);
                                 if (item == null)
@@ -337,7 +337,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         using (var db = _dbService.GetDbContext())
                         {
-                            if (!addNewStreamVideo.ContainsKey(youtubePubSubNotification.VideoId) && !Extensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
+                            if (!addNewStreamVideo.ContainsKey(youtubePubSubNotification.VideoId) && !SharedExtensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
                                 Log.Info($"{channel} - (新影片) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
 
@@ -414,9 +414,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         using (var db = _dbService.GetDbContext())
                         {
-                            if (Extensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
+                            if (SharedExtensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                             {
-                                DataBase.Table.Video streamVideo = Extensions.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
+                                DataBase.Table.Video streamVideo = SharedExtensions.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
                                 if (streamVideo == null)
                                 {
                                     EmbedBuilder embedBuilder = EmbedBuilderFactory.CreatePubSubVideoDeleted(streamVideo);

@@ -467,7 +467,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                         }
 
                         string addString = "\n如需調整影片上傳通知頻道請使用 `/youtube set-video-notice-channel`";
-                        if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId) && !Extensions.IsChannelInDb(channelId))
+                        if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId) && !SharedExtensions.IsChannelInDb(channelId))
                             addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help youtube-spider add` 查看說明並加入爬蟲)";
 
                         db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel()

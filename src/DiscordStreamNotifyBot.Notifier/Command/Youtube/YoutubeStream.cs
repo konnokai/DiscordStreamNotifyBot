@@ -2,6 +2,7 @@
 using DiscordStreamNotifyBot.Command.Attribute;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Interaction;
 using System.Text.RegularExpressions;
 
 namespace DiscordStreamNotifyBot.Command.Youtube
@@ -75,7 +76,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
 
-            if (!Extensions.HasStreamVideoByVideoId(videoId))
+            if (!SharedExtensions.HasStreamVideoByVideoId(videoId))
                 await _service.AddOtherDataAsync(video, true);
 
             try
@@ -151,7 +152,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 return;
             }
 
-            if (!Extensions.HasStreamVideoByVideoId(videoId))
+            if (!SharedExtensions.HasStreamVideoByVideoId(videoId))
             {
                 await _service.AddOtherDataAsync(video, false);
                 await Context.Channel.SendConfirmAsync($"已添加資料: {video.Snippet.ChannelTitle} - {video.Snippet.Title}");
@@ -423,7 +424,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             videoId = _service.GetVideoId(videoId);
 
-            var video = Extensions.GetStreamVideoByVideoId(videoId);
+            var video = SharedExtensions.GetStreamVideoByVideoId(videoId);
             if (video == null)
             {
                 await ReplyAsync($"不存在 {videoId} 的影片").ConfigureAwait(false);
