@@ -1,32 +1,24 @@
-﻿using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.Youtube.Json;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using Polly;
-using System.Collections.Concurrent;
-using System.Data;
 using System.Net;
 using System.Text.RegularExpressions;
 using Video = Google.Apis.YouTube.v3.Data.Video;
 
 using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
-namespace DiscordStreamNotifyBot.SharedService.Youtube
+namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 {
-    public partial class YoutubeStreamService
+    public partial class YoutubeDetectionService
     {
-        private static ConcurrentDictionary<string, DataBase.Table.Video> addNewStreamVideo = new();
-        private static HashSet<string> newStreamList = new();
-        private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
-
         private void ReScheduleReminder()
         {
-            List<string> recordChannelId = new();
             using (var db = _dbService.GetDbContext())
             {
-                if (db.RecordYoutubeChannel.Any())
-                    recordChannelId = db.RecordYoutubeChannel.AsNoTracking().Select((x) => x.YoutubeChannelId).ToList();
-
                 foreach (var streamVideo in db.HoloVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
                 {
                     StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
@@ -47,15 +39,14 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private async Task HoloScheduleAsync()
         {
             if (Bot.IsHoloChannelSpider || Bot.IsDisconnect) return;
-            //Log.Info("Holo影片清單整理開始");
             Bot.IsHoloChannelSpider = true;
 
             try
             {
                 HtmlWeb htmlWeb = new HtmlWeb();
                 HtmlDocument htmlDocument = await Policy.Handle<HttpRequestException>()
-                    .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
-                    .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
+                    .Or<WebException>((ex) => ex.Message.Contains("unavailable"))
+                    .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout"))
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -111,10 +102,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                                 Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
-                                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateNewVideo(streamVideo);
-
                                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstHolo)
-                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
+                                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false);
                             }
                             else if (!string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw)) //已開台直播
                             {
@@ -151,15 +140,13 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                                 if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                                 {
-                                    EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateNewStream(streamVideo, startTime);
-
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                     {
-                                        if (!isFirstHolo) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                                        if (!isFirstHolo) await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewStream).ConfigureAwait(false);
                                         StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                 }
-                                else if (startTime > DateTime.Now.AddMinutes(-10) || item.Snippet.LiveBroadcastContent == "live") // 如果開台時間在十分鐘內或已經開台
+                                else if (startTime > DateTime.Now.AddMinutes(-10) || item.Snippet.LiveBroadcastContent == "live")
                                 {
                                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                                         StartReminder(streamVideo, streamVideo.ChannelType);
@@ -177,18 +164,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
 
             Bot.IsHoloChannelSpider = false; isFirstHolo = false;
-            //Log.Info("Holo影片清單整理完成");
         }
 
-        // 2434官網直播表: https://www.nijisanji.jp/streams
-        // 直播資料路徑會變動，~~必須要從上面的網址直接解析Json~~
-        // 發現有API網址了: https://www.nijisanji.jp/api/streams?day_offset=-1
-        // day_offset是必要參數，可以設定-3~6
-        // 2434成員資料
-        // JP: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanji&locale=ja&includeHidden=true
-        // EN: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=nijisanjien&locale=ja&includeHidden=true
-        // VR: https://www.nijisanji.jp/api/livers?limit=300&offset=0&orderKey=subscriber_count&order=desc&affiliation=virtuareal&locale=ja&includeHidden=true
-        // KR跟ID沒看到網站有請求
         private async Task NijisanjiScheduleAsync()
         {
             if (Bot.IsNijisanjiChannelSpider || Bot.IsDisconnect)
@@ -196,7 +173,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 Log.Warn("彩虹社影片清單整理已取消");
                 return;
             }
-            //Log.Info("彩虹社影片清單整理開始");
 
             try
             {
@@ -237,49 +213,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     if (item.Type != "youtube_event")
                         continue;
 
-                    string videoId = item.Attributes.Url.Split("?v=")[1].Trim()/*, channelTitle = "", liverId = null, externalId = null*/;
+                    string videoId = item.Attributes.Url.Split("?v=")[1].Trim();
                     if (newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId)) continue;
                     newStreamList.Add(videoId);
-
-                    //var youtubeChannelData = datas.FirstOrDefault((x) => x.Type == "youtube_channel" && x.Id == item.Relationships.YoutubeChannel.Data.Id);
-                    //if (youtubeChannelData != null)
-                    //{
-                    //    channelTitle = youtubeChannelData.Attributes.Name;
-                    //    liverId = youtubeChannelData.Relationships?.Liver?.Data?.Id;
-                    //    externalId = datas.FirstOrDefault((x) => x.Type == "liver" && x.Id == liverId).Attributes.ExternalId;
-                    //}
-
-                    //if (!string.IsNullOrEmpty(externalId))
-                    //{
-                    //    var channelData = NijisanjiLiverContents.FirstOrDefault((x) => x.Id == externalId);
-                    //    if (channelData != null)
-                    //    {
-                    //        if (string.IsNullOrEmpty(channelTitle))
-                    //            channelTitle = $"{channelData.Name} / {channelData.EnName}";
-
-                    //        string channelId = "";
-                    //        try
-                    //        {
-                    //            channelId = await GetChannelIdAsync(channelData.SocialLinks.Youtube);
-
-                    //            streamVideo = new DataBase.Table.Video()
-                    //            {
-                    //                ChannelId = channelId,
-                    //                ChannelTitle = channelTitle,
-                    //                VideoId = videoId,
-                    //                VideoTitle = item.Attributes.Title,
-                    //                ScheduledStartTime = item.Attributes.StartAt.Value,
-                    //                ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
-                    //            };
-                    //        }
-                    //        catch (Exception ex)
-                    //        {
-                    //            Log.Error(ex.Demystify(), $"channelData 解析失敗: {channelData.SocialLinks.Youtube}");
-                    //        }
-                    //    }
-                    //}
-
-                    // 由於現在 2434 不會設定 SocialLinks 資料了，所以直接用 API 撈到的頻道 ID 去設定
 
                     Log.Info($"Nijisanji Id: {videoId}");
                     var video = await GetVideoAsync(videoId);
@@ -299,15 +235,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         ChannelType = DataBase.Table.Video.YTChannelType.Nijisanji
                     };
 
-                    //Log.Warn($"檢測到無 Liver 資料的頻道({videoId}): `{video.Snippet.ChannelTitle}` / {item.Attributes.Title}");
-                    //Log.Warn("重新刷新 Liver 資料清單");
-
-                    //NijisanjiLiverContents.Clear();
-                    //foreach (var affiliation in new string[] { "nijisanji", "nijisanjien", "virtuareal" })
-                    //{
-                    //    await Task.Run(async () => await GetOrCreateNijisanjiLiverListAsync(affiliation, true));
-                    //}
-
                     if (item.Attributes.Status == "on_air") // 已開台
                     {
                         Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
@@ -319,15 +246,13 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     {
                         try
                         {
-                            EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateNewStream(streamVideo, item.Attributes.StartAt.Value);
-
                             Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             {
                                 // 會遇到尚未開台但已過開始時間的情況，所以還是先判定開始時間大於現在時間後再傳送新直播通知
                                 if (!isFirst2434 && item.Attributes.StartAt > DateTime.Now)
-                                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewStream).ConfigureAwait(false);
 
                                 StartReminder(streamVideo, streamVideo.ChannelType);
                             }
@@ -350,13 +275,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
 
             Bot.IsNijisanjiChannelSpider = false; isFirst2434 = false;
-            //Log.Info("彩虹社影片清單整理完成");
         }
 
-        // Todo: BlockingCollection應用 (但還不知道要用甚麼)
-        // 應該是不能用，為了降低API配額消耗，所以必須取得全部的VideoId後再一次性的跟API要資料
-        // https://blog.darkthread.net/blog/blockingcollection/
-        // https://docs.microsoft.com/en-us/dotnet/standard/collections/thread-safe/blockingcollection-overview
         private async Task OtherScheduleAsync()
         {
             if (Bot.IsOtherChannelSpider || Bot.IsDisconnect) return;
@@ -418,8 +338,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         try
                         {
                             var response = await Policy.Handle<HttpRequestException>()
-                                .Or<WebException>((ex) => ex.Message.Contains("unavailable")) // Resource temporarily unavailable
-                                .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout")) // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing
+                                .Or<WebException>((ex) => ex.Message.Contains("unavailable"))
+                                .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout"))
                                 .WaitAndRetryAsync(3, (retryAttempt) =>
                                 {
                                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -460,20 +380,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                             continue;
                                         }
 
-                                        try
-                                        {
-                                            Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
-
-                                            await Bot.ApplicatonOwner.SendMessageAsync($"`{item.ChannelTitle}` ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
-
-                                            // Todo: 頻道錯誤通知後移除爬蟲
-                                            //db.YoutubeChannelSpider.Remove(item);
-                                            //db.SaveChanges();
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            Log.Error(ex.Demystify(), $"頻道被 Ban 了但移除爬蟲失敗: {item.ChannelTitle} ({item.ChannelId})");
-                                        }
+                                        // 偵測端無 Discord owner，僅記錄（原 owner 私訊改由維運監看 log）
+                                        Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
                                     }
                                 }
 
@@ -551,7 +459,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
 
             Bot.IsOtherChannelSpider = false; isFirstOther = false;
-            //Log.Info("其他勢影片清單整理完成");
         }
 
         private async Task CheckScheduleTime()
@@ -559,9 +466,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             using var db = _dbService.GetDbContext();
             try
             {
-                // Key原則上不會有null或空白的情況才對
-                //var list = Reminders.Where((x) => string.IsNullOrEmpty(x.Key)).ToList();
-                //list.AddRange(Reminders.Where((x) => x.Value.StreamVideo.ScheduledStartTime < DateTime.Now));
                 foreach (var item in Reminders.Where((x) => x.Value.StreamVideo.ScheduledStartTime < DateTime.Now))
                 {
                     Reminders.TryRemove(item);
@@ -570,17 +474,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"CheckScheduleTime-TryRemove");
-            }
-
-            List<string> recordChannelId = new();
-            try
-            {
-                if (db.RecordYoutubeChannel.Any())
-                    recordChannelId = db.RecordYoutubeChannel.Select((x) => x.YoutubeChannelId).ToList();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"CheckScheduleTime-GetRecordYoutubeChannel");
             }
 
             int changeVideoNum = 0;
@@ -599,25 +492,16 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     video.Id = string.Join(",", remindersList.Select((x) => x.Key));
                     var videoResult = await video.ExecuteAsync(); // 如果直播被刪除的話該直播 Id 不會回傳資訊，但 API 會返回 200 狀態
 
-                    foreach (var reminder in remindersList) // 直接使用 Reminders 來做迴圈
+                    foreach (var reminder in remindersList)
                     {
                         try
                         {
                             // 如果 viderResult 內沒有該 VideoId 直播的話，則判定該直播已刪除
                             if (!videoResult.Items.Any((x) => x.Id == reminder.Key))
                             {
-                                // 如果是錄影頻道的話則忽略
-                                //if (recordChannelId.Any((x) => x == reminder.Value.StreamVideo.ChannelId))
-                                //{
-                                //    Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 錄影頻道已刪除直播，略過");
-                                //    continue;
-                                //}
-
                                 Log.Warn($"CheckScheduleTime-VideoResult-{reminder.Key}: 已刪除直播");
 
-                                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateReminderStreamDeleted(reminder.Value.StreamVideo);
-
-                                await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder.Build(), NoticeType.Delete).ConfigureAwait(false);
+                                await PublishYoutubeNotificationAsync(reminder.Value.StreamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
                                 Reminders.TryRemove(reminder.Key, out var reminderItem);
 
                                 reminder.Value.StreamVideo.IsPrivate = true;
@@ -633,10 +517,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             {
                                 Reminders.TryRemove(reminder.Key, out var reminderItem);
 
-                                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateScheduleDataLost(reminder.Value.StreamVideo);
-
-                                if (Bot.ApplicatonOwner != null) await Bot.ApplicatonOwner.SendMessageAsync(null, false, embedBuilder.Build()).ConfigureAwait(false);
-                                await SendStreamMessageAsync(reminder.Value.StreamVideo, embedBuilder.Build(), NoticeType.Start).ConfigureAwait(false);
+                                await PublishYoutubeNotificationAsync(reminder.Value.StreamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
                                 continue;
                             }
 
@@ -668,9 +549,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                                     if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                                     {
-                                        EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateStreamTimeChangedReminder(streamVideo, reminder.Value.StreamVideo.ScheduledStartTime);
-
-                                        await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.ChangeTime).ConfigureAwait(false);
+                                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime).ConfigureAwait(false);
                                         StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                 }
@@ -727,10 +606,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 streamVideo.ChannelType = streamVideo.GetProductionType();
                 Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
-                EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateNewVideo(streamVideo);
-
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
-                    await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewVideo).ConfigureAwait(false);
+                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false);
             }
             else if (!string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw)) //已開台直播
             {
@@ -769,22 +646,19 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                 if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                 {
-                    EmbedBuilder embedBuilder = EmbedBuilderFactory.CreateNewStream(streamVideo, startTime, true);
-
                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                     {
-                        if (!isFirstOther) await SendStreamMessageAsync(streamVideo, embedBuilder.Build(), NoticeType.NewStream).ConfigureAwait(false);
+                        if (!isFirstOther) await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewStream).ConfigureAwait(false);
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
                 }
-                else if (startTime > DateTime.Now.AddMinutes(-10) || item.Snippet.LiveBroadcastContent == "live") // 如果開台時間在十分鐘內或已經開台
+                else if (startTime > DateTime.Now.AddMinutes(-10) || item.Snippet.LiveBroadcastContent == "live")
                 {
                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                         StartReminder(streamVideo, streamVideo.ChannelType);
                 }
                 else addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
             }
-            // 好像從沒看過這個分類觸發過
             else if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualStartTimeRaw) && item.LiveStreamingDetails.ActiveLiveChatId != null)
             {
                 var streamVideo = new DataBase.Table.Video()

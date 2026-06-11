@@ -134,15 +134,6 @@ namespace DiscordStreamNotifyBot
             }
         }
 
-        /// <summary>
-        /// 無頭模式初始化（Scraper 宿主用，計畫階段 3）：不建立 Discord 連線，
-        /// 僅設定偵測服務所需的靜態相依（DbService / Redis）。
-        /// <para>Scraper 參考本組件並以未登入的 DiscordSocketClient 實體執行偵測服務；
-        /// 偵測路徑一律 publish 至匯流排（fromBus seam），保證不觸碰 gateway。</para>
-        /// </summary>
-        public static void InitHeadlessHost(BotConfig botConfig)
-            => BotState.InitHeadlessHost(botConfig);
-
         /// <summary>依 Discord 官方公式判斷該伺服器是否歸屬於本 Shard（委派 <see cref="BotState"/>）。</summary>
         public static bool IsServerOnThisShard(ulong guildId) => BotState.IsServerOnThisShard(guildId);
 
@@ -475,7 +466,7 @@ namespace DiscordStreamNotifyBot
             await client.StopAsync();
 
             Redis.GetSubscriber().UnsubscribeAll();
-            SharedService.Youtube.YoutubeStreamService.SaveDateBase();
+            // 偵測資料（addNewStreamVideo）保存由 Scraper 的偵測服務於關閉時負責；Notifier 不再處理偵測狀態。
         }
 
         private void TimerHandler(object state)

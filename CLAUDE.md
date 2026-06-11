@@ -15,31 +15,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 src/
-├─ DiscordStreamNotifyBot.Shared/       (classlib) 共用基礎 + 偵測服務：
+├─ DiscordStreamNotifyBot.Shared/       (classlib) 無狀態共用基礎：
 │                                                   DataBase/Auth/HttpClients/Log/Redis/BotConfig/Utility、
 │                                                   RedisChannels、ClusterService、RabbitMqService、Messages DTO、
 │                                                   StartupPreflight、GracefulShutdown、MainDbContextFactory、
-│                                                   YoutubeApiService、BotState（共用靜態狀態）、SharedExtensions、
-│                                                   EmojiService、IInteractionService、SharedService/{Youtube,Twitch,Twitcasting}（偵測服務）
+│                                                   YoutubeApiService、TwitchApiService（無狀態 API）、BotState、
+│                                                   SharedExtensions、IInteractionService、SharedService/Youtube/Json（資料模型）
 ├─ DiscordStreamNotifyBot.Notifier/     (exe) 通知層：Discord 連線 + Interaction/Command 指令樹 + YoutubeMember 會限服務
 │                                              （AssemblyName = DiscordStreamNotifyBot；消費匯流排重建 embed 發送）
+│                                              SharedService/{Youtube,Twitch,Twitcasting}Service（指令支援+發送）、
+│                                              EmojiService、*EmbedBuilderFactory
 ├─ DiscordStreamNotifyBot.Scraper/      (exe) 爬蟲層：leader 鎖 + 心跳 + DetectionHost（只參考 Shared，不參考 Notifier）
-│                                              （無頭模式實體執行 Shared 的偵測服務並發布至匯流排）
+│                                              Detection/{Youtube,Twitch,Twitcasting}（偵測服務，只有 Timer + Redis 訂閱）
+│                                              **完全不建立 DiscordSocketClient**，偵測到事件 publish DTO 至匯流排
 └─ DiscordStreamNotifyBot.Coordinator/  (exe) 主控層：心跳監控、leader 觀察、TOTAL_SHARDS 公告
 ```
 
 > **專案職責清楚（無循環/交叉參考）**：Notifier、Scraper、Coordinator 皆只參考 Shared。
-> 偵測服務（YoutubeStreamService/TwitchService/TwitcastingService）與其相依（EmbedBuilderFactory/EmojiService/
-> YoutubeApiService/BotState）位於 Shared，由 Scraper 的 DetectionHost 實體執行（`Bot.IsDetectionHost`）；
-> Notifier 透過 namespace 參考同一份服務做指令與通知消費。`Bot`(Notifier) 的共用靜態成員委派至 `BotState`(Shared)。
+> **偵測（Timer/Redis 訂閱/排程爬取/PubSub/EventSub/WebHook）位於 Scraper 的 `Detection/`**，不碰 Discord gateway，
+> 偵測到事件 publish DTO 至匯流排。**指令支援 + 通知發送位於 Notifier 的 `SharedService/`**（持有 DiscordSocketClient
+> /EmojiService/EmbedBuilderFactory，消費匯流排重建 embed 發送、建立活動、換橫幅）。
+> 兩端共用的無狀態 API 收斂於 Shared 的 `YoutubeApiService` / `TwitchApiService`。`Bot`(Notifier) 的共用靜態成員委派至 `BotState`(Shared)。
 
 > **架構（角色由執行檔決定，無模式旗標）**：
-> Scraper＝唯一偵測者（leader 鎖單例；`Bot.IsDetectionHost` 由 DetectionHost 設定）→ publish DTO 到 RabbitMQ
+> Scraper＝唯一偵測者（leader 鎖單例；`BotState.IsDetectionHost` 由 DetectionHost 設定）→ publish DTO 到 RabbitMQ
 > `bot.notify`；Notifier shard＝消費 `notify.shard.{id}` → `EmbedBuilderFactory` 重建 embed → 只發給自己持有的
-> 伺服器（shard 守衛 ×6 處）。**Notifier 必須搭配 RabbitMQ + Scraper 才有通知**（指令系統獨立可用）。
+> 伺服器（shard 守衛）。**Notifier 必須搭配 RabbitMQ + Scraper 才有通知**（指令系統獨立可用）。
 > 會限（YoutubeMemberService）**不走匯流排**：按 shard 分區由各 Notifier 自行檢查。
+> 少數 YouTube owner 控制（切換錄影 / 強制 SubscribePubSub / 手動 AddVideo）由 Notifier 指令發 `youtube.control.*`
+> Redis 訊息，Scraper 偵測器訂閱後執行。
 > 階段 5：官方伺服器白名單存 Redis SET（首啟由 OfficialList.json 播種）、狀態列計數跨 shard 彙總（Redis HASH）。
-> **待辦**：YoutubeApiService 抽出、§11-2 EF baseline、多程序實測（計畫 §6.2 驗證清單）。
+> **待辦**：§11-2 EF baseline、多程序實測（計畫 §6.2 驗證清單）。
 
 ### 相依的外部系統
 
@@ -155,20 +161,20 @@ Program.Main
 
 兩個目錄結構完全對稱（`Youtube/`、`Twitch/`、`TwitCasting/`、`YoutubeMember/`、`Attribute/`、`Help/`）。
 
-### SharedService（核心業務邏輯）
+### 偵測服務（Scraper `Detection/`）與通知服務（Notifier `SharedService/`）
 
-`SharedService/{Youtube,Twitch,Twitcasting,YoutubeMember}/` 是最重要的檔案。  
-模式：Singleton + 多個 `System.Threading.Timer` + Redis pub/sub 訂閱。
+偵測（Timer + Redis pub/sub 訂閱）與發送（GetGuild 送訊息）**已拆分到不同專案**，不再共用一個 partial class：
 
-`YoutubeStreamService` 是 `partial` class，分散在：
+| 平台 | Scraper `Detection/`（偵測→publish DTO） | Notifier `SharedService/`（指令支援+消費發送） | Shared（無狀態 API） |
+|------|------|------|------|
+| YouTube | `Youtube/YoutubeDetectionService{,.Schedule,.Reminder}.cs`（排程爬取、Redis 訂閱、PubSub、reminder） | `Youtube/YoutubeStreamService.cs`、`EmbedBuilderFactory.cs` | `YoutubeApiService` |
+| Twitch | `Twitch/TwitchDetectionService.cs` + `Debounce/` | `Twitch/TwitchService.cs`、`TwitchEmbedBuilderFactory.cs` | `TwitchApiService` |
+| Twitcasting | `Twitcasting/TwitcastingDetectionService.cs` | `Twitcasting/TwitcastingService.cs`、`TwitcastingEmbedBuilderFactory.cs` | – |
+| 會限 | – | `YoutubeMember/YoutubeMemberService.cs`（按 shard，不走匯流排） | – |
 
-| 檔案 | 內容 |
-|------|------|
-| `YoutubeStreamService.cs` | 建構子、Redis 訂閱、YouTube API 存取 |
-| `Schedule.cs` | 定時爬取排程 |
-| `ReminderAction.cs` | 到點提醒動作 |
-| `ChangeGuildBanner.cs` | 開台時更換伺服器橫幅 |
-| `EmbedBuilderFactory.cs` | 建立通知 Embed |
+> 偵測服務只依賴 Shared（`*ApiService` / DB / `NotificationBusPublisher` / `RedisChannels`），**不參考 Discord gateway**。
+> Notifier 服務持有 `DiscordSocketClient` + `EmojiService`，消費匯流排重建 embed 後發送。
+> `YoutubeDetectionService.cs` 為 `partial` class（核心 + `.Schedule` 排程爬取 + `.Reminder` 到點提醒）。
 
 ### 資料庫（`DataBase/`）
 

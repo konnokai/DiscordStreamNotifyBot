@@ -35,10 +35,10 @@ namespace DiscordStreamNotifyBot.Shared
         public static int TotalShardCount { get; set; }
 
         /// <summary>
-        /// 無頭宿主（Scraper）初始化：設定偵測服務所需的 DbService / Redis 相依，不建立 Discord 連線。
+        /// 偵測宿主（Scraper）初始化：設定偵測服務所需的 DbService / Redis 相依，不建立 Discord 連線。
         /// RedisConnection 已由 StartupPreflight 完成 Init。
         /// </summary>
-        public static void InitHeadlessHost(BotConfig botConfig)
+        public static void InitDetectionDependencies(BotConfig botConfig)
         {
             DbService = new MainDbService(botConfig.MySqlConnectionString);
             Redis = RedisConnection.Instance.ConnectionMultiplexer;
