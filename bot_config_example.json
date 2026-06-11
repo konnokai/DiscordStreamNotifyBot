@@ -29,7 +29,5 @@
     "UserName": "guest",
     "Password": "guest",
     "VirtualHost": "/"
-  },
-  "EnableNotificationBus": false,
-  "EnableDetection": true
+  }
 }

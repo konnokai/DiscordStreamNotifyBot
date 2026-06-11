@@ -5,6 +5,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.Interaction;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
@@ -89,9 +90,44 @@ namespace DiscordStreamNotifyBot
             }
 
             if (_shardId == 0)
+                InitializeDatabase();
+        }
+
+        /// <summary>
+        /// shard 0 啟動時的資料庫初始化（計畫 §11-2）。取代舊有 EnsureCreated（會建立無遷移歷史的庫）：
+        /// <list type="bullet">
+        /// <item>全新空庫 → <c>Migrate()</c> 依遷移建表並寫入歷史。</item>
+        /// <item>既有庫但無 <c>__EFMigrationsHistory</c>（舊 EnsureCreated 建立）→ 不自動遷移（與舊行為一樣安全 no-op），
+        /// 記錄提示請先執行 <c>Migrations/_Baseline_ExistingDb.sql</c> 基線化後再手動 <c>dotnet ef database update</c>。</item>
+        /// <item>已有遷移歷史 → <c>Migrate()</c> 套用待處理遷移。</item>
+        /// </list>
+        /// </summary>
+        private static void InitializeDatabase()
+        {
+            try
             {
-                using (var db = DbService.GetDbContext())
-                    db.Database.EnsureCreated();
+                using var db = DbService.GetDbContext();
+                var creator = (Microsoft.EntityFrameworkCore.Storage.RelationalDatabaseCreator)db.Database.GetService<Microsoft.EntityFrameworkCore.Storage.IDatabaseCreator>();
+
+                if (!creator.HasTables())
+                {
+                    Log.Info("偵測到全新資料庫，依 EF 遷移建立 schema...");
+                    db.Database.Migrate();
+                    return;
+                }
+
+                if (!db.Database.GetAppliedMigrations().Any())
+                {
+                    Log.Warn("既有資料庫無 __EFMigrationsHistory（疑似舊版 EnsureCreated 建立）；本次略過自動遷移。");
+                    Log.Warn("請先執行 src/DiscordStreamNotifyBot.Shared/Migrations/_Baseline_ExistingDb.sql 基線化後，再手動 dotnet ef database update（計畫 §11-2）。");
+                    return;
+                }
+
+                db.Database.Migrate();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "InitializeDatabase 失敗");
             }
         }
 
