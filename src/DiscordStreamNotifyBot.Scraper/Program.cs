@@ -9,6 +9,7 @@ namespace DiscordStreamNotifyBot.Scraper
         private static async Task<int> Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Log.RolePrefix = "scraper";
             GracefulShutdown.Init();
 
             var config = new BotConfig();

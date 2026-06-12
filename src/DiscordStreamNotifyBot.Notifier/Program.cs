@@ -61,6 +61,9 @@ namespace DiscordStreamNotifyBot
                 }
             }
 
+            // 多程序部署 log 標籤（計畫 §12.7）：跨程序追蹤用
+            Log.RolePrefix = $"notifier:{shardId}";
+
             // 啟動連線檢查（計畫 §5.3）：進入主邏輯前先確認 MySQL / Redis 可連線，失敗印訊息後 Exit(1)
             try
             {

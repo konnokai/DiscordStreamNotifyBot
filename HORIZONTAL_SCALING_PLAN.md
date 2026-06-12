@@ -563,8 +563,8 @@ scraper 是唯一 quota 消費者，更要省。偵測/提醒路徑盡量用 `Ge
 ### 12.6 建置：單一 image 多角色
 三個 exe 可用單一 multi-stage Dockerfile 產出**一個 image**，entrypoint 依 `ROLE` 選執行檔；省 build 時間/儲存、簡化 CI（取代 §6 的三個 Dockerfile）。
 
-### 12.7 可觀測性：結構化日誌 + 角色/shard 標籤
-多程序下 log 分散，`Log` 輸出統一帶 `{role}:{shardId}` 前綴（或導入 Serilog + 集中 sink），維運追蹤更容易。
+### 12.7 可觀測性：結構化日誌 + 角色/shard 標籤 **（已完成）**
+`Log.RolePrefix` 由各程序啟動時設定（`scraper` / `notifier:{shardId}` / `coordinator`），於時間戳後輸出 `[{role}]` 標籤（console + 檔案），跨程序追蹤更容易。後續可再導入 Serilog + 集中 sink。
 
 ### 12.8 EF Core：Pooled DbContextFactory
 scraper/notifier 大量短生命週期 context，改 `AddPooledDbContextFactory` 降配置成本（讀取已普遍用 `AsNoTracking`）。

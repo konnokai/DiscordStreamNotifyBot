@@ -1,5 +1,13 @@
 ﻿public static class Log
 {
+    /// <summary>
+    /// 多程序部署時的角色/shard 標籤（如 <c>scraper</c> / <c>notifier:0</c> / <c>coordinator</c>，計畫 §12.7）。
+    /// 由各程序啟動時設定，輸出於時間戳之後，方便跨程序追蹤分散的 log。
+    /// </summary>
+    public static string RolePrefix { get; set; }
+
+    private static string PrefixTag() => string.IsNullOrEmpty(RolePrefix) ? "" : $" [{RolePrefix}]";
+
     enum LogType { Verb, Stream, Info, Warn, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".log";
     static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.log";
@@ -14,7 +22,7 @@
 
         lock (writeLockObj)
         {
-            text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] [{type.ToString().ToUpper()}] | {text}\r\n";
+            text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}]{PrefixTag()} [{type.ToString().ToUpper()}] | {text}\r\n";
 
             switch (type)
             {
@@ -94,7 +102,7 @@
 
     public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray, bool newLine = true, bool isError = false)
     {
-        text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {text}";
+        text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}]{PrefixTag()} {text}";
         Console.ForegroundColor = consoleColor;
 
         if (isError)
