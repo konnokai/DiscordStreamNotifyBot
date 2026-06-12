@@ -65,7 +65,12 @@ namespace DiscordStreamNotifyBot.Shared
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             _connection = await _factory.CreateConnectionAsync(cancellationToken);
-            _publishChannel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+
+            // Publisher confirms（計畫 §12.5）：tracking 開啟後 BasicPublishAsync 會等待 broker 確認落地，
+            // 未確認（nack / 連線中斷）即丟例外，由呼叫端 try/catch 記錄，補強 at-least-once。
+            _publishChannel = await _connection.CreateChannelAsync(
+                new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
+                cancellationToken: cancellationToken);
 
             await DeclareTopologyAsync(_publishChannel, cancellationToken);
         }

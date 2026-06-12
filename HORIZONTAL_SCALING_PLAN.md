@@ -556,9 +556,9 @@ docker compose down                          # 停整個叢集
 scraper 是唯一 quota 消費者，更要省。偵測/提醒路徑盡量用 `GetVideosAsync`（一次 50 筆）取代逐支 `GetVideoAsync`；錄影 pub/sub handler 若會連續處理多支也可彙整批次。
 
 ### 12.5 RabbitMQ 可靠性與吞吐（隨階段 3）
-- **Publisher confirms**：scraper 開 confirm，確保 broker 已落地再回報成功，補強 at-least-once。
-- **BasicQos prefetch**：notifier 設 prefetch 上限，控制同時處理量、避免被灌爆。
-- **shard-routed routing key**：scraper 算出目標 shard 精準投遞，免廣播（§4.3 後續優化）。
+- ~~**Publisher confirms**~~ **（已完成）**：`RabbitMqService.InitializeAsync` 以 `CreateChannelOptions(publisherConfirmationsEnabled, publisherConfirmationTrackingEnabled)` 建立發布 channel，`BasicPublishAsync` 會等 broker 確認落地，未確認即丟例外（呼叫端 try/catch 記錄）。
+- ~~**BasicQos prefetch**~~ **（已完成）**：`ConsumeShardQueueAsync` 以 `BasicQosAsync(prefetchCount: 20)` 限制同時處理量。
+- **shard-routed routing key**：scraper 算出目標 shard 精準投遞，免廣播（§4.3 後續優化，尚未做）。
 
 ### 12.6 建置：單一 image 多角色
 三個 exe 可用單一 multi-stage Dockerfile 產出**一個 image**，entrypoint 依 `ROLE` 選執行檔；省 build 時間/儲存、簡化 CI（取代 §6 的三個 Dockerfile）。
