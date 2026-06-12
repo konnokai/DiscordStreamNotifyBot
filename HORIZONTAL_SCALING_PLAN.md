@@ -524,10 +524,10 @@ docker compose down                          # 停整個叢集
    → 改用 .NET Generic Host（§12.1）原生處理 SIGTERM，以 `IHostApplicationLifetime` + `CancellationToken` 做優雅關閉；取代現有 `while(!IsDisconnect)` 輪詢與 `IsHoloChannelSpider` 等靜態旗標。
 2. **EF 初始化與既有 DB 衝突（高）**：現有資料庫由 `EnsureCreated()` 建立，**沒有** `__EFMigrationsHistory`；直接 `dotnet ef database update`（§10.3）會與既存表衝突。
    → 一次性遷移流程：建立 initial migration → 用 `migrations add` 後以 `--no-build` 或手動將 baseline 標記為已套用（`dotnet ef migrations script` 比對 / 或 `INSERT __EFMigrationsHistory`），確認既有資料不被重建。**正式環境務必先備份**。
-3. **方式 A 縮容後孤兒 queue（中）**：`notify.shard.{id}` 為 durable，若直接刪除某 notifier 服務，該 queue 無人消費會**無限堆積**。
-   → per-shard queue 設 `x-message-ttl` 與（或）`x-expires`（queue 閒置過期），或縮容時一併刪 queue。廣播路由下尤其要注意。
+3. ~~**方式 A 縮容後孤兒 queue（中）**~~ **（已修正）**：`notify.shard.{id}` 為 durable，若直接刪除某 notifier 服務，該 queue 無人消費會無限堆積。
+   → `RabbitMqService.ConsumeShardQueueAsync` 宣告時已加 `x-message-ttl`（1h，過期訊息丟棄）+ `x-expires`（24h 閒置自動刪 queue）；值均大於正常重啟窗口，確保 at-least-once 不被誤刪。**注意**：既有 queue 變更參數會 PRECONDITION_FAILED，需先刪 queue（pre-production 直接生效）。
 
-> 已修正：§2.4 租約範圍改為半開區間 `[0, TOTAL_SHARDS)`；§2.1/§3 心跳欄位命名統一為 `HeartbeatIntervalSeconds` / `HeartbeatTtlSeconds`。
+> 已修正：§2.4 租約範圍改為半開區間 `[0, TOTAL_SHARDS)`；§2.1/§3 心跳欄位命名統一為 `HeartbeatIntervalSeconds` / `HeartbeatTtlSeconds`；§11-1 SIGTERM（GracefulShutdown）、§11-2 EF baseline、§11-3 孤兒 queue TTL 皆已完成。
 
 ---
 

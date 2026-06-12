@@ -14,8 +14,9 @@ namespace DiscordStreamNotifyBot.Shared
     /// shard 歸屬過濾（計畫 §4.3）。
     /// </para>
     /// <para>
-    /// 注意：本類別為階段 3 的連線基礎，目前尚未接上偵測→publish / 消費→送出的實際流程，
-    /// 仍需在有 RabbitMQ broker 的環境下做多程序驗證。
+    /// 已接上實際流程：Scraper 偵測服務 publish DTO（經 <see cref="NotificationBusPublisher"/>），
+    /// Notifier 端 <c>NotificationBusConsumer</c> 消費 per-shard queue 後重建 embed 發送；
+    /// per-shard queue 設 x-message-ttl / x-expires 防孤兒堆積（§11-3）。仍需有 broker 的多程序實測。
     /// </para>
     /// </summary>
     public sealed class RabbitMqService : IAsyncDisposable
@@ -28,6 +29,19 @@ namespace DiscordStreamNotifyBot.Shared
 
         /// <summary>死信佇列。</summary>
         public const string DeadLetterQueue = "notify.dlq";
+
+        /// <summary>
+        /// per-shard queue 的訊息存活時間（ms）：直播通知逾時即無意義，過期丟棄避免堆積（計畫 §11-3）。
+        /// 須明顯大於 notifier 重啟時間，確保重啟期間的訊息不被丟掉（at-least-once）。預設 1 小時。
+        /// </summary>
+        public const int ShardQueueMessageTtlMs = 60 * 60 * 1000;
+
+        /// <summary>
+        /// per-shard queue 的閒置過期時間（ms）：縮容/移除某 notifier 後，其 durable queue 無人消費，
+        /// 閒置超過此時間即自動刪除，避免孤兒 queue 無限堆積（計畫 §11-3）。
+        /// 須明顯大於規劃性維運窗口，確保正常重啟不會誤刪 queue。預設 24 小時。
+        /// </summary>
+        public const int ShardQueueExpiresMs = 24 * 60 * 60 * 1000;
 
         private readonly ConnectionFactory _factory;
         private IConnection _connection;
@@ -114,10 +128,14 @@ namespace DiscordStreamNotifyBot.Shared
             await DeclareTopologyAsync(channel, cancellationToken);
 
             string queueName = $"notify.shard.{shardId}";
+            // 注意：x-message-ttl / x-expires 屬 queue 宣告參數，若 queue 已存在且參數不同，
+            // 重新宣告會 PRECONDITION_FAILED；變更需先刪除既有 queue（pre-production 直接生效）。
             var queueArgs = new Dictionary<string, object>
             {
                 ["x-dead-letter-exchange"] = NotifyDlx,
                 ["x-queue-type"] = "quorum",
+                ["x-message-ttl"] = ShardQueueMessageTtlMs,   // 過期訊息丟棄，避免堆積（§11-3）
+                ["x-expires"] = ShardQueueExpiresMs,          // 閒置 queue 自動刪除，清理孤兒 queue（§11-3）
             };
 
             await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false,

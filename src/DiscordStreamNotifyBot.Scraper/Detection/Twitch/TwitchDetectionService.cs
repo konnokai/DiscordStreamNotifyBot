@@ -34,7 +34,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
             if (!_apiService.IsEnable)
             {
-                Log.Warn("Twitch API 未啟用，TwitCh 偵測不啟動");
+                Log.Warn("Twitch API 未啟用，Twitch 偵測不啟動");
                 return;
             }
 
