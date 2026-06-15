@@ -552,8 +552,8 @@ docker compose down                          # 停整個叢集
 ### 12.3 通知層：notice 設定記憶體快取
 廣播 + 各自過濾下，每則事件 × N shard 都查一次 `NoticeYoutubeStreamChannel`。notifier 端做記憶體快取（定期刷新，或用 Redis pub/sub 發「設定已變更」失效通知），大幅降 MySQL 壓力。或改採 §4.3 的 shard-routed 路由，從源頭減少 fan-out。
 
-### 12.4 YouTube quota：批次查詢
-scraper 是唯一 quota 消費者，更要省。偵測/提醒路徑盡量用 `GetVideosAsync`（一次 50 筆）取代逐支 `GetVideoAsync`；錄影 pub/sub handler 若會連續處理多支也可彙整批次。
+### 12.4 YouTube quota：批次查詢 **（已完成）**
+`NijisanjiScheduleAsync` 原本在迴圈內逐支 `GetVideoAsync`，改為先收集 videoId 再 `GetVideosAsync`（一次 50 筆）批次取得後以 dict 配對處理。Holo/Other/CheckScheduleTime 本就批次；單事件的 Redis/reminder 路徑（一則一支）無法批次，維持原樣。
 
 ### 12.5 RabbitMQ 可靠性與吞吐（隨階段 3）
 - ~~**Publisher confirms**~~ **（已完成）**：`RabbitMqService.InitializeAsync` 以 `CreateChannelOptions(publisherConfirmationsEnabled, publisherConfirmationTrackingEnabled)` 建立發布 channel，`BasicPublishAsync` 會等 broker 確認落地，未確認即丟例外（呼叫端 try/catch 記錄）。

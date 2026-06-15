@@ -208,6 +208,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     return;
                 }
 
+                // 先收集本次要查的 (item, videoId)，再批次查 YouTube API（一次 50 筆省 quota，§12.4）
+                var pendingItems = new List<(Data item, string videoId)>();
                 foreach (var item in datas)
                 {
                     if (item.Type != "youtube_event")
@@ -216,15 +218,35 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     string videoId = item.Attributes.Url.Split("?v=")[1].Trim();
                     if (newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId)) continue;
                     newStreamList.Add(videoId);
+                    pendingItems.Add((item, videoId));
+                }
 
-                    Log.Info($"Nijisanji Id: {videoId}");
-                    var video = await GetVideoAsync(videoId);
-                    if (video == null)
+                var videoDict = new Dictionary<string, Video>();
+                for (int i = 0; i < pendingItems.Count; i += 50)
+                {
+                    var idChunk = pendingItems.Skip(i).Take(50).Select((x) => x.videoId);
+                    try
+                    {
+                        foreach (var v in await GetVideosAsync(idChunk))
+                        {
+                            if (!string.IsNullOrEmpty(v?.Id)) videoDict[v.Id] = v;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), "NijisanjiScheduleAsync-GetVideos");
+                    }
+                }
+
+                foreach (var (item, videoId) in pendingItems)
+                {
+                    if (!videoDict.TryGetValue(videoId, out var video) || video == null)
                     {
                         Log.Warn($"NijisanjiScheduleAsync: 取得直播資料失敗 {videoId}");
                         continue;
                     }
 
+                    Log.Info($"Nijisanji Id: {videoId}");
                     DataBase.Table.Video streamVideo = new DataBase.Table.Video()
                     {
                         ChannelId = video.Snippet.ChannelId,
