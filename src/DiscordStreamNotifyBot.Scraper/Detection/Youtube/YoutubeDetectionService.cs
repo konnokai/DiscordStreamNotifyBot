@@ -540,8 +540,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
         }
 
-        /// <summary>relay：偵測排程沿用此名稱呼叫，等同 publish banner。</summary>
-        private Task ChangeGuildBannerAsync(string channelId, string videoId) => PublishBannerAsync(channelId, videoId);
         #endregion
 
         #region API 委派（Shared.YoutubeApiService 單一來源）

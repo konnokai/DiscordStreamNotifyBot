@@ -172,7 +172,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
 #endif
 
-            await ChangeGuildBannerAsync(streamVideo.ChannelId, streamVideo.VideoId);
+            await PublishBannerAsync(streamVideo.ChannelId, streamVideo.VideoId);
 
             if (!isRecord)
             {

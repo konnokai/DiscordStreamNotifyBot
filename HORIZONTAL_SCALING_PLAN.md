@@ -566,5 +566,5 @@ scraper 是唯一 quota 消費者，更要省。偵測/提醒路徑盡量用 `Ge
 ### 12.7 可觀測性：結構化日誌 + 角色/shard 標籤 **（已完成）**
 `Log.RolePrefix` 由各程序啟動時設定（`scraper` / `notifier:{shardId}` / `coordinator`），於時間戳後輸出 `[{role}]` 標籤（console + 檔案），跨程序追蹤更容易。後續可再導入 Serilog + 集中 sink。
 
-### 12.8 EF Core：Pooled DbContextFactory
-scraper/notifier 大量短生命週期 context，改 `AddPooledDbContextFactory` 降配置成本（讀取已普遍用 `AsNoTracking`）。
+### 12.8 EF Core：Pooled DbContextFactory **（已完成）**
+`MainDbService` 內改用 `PooledDbContextFactory<MainDbContext>`（`GetDbContext()` 由池取得、Dispose 歸還），降低 scraper/notifier 大量短生命週期 context 的配置成本。36 處皆 `using var db = GetDbContext()` 短用即還，且讀取普遍 `AsNoTracking`，契合物件池。
