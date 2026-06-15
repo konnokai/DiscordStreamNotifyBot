@@ -542,8 +542,10 @@ docker compose down                          # 停整個叢集
 - **一次性到點提醒**（`StartReminder` 每場直播一個 Timer、Twitch stream_offline 3 分鐘倒數）維持 `System.Threading.Timer`（一次性、非輪詢重入問題），未改。
 - **未採完整 Generic Host（IHost）shell**：其主要價值 SIGTERM 已由 `GracefulShutdown`（§11-1）提供，且與既有 leader 鎖 / 手動 DI 結構重疊，導入淨效益低、風險高，故只取 PeriodicTimer + CancellationToken 的實質好處。日曆型排程暫維持手算 `nextMidnight-now`（未上 Cronos/Quartz）。
 
-### 12.2 設定：改用 `Microsoft.Extensions.Configuration`
+### 12.2 設定：改用 `Microsoft.Extensions.Configuration` **（暫緩，需明確決策）**
 採 Generic Host 後，用內建 configuration 分層（json + 環境變數 + 命令列），env 以 `RabbitMQ__HostName` 自動綁定 → **可刪掉 §3 手寫的 env 覆寫對應程式碼**，少維護一份對照。
+
+> **暫緩原因**：(1) 前提「採 Generic Host 後」未成立——§12.1 刻意未導入完整 IHost。(2) 唯一實質效益（刪手寫對照）只在改用 `Section__Property` 命名慣例時成立，這會**變更現有部署 env 變數名稱**（`MYSQL_CONNECTION_STRING`→`MySqlConnectionString`、`RABBITMQ_HOST`→`RabbitMQ__HostName`…），影響 `.env`/compose/docs 與既有正式環境部署；保留 flat 名稱則手寫對照仍在、無淨效益。(3) `BotConfig` 為 Newtonsoft 序列化的設定骨幹、全專案廣用，改綁定機制屬中大型且觸及啟動關鍵路徑的重構。→ 建議與「完整 Generic Host 遷移」一併、且在確認可變更 env 命名後再做，不於收尾倉促進行。
 
 ### 12.3 通知層：notice 設定記憶體快取 **（已完成）**
 新增 `Notifier/SharedService/NoticeCache<T>`（TTL 30s 快照 + 變更時 `Invalidate`），三個發送服務（YouTube/Twitch/Twitcasting）改從快取讀通知設定、過濾在記憶體做，大幅降廣播 fan-out 下的 MySQL 查詢。發送路徑移除失效伺服器/權限後即 `Invalidate`；YT 關閉建立活動旗標改用 `ExecuteUpdate` 依 PK 更新（避免把唯讀快取實例 Attach 到 context）。通知設定屬「每伺服器」、設定指令必在該伺服器所屬 shard 執行，故本機快取即正確，跨 shard 不需共享；設定變更最大過時 ≤ TTL（可後續加指令端即時 `Invalidate` 或 §4.3 shard-routed 路由再優化）。
