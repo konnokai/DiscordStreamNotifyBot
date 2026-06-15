@@ -22,11 +22,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         private readonly TwitcastingClient _twitcastingClient;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
-        private readonly Timer _refreshCategoriesTimer, _refreshWebHookTimer;
 
         private List<Category> categories;
         private string twitcastingRecordPath = "";
-        private bool isRuning = false;
 
         public TwitcastingDetectionService(TwitcastingClient twitcastingClient, BotConfig botConfig, MainDbService dbService)
         {
@@ -45,20 +43,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Utility.GetDataFilePath("");
             if (!twitcastingRecordPath.EndsWith(Utility.GetPlatformSlash())) twitcastingRecordPath += Utility.GetPlatformSlash();
 
-            _refreshCategoriesTimer = new Timer(async (_) =>
+            // 偵測排程（計畫 §12.1）：PeriodicTimer 背景輪詢，await 友善、無重入、吃 CancellationToken
+            var token = GracefulShutdown.Token;
+            PeriodicRunner.RunAsync("TwitCasting-categories", TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30), async () =>
             {
-                try
-                {
-                    categories = await _twitcastingClient.GetCategoriesAsync();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "TwitCasting 分類獲取失敗");
-                }
-            }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30));
+                categories = await _twitcastingClient.GetCategoriesAsync();
+            }, token);
 
-            _refreshWebHookTimer = new Timer(async (_) => { await TimerHandel(); },
-                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15));
+            PeriodicRunner.RunAsync("TwitCasting-webhook", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15), TimerHandel, token);
 
             Bot.RedisSub.Subscribe(new RedisChannel("twitcasting.pubsub.startlive", RedisChannel.PatternMode.Literal), async (channel, message) =>
             {
@@ -103,9 +95,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             return;
 #endif
 
-            if (isRuning) return;
-            isRuning = true;
-
+            // PeriodicTimer 保證單一迴圈不重疊，無需 isRuning 重入旗標（§12.1）
             using var db = _dbService.GetDbContext();
             var spiderList = db.TwitcastingSpider.AsNoTracking().ToList();
 
@@ -138,7 +128,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                 }
             }
             catch (Exception ex) { Log.Error(ex.Demystify(), "TwitCastingService-Timer"); }
-            finally { isRuning = false; }
 
             await db.SaveChangesAsync();
         }

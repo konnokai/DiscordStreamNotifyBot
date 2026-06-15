@@ -20,11 +20,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         private readonly TwitchApiService _apiService;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
-        private readonly Timer _timer, _removeVerificationFailedWebhookTimer;
         private readonly HashSet<string> _hashSet = new();
         private readonly ConcurrentDictionary<string, DebounceChannelUpdateMessage> _debounceChannelUpdateMessage = new();
         private readonly ConcurrentDictionary<string, Timer> _streamOfflineReminders = new();
-        private bool isRuning = false;
 
         public TwitchDetectionService(TwitchApiService apiService, BotConfig botConfig, MainDbService dbService)
         {
@@ -232,13 +230,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
 #nullable disable
 
-            _timer = new Timer(async (obj) => { await TimerHandel(); }, null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30));
+            // 偵測排程（計畫 §12.1）：PeriodicTimer 背景輪詢，await 友善、無重入、吃 CancellationToken
+            var token = GracefulShutdown.Token;
+            PeriodicRunner.RunAsync("Twitch-poll", TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30), TimerHandel, token);
 
             // 每日 00:00 定時檢查驗證失敗的 WebHook 並移除
             var now = DateTime.Now;
-            var nextMidnight = now.Date.AddDays(1);
-            var dueTime = nextMidnight - now;
-            _removeVerificationFailedWebhookTimer = new Timer(async (obj) =>
+            var dueTime = now.Date.AddDays(1) - now;
+            PeriodicRunner.RunAsync("Twitch-removeFailedWebhook", dueTime, TimeSpan.FromDays(1), async () =>
             {
                 Log.Info("開始檢查 Twitch WebHook 驗證失敗的訂閱...");
 
@@ -263,14 +262,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 }
 
                 Log.Info("完成檢查 Twitch WebHook 驗證失敗的訂閱");
-            }, null, dueTime, TimeSpan.FromDays(1));
+            }, token);
         }
 
         private async Task TimerHandel()
         {
-            if (isRuning) return;
-            isRuning = true;
-
+            // PeriodicTimer 保證單一迴圈不重疊，無需 isRuning 重入旗標（§12.1）
             try
             {
                 using var db = _dbService.GetDbContext();
@@ -385,7 +382,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 }
             }
             catch (Exception ex) { Log.Error(ex.Demystify(), "TwitchService-Timer"); }
-            finally { isRuning = false; }
         }
 
         /// <summary>

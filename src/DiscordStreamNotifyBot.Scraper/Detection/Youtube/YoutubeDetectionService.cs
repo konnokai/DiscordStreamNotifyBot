@@ -31,8 +31,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private bool isSubscribing = false;
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
-        private Timer holoSchedule, nijisanjiSchedule, otherSchedule, checkScheduleTime, saveDateBase, subscribePubSub, reScheduleTime;
-        private Timer channelTitleCheckTimer;
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly HttpClient _nijisanjiApiHttpClient;
@@ -427,25 +425,25 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
             });
 
-            // 偵測 Timer
-            reScheduleTime = new Timer((objState) => ReScheduleReminder(), null, TimeSpan.FromSeconds(5), TimeSpan.FromDays(1));
-            holoSchedule = new Timer(async (objState) => await HoloScheduleAsync(), null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
-            nijisanjiSchedule = new Timer(async (objState) => await NijisanjiScheduleAsync(), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
-            otherSchedule = new Timer(async (objState) => await OtherScheduleAsync(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5));
-            checkScheduleTime = new Timer(async (objState) => await CheckScheduleTime(), null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
-            saveDateBase = new Timer((objState) => SaveDateBase(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3));
+            // 偵測排程（計畫 §12.1）：PeriodicTimer 背景輪詢，await 友善、無重入、吃 CancellationToken
+            var token = GracefulShutdown.Token;
+            PeriodicRunner.RunAsync("YT-reSchedule", TimeSpan.FromSeconds(5), TimeSpan.FromDays(1), () => { ReScheduleReminder(); return Task.CompletedTask; }, token);
+            PeriodicRunner.RunAsync("YT-holo", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5), HoloScheduleAsync, token);
+            PeriodicRunner.RunAsync("YT-niji", TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5), NijisanjiScheduleAsync, token);
+            PeriodicRunner.RunAsync("YT-other", TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5), OtherScheduleAsync, token);
+            PeriodicRunner.RunAsync("YT-checkSchedule", TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15), CheckScheduleTime, token);
+            PeriodicRunner.RunAsync("YT-saveDb", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3), () => { SaveDateBase(); return Task.CompletedTask; }, token);
 
 #if !RELEASE
             return;
 #endif
 
-            subscribePubSub = new Timer(async (objState) => await SubscribePubSubAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30));
+            PeriodicRunner.RunAsync("YT-subscribePubSub", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30), SubscribePubSubAsync, token);
 
-            // 新增每日 00:00 定時檢查 YouTube 頻道名稱的 Timer
+            // 每日 00:00 定時檢查 YouTube 頻道名稱
             var now = DateTime.Now;
-            var nextMidnight = now.Date.AddDays(1);
-            var dueTime = nextMidnight - now;
-            channelTitleCheckTimer = new Timer(async _ => await CheckAndUpdateYoutubeChannelTitlesAsync(), null, dueTime, TimeSpan.FromDays(1));
+            var dueTime = now.Date.AddDays(1) - now;
+            PeriodicRunner.RunAsync("YT-channelTitleCheck", dueTime, TimeSpan.FromDays(1), CheckAndUpdateYoutubeChannelTitlesAsync, token);
         }
 
         #region 匯流排發布 helper

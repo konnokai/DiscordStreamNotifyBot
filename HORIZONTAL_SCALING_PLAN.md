@@ -535,16 +535,12 @@ docker compose down                          # 停整個叢集
 
 > 建議優先序：**12.1 / 12.2 重構時一併做**（順手且解掉 §11 問題）；**12.5 隨階段 3 做**；其餘可後續迭代。
 
-### 12.1 排程與生命週期：Generic Host + PeriodicTimer +（必要時）cron — 回應「Timer → cronjob」
-現況 `System.Threading.Timer` + 靜態旗標（`isRuning`/`isSubscribing`）混雜，重入要自己擋，且關閉處理不完整（§11-1）。重構為三層較清楚：
+### 12.1 排程與生命週期：PeriodicTimer 背景輪詢 **（已完成，核心部分）**
+固定間隔輪詢已由 `System.Threading.Timer` + 靜態 `isRuning` 旗標改為 `Shared/PeriodicRunner`（`PeriodicTimer` 迴圈，吃 `GracefulShutdown.Token`）：
 
-| 排程性質 | 例子 | 建議做法 |
-|---|---|---|
-| 固定間隔輪詢 | holo/niji/other(5min)、saveDb(3min)、subscribePubSub(30min) | `BackgroundService` + **`PeriodicTimer`**（await 友善、無重入、吃 `CancellationToken`，省掉 `isRuning` 旗標） |
-| **日曆型排程** | 每日 00:00 頻道名稱檢查（現手算 `nextMidnight-now`） | **真正的 cron**：`Cronos`（輕量 cron 解析）或 `Quartz.NET`，比手算穩、處理重啟/DST |
-| 一次性到點提醒 | `StartReminder` 每場直播一個 Timer | 維持「掃描即將到點清單」的 PeriodicTimer，或用 **Quartz 持久化 job** 取代，省掉重啟後 `ReScheduleReminder` 手動重排 |
-
-推薦：**Generic Host + BackgroundService + PeriodicTimer**（低依賴、解 SIGTERM）；只有日曆型/持久化排程才上 **Quartz.NET**（其 clustering 也能當 scraper 單例保險，但與 leader 鎖重疊，非必要）。**不要把固定間隔輪詢硬改成 cron**——cron 的價值在「特定時刻」，間隔輪詢用 PeriodicTimer 更合適。
+- **轉換的輪詢**：YT holo/niji/other(5min)、checkSchedule(15min)、saveDb(3min)、subscribePubSub(30min)、reSchedule/channelTitleCheck(daily)；Twitch poll(30s)、removeFailedWebhook(daily)；Twitcasting categories(30min)、webhook(15min)。`PeriodicTimer` 前後不重疊 → 移除 Twitch/Twitcasting `isRuning`（YT `isSubscribing` 保留：另由 `youtube.control.subscribePubSub` 控制訊息呼叫，仍需防並發）。
+- **一次性到點提醒**（`StartReminder` 每場直播一個 Timer、Twitch stream_offline 3 分鐘倒數）維持 `System.Threading.Timer`（一次性、非輪詢重入問題），未改。
+- **未採完整 Generic Host（IHost）shell**：其主要價值 SIGTERM 已由 `GracefulShutdown`（§11-1）提供，且與既有 leader 鎖 / 手動 DI 結構重疊，導入淨效益低、風險高，故只取 PeriodicTimer + CancellationToken 的實質好處。日曆型排程暫維持手算 `nextMidnight-now`（未上 Cronos/Quartz）。
 
 ### 12.2 設定：改用 `Microsoft.Extensions.Configuration`
 採 Generic Host 後，用內建 configuration 分層（json + 環境變數 + 命令列），env 以 `RabbitMQ__HostName` 自動綁定 → **可刪掉 §3 手寫的 env 覆寫對應程式碼**，少維護一份對照。
