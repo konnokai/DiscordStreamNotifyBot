@@ -560,8 +560,8 @@ docker compose down                          # 停整個叢集
 - ~~**BasicQos prefetch**~~ **（已完成）**：`ConsumeShardQueueAsync` 以 `BasicQosAsync(prefetchCount: 20)` 限制同時處理量。
 - **shard-routed routing key**：scraper 算出目標 shard 精準投遞，免廣播（§4.3 後續優化，尚未做）。
 
-### 12.6 建置：單一 image 多角色
-三個 exe 可用單一 multi-stage Dockerfile 產出**一個 image**，entrypoint 依 `ROLE` 選執行檔；省 build 時間/儲存、簡化 CI（取代 §6 的三個 Dockerfile）。
+### 12.6 建置：單一 image 多角色 **（已完成）**
+根目錄單一 multi-stage `Dockerfile`：三個 exe publish 至 `/app/{scraper,notifier,coordinator}`，entrypoint 依 `$ROLE` 選執行檔（Notifier 額外 forward `command` 的 `[ShardId, TotalShards]`）。`docker-compose.yml` 改為所有服務共用 `image: discord-stream-notify-bot:latest`（`x-app` 錨點帶 build/image），各服務以 `environment: ROLE` 區分；已移除三個 per-project Dockerfile。各 exe 的 BotRole 仍寫死於 Program.cs，`ROLE` 僅供 entrypoint 選 dll。
 
 ### 12.7 可觀測性：結構化日誌 + 角色/shard 標籤 **（已完成）**
 `Log.RolePrefix` 由各程序啟動時設定（`scraper` / `notifier:{shardId}` / `coordinator`），於時間戳後輸出 `[{role}]` 標籤（console + 檔案），跨程序追蹤更容易。後續可再導入 Serilog + 集中 sink。
