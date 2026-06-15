@@ -549,8 +549,8 @@ docker compose down                          # 停整個叢集
 ### 12.2 設定：改用 `Microsoft.Extensions.Configuration`
 採 Generic Host 後，用內建 configuration 分層（json + 環境變數 + 命令列），env 以 `RabbitMQ__HostName` 自動綁定 → **可刪掉 §3 手寫的 env 覆寫對應程式碼**，少維護一份對照。
 
-### 12.3 通知層：notice 設定記憶體快取
-廣播 + 各自過濾下，每則事件 × N shard 都查一次 `NoticeYoutubeStreamChannel`。notifier 端做記憶體快取（定期刷新，或用 Redis pub/sub 發「設定已變更」失效通知），大幅降 MySQL 壓力。或改採 §4.3 的 shard-routed 路由，從源頭減少 fan-out。
+### 12.3 通知層：notice 設定記憶體快取 **（已完成）**
+新增 `Notifier/SharedService/NoticeCache<T>`（TTL 30s 快照 + 變更時 `Invalidate`），三個發送服務（YouTube/Twitch/Twitcasting）改從快取讀通知設定、過濾在記憶體做，大幅降廣播 fan-out 下的 MySQL 查詢。發送路徑移除失效伺服器/權限後即 `Invalidate`；YT 關閉建立活動旗標改用 `ExecuteUpdate` 依 PK 更新（避免把唯讀快取實例 Attach 到 context）。通知設定屬「每伺服器」、設定指令必在該伺服器所屬 shard 執行，故本機快取即正確，跨 shard 不需共享；設定變更最大過時 ≤ TTL（可後續加指令端即時 `Invalidate` 或 §4.3 shard-routed 路由再優化）。
 
 ### 12.4 YouTube quota：批次查詢 **（已完成）**
 `NijisanjiScheduleAsync` 原本在迴圈內逐支 `GetVideoAsync`，改為先收集 videoId 再 `GetVideosAsync`（一次 50 筆）批次取得後以 dict 配對處理。Holo/Other/CheckScheduleTime 本就批次；單事件的 Redis/reminder 路徑（一則一支）無法批次，維持原樣。

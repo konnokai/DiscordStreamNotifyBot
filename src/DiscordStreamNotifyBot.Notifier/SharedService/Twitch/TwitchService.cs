@@ -39,6 +39,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
         private readonly MessageComponent _messageComponent;
+        private readonly NoticeCache<DataBase.Table.NoticeTwitchStreamChannel> _noticeCache;
 
         public TwitchService(DiscordSocketClient client, TwitchApiService apiService, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
@@ -47,6 +48,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             _emojiService = emojiService;
             _dbService = dbService;
             _botConfig = botConfig;
+            _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitchStreamChannel>(dbService, db => db.NoticeTwitchStreamChannels.AsNoTracking().ToList());
 
             _messageComponent = new ComponentBuilder()
                 .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
@@ -138,7 +140,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 #else
             using (var db = _dbService.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitchStreamChannels.Where((x) => x.NoticeTwitchUserId == twitchUserId).ToList();
+                // 通知設定改讀記憶體快取（§12.3）
+                var noticeGuildList = _noticeCache.Get().Where((x) => x.NoticeTwitchUserId == twitchUserId).ToList();
                 Log.New($"發送 Twitch 通知 ({noticeGuildList.Count} / {noticeType}): ({twitchUserId}) - {embed.Title}");
 
                 foreach (var item in noticeGuildList)
@@ -171,6 +174,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             Log.Warn($"Twitch 通知 ({twitchUserId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                             continue;
                         }
 
@@ -207,6 +211,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             Log.Warn($"Twitch 通知 ({twitchUserId}) | 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
                             db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {

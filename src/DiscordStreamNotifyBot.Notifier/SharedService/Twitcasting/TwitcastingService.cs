@@ -24,6 +24,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
+        private readonly NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel> _noticeCache;
 
         public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
@@ -39,6 +40,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             _emojiService = emojiService;
             _botConfig = botConfig;
             _dbService = dbService;
+            _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel>(dbService, db => db.NoticeTwitcastingStreamChannels.AsNoTracking().ToList());
         }
 
 #nullable enable
@@ -102,7 +104,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 #else
             using (var db = _dbService.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitcastingStreamChannels.AsNoTracking().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
+                // 通知設定改讀記憶體快取（§12.3）
+                var noticeGuildList = _noticeCache.Get().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
                 EmbedBuilder embedBuilder = TwitcastingEmbedBuilderFactory.CreateStreamStarted(twitcastingStream, isPrivate, isRecord);
@@ -125,6 +128,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                             Log.Warn($"TwitCasting 通知 ({item.DiscordChannelId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                             continue;
                         }
 
@@ -161,6 +165,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                             Log.Warn($"TwitCasting 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
                             db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {

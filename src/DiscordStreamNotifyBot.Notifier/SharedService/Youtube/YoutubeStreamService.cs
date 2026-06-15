@@ -58,6 +58,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
         private readonly Shared.YoutubeApiService _apiService;
+        private readonly NoticeCache<NoticeYoutubeStreamChannel> _noticeCache;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService, Shared.YoutubeApiService apiService)
         {
@@ -66,6 +67,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _dbService = dbService;
             _botConfig = botConfig;
             _apiService = apiService;
+            _noticeCache = new NoticeCache<NoticeYoutubeStreamChannel>(dbService, db => db.NoticeYoutubeStreamChannel.AsNoTracking().ToList());
 
             _messageComponent = new ComponentBuilder()
                         .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
@@ -203,13 +205,15 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     break;
             }
 
+            // 通知設定改讀記憶體快取（§12.3），降廣播 fan-out 下的 MySQL 壓力；快取為唯讀快照
+            var allNotice = _noticeCache.Get();
             List<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels = new List<NoticeYoutubeStreamChannel>();
             using (var db = _dbService.GetDbContext())
             {
                 try
                 {
                     // 有設定該頻道的通知就不用過濾，他們肯定是要這頻道的通知
-                    noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == streamVideo.ChannelId));
+                    noticeYoutubeStreamChannels.AddRange(allNotice.Where((x) => x.YouTubeChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
@@ -224,7 +228,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         !db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
                         db.YoutubeChannelSpider.AsNoTracking().First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
                     {
-                        noticeYoutubeStreamChannels.AddRange(db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.YouTubeChannelId == type));
+                        noticeYoutubeStreamChannels.AddRange(allNotice.Where((x) => x.YouTubeChannelId == type));
                     }
                 }
                 catch (Exception ex)
@@ -280,6 +284,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                             continue;
                         }
 
@@ -296,9 +301,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 if (!guild.GetUser(_client.CurrentUser.Id).GuildPermissions.ManageEvents)
                                 {
                                     Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 無權限可建立活動，關閉此功能");
-                                    item.IsCreateEventForNewStream = false;
-                                    db.NoticeYoutubeStreamChannel.Update(item);
-                                    db.SaveChanges();
+                                    // item 來自唯讀快取，不可 Attach/Update；以 ExecuteUpdate 依 PK 直接更新，避免跨 context 追蹤衝突
+                                    db.NoticeYoutubeStreamChannel.Where((x) => x.Id == item.Id)
+                                        .ExecuteUpdate((s) => s.SetProperty((p) => p.IsCreateEventForNewStream, false));
+                                    _noticeCache.Invalidate();
 
                                     try
                                     {
@@ -446,6 +452,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 遺失權限");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.DiscordNoticeVideoChannelId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
