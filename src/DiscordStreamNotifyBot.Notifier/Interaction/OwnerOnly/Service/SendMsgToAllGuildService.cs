@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Shared;
 using Polly;
 using System.Net;
 using System.Reflection;
@@ -21,17 +22,25 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
             public ulong UserId { get; set; }
             public ulong ChannelId { get; set; }
             public string Guid { get; set; }
-            public NoticeType NoticeType { get; set; }
-            public Embed Embed { get; set; }
+            public SendAllPayload Payload { get; set; }
 
-            public ButtonCheckData(ulong userId, ulong channelId, string guid, NoticeType noticeType, Embed embed)
+            public ButtonCheckData(ulong userId, ulong channelId, string guid, SendAllPayload payload)
             {
                 UserId = userId;
                 ChannelId = channelId;
                 Guid = guid;
-                NoticeType = noticeType;
-                Embed = embed;
+                Payload = payload;
             }
+        }
+
+        /// <summary>跨 shard 全球訊息發送的結構化參數（傳結構化資料，各 shard 端重建 embed，符合計畫 §8）。</summary>
+        private class SendAllPayload
+        {
+            public NoticeType NoticeType { get; set; }
+            public string Message { get; set; }
+            public string ImageUrl { get; set; }
+            public string AuthorName { get; set; }
+            public string AuthorIconUrl { get; set; }
         }
 
         private readonly DiscordSocketClient _client;
@@ -43,6 +52,23 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
         {
             _client = discordSocketClient;
             _dbService = dbService;
+
+            // 各 shard 訂閱發送廣播：對自己持有的伺服器發送（_client.Guilds 過濾天然不重複）
+            Bot.RedisSub.Subscribe(new RedisChannel(RedisChannels.Notifier.SendMessageToAll, RedisChannel.PatternMode.Literal), (_, value) =>
+            {
+                try
+                {
+                    var payload = JsonConvert.DeserializeObject<SendAllPayload>(value);
+                    if (payload == null)
+                        return;
+
+                    ThreadPool.QueueUserWorkItem(async (state) => await StartSendMessage(payload));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "SendMessageToAll 廣播處理失敗");
+                }
+            });
 
             _client.ModalSubmitted += async modal =>
             {
@@ -58,21 +84,22 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 string imageUrl = modal.Data.Attachments.Count == 1 ? modal.Data.Attachments.First().Url : "";
                 string message = components.First(x => x.CustomId == "message").Value;
 
-                Embed embed = new EmbedBuilder().WithOkColor()
-                    .WithUrl("https://konnokai.me/")
-                    .WithTitle("來自開發者消息")
-                    .WithAuthor(modal.User)
-                    .WithDescription(message)
-                    .WithImageUrl(imageUrl)
-                    .WithFooter("管理員可以透過 `/utility set-global-notice-channel` 來設定由哪個頻道來接收小幫手相關的通知").Build();
+                var payload = new SendAllPayload
+                {
+                    NoticeType = noticeType,
+                    Message = message,
+                    ImageUrl = imageUrl,
+                    AuthorName = modal.User.ToString(),
+                    AuthorIconUrl = modal.User.GetDisplayAvatarUrl() ?? modal.User.GetDefaultAvatarUrl()
+                };
 
                 var guid = Guid.NewGuid().ToString().Replace("-", "");
                 ComponentBuilder component = new ComponentBuilder()
                     .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
                     .WithButton("否", $"{guid}-no", ButtonStyle.Danger);
 
-                await modal.FollowupAsync(text: $"本次發送的類型為: {GetNoticeTypeDisplayName(noticeType)}", embed: embed, components: component.Build(), ephemeral: true);
-                checkData = new ButtonCheckData(modal.User.Id, modal.ChannelId.Value, guid, noticeType, embed);
+                await modal.FollowupAsync(text: $"本次發送的類型為: {GetNoticeTypeDisplayName(noticeType)}", embed: BuildEmbed(payload), components: component.Build(), ephemeral: true);
+                checkData = new ButtonCheckData(modal.User.Id, modal.ChannelId.Value, guid, payload);
             };
 
             _client.ButtonExecuted += async button =>
@@ -102,7 +129,13 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
 
                 if (button.Data.CustomId.EndsWith("yes"))
                 {
-                    ThreadPool.QueueUserWorkItem(async (state) => await StartSendMessage());
+                    // 廣播給所有 shard（含本 shard），各自對自己持有的伺服器發送，避免只發單一 shard
+                    await Bot.RedisSub.PublishAsync(
+                        new RedisChannel(RedisChannels.Notifier.SendMessageToAll, RedisChannel.PatternMode.Literal),
+                        JsonConvert.SerializeObject(checkData.Payload));
+
+                    await button.FollowupAsync("已廣播至所有 shard，各 shard 將對自己持有的伺服器發送（進度請見各 shard log）", ephemeral: true);
+                    checkData = null;
                 }
                 else
                 {
@@ -111,13 +144,34 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
             };
         }
 
-        private async Task StartSendMessage()
+        /// <summary>由結構化參數重建發送用的 embed（各 shard 端執行）。</summary>
+        private static Embed BuildEmbed(SendAllPayload payload)
         {
+            var eb = new EmbedBuilder().WithOkColor()
+                .WithUrl("https://konnokai.me/")
+                .WithTitle("來自開發者消息")
+                .WithDescription(payload.Message)
+                .WithImageUrl(payload.ImageUrl)
+                .WithFooter("管理員可以透過 `/utility set-global-notice-channel` 來設定由哪個頻道來接收小幫手相關的通知");
+
+            if (!string.IsNullOrEmpty(payload.AuthorName))
+                eb.WithAuthor(payload.AuthorName, payload.AuthorIconUrl);
+
+            return eb.Build();
+        }
+
+        private async Task StartSendMessage(SendAllPayload payload)
+        {
+            if (isSending)
+                return;
+
             isSending = true;
+            Embed embed = BuildEmbed(payload);
+            var noticeType = payload.NoticeType;
             var isSendMessageGuildId = new HashSet<ulong>();
             using (var db = _dbService.GetDbContext())
             {
-                if (checkData.NoticeType == NoticeType.Normal)
+                if (noticeType == NoticeType.Normal)
                 {
                     try
                     {
@@ -175,7 +229,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                     })
                                     .ExecuteAsync(async () =>
                                     {
-                                        await textChannel.SendMessageAsync(embed: checkData.Embed);
+                                        await textChannel.SendMessageAsync(embed: embed);
                                         isSendMessageGuildId.Add(item.Key);
                                     });
                             }
@@ -203,7 +257,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                     db.SaveChanges();
                     Log.Info("已於全球訊息專用通知頻道發送完成");
                 }
-                else if (checkData.NoticeType == NoticeType.Sponsor)
+                else if (noticeType == NoticeType.Sponsor)
                 {
                     foreach (var item in DiscordStreamNotifyBot.Utility.OfficialGuildList)
                     {
@@ -269,7 +323,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                 })
                                 .ExecuteAsync(async () =>
                                 {
-                                    await textChannel.SendMessageAsync(embed: checkData.Embed);
+                                    await textChannel.SendMessageAsync(embed: embed);
                                     isSendMessageGuildId.Add(item.Key);
                                 });
                         }
@@ -353,7 +407,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                 })
                                 .ExecuteAsync(async () =>
                                 {
-                                    await textChannel.SendMessageAsync(embed: checkData.Embed);
+                                    await textChannel.SendMessageAsync(embed: embed);
                                     isSendMessageGuildId.Add(item.Key);
                                 });
                         }
@@ -439,7 +493,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                 })
                                 .ExecuteAsync(async () =>
                                 {
-                                    await textChannel.SendMessageAsync(embed: checkData.Embed);
+                                    await textChannel.SendMessageAsync(embed: embed);
                                     isSendMessageGuildId.Add(item.Key);
                                 });
                         }
@@ -468,7 +522,6 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 db.SaveChanges();
                 Log.Info("已於會限驗證紀錄頻道發送完成");
 
-                checkData = null;
                 isSending = false;
             }
         }

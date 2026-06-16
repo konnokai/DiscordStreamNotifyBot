@@ -1,5 +1,6 @@
 ﻿using Discord.Commands;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Command.Admin
 {
@@ -7,11 +8,13 @@ namespace DiscordStreamNotifyBot.Command.Admin
     {
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
+        private readonly ClusterQueryService _clusterQuery;
 
-        public Administration(DiscordSocketClient discordSocketClient, MainDbService dbService)
+        public Administration(DiscordSocketClient discordSocketClient, MainDbService dbService, ClusterQueryService clusterQuery)
         {
             _client = discordSocketClient;
             _dbService = dbService;
+            _clusterQuery = clusterQuery;
         }
 
         // 暫時移除，ChangeStatus 現在並非 Static
@@ -54,21 +57,23 @@ namespace DiscordStreamNotifyBot.Command.Admin
         [RequireOwner]
         public async Task ListServerAsync([Summary("頁數")] int page = 0)
         {
+            // 跨 shard：合併各 shard 的伺服器快照（B1）
+            var guilds = await _clusterQuery.ReadMergedGuildsAsync();
+
             await Context.SendPaginatedConfirmAsync(page, (cur) =>
             {
                 EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor().WithTitle("目前所在的伺服器有");
 
-                foreach (var item in _client.Guilds.Skip(cur * 5).Take(5))
+                foreach (var item in guilds.Skip(cur * 5).Take(5))
                 {
-                    int totalMember = item.MemberCount;
-
                     embedBuilder.AddField(item.Name, "Id: " + item.Id +
                         "\nOwner Id: " + item.OwnerId +
-                        "\n人數: " + totalMember.ToString());
+                        "\n人數: " + item.MemberCount.ToString());
                 }
 
+                embedBuilder.WithFooter($"總數量: {guilds.Count}（{Bot.TotalShardCount} shard）");
                 return embedBuilder;
-            }, _client.Guilds.Count, 5);
+            }, guilds.Count, 5);
         }
 
         [RequireContext(ContextType.DM)]
@@ -78,9 +83,12 @@ namespace DiscordStreamNotifyBot.Command.Admin
         [RequireOwner]
         public async Task SearchServerAsync([Summary("關鍵字")] string keyword = "", [Summary("頁數")] int page = 0)
         {
+            // 跨 shard：合併各 shard 的伺服器快照（B1）
+            var guilds = await _clusterQuery.ReadMergedGuildsAsync();
+
             if (ulong.TryParse(keyword, out ulong guildId))
             {
-                var guild = _client.GetGuild(guildId);
+                var guild = guilds.FirstOrDefault((x) => x.Id == guildId);
                 if (guild != null)
                 {
                     var embed = new EmbedBuilder().WithOkColor().AddField(guild.Name,
@@ -93,7 +101,7 @@ namespace DiscordStreamNotifyBot.Command.Admin
                 }
             }
 
-            var list = _client.Guilds.Where((x) => x.Name.Contains(keyword, StringComparison.InvariantCultureIgnoreCase));
+            var list = guilds.Where((x) => x.Name.Contains(keyword, StringComparison.InvariantCultureIgnoreCase)).ToList();
             if (!list.Any())
             {
                 await Context.Channel.SendErrorAsync("該關鍵字無伺服器");
@@ -112,10 +120,10 @@ namespace DiscordStreamNotifyBot.Command.Admin
                         $"人數: {item.MemberCount}\n");
                 }
 
-                embedBuilder.WithFooter($"總數量: {list.Count()}");
+                embedBuilder.WithFooter($"總數量: {list.Count}");
 
                 return embedBuilder;
-            }, list.Count(), 5, false);
+            }, list.Count, 5, false);
         }
 
         [RequireContext(ContextType.DM)]
@@ -125,11 +133,9 @@ namespace DiscordStreamNotifyBot.Command.Admin
         [RequireOwner]
         public async Task DieAsync()
         {
-            Bot.IsDisconnect = true;
-            Bot.IsHoloChannelSpider = false;
-            Bot.IsNijisanjiChannelSpider = false;
-            Bot.IsOtherChannelSpider = false;
-            await Context.Channel.SendConfirmAsync("關閉中");
+            await Context.Channel.SendConfirmAsync("關閉中（已廣播至所有 shard）");
+            // 廣播至所有 Notifier shard（含本 shard），各自收到後設 Bot.IsDisconnect = true
+            await _service.BroadcastShutdownAsync();
         }
 
         [RequireContext(ContextType.DM)]
@@ -140,17 +146,9 @@ namespace DiscordStreamNotifyBot.Command.Admin
         {
             if (gid == 0) { await Context.Channel.SendErrorAsync("伺服器Id為空"); return; }
 
-            var guild = _client.GetGuild(gid);
-            if (guild == null)
-            {
-                await Context.Channel.SendErrorAsync("伺服器不存在");
-                return;
-            }
-
-            try { await guild.LeaveAsync(); }
-            catch (Exception) { await Context.Channel.SendErrorAsync("失敗，請確認Id是否正確"); return; }
-
-            await Context.Channel.SendConfirmAsync("✅");
+            // 目標伺服器只在單一 shard，廣播讓持有它的 shard 離開
+            await _service.BroadcastLeaveGuildAsync(gid);
+            await Context.Channel.SendConfirmAsync($"已廣播離開伺服器 `{gid}` 的要求（由持有該伺服器的 shard 執行）");
         }
 
         [RequireContext(ContextType.DM)]
@@ -160,43 +158,48 @@ namespace DiscordStreamNotifyBot.Command.Admin
         [RequireOwner]
         public async Task GetInviteURLAsync([Summary("伺服器Id")] ulong gid = 0, [Summary("頻道Id")] ulong cid = 0)
         {
-            if (gid == 0) gid = Context.Guild.Id;
-            SocketGuild guild = _client.GetGuild(gid);
-            if (guild == null)
+            if (gid == 0)
             {
-                await Context.Channel.SendErrorAsync($"伺服器 {gid} 不存在");
+                await Context.Channel.SendErrorAsync("伺服器Id為空");
                 return;
             }
 
             try
             {
+                // 目標伺服器只在單一 shard，向持有它的 shard 請求建立邀請／頻道清單（B2）
+                string arg = cid == 0 ? gid.ToString() : $"{gid}:{cid}";
+                var (responses, _, _) = await _clusterQuery.RequestAsync<ClusterQueryService.InviteResponse>(ClusterQueryService.ClusterQueryType.GetInviteUrl, arg);
+
+                var resp = responses.FirstOrDefault();
+                if (resp == null)
+                {
+                    await Context.Channel.SendErrorAsync($"伺服器 {gid} 不存在或目前無 shard 在線持有");
+                    return;
+                }
+
                 if (cid == 0)
                 {
-                    // 忽略 ticket- & closed- 開頭的頻道
-                    IReadOnlyCollection<SocketTextChannel> socketTextChannels = [.. guild.TextChannels.Where((x) => !x.Name.StartsWith("ticket-") && !x.Name.StartsWith("closed-"))];
+                    IReadOnlyList<ClusterQueryService.ChannelInfo> channels = resp.TextChannels ?? new List<ClusterQueryService.ChannelInfo>();
 
                     await Context.SendPaginatedConfirmAsync(0, (cur) =>
                     {
                         EmbedBuilder embedBuilder = new EmbedBuilder()
                            .WithOkColor()
-                           .WithTitle("以下為 " + guild.Name + " 所有的文字頻道")
-                           .WithDescription(string.Join('\n', socketTextChannels.Skip(cur * 20).Take(20).Select((x) => x.Id + " / " + x.Name)));
+                           .WithTitle($"以下為 {gid} 所有的文字頻道")
+                           .WithDescription(string.Join('\n', channels.Skip(cur * 20).Take(20).Select((x) => x.Id + " / " + x.Name)));
 
                         return embedBuilder;
-                    }, socketTextChannels.Count, 20);
+                    }, channels.Count, 20);
                 }
                 else
                 {
-                    IInviteMetadata invite = await guild.GetTextChannel(cid).CreateInviteAsync(300, 1, false);
-                    await Context.Channel.SendConfirmAsync(invite.Url);
+                    if (resp.InviteUrl == "__NOPERM__")
+                        await Context.Channel.SendErrorAsync("缺少邀請權限");
+                    else if (string.IsNullOrEmpty(resp.InviteUrl))
+                        await Context.Channel.SendErrorAsync("無法建立邀請（頻道不存在或建立失敗）");
+                    else
+                        await Context.Channel.SendConfirmAsync(resp.InviteUrl);
                 }
-            }
-            catch (Discord.Net.HttpException httpEx)
-            {
-                if (httpEx.DiscordCode == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
-                    await Context.Channel.SendErrorAsync("缺少邀請權限");
-                else
-                    Log.Error(httpEx.ToString());
             }
             catch (Exception ex)
             {
@@ -219,26 +222,29 @@ namespace DiscordStreamNotifyBot.Command.Admin
                     return;
                 }
 
-                var guild = _client.GetGuild(gid);
-                if (guild == null)
+                // 伺服器即時資訊（名稱/人數/頻道名）只有持有它的 shard 有，向該 shard 請求（B2）；DB 區塊維持本機查（共用 DB）
+                var (infoResponses, _, _) = await _clusterQuery.RequestAsync<ClusterQueryService.GuildInfoResponse>(ClusterQueryService.ClusterQueryType.GuildInfo, gid.ToString());
+                var info = infoResponses.FirstOrDefault();
+                if (info == null)
                 {
-                    await Context.Channel.SendErrorAsync("找不到指定的伺服器").ConfigureAwait(false);
+                    await Context.Channel.SendErrorAsync("找不到指定的伺服器（無 shard 在線持有）").ConfigureAwait(false);
                     return;
                 }
 
-                string result = $"伺服器名稱: **{guild.Name}**\n" +
-                            $"伺服器Id: {guild.Id}\n" +
-                            $"擁有者Id: {guild.OwnerId}\n" +
-                            $"人數: {guild.MemberCount}\n";
+                var channels = info.Channels ?? new Dictionary<ulong, string>();
+
+                string result = $"伺服器名稱: **{info.Name}**\n" +
+                            $"伺服器Id: {gid}\n" +
+                            $"擁有者Id: {info.OwnerId}\n" +
+                            $"人數: {info.MemberCount}\n";
 
                 using (var db = _dbService.GetDbContext())
                 {
                     var guildConfig = await db.GuildConfig.AsNoTracking().FirstOrDefaultAsync((x) => x.GuildId == gid);
                     if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)
                     {
-                        var channel = guild.GetChannel(guildConfig.LogMemberStatusChannelId);
-                        if (channel != null)
-                            result += $"伺服器會限記錄頻道: {channel.Name} ({channel.Id})\n";
+                        if (channels.TryGetValue(guildConfig.LogMemberStatusChannelId, out var logChannelName))
+                            result += $"伺服器會限記錄頻道: {logChannelName} ({guildConfig.LogMemberStatusChannelId})\n";
                         else
                             result += $"伺服器會限記錄頻道: (不存在) {guildConfig.LogMemberStatusChannelId}\n";
                     }
@@ -257,17 +263,15 @@ namespace DiscordStreamNotifyBot.Command.Admin
                         }
                     }
 
-                    var youtubeChannelList = db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.GuildId == guild.Id);
+                    var youtubeChannelList = db.NoticeYoutubeStreamChannel.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (youtubeChannelList.Any())
                     {
                         List<string> channelListResult = new List<string>();
 
                         foreach (var item in youtubeChannelList)
                         {
-                            var noticeChannel = guild.GetChannel(item.DiscordNoticeVideoChannelId);
-
-                            if (noticeChannel != null)
-                                channelListResult.Add($"{noticeChannel}: {item.YouTubeChannelId}");
+                            if (channels.TryGetValue(item.DiscordNoticeVideoChannelId, out var noticeChannelName))
+                                channelListResult.Add($"{noticeChannelName}: {item.YouTubeChannelId}");
                             else
                                 channelListResult.Add($"(不存在) {item.DiscordNoticeVideoChannelId}: {item.YouTubeChannelId}");
                         }
@@ -283,7 +287,7 @@ namespace DiscordStreamNotifyBot.Command.Admin
                         }
                     }
 
-                    var memberChcekList = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == guild.Id);
+                    var memberChcekList = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (memberChcekList.Any())
                     {
                         result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```\n";
@@ -295,17 +299,15 @@ namespace DiscordStreamNotifyBot.Command.Admin
                         result += $"設定的 Twitch 爬蟲: \n```{string.Join('\n', twitchSpiders.Select((x) => $"{x.UserName}: {x.UserLogin}"))}```\n";
                     }
 
-                    var noticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.AsNoTracking().Where((x) => x.GuildId == guild.Id);
+                    var noticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (noticeTwitchStreamChannels.Any())
                     {
                         List<string> channelListResult = new List<string>();
 
                         foreach (var item in noticeTwitchStreamChannels)
                         {
-                            var noticeChannel = guild.GetChannel(item.DiscordChannelId);
-
-                            if (noticeChannel != null)
-                                channelListResult.Add($"{noticeChannel}: {item.NoticeTwitchUserId}");
+                            if (channels.TryGetValue(item.DiscordChannelId, out var noticeChannelName))
+                                channelListResult.Add($"{noticeChannelName}: {item.NoticeTwitchUserId}");
                             else
                                 channelListResult.Add($"(不存在) {item.DiscordChannelId}: {item.NoticeTwitchUserId}");
                         }
@@ -347,17 +349,16 @@ namespace DiscordStreamNotifyBot.Command.Admin
                 string result = $"使用者名稱: **{user.Username}**\n" +
                             $"使用者 Id: {user.Id}\n";
 
-                List<string> guildList = new();
-                foreach (var item in _client.Guilds)
-                {
-                    if (item.GetUser(uid) != null)
-                        guildList.Add($"{item.Name} ({item.Id})");
-                }
+                // 使用者可能在任一 shard 的伺服器，需即時向各 shard 查詢（B2）
+                var (responses, responded, expected) = await _clusterQuery.RequestAsync<ClusterQueryService.UserInfoResponse>(ClusterQueryService.ClusterQueryType.UserInfo, uid.ToString());
+                var guildList = responses.SelectMany((r) => r.GuildNames).ToList();
 
                 if (guildList.Any())
                 {
                     result += $"共同的伺服器: \n```{string.Join('\n', guildList)}```";
                 }
+
+                result += $"\n（{responded}/{expected} shard 已回應）";
 
                 await Context.Channel.SendConfirmAsync(result).ConfigureAwait(false);
             }
@@ -430,24 +431,19 @@ namespace DiscordStreamNotifyBot.Command.Admin
                 return;
             }
 
+            // 白名單為全域（Redis），成員/名稱狀態需跨 shard 判定：任何 shard 都未持有者才標「已離開」（B1）
+            var mergedGuilds = await _clusterQuery.ReadMergedGuildsAsync();
+            var guildNameById = new Dictionary<ulong, string>();
+            foreach (var g in mergedGuilds)
+                guildNameById[g.Id] = g.Name;
+
             List<string> officialList = new();
             foreach (var item in Utility.OfficialGuildList)
             {
-                try
-                {
-                    var guild = _client.GetGuild(item);
-                    if (guild == null)
-                    {
-                        officialList.Add($"*已離開的伺服器* `({item})`");
-                        continue;
-                    }
-
-                    officialList.Add($"{guild.Name} `({item})`");
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), $"取得伺服器資料失敗: {item}");
-                }
+                if (guildNameById.TryGetValue(item, out var name))
+                    officialList.Add($"{name} `({item})`");
+                else
+                    officialList.Add($"*已離開的伺服器* `({item})`");
             }
 
             if (page <= 0)
@@ -470,7 +466,9 @@ namespace DiscordStreamNotifyBot.Command.Admin
         {
             try
             {
-                var guilds = _service.GetNoNotifyGuilds();
+                // 跨 shard：合併全叢集伺服器後過濾未設定通知者（B1 + DB）
+                var merged = await _clusterQuery.ReadMergedGuildsAsync();
+                var guilds = _clusterQuery.FilterNoNotifyGuilds(merged);
 
                 File.WriteAllText(Utility.GetDataFilePath("NoNotifyGuildList.txt"), string.Join('\n', guilds.Select(g => $"{g.Name} | {g.Id} | {g.MemberCount} 人")));
 
@@ -503,26 +501,21 @@ namespace DiscordStreamNotifyBot.Command.Admin
             {
                 await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
 
-                var guilds = _service.GetNoNotifyGuilds();
+                // 各 shard 離開自己持有的未設定通知伺服器並回報數量（A 廣播 + 數量彙總）
+                var (total, responded, expected) = await _service.BroadcastLeaveNoNotifyAsync();
 
-                if (guilds.Count == 0)
+                if (total == 0)
                 {
                     await Context.Channel.SendErrorAsync("沒有未設定通知的伺服器");
                     return;
                 }
 
-                foreach (var item in guilds)
-                {
-                    await item.LeaveAsync().ConfigureAwait(false);
-                    Log.Info($"已離開未設定通知的伺服器: {item.Name} ({item.Id})");
-                }
-
-                await Context.Channel.SendConfirmAsync($"已離開 {guilds.Count} 個未設定通知的伺服器").ConfigureAwait(false);
+                await Context.Channel.SendConfirmAsync($"已廣播離開 {total} 個未設定通知的伺服器（{responded}/{expected} shard 回應，實際離開於背景進行）").ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), "LeaveNoNotifyGuild Error");
-                await Context.Channel.SendErrorAsync("取得未設定通知的伺服器列表失敗，請查看日誌").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync("離開未設定通知的伺服器失敗，請查看日誌").ConfigureAwait(false);
             }
         }
     }

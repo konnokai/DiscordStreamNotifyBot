@@ -71,6 +71,25 @@ namespace DiscordStreamNotifyBot.Shared
 
             /// <summary>各 shard 服務成員數（HASH，field = shardId）。狀態列彙總顯示用。</summary>
             public const string MemberCountHash = "cluster:stats:member_count";
+
+            /// <summary>各 shard 持有的伺服器快照（HASH，field = shardId，value = JSON guild 清單）。跨 shard 讀取彙總用。</summary>
+            public const string GuildSnapshotHash = "cluster:stats:guild_snapshot";
+        }
+
+        /// <summary>Notifier 控制平面頻道（指令觸發，廣播至所有 shard）。</summary>
+        public static class Notifier
+        {
+            /// <summary>關閉所有 Notifier shard（die 指令廣播，各 shard 收到後設 <c>Bot.IsDisconnect = true</c>）。</summary>
+            public const string Shutdown = "notifier.control.shutdown";
+
+            /// <summary>離開指定伺服器（payload = guildId；僅持有該伺服器的 shard 會實際離開）。</summary>
+            public const string LeaveGuild = "notifier.control.leaveGuild";
+
+            /// <summary>離開未設定通知的伺服器（payload = correlationId；各 shard 離開自己的並回報數量）。</summary>
+            public const string LeaveNoNotifyGuild = "notifier.control.leaveNoNotify";
+
+            /// <summary>全球訊息發送（payload = JSON SendAllPayload；各 shard 對自己持有的伺服器發送）。</summary>
+            public const string SendMessageToAll = "notifier.control.sendMessageToAll";
         }
 
         /// <summary>叢集控制平面鍵（水平擴展新增，詳見計畫 §4.2）。</summary>
@@ -87,6 +106,12 @@ namespace DiscordStreamNotifyBot.Shared
 
             /// <summary>notifier shard 租約鍵：<c>cluster:shard:lease:{shardId}</c>。</summary>
             public static string ShardLease(int shardId) => $"cluster:shard:lease:{shardId}";
+
+            /// <summary>跨 shard 查詢請求頻道（scatter-gather；payload 內含 correlationId）。</summary>
+            public const string QueryRequest = "cluster:query:request";
+
+            /// <summary>跨 shard 查詢回應頻道：<c>cluster:query:reply:{correlationId}</c>（請求端依 correlationId 訂閱收集）。</summary>
+            public static string QueryReply(string correlationId) => $"cluster:query:reply:{correlationId}";
         }
     }
 }

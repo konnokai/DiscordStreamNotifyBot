@@ -35,15 +35,6 @@ namespace DiscordStreamNotifyBot
         /// <summary>叢集的 Shard 總數</summary>
         public static int TotalShardCount { get => BotState.TotalShardCount; private set => BotState.TotalShardCount = value; }
 
-        /// <summary>
-        /// 本程序是否為偵測宿主。由 Scraper 的 DetectionHost 設為 true；Notifier 永遠為 false。
-        /// 偵測（爬蟲 Timer / 錄影 Redis 訂閱 / PubSub 維護）只在偵測宿主啟動 —— 角色由執行檔決定，不可設定。
-        /// </summary>
-        public static bool IsDetectionHost { get => BotState.IsDetectionHost; set => BotState.IsDetectionHost = value; }
-        public static bool IsHoloChannelSpider { get => BotState.IsHoloChannelSpider; set => BotState.IsHoloChannelSpider = value; }
-        public static bool IsNijisanjiChannelSpider { get => BotState.IsNijisanjiChannelSpider; set => BotState.IsNijisanjiChannelSpider = value; }
-        public static bool IsOtherChannelSpider { get => BotState.IsOtherChannelSpider; set => BotState.IsOtherChannelSpider = value; }
-
         private static DiscordSocketClient client;
         private static Timer timerUpdateStatus;
         private static NotificationBusConsumer _busConsumer;
@@ -134,9 +125,6 @@ namespace DiscordStreamNotifyBot
             }
         }
 
-        /// <summary>依 Discord 官方公式判斷該伺服器是否歸屬於本 Shard（委派 <see cref="BotState"/>）。</summary>
-        public static bool IsServerOnThisShard(ulong guildId) => BotState.IsServerOnThisShard(guildId);
-
         /// <summary>
         /// 在 <c>GetGuild(guildId) == null</c> 時判斷是否「真的」該刪除此伺服器的設定（委派 <see cref="BotState"/>）：
         /// 僅「歸屬本 Shard」且「已 Ready」才回傳 true，避免多 Shard 互刪設定。
@@ -183,6 +171,9 @@ namespace DiscordStreamNotifyBot
                         }
                     }
                 }
+
+                // 寫入本 shard 伺服器快照，供跨 shard 讀取類指令彙總（B1）
+                await SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
             };
 
             client.LeftGuild += (guild) =>
@@ -260,6 +251,9 @@ namespace DiscordStreamNotifyBot
                 {
                     Log.Error(ex.Demystify(), $"LeftGuild-{guild}");
                 }
+
+                // 更新本 shard 伺服器快照（B1）
+                _ = SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
                 return Task.CompletedTask;
             };
             #endregion
@@ -444,6 +438,8 @@ namespace DiscordStreamNotifyBot
                     }
                 }
 
+                // 更新本 shard 伺服器快照（B1）
+                _ = SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
                 return Task.CompletedTask;
             };
 
@@ -452,21 +448,9 @@ namespace DiscordStreamNotifyBot
             do { await Task.Delay(1000); }
             while (!IsDisconnect);
 
-            while (IsHoloChannelSpider || IsOtherChannelSpider)
-            {
-                List<string> str = new List<string>();
-
-                if (IsHoloChannelSpider) str.Add("Holo");
-                if (IsOtherChannelSpider) str.Add("Other");
-
-                Log.Info($"等待 {string.Join(", ", str)} 完成");
-                await Task.Delay(5000);
-            }
-
             await client.StopAsync();
 
             Redis.GetSubscriber().UnsubscribeAll();
-            // 偵測資料（addNewStreamVideo）保存由 Scraper 的偵測服務於關閉時負責；Notifier 不再處理偵測狀態。
         }
 
         private void TimerHandler(object state)
@@ -474,6 +458,9 @@ namespace DiscordStreamNotifyBot
             if (IsDisconnect) return;
 
             ChangeStatus();
+
+            // 週期重寫本 shard 伺服器快照（B1；容忍 memberCount 漂移，管理用途足夠）
+            _ = SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
         }
 
         /// <summary>
