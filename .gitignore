@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 
 /Discord Stream Notify Bot/DbTrackerLog.txt
+/bot_config.json
