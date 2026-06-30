@@ -115,7 +115,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 return youtubeChannelSpider.ChannelTitle;
 
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NonApprovedVideos.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
+                return db.NonApprovedVideos.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelTitle;
 
             return channelId;
         }
