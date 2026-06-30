@@ -73,7 +73,7 @@
 
                                 await modal.SendConfirmAsync($"發送成功，回覆訊息:\n" +
                                     $"{message}\n" +
-                                    $"({modal.Data.Attachments.Count} 個附加檔案)", true);
+                                    $"({(modal.Data.Attachments != null ? modal.Data.Attachments.Count : 0)} 個附加檔案)", true);
                             }
                             catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                             {
