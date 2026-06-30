@@ -81,7 +81,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
 
                 var noticeType = Enum.Parse<NoticeType>(modal.Data.Components
                     .First(x => x.CustomId == "notice_type").Value);
-                string imageUrl = modal.Data.Attachments.Count == 1 ? modal.Data.Attachments.First().Url : "";
+                string imageUrl = (modal.Data.Attachments?.Count ?? 0) == 1 ? modal.Data.Attachments.First().Url : "";
                 string message = components.First(x => x.CustomId == "message").Value;
 
                 var payload = new SendAllPayload

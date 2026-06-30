@@ -29,7 +29,7 @@
 
                             await Bot.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());
 
-                            if (modal.Data.Attachments.Count > 0)
+                            if (modal.Data.Attachments?.Count > 0)
                             {
                                 foreach (var attachment in modal.Data.Attachments)
                                 {
@@ -41,7 +41,7 @@
                                 .WithTitle("")
                                 .WithDescription($"已收到訊息，請確保你填寫的聯絡資訊可讓 Bot 擁有者聯繫\n" +
                                     $"注意: Bot 擁有者會優先透過 Bot 來回應你的訊息，請確保你已開啟與本 Bot 共通伺服器的 `私人訊息` 隱私設定")
-                                .AddField($"已附加的檔案數量", modal.Data.Attachments.Count);
+                                .AddField($"已附加的檔案數量", modal.Data.Attachments?.Count ?? 0);
 
                             await modal.FollowupAsync(embed: embedBuilder.Build(), ephemeral: true);
                         }
@@ -63,7 +63,7 @@
                                         .WithDescription(message)
                                         .Build());
 
-                                if (modal.Data.Attachments.Count > 0)
+                                if (modal.Data.Attachments?.Count > 0)
                                 {
                                     foreach (var attachment in modal.Data.Attachments)
                                     {
@@ -73,7 +73,7 @@
 
                                 await modal.SendConfirmAsync($"發送成功，回覆訊息:\n" +
                                     $"{message}\n" +
-                                    $"({modal.Data.Attachments.Count} 個附加檔案)", true);
+                                    $"({modal.Data.Attachments?.Count ?? 0} 個附加檔案)", true);
                             }
                             catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                             {
