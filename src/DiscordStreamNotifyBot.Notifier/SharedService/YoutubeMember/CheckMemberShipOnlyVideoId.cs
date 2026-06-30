@@ -9,7 +9,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         private int _isCheckingMemberShipOnlyVideoId = 0;
 
         //https://github.com/member-gentei/member-gentei/blob/90f62385f554eb4c02ed8732e15061b9dd1dd6d0/gentei/apis/youtube.go#L100
-        private async void CheckMemberShipOnlyVideoId(object stats)
+        private async Task CheckMemberShipOnlyVideoId(object stats)
         {
             // 單次執行守衛（async void 無法被外部 await，必須自行防重入）
             if (Interlocked.CompareExchange(ref _isCheckingMemberShipOnlyVideoId, 1, 0) != 0)

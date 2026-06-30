@@ -139,7 +139,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 }
             };
 
-            checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
+            checkMemberShipOnlyVideoId = new Timer(new TimerCallback(async (obj) => await CheckMemberShipOnlyVideoId(obj)), null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
@@ -447,6 +447,16 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
     static class Ext
     {
+        // Discord.Net 3.19.1 的 DiscordErrorCode 列舉尚未涵蓋 50278（與機器人無任何共同伺服器，代表使用者已離開所有伺服器）
+        private const int CannotSendMessageNoMutualGuild = 50278;
+
+        // 與機器人已無共同伺服器 = 使用者離開了所有伺服器，復用 member.revokeToken 流程移除其會限與授權紀錄（跨 shard、冪等）
+        private static void RemoveLeftUserMemberCheck(ulong userId)
+        {
+            Log.Warn($"使用者已離開所有伺服器，移除其會限紀錄: {userId}");
+            Bot.RedisSub.Publish(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), userId.ToString());
+        }
+
         // RestUser無法被序列化，暫時放棄Cache
         //private static async Task<RestUser> GetRestUserFromCatchOrCreate(ulong userId)
         //{
@@ -603,7 +613,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
             catch (Discord.Net.HttpException ex)
             {
-                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+                if ((int?)ex.DiscordCode == CannotSendMessageNoMutualGuild)
+                {
+                    RemoveLeftUserMemberCheck(userId);
+                }
+                else if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
                     await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
@@ -652,7 +666,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
             catch (Discord.Net.HttpException ex)
             {
-                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+                if ((int?)ex.DiscordCode == CannotSendMessageNoMutualGuild)
+                {
+                    RemoveLeftUserMemberCheck(userId);
+                }
+                else if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
                     await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
@@ -689,7 +707,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
             catch (Discord.Net.HttpException ex)
             {
-                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+                if ((int?)ex.DiscordCode == CannotSendMessageNoMutualGuild && dc.Recipient != null)
+                {
+                    RemoveLeftUserMemberCheck(dc.Recipient.Id);
+                }
+                else if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {dc.Name}");
                 }
