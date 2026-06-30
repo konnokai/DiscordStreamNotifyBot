@@ -29,7 +29,7 @@
 
                             await Bot.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());
 
-                            if (modal.Data.Attachments.Count > 0)
+                            if (modal.Data.Attachments != null && modal.Data.Attachments.Count > 0)
                             {
                                 foreach (var attachment in modal.Data.Attachments)
                                 {
@@ -63,7 +63,7 @@
                                         .WithDescription(message)
                                         .Build());
 
-                                if (modal.Data.Attachments.Count > 0)
+                                if (modal.Data.Attachments != null && modal.Data.Attachments.Count > 0)
                                 {
                                     foreach (var attachment in modal.Data.Attachments)
                                     {
