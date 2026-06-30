@@ -66,7 +66,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private async Task ReminderTimerActionAsync(object rObj)
         {
             var streamVideo = (TableVideo)rObj;
-            var db = _dbService.GetDbContext();
+            using var db = _dbService.GetDbContext();
 
             try
             {

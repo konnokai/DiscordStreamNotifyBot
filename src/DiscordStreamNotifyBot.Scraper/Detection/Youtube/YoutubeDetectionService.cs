@@ -27,7 +27,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         public YouTubeService YouTubeService => _apiService.YouTubeService;
 
         private static ConcurrentDictionary<string, TableVideo> addNewStreamVideo = new();
-        private static HashSet<string> newStreamList = new();
+        private static ConcurrentBag<string> newStreamList = new();
 
         private bool isSubscribing = false;
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
@@ -723,21 +723,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     return $"({NotificationType} at {Published}) {ChannelId} - {VideoId}";
             }
             return "";
-        }
-    }
-
-    public static class Ext
-    {
-        public static DateTime? ConvertDateTime(this string text)
-        {
-            try
-            {
-                return Convert.ToDateTime(text);
-            }
-            catch
-            {
-                return new DateTime();
-            }
         }
     }
 }
