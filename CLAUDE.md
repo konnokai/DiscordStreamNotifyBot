@@ -8,8 +8,8 @@
 
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
-- 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`）+ 三個角色 exe 空殼 `src/DiscordStreamNotifyBot.{Scraper,Notifier,Coordinator}` + 現行 `DiscordStreamNotifyBot/`（仍是唯一有功能的 app，參考 Shared；階段 2 內容搬入 Notifier 後移除）。
-- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 1 完成（Solution 骨架 + Shared），階段 2 待做**。
+- 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`）+ `src/DiscordStreamNotifyBot.Notifier`（**現行唯一有功能的 app**：Bot.cs、指令系統、`SharedService/` 偵測，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.{Scraper,Coordinator}`（exe 空殼）。
+- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 2 完成（Notifier 上線，偵測暫留），階段 3 待做**。偵測拆去 Scraper + Redis Streams 匯流排 + 指令改用 `*ApiService` 尚未做。
 - **`claude` 分支 = RabbitMQ 版三層拆分的完整參考實作。只用 `git show claude:<path>` 閱讀收割，永不合併、永不 checkout 到工作樹。**
 - `nadekobot/` = 參考用外部專案（已 gitignore），非本專案程式碼。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
@@ -18,8 +18,8 @@
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release   # commit 前必跑，0 error 才可提交
-dotnet run -c Release --project DiscordStreamNotifyBot        # 單 shard（現行 app；階段 2 後改 Notifier）
-dotnet run -c Release --project DiscordStreamNotifyBot -- 0 4 # [ShardId, TotalShards]
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier        # 單 shard（現行有功能的 app）
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier -- 0 4 # [ShardId, TotalShards]
 ```
 
 - 首次執行若無 `bot_config.json` 會產生 `bot_config_example.json` 後退出；必填 DiscordToken、WebHookUrl、GoogleApiKey、ApiServerDomain。

@@ -334,11 +334,13 @@ services:
 - 參考：§2.1 列出的 `git show claude:...` 檔案。
 
 ### 階段 2：Notifier 上線（先維持單 shard 行為）
-- [ ] `Bot.cs`、指令系統、`Interaction/`、`Command/` 搬入 Notifier；指令改用 Shared 的 `*ApiService`。
-- [ ] 偵測 Timer **暫留** Notifier，功能不中斷。
+- [x] `Bot.cs`、指令系統、`Interaction/`、`Command/`（連同 `SharedService/`、`HttpClients/`、`Data/`、`UptimeKumaClient`、Logo）整批搬入 Notifier；現行單一專案移除，Notifier 成為唯一有功能的 app（`AssemblyName=DiscordStreamNotifyBot` 保留輸出檔名）。Program.cs 掛 `StartupPreflight` + `GracefulShutdown`（token 橋接既有 `Bot.IsDisconnect` 關閉路徑，SIGTERM 生效）。
+      **刻意延後至階段 3**：「指令改用 Shared 的 `*ApiService`」。理由：`YoutubeApiService`/`TwitchApiService` 是從偵測服務（`YoutubeStreamService`/`TwitchService`）carve 出來的；階段 2 偵測仍在 Notifier，現在切會造成 API 邏輯雙份，等階段 3 偵測搬去 Scraper 時一併做才不重工。
+- [x] 偵測 Timer **暫留** Notifier，功能不中斷（單程序全功能，維持單 shard 行為）。
 - 參考：`git show claude:src/DiscordStreamNotifyBot.Notifier/Bot.cs`、`.../Program.cs`。
 
 ### 階段 3：Scraper 拆出 + Redis Streams 匯流排
+- [ ] （承階段 2）新增 Shared 的 `YoutubeApiService`/`TwitchApiService` + `HttpClients/` 純 HTTP client；指令層改呼叫 ApiService，斷開對偵測服務的相依。
 - [ ] Shared 加 `Messages/` DTO 與 streams publisher/consumer helper（§4）。
 - [ ] 偵測 Timer、錄影訂閱、PubSub/EventSub 維護搬到 Scraper；偵測端 publish DTO、移除 Discord 呼叫。
 - [ ] Notifier 消費 group → 重建 embed → 發送（含 banner/活動）→ XACK；移除殘留偵測 Timer。
