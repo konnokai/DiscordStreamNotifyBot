@@ -327,9 +327,10 @@ services:
       （helper 暫置於 `Bot`：`Bot.IsServerOnThisShard` / `Bot.ShouldDeleteMissingGuild`，階段 1 拆分時移入 `BotState`。）
 
 ### 階段 1：Solution 骨架 + Shared
-- [ ] 建 `src/` 四專案 + 參考關係，全部可編譯（exe 先空殼）。
-- [ ] 搬移 §2.1 清單；EF 工具指向 Shared（含設計階段工廠）；**Migrations/ 從 claude 分支整批照搬**（§9-2）。
-- [ ] 三個 exe 的 Main 開頭掛 `StartupPreflight` + `GracefulShutdown`。
+- [x] 建 `src/` 四專案 + 參考關係，全部可編譯（exe 先空殼）。現行 `DiscordStreamNotifyBot/` 暫留並參考 Shared，階段 2 內容搬入 Notifier 後移除。
+- [x] 搬移 §2.1 清單的基礎設施：`BotConfig` / `Log` / `Utility`（master 版本本身無 Discord 耦合，整檔搬移，`Bot.RedisDb/DbService` → `BotState`）/ `RedisConnection` / `RedisDataStore` / `Auth/` / `DataBase/`；新增 `BotState` / `RedisChannels` / `GracefulShutdown` / `StartupPreflight`（RabbitMQ 探測移除，Streams preflight 留 TODO 至階段 3）/ `BotRole` / `MainDbContextFactory`。EF 工具指向 Shared；**Migrations/ 從 claude 分支整批照搬**（含 `SyncModelDrift` + baseline SQL），`has-pending-model-changes` = 無 drift（§9-2）。
+      **刻意延後**（移至消費階段，非本階段）：`HttpClients/` 與 `YoutubeApiService`/`TwitchApiService`（階段 2 指令改用時搬）、`Messages/` DTO 與 `NotificationBus`（§8 本就列階段 3）。
+- [x] 三個 exe 的 Main 開頭掛 `StartupPreflight` + `GracefulShutdown`（空殼：preflight 通過後等 `GracefulShutdown.Token`）。
 - 參考：§2.1 列出的 `git show claude:...` 檔案。
 
 ### 階段 2：Notifier 上線（先維持單 shard 行為）

@@ -4,6 +4,7 @@ using DiscordStreamNotifyBot.DataBase;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DiscordStreamNotifyBot.Migrations
 {
     [DbContext(typeof(MainDbContext))]
-    partial class MainDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611015819_SyncModelDrift")]
+    partial class SyncModelDrift
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -329,45 +332,6 @@ namespace DiscordStreamNotifyBot.Migrations
                     b.ToTable("notice_twitch_stream_channels", (string)null);
                 });
 
-            modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.NoticeTwitterSpaceChannel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("DateAdded")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("date_added");
-
-                    b.Property<ulong>("DiscordChannelId")
-                        .HasColumnType("bigint unsigned")
-                        .HasColumnName("discord_channel_id");
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("bigint unsigned")
-                        .HasColumnName("guild_id");
-
-                    b.Property<string>("NoticeTwitterSpaceUserId")
-                        .HasColumnType("longtext")
-                        .HasColumnName("notice_twitter_space_user_id");
-
-                    b.Property<string>("NoticeTwitterSpaceUserScreenName")
-                        .HasColumnType("longtext")
-                        .HasColumnName("notice_twitter_space_user_screen_name");
-
-                    b.Property<string>("StratTwitterSpaceMessage")
-                        .HasColumnType("longtext")
-                        .HasColumnName("strat_twitter_space_message");
-
-                    b.HasKey("Id")
-                        .HasName("pk_notice_twitter_space_channel");
-
-                    b.ToTable("notice_twitter_space_channel", (string)null);
-                });
-
             modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.NoticeYoutubeStreamChannel", b =>
                 {
                     b.Property<int>("Id")
@@ -670,89 +634,6 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasName("pk_twitch_streams");
 
                     b.ToTable("twitch_streams", (string)null);
-                });
-
-            modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.TwitterSpace", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("DateAdded")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("date_added");
-
-                    b.Property<DateTime>("SpaecActualStartTime")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("spaec_actual_start_time");
-
-                    b.Property<string>("SpaecId")
-                        .HasColumnType("longtext")
-                        .HasColumnName("spaec_id");
-
-                    b.Property<string>("SpaecMasterPlaylistUrl")
-                        .HasColumnType("longtext")
-                        .HasColumnName("spaec_master_playlist_url");
-
-                    b.Property<string>("SpaecTitle")
-                        .HasColumnType("longtext")
-                        .HasColumnName("spaec_title");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("longtext")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("UserName")
-                        .HasColumnType("longtext")
-                        .HasColumnName("user_name");
-
-                    b.Property<string>("UserScreenName")
-                        .HasColumnType("longtext")
-                        .HasColumnName("user_screen_name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_twitter_space");
-
-                    b.ToTable("twitter_space", (string)null);
-                });
-
-            modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.TwitterSpaceSpider", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("varchar(255)")
-                        .HasColumnName("user_id");
-
-                    b.Property<DateTime?>("DateAdded")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("date_added");
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("bigint unsigned")
-                        .HasColumnName("guild_id");
-
-                    b.Property<bool>("IsRecord")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("is_record");
-
-                    b.Property<bool>("IsWarningUser")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("is_warning_user");
-
-                    b.Property<string>("UserName")
-                        .HasColumnType("longtext")
-                        .HasColumnName("user_name");
-
-                    b.Property<string>("UserScreenName")
-                        .HasColumnType("longtext")
-                        .HasColumnName("user_screen_name");
-
-                    b.HasKey("UserId")
-                        .HasName("pk_twitter_space_spider");
-
-                    b.ToTable("twitter_space_spider", (string)null);
                 });
 
             modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.YoutubeChannelNameToId", b =>

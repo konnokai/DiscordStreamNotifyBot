@@ -8,8 +8,8 @@
 
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
-- 程式碼 = 單一專案 `DiscordStreamNotifyBot/`（`DiscordStreamNotifyBot.sln`）。
-- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 0 完成（shard 歸屬守衛已止血），階段 1 待做**。
+- 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`）+ 三個角色 exe 空殼 `src/DiscordStreamNotifyBot.{Scraper,Notifier,Coordinator}` + 現行 `DiscordStreamNotifyBot/`（仍是唯一有功能的 app，參考 Shared；階段 2 內容搬入 Notifier 後移除）。
+- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 1 完成（Solution 骨架 + Shared），階段 2 待做**。
 - **`claude` 分支 = RabbitMQ 版三層拆分的完整參考實作。只用 `git show claude:<path>` 閱讀收割，永不合併、永不 checkout 到工作樹。**
 - `nadekobot/` = 參考用外部專案（已 gitignore），非本專案程式碼。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
@@ -18,7 +18,7 @@
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release   # commit 前必跑，0 error 才可提交
-dotnet run -c Release --project DiscordStreamNotifyBot        # 單 shard
+dotnet run -c Release --project DiscordStreamNotifyBot        # 單 shard（現行 app；階段 2 後改 Notifier）
 dotnet run -c Release --project DiscordStreamNotifyBot -- 0 4 # [ShardId, TotalShards]
 ```
 
@@ -40,12 +40,12 @@ dotnet run -c Release --project DiscordStreamNotifyBot -- 0 4 # [ShardId, TotalS
 ## EF Core 鐵則
 
 ```powershell
-dotnet ef migrations add <Name> --project DiscordStreamNotifyBot
-dotnet ef database update --project DiscordStreamNotifyBot    # 僅限本地/開發 DB
+dotnet ef migrations add <Name> --project src/DiscordStreamNotifyBot.Shared
+dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅限本地/開發 DB
 ```
 
 - **正式 DB 永遠不用 `database update` 直連**。改產冪等 SQL、人工審核後手動於維護窗口執行：
-  `dotnet ef migrations script --idempotent --project DiscordStreamNotifyBot -o migrate.sql`
+  `dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate.sql`
 - 正式 DB **已完成基線化**（`__EFMigrationsHistory` 存在，2026-06），且已套用至 claude 分支的 `SyncModelDrift`。**禁用 `EnsureCreated`**。
 - 重構搬遷 DataBase/ 時，migration 檔**只能照搬、不可重新生成**（ID 必須對上正式 DB 歷史，詳見計畫 §9-2）。
 

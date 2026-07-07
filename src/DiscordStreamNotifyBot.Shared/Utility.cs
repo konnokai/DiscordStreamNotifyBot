@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using DiscordStreamNotifyBot.Shared;
+using System.Runtime.InteropServices;
 
 namespace DiscordStreamNotifyBot
 {
@@ -15,7 +16,7 @@ namespace DiscordStreamNotifyBot
         {
             try
             {
-                return Bot.RedisDb.SetMembers("youtube.nowRecord").Select((x) => x.ToString()).ToList();
+                return BotState.RedisDb.SetMembers("youtube.nowRecord").Select((x) => x.ToString()).ToList();
             }
             catch (Exception ex)
             {
@@ -30,7 +31,7 @@ namespace DiscordStreamNotifyBot
             {
                 int total = 0;
 
-                using var db = Bot.DbService.GetDbContext();
+                using var db = BotState.DbService.GetDbContext();
                 total += db.HoloVideos.AsNoTracking().Count();
                 total += db.NijisanjiVideos.AsNoTracking().Count();
                 total += db.OtherVideos.AsNoTracking().Count();
