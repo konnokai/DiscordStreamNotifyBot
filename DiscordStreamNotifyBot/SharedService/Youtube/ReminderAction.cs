@@ -370,6 +370,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         var guild = _client.GetGuild(item.GuildId);
                         if (guild == null)
                         {
+                            // 不屬於本 Shard 或尚未 Ready，靜默略過，別刪設定（避免多 Shard 互刪）
+                            if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
+                                continue;
+
                             Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();

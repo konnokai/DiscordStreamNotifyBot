@@ -95,6 +95,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 var guild = _client.GetGuild(guildYoutubeMemberConfig.GuildId);
                 if (guild == null)
                 {
+                    // 不屬於本 Shard 或尚未 Ready，靜默略過，別刪設定（避免多 Shard 互刪）
+                    if (!Bot.ShouldDeleteMissingGuild(guildYoutubeMemberConfig.GuildId))
+                        continue;
+
                     Log.Warn($"{guildYoutubeMemberConfig.GuildId} Guild 不存在");
                     db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guildYoutubeMemberConfig.GuildId));
                     continue;

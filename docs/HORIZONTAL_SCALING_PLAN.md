@@ -323,7 +323,8 @@ services:
 > 無自動化測試 — 每階段以多程序手動實測驗證（§11）。commit 前一律 `dotnet build DiscordStreamNotifyBot.sln -c Release`。
 
 ### 階段 0：止血 PR — shard 歸屬守衛
-- [ ] 在現行單一專案直接修 §5.1 的 5 處 + `BotState.IsServerOnThisShard` 等效 helper。不改變單 shard 行為，立即消除未來多 shard 互刪設定的災難。
+- [x] 在現行單一專案直接修 §5.1 的 5 處 + `BotState.IsServerOnThisShard` 等效 helper。不改變單 shard 行為，立即消除未來多 shard 互刪設定的災難。
+      （helper 暫置於 `Bot`：`Bot.IsServerOnThisShard` / `Bot.ShouldDeleteMissingGuild`，階段 1 拆分時移入 `BotState`。）
 
 ### 階段 1：Solution 骨架 + Shared
 - [ ] 建 `src/` 四專案 + 參考關係，全部可編譯（exe 先空殼）。

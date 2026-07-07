@@ -9,7 +9,7 @@
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
 - 程式碼 = 單一專案 `DiscordStreamNotifyBot/`（`DiscordStreamNotifyBot.sln`）。
-- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**尚未開始（階段 0 待做）**。
+- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 0 完成（shard 歸屬守衛已止血），階段 1 待做**。
 - **`claude` 分支 = RabbitMQ 版三層拆分的完整參考實作。只用 `git show claude:<path>` 閱讀收割，永不合併、永不 checkout 到工作樹。**
 - `nadekobot/` = 參考用外部專案（已 gitignore），非本專案程式碼。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。

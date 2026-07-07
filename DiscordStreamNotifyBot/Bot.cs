@@ -29,6 +29,26 @@ namespace DiscordStreamNotifyBot
         public static bool IsNijisanjiChannelSpider { get; set; } = false;
         public static bool IsOtherChannelSpider { get; set; } = false;
 
+        // Shard 資訊（多 shard 歸屬判斷用；階段 1 拆分後移至 BotState）
+        public static int ShardId { get; private set; }
+        public static int TotalShardCount { get; private set; }
+
+        /// <summary>依 Discord 官方公式 <c>(guildId &gt;&gt; 22) % totalShards</c> 判斷該伺服器是否歸屬於本 Shard。</summary>
+        public static bool IsServerOnThisShard(ulong guildId)
+        {
+            if (TotalShardCount <= 1)
+                return true;
+
+            return (int)((guildId >> 22) % (ulong)TotalShardCount) == ShardId;
+        }
+
+        /// <summary>
+        /// 在 <c>GetGuild(guildId) == null</c> 時判斷是否「真的」該刪除該伺服器設定：
+        /// 僅當「已 Ready」且「歸屬本 Shard」才回傳 true，避免多 Shard 互刪設定或啟動未完成時誤刪。
+        /// </summary>
+        public static bool ShouldDeleteMissingGuild(ulong guildId)
+            => IsConnect && IsServerOnThisShard(guildId);
+
         private static DiscordSocketClient client;
         private static Timer timerUpdateStatus;
 
@@ -42,6 +62,8 @@ namespace DiscordStreamNotifyBot
         {
             _shardId = shardId;
             _totalShardCount = totalShardCount;
+            ShardId = shardId;
+            TotalShardCount = totalShardCount;
 
             _botConfig.InitBotConfig();
             DbService = new MainDbService(_botConfig.MySqlConnectionString);
