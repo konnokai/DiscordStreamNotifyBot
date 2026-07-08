@@ -183,7 +183,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 }
             });
 
-            Bot.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), _botConfig.RedisTokenKey);
+            // 用 Utility.RedisKey（由 RedisTokenKeyProvisioner 佈建的叢集真實來源），而非 _botConfig.RedisTokenKey
+            // （bootstrap 時非 shard 0 的設定檔可能仍為空）。
+            Bot.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), Utility.RedisKey);
             Log.Info("已同步 Redis Token");
             _dbService = dbService;
         }

@@ -113,22 +113,12 @@ public class BotConfig
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
 
-            if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
-            {
-                Log.Error($"{nameof(RedisTokenKey)} 遺失，將重新建立隨機亂數");
-
-                RedisTokenKey = GenRandomKey();
-
-                try { File.WriteAllText("bot_config.json", JsonConvert.SerializeObject(this, Formatting.Indented)); }
-                catch (Exception ex)
-                {
-                    Log.Error($"設定檔保存失敗: {ex}");
-                    Log.Error($"請手動將此字串填入設定檔中的 \"{nameof(RedisTokenKey)}\" 欄位: {RedisTokenKey}");
-                    Environment.Exit(3);
-                }
-            }
-
-            Utility.RedisKey = RedisTokenKey;
+            // RedisTokenKey 的佈建改由 Redis 連線後的 RedisTokenKeyProvisioner 統一處理：僅 notifier shard 0 有權
+            // 建立，並以 Redis 為單一真實來源同步至各 shard 與後端。此處不再各自產生金鑰（會導致每個程序產生不同
+            // 金鑰、彼此與後端對不上，且原 GenRandomKey 產生空字串使「重建」實際無效）。設定檔已有金鑰時直接採用；
+            // 為空則留給 Provisioner，且不覆寫其可能已設好的 Utility.RedisKey。
+            if (!string.IsNullOrWhiteSpace(RedisTokenKey))
+                Utility.RedisKey = RedisTokenKey;
         }
         catch (Exception ex)
         {
@@ -177,17 +167,15 @@ public class BotConfig
 
     public static string GenRandomKey(int length = 128)
     {
-        var characters = "ABCDEF_GHIJKLMNOPQRSTUVWXYZ@abcdefghijklmnopqrstuvwx-yz0123456789";
-        var Charsarr = new char[128];
+        const string characters = "ABCDEF_GHIJKLMNOPQRSTUVWXYZ@abcdefghijklmnopqrstuvwx-yz0123456789";
         var random = new Random();
+        var chars = new char[length];
 
-        for (int i = 0; i < Charsarr.Length; i++)
+        for (int i = 0; i < length; i++)
         {
-            Charsarr[i] = characters[random.Next(characters.Length)];
+            chars[i] = characters[random.Next(characters.Length)];
         }
 
-        var resultString = new string(Charsarr);
-        resultString = resultString[Math.Min(length, resultString.Length)..];
-        return resultString;
+        return new string(chars);
     }
 }

@@ -101,6 +101,9 @@ namespace DiscordStreamNotifyBot.Shared
             /// <summary>TOTAL_SHARDS 公告（叢集真實來源）。</summary>
             public const string TotalShards = "cluster:total_shards";
 
+            /// <summary>RedisTokenKey（Auth 加解密金鑰，與後端共用）叢集真實來源。僅 notifier shard 0 有權建立。</summary>
+            public const string RedisTokenKey = "cluster:redis_token_key";
+
             /// <summary>各程序心跳鍵：<c>cluster:heartbeat:{role}:{id}</c>。</summary>
             public static string Heartbeat(string role, string id) => $"cluster:heartbeat:{role}:{id}";
 

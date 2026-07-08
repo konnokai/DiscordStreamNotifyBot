@@ -67,15 +67,27 @@ namespace DiscordStreamNotifyBot
             }
 
             // 啟動連線檢查（計畫 §5.3）：進入主邏輯前確認 MySQL / Redis 可連線，失敗印訊息後 Exit(1) 交給 Compose restart
+            var preflightConfig = new BotConfig();
             try
             {
-                var preflightConfig = new BotConfig();
                 preflightConfig.InitBotConfig();
                 await StartupPreflight.EnsureAsync(Role, preflightConfig, TimeSpan.FromSeconds(60));
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), "StartupPreflight 失敗");
+                Environment.Exit(1);
+            }
+
+            // RedisTokenKey 叢集佈建（僅 shard 0 有權建立，以 Redis 為單一真實來源同步至各 shard 與後端）。
+            // 必須在建立 Bot（其 YoutubeMemberService/RedisDataStore 會捕捉 Utility.RedisKey）之前完成。
+            try
+            {
+                await RedisTokenKeyProvisioner.EnsureAsync(Role, shardId, preflightConfig, TimeSpan.FromSeconds(60));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "RedisTokenKey 佈建失敗");
                 Environment.Exit(1);
             }
 
