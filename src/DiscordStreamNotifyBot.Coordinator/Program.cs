@@ -1,7 +1,6 @@
 namespace DiscordStreamNotifyBot.Coordinator
 {
-    // 階段 1 空殼：僅掛上 StartupPreflight + GracefulShutdown，驗證專案結構與 Shared 參考。
-    // 主控層實際邏輯（心跳監控 / leader 鎖觀察 / XPENDING 監控）於階段 4 實作。
+    // 主控層進入點（計畫階段 4）：StartupPreflight + GracefulShutdown → CoordinatorService 監控迴圈。
     internal class Program
     {
         private const BotRole Role = BotRole.Coordinator;
@@ -25,8 +24,8 @@ namespace DiscordStreamNotifyBot.Coordinator
                 return 1;
             }
 
-            Log.Info($"{Role} 空殼啟動完成，等待關閉訊號（實際邏輯於後續階段實作）");
-            try { await Task.Delay(Timeout.Infinite, GracefulShutdown.Token); }
+            var service = new CoordinatorService(config);
+            try { await service.RunAsync(GracefulShutdown.Token); }
             catch (OperationCanceledException) { }
 
             Log.Info($"{Role} 已關閉");

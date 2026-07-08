@@ -84,6 +84,22 @@ namespace DiscordStreamNotifyBot.Shared
             return result.ClaimedEntries;
         }
 
+        /// <summary>
+        /// 取得 stream 各 consumer group 的狀態（pending 數 / consumer 數）供 Coordinator 監控（§4.4 / §9.3）。
+        /// stream 尚未建立時回傳空陣列。
+        /// </summary>
+        public static async Task<StreamGroupInfo[]> GetGroupsAsync(IDatabase db)
+        {
+            try
+            {
+                return await db.StreamGroupInfoAsync(StreamKey);
+            }
+            catch (RedisServerException ex) when (ex.Message.Contains("no such key"))
+            {
+                return Array.Empty<StreamGroupInfo>();
+            }
+        }
+
         /// <summary>從 stream 訊息取出 <c>type</c> 與 <c>payload</c>；欄位缺失時回傳 false。</summary>
         public static bool TryGetPayload(StreamEntry entry, out string type, out string payload)
         {

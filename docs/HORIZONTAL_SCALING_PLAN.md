@@ -348,9 +348,9 @@ services:
 - [x] （3-5）scraper leader 鎖（`ScraperService` + `ClusterService`：`SET NX EX` 取鎖 + 續租 + 心跳，失鎖即結束避免雙偵測）。
 - 參考：`git show claude:src/DiscordStreamNotifyBot.Scraper/Detection/...`、`.../Notifier/NotificationBusConsumer.cs`（語意參考，傳輸層改 §4）。
 
-### 階段 4：Coordinator
-- [ ] 心跳監控 + leader 鎖觀察 + `cluster:total_shards` 公告 + XPENDING 堆積監控。
-- [ ] （選用）shard 租約，支援方式 B。
+### 階段 4：Coordinator（完成，正確性待測試環境驗）
+- [x] 心跳監控 + leader 鎖觀察 + `cluster:total_shards` 公告 + XPENDING 堆積監控。`CoordinatorService` 掛在 `PeriodicTimer` 迴圈：寫自身心跳、續公告 TOTAL_SHARDS、`ScanHeartbeatKeys` 統計 scraper/notifier 存活數、`NotificationBus.GetGroupsAsync`（`XINFO GROUPS`）監控各 group pending（門檻 500）與無 consumer 的殘留 group（§9.3）。`ClusterService` 於階段 3 已備齊所需方法，未改。
+- [ ] （選用）shard 租約，支援方式 B。`ClusterService.TryClaimAnyShardAsync` 等已就緒，Coordinator 端主動分配待方式 B 需要時再接。
 - 參考：`git show claude:src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs`。
 
 ### 階段 5：跨 shard 指令與共享狀態
