@@ -79,6 +79,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 - Global usings 已在 csproj 宣告：`Discord`、`Discord.WebSocket`、`Newtonsoft.Json`、`StackExchange.Redis`、`Microsoft.EntityFrameworkCore`、`System.Diagnostics`、`Google.Apis.YouTube.v3.Data`。
 - Embed 顏色：`WithOkColor()`（綠）/ `WithErrorColor()`（深灰）/ `WithRecordColor()`（紅）。
 - 風格遵循根目錄 `.editorconfig`。
+- Commit：訊息繁中；多行訊息用 Bash tool 的 heredoc（`git commit -F - <<'EOF' … EOF`），**勿用 PowerShell here-string `@'…'@`**（Bash tool 是 POSIX sh，`@'` 會漏字進標題）。
 
 ## 指令文件
 
