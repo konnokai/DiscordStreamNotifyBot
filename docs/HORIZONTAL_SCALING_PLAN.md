@@ -363,9 +363,9 @@ services:
 - [ ] 跑完 §11 驗證清單（需 docker + 外部 MySQL/Redis 的測試環境；本機無 docker 無法建 image，留待測試環境）。
 - 參考：`git show claude:Dockerfile`、`claude:docker-compose.yml`、`claude:.env.example`。
 
-### 階段 7（收尾）：制度回填
-- [ ] 更新 CLAUDE.md（架構段改為四專案版，收割 claude 分支 CLAUDE.md 的對應段落）。
-- [ ] 收割 claude 分支的 `.claude/skills/`（`add-detection-platform`、`debug-detection-bus`、`ef-migration-baseline`），把 RabbitMQ 字眼改成 streams 後放入本分支。
+### 階段 7（收尾）：制度回填（完成）
+- [x] 更新 CLAUDE.md（架構段已四專案版；「目前狀態」改為階段 0-7 程式碼完成、僅編譯驗證；架構要點加 Coordinator + 跨 shard；適用 Skills 列三個本專案 skill）。
+- [x] 收割 claude 分支的 `.claude/skills/`（`add-detection-platform`、`debug-detection-bus`、`ef-migration-baseline`），RabbitMQ→Redis Streams，且校準到現行樹實名（`NotificationBus.PublishAsync`/`NotifyType`/`DispatchAsync` switch/`bot:notify` group `shard-{id}`/shard 公式 `(guildId>>22)%total`）。順手修掉 shard 0 啟動的 `EnsureCreated`（違 EF 鐵則的 master 遺留）：`Bot.cs` 改為啟動不碰 DB，遷移一律 Script-Migration。
 
 ---
 

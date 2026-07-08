@@ -88,11 +88,9 @@ namespace DiscordStreamNotifyBot
                 return;
             }
 
-            if (_shardId == 0)
-            {
-                using (var db = DbService.GetDbContext())
-                    db.Database.EnsureCreated();
-            }
+            // 不在啟動時建立/遷移資料庫：正式 DB 已基線化，禁用 EnsureCreated（會建立無遷移歷史的庫）；
+            // 遷移一律用 Script-Migration 產生冪等 SQL、人工審核後於維護窗口手動套用（見 CLAUDE.md EF 鐵則）。
+            // 本地/開發庫請自行 dotnet ef database update。
         }
 
         public async Task StartAndBlockAsync()

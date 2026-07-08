@@ -9,7 +9,7 @@
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
-- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 6 檔案完成（Dockerfile + compose 方式 A + .env.example + .dockerignore），階段 7（制度回填）待做**。§11 驗證清單與 Docker 實跑需測試環境（本機無 docker）。正確性（§11）待計畫完成後於測試環境驗。
+- **三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）程式碼全數完成（階段 0-7）**，權威設計見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)。**僅編譯綠燈驗證；§11 執行期正確性 + Docker 實建 image 待測試環境**（本機無 docker）。
 - **`claude` 分支 = RabbitMQ 版三層拆分的完整參考實作。只用 `git show claude:<path>` 閱讀收割，永不合併、永不 checkout 到工作樹。**
 - `nadekobot/` = 參考用外部專案（已 gitignore），非本專案程式碼。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
@@ -57,6 +57,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 - **DI 反射自動載入**：實作 `IInteractionService` / `ICommandService` 的類別自動註冊 Singleton（`Interaction|Command/Extensions.cs`），新增服務不需手動登記。
 - DB：`MainDbService.GetDbContext()` 取短生命週期 context（`using var db = ...`），讀取一律 `.AsNoTracking()`。YouTube 影片四表（Holo/Nijisanji/Other/NonApproved）繼承 `Video`，依 videoId 查詢需依序探查四表。
 - 偵測與發送已拆分（計畫階段 3）：偵測（Timer/排程爬取/webhook 訂閱）在 **Scraper** `Detection/`，publish DTO 到 `bot:notify`；發送（`_client.GetGuild` + embed）在 **Notifier** `SharedService/`，消費匯流排後 `DispatchFromBusAsync` 重建 embed。跨層 DTO 在 `Shared/Messages/`。
+- **Coordinator**（階段 4）：`CoordinatorService` 心跳/leader 觀察/`TOTAL_SHARDS` 公告/`XINFO GROUPS` pending 監控，不負責重啟（交 Compose）。**跨 shard 指令**（階段 5，計畫 §7）：`Notifier/SharedService/Cluster/ClusterQueryService`（合併快照 + request-reply）+ `AdministrationService` 廣播；`OfficialGuildList` 存 Redis SET；狀態列計數走 `cluster:stats:*` HASH 彙總。部署見根目錄 `Dockerfile`/`docker-compose.yml`（方式 A）。
 
 ## 外部契約（不可片面更改）
 
@@ -92,4 +93,5 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 
 ## 適用 Skills
 
-`/migrate`（EF 變更後）、`/code-review`（重構/PR 後）、`/security-scan`（Auth 或加密變更時）、`/health-check`、`/de-sloppify`、`/checkpoint`。不適用：`/scaffold`、`/tdd`（無測試框架）、`/api-versioning`、`/aspire`。
+- 本專案 skills（`.claude/skills/`）：`add-detection-platform`（新增平台/通知事件）、`debug-detection-bus`（偵測→匯流排→發送除錯）、`ef-migration-baseline`（EF 遷移/基線化）。
+- 外掛 skills：`/migrate`（EF 變更後）、`/code-review`（重構/PR 後）、`/security-scan`（Auth 或加密變更時）、`/health-check`、`/de-sloppify`、`/checkpoint`。不適用：`/scaffold`、`/tdd`（無測試框架）、`/api-versioning`、`/aspire`。
