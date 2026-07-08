@@ -362,8 +362,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-/Discord Stream Notify Bot/DbTrackerLog.txt
-/bot_config.json
+DbTrackerLog.txt
+bot_config.json
 
 # Docker Compose 部署密鑰（範例 .env.example 才進版控，見計畫 §6）
 .env
