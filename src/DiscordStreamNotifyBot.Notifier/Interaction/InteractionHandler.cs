@@ -15,6 +15,43 @@ namespace DiscordStreamNotifyBot.Interaction
 
         public int CommandCount => _interactions.ComponentCommands.Count + _interactions.ContextCommands.Count + _interactions.SlashCommands.Count;
 
+        /// <summary>
+        /// 會被全球註冊的 Slash 指令「規格」雜湊（指令名稱、描述，以及各參數的位置/名稱/型別/是否必填/描述）。
+        /// <para>只要規格有任何變動，雜湊即改變，供啟動時判斷是否需要重新註冊全球指令（取代僅比對指令總數的舊做法）。</para>
+        /// </summary>
+        public string CommandSignature
+        {
+            get
+            {
+                var sb = new System.Text.StringBuilder();
+
+                var commands = _interactions.SlashCommands
+                    .Where((cmd) => !cmd.Module.DontAutoRegister) // 只納入會被全球註冊的指令（排除伺服器專屬指令）
+                    .Select((cmd) =>
+                    {
+                        string groupPrefix = string.IsNullOrEmpty(cmd.Module.SlashGroupName) ? "" : cmd.Module.SlashGroupName + " ";
+                        // 參數維持宣告順序（即 Discord 上的位置），逐一記錄位置/名稱/型別/是否必填/描述
+                        var parameters = cmd.Parameters
+                            .Select((p, index) => $"{index}:{p.Name}:{p.ParameterType.Name}:{(p.IsRequired ? "R" : "O")}:{p.Description}")
+                            .ToList();
+                        return (Name: groupPrefix + cmd.Name, Description: cmd.Description, Parameters: parameters);
+                    })
+                    .OrderBy((x) => x.Name, StringComparer.Ordinal) // 指令間排序以求穩定；參數內部維持位置順序
+                    .ToList();
+
+                foreach (var cmd in commands)
+                {
+                    sb.Append(cmd.Name).Append('|').Append(cmd.Description).Append('|');
+                    foreach (var p in cmd.Parameters)
+                        sb.Append(p).Append(';');
+                    sb.Append('\n');
+                }
+
+                using var sha = System.Security.Cryptography.SHA256.Create();
+                return Convert.ToHexString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(sb.ToString())));
+            }
+        }
+
         public InteractionHandler(IServiceProvider services, InteractionService interactions, DiscordSocketClient client)
         {
             _client = client;

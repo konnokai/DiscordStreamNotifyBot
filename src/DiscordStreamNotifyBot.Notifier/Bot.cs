@@ -304,10 +304,11 @@ namespace DiscordStreamNotifyBot
             try
             {
                 InteractionService interactionService = serviceProvider.GetService<InteractionService>();
-                int localCommandCount = serviceProvider.GetService<InteractionHandler>().CommandCount;
+                // 以「指令規格雜湊」判斷是否需重註冊：只要 Slash 指令的名稱/參數/型別等規格有變動，雜湊即改變（取代僅比對指令總數）
+                string localCommandSignature = serviceProvider.GetService<InteractionHandler>().CommandSignature;
 #if DEBUG
-                var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", localCommandCount)).ToString();
-                if (commandCount != localCommandCount.ToString())
+                var commandSignature = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_signature", localCommandSignature)).ToString();
+                if (commandSignature != localCommandSignature)
                 {
                     if (_botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(_botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試 Slash 指令的伺服器或伺服器不存在，略過");
@@ -333,8 +334,8 @@ namespace DiscordStreamNotifyBot
                 {
                     try
                     {
-                        var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", localCommandCount)).ToString();
-                        if (commandCount != localCommandCount.ToString())
+                        var commandSignature = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_signature", localCommandSignature)).ToString();
+                        if (commandSignature != localCommandSignature)
                         {
                             await interactionService.RegisterCommandsGloballyAsync();
                             Log.Info("已註冊全球指令");

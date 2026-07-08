@@ -175,9 +175,10 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 {
                     try
                     {
+                        // 跨 shard：只處理本 shard 持有的伺服器，否則對別 shard 的伺服器 GetGuild 會是 null 而誤刪其 GuildConfig（與 YT/Twitch/會限段一致）
                         List<KeyValuePair<ulong, ulong>> list = db.GuildConfig
                             .Distinct((x) => x.GuildId)
-                            .Where((x) => x.NoticeChannelId != 0)
+                            .Where((x) => x.NoticeChannelId != 0 && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
                             .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.NoticeChannelId))
                             .ToList();
 
