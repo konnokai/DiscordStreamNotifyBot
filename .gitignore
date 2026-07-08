@@ -370,3 +370,7 @@ bot_config.json
 
 # 參考用外部專案（非本專案程式碼，見 CLAUDE.md）
 /nadekobot/
+
+# graphify
+/graphify-out/cost.json
+/graphify-out/cache
