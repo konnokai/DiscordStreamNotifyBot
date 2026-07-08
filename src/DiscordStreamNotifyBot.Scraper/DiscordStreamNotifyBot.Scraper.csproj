@@ -7,6 +7,8 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<Configurations>Debug;Release;Debug_DontRegisterCommand;Debug_API</Configurations>
+		<!-- dotnet run 的工作目錄指向 repo 根（bot_config.json 所在）；IDE F5 另由 Properties\launchSettings.json 的 workingDirectory 控制 -->
+		<RunWorkingDirectory>$(MSBuildProjectDirectory)\..\..</RunWorkingDirectory>
 	</PropertyGroup>
 
 	<ItemGroup>

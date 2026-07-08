@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Coordinator": {
+      "commandName": "Project",
+      "workingDirectory": "..\\..",
+      "dotnetRunMessages": true
+    }
+  }
+}

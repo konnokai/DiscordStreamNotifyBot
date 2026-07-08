@@ -1,0 +1,21 @@
+{
+  "profiles": {
+    "Notifier (單 shard)": {
+      "commandName": "Project",
+      "workingDirectory": "..\\..",
+      "dotnetRunMessages": true
+    },
+    "Notifier (shard 0/2)": {
+      "commandName": "Project",
+      "commandLineArgs": "0 2",
+      "workingDirectory": "..\\..",
+      "dotnetRunMessages": true
+    },
+    "Notifier (shard 1/2)": {
+      "commandName": "Project",
+      "commandLineArgs": "1 2",
+      "workingDirectory": "..\\..",
+      "dotnetRunMessages": true
+    }
+  }
+}

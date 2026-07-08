@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Scraper": {
+      "commandName": "Project",
+      "workingDirectory": "..\\..",
+      "dotnetRunMessages": true
+    }
+  }
+}
