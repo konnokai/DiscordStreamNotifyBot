@@ -9,7 +9,7 @@
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
-- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 4 完成（Coordinator 上線，僅編譯驗證），階段 5（跨 shard 指令）待做**。正確性（§11）待計畫完成後於測試環境驗。
+- 進行中：**三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）**，權威設計與分階段步驟見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)，目前進度：**階段 5 完成（跨 shard 指令三機制 + OfficialGuildList 存 Redis + 計數 HASH 彙總，僅編譯驗證），階段 6（Docker 化部署）待做**。正確性（§11）待計畫完成後於測試環境驗。
 - **`claude` 分支 = RabbitMQ 版三層拆分的完整參考實作。只用 `git show claude:<path>` 閱讀收割，永不合併、永不 checkout 到工作樹。**
 - `nadekobot/` = 參考用外部專案（已 gitignore），非本專案程式碼。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。

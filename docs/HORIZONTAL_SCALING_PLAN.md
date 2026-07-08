@@ -353,10 +353,10 @@ services:
 - [ ] （選用）shard 租約，支援方式 B。`ClusterService.TryClaimAnyShardAsync` 等已就緒，Coordinator 端主動分配待方式 B 需要時再接。
 - 參考：`git show claude:src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs`。
 
-### 階段 5：跨 shard 指令與共享狀態
-- [ ] §7 三機制（ClusterQueryService + AdministrationService 改造）。
-- [ ] `Utility.OfficialGuildList` 改存 Redis SET（解 `Program.cs:41` TODO，首啟由 OfficialList.json 播種）。
-- [ ] 狀態列伺服器/成員計數跨 shard 彙總（Redis HASH）。
+### 階段 5：跨 shard 指令與共享狀態（完成，正確性待測試環境驗）
+- [x] §7 三機制（ClusterQueryService + AdministrationService 改造）。新增 `Notifier/SharedService/Cluster/ClusterQueryService.cs`（B1 `ReadMergedGuildsAsync`/`WriteGuildSnapshotAsync` + B2 `RequestAsync`/`CollectAsync`，訂閱 `cluster:query:request`）；`AdministrationService` 加 A 廣播訂閱（shutdown/leaveGuild/leaveNoNotify）+ `Administration` 指令改走合併快照/廣播/request-reply；`SendMsgToAllGuildService` 改廣播 `SendAllPayload` 各 shard 重建 embed 發送（只回「已廣播」，§7 已知取捨）。四檔照搬 claude 版（純 cross-shard 疊加，無功能分岔）。
+- [x] `Utility.OfficialGuildList` 改存 Redis SET（`LoadOfficialGuildListFromRedisAsync`/`SaveOfficialGuildListToRedisAsync`）；`Program.cs` 首啟由 `OfficialList.json` 播種後改讀 Redis（解原 TODO）；Add/Remove 走 `SaveAndBroadcastOfficialGuildListAsync` → 廣播 reload。
+- [x] 狀態列伺服器/成員計數跨 shard 彙總（Redis HASH）。`Bot.GetAggregatedShardCountAsync` 寫 `cluster:stats:{guild,member}_count` HASH（field=shardId）並加總 `[0,TotalShardCount)`；`WriteGuildSnapshotAsync` 於 Ready/Joined/Left/15min timer 重寫 `cluster:stats:guild_snapshot`。
 
 ### 階段 6：Docker 化與部署驗證
 - [ ] 單一 multi-stage Dockerfile + compose（方式 A）+ `.env.example`。

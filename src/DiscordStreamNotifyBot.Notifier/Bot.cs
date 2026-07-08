@@ -135,6 +135,9 @@ namespace DiscordStreamNotifyBot
                         }
                     }
                 }
+
+                // 寫入本 shard 伺服器快照，供跨 shard 讀取類指令彙總（B1，計畫 §7）
+                await SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
             };
 
             client.LeftGuild += (guild) =>
@@ -212,6 +215,9 @@ namespace DiscordStreamNotifyBot
                 {
                     Log.Error(ex.Demystify(), $"LeftGuild-{guild}");
                 }
+
+                // 更新本 shard 伺服器快照（B1）
+                _ = SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
                 return Task.CompletedTask;
             };
             #endregion
@@ -396,6 +402,8 @@ namespace DiscordStreamNotifyBot
                     }
                 }
 
+                // 更新本 shard 伺服器快照（B1）
+                _ = SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
                 return Task.CompletedTask;
             };
 
@@ -426,6 +434,40 @@ namespace DiscordStreamNotifyBot
             if (IsDisconnect) return;
 
             ChangeStatus();
+
+            // 週期重寫本 shard 伺服器快照（B1；容忍 memberCount 漂移，管理用途足夠）
+            _ = SharedService.Cluster.ClusterQueryService.WriteGuildSnapshotAsync(client);
+        }
+
+        /// <summary>
+        /// 跨 shard 計數彙總（階段 5）：將本 shard 計數寫入 Redis HASH（field = shardId），
+        /// 多 shard 時回傳全 shard 加總（僅計入 <c>[0, TotalShardCount)</c> 的欄位，避免縮容殘留干擾）；
+        /// 單 shard 或 Redis 失敗時退回本機計數。
+        /// </summary>
+        private async Task<long> GetAggregatedShardCountAsync(string hashKey, long ownCount)
+        {
+            try
+            {
+                await RedisDb.HashSetAsync(hashKey, _shardId, ownCount);
+
+                if (_totalShardCount <= 1)
+                    return ownCount;
+
+                long total = 0;
+                foreach (var entry in await RedisDb.HashGetAllAsync(hashKey))
+                {
+                    if (int.TryParse(entry.Name, out int entryShardId) && entryShardId < _totalShardCount &&
+                        entry.Value.TryParse(out long value))
+                        total += value;
+                }
+
+                return total;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "GetAggregatedShardCountAsync");
+                return ownCount;
+            }
         }
 
         public void ChangeStatus()
@@ -435,13 +477,13 @@ namespace DiscordStreamNotifyBot
                 switch (Status)
                 {
                     case BotPlayingStatus.Guild:
-                        await client.SetCustomStatusAsync($"在 {client.Guilds.Count} 個伺服器");
+                        await client.SetCustomStatusAsync($"在 {await GetAggregatedShardCountAsync(Shared.RedisChannels.SharedState.GuildCountHash, client.Guilds.Count)} 個伺服器");
                         Status = BotPlayingStatus.Member;
                         break;
                     case BotPlayingStatus.Member:
                         try
                         {
-                            await client.SetCustomStatusAsync($"服務 {client.Guilds.Sum((x) => x.MemberCount)} 個成員");
+                            await client.SetCustomStatusAsync($"服務 {await GetAggregatedShardCountAsync(Shared.RedisChannels.SharedState.MemberCountHash, client.Guilds.Sum((x) => x.MemberCount))} 個成員");
                             Status = BotPlayingStatus.Info;
                         }
                         catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
