@@ -1,30 +1,30 @@
-﻿using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.Interaction;
-using System.Runtime.InteropServices;
-using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
 
 #if !DEBUG
 using Polly;
 #endif
 
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
+
 namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 {
+    /// <summary>
+    /// TwitCasting 指令支援 + 通知發送（Notifier 專用）：消費匯流排 <see cref="Shared.Messages.TwitcastingNotification"/>
+    /// 後重建 embed 並只發送給本 shard 持有的伺服器。偵測（Timer / WebHook 維護 / Redis 訂閱）由 Scraper 負責。
+    /// </summary>
     public class TwitcastingService : IInteractionService
     {
         public bool IsEnable { get; private set; } = true;
 
-        private readonly HashSet<int> hashSet = new HashSet<int>();
         private readonly DiscordSocketClient _client;
         private readonly TwitcastingClient _twitcastingClient;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
-        private readonly Timer _refreshCategoriesTimer, _refreshWebHookTimer;
-
-        private List<Category> categories;
-        private string twitcastingRecordPath = "";
-        private bool isRuning = false;
+        private readonly BotConfig _botConfig;
+        private readonly NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel> _noticeCache;
 
         public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
         {
@@ -38,62 +38,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             _client = client;
             _twitcastingClient = twitcastingClient;
             _emojiService = emojiService;
-
-            twitcastingRecordPath = botConfig.TwitCastingRecordPath;
-            if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Utility.GetDataFilePath("");
-            if (!twitcastingRecordPath.EndsWith(Utility.GetPlatformSlash())) twitcastingRecordPath += Utility.GetPlatformSlash();
-
-            _refreshCategoriesTimer = new Timer(async (_) =>
-            {
-                try
-                {
-                    categories = await _twitcastingClient.GetCategoriesAsync();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "TwitCasting 分類獲取失敗");
-                }
-            }, null, TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30));
-
-            _refreshWebHookTimer = new Timer(async (_) => { await TimerHandel(); },
-                null, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15));
-
+            _botConfig = botConfig;
             _dbService = dbService;
-
-            Bot.RedisSub.Subscribe(new RedisChannel("twitcasting.pubsub.startlive", RedisChannel.PatternMode.Literal), async (channel, message) =>
-            {
-                var webHookJson = JsonConvert.DeserializeObject<TwitCastingWebHookJson>(message);
-                if (webHookJson == null)
-                {
-                    Log.Error("TwitCasting WebHook JSON 反序列化失敗");
-                    return;
-                }
-
-                using var db = _dbService.GetDbContext();
-                if (await db.TwitcastingStreams.AsNoTracking().AnyAsync((x) => x.StreamId == int.Parse(webHookJson.Movie.Id)))
-                {
-                    Log.Warn($"TwitCasting 重複開台通知: {webHookJson.Movie.Id} - {webHookJson.Movie.Title}");
-                    return;
-                }
-
-                bool isRecord = db.TwitcastingSpider.SingleOrDefault((x) => x.ScreenId == webHookJson.Broadcaster.Id)?.IsRecord ?? false;
-                var twitcastingStream = new TwitcastingStream()
-                {
-                    ChannelId = webHookJson.Broadcaster.Id,
-                    ChannelTitle = webHookJson.Broadcaster.Name,
-                    StreamId = int.Parse(webHookJson.Movie.Id),
-                    StreamTitle = webHookJson.Movie.Title ?? "無標題",
-                    StreamSubTitle = webHookJson.Movie.Subtitle,
-                    Category = GetCategorieNameById(webHookJson.Movie.Category),
-                    ThumbnailUrl = webHookJson.Movie.LargeThumbnail,
-                    StreamStartAt = UnixTimeStampToDateTime(webHookJson.Movie.Created)
-                };
-
-                await db.TwitcastingStreams.AddAsync(twitcastingStream);
-                await db.SaveChangesAsync();
-
-                await SendStreamMessageAsync(twitcastingStream, webHookJson.Movie.IsProtected, !webHookJson.Movie.IsProtected && isRecord && RecordTwitCasting(twitcastingStream));
-            });
+            _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel>(dbService, db => db.NoticeTwitcastingStreamChannels.AsNoTracking().ToList());
         }
 
 #nullable enable
@@ -132,77 +79,36 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             }
         }
 
-        private async Task TimerHandel()
-        {
-#if DEBUG
-            return;
-#endif
+#nullable disable
 
-            if (isRuning) return;
-            isRuning = true;
-
-            using var db = _dbService.GetDbContext();
-            var spiderList = db.TwitcastingSpider.AsNoTracking().ToList();
-
-            try
+        /// <summary>
+        /// 通知匯流排消費端入口：還原 TwitcastingStream 後實際發送。
+        /// </summary>
+        public Task DispatchFromBusAsync(Shared.Messages.TwitcastingNotification dto)
+            => SendStreamMessageAsync(new TwitcastingStream
             {
-                // 取得所有已註冊的 webhook
-                var registeredWebhooks = await _twitcastingClient.GetAllRegistedWebHookAsync();
-                if (registeredWebhooks == null)
-                {
-                    Log.Error("TwitCastingService-Timer: 無法獲取已註冊的 Webhook 列表，請檢查 TwitCasting API 設定是否正確。");
-                    return;
-                }
-                var registeredChannelIds = registeredWebhooks.Select(x => x.UserId).ToHashSet();
+                ChannelId = dto.ChannelId,
+                ChannelTitle = dto.ChannelTitle,
+                StreamId = dto.StreamId,
+                StreamTitle = dto.StreamTitle,
+                StreamSubTitle = dto.StreamSubTitle,
+                Category = dto.Category,
+                ThumbnailUrl = dto.ThumbnailUrl,
+                StreamStartAt = dto.StreamStartAt,
+            }, dto.IsPrivate, dto.IsRecord);
 
-                // 需要註冊 webhook 的頻道
-                var spiderChannelIds = spiderList.Where((x) => !string.IsNullOrEmpty(x.ChannelId)).Select(x => x.ChannelId).ToHashSet();
-
-                // 註冊缺少的 webhook
-                foreach (var channelId in spiderChannelIds.Except(registeredChannelIds))
-                {
-                    await _twitcastingClient.RegisterWebHookAsync(channelId);
-                    Log.Info($"註冊 TwitCasting Webhook: {channelId}");
-                }
-
-                // 移除多餘的 webhook
-                foreach (var channelId in registeredChannelIds.Except(spiderChannelIds))
-                {
-                    await _twitcastingClient.RemoveWebHookAsync(channelId);
-                    Log.Info($"移除 TwitCasting Webhook: {channelId}");
-                }
-            }
-            catch (Exception ex) { Log.Error(ex.Demystify(), "TwitCastingService-Timer"); }
-            finally { isRuning = false; }
-
-            await db.SaveChangesAsync();
-        }
-
-        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate = false, bool isRecord = false)
+        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate, bool isRecord)
         {
 #if DEBUG
             Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
             using (var db = _dbService.GetDbContext())
             {
-                var noticeGuildList = db.NoticeTwitcastingStreamChannels.AsNoTracking().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
+                // 通知設定改讀記憶體快取（§12.3）
+                var noticeGuildList = _noticeCache.Get().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
-                EmbedBuilder embedBuilder = new EmbedBuilder()
-                    .WithTitle(twitcastingStream.StreamTitle)
-                    .WithDescription(Format.Url($"{twitcastingStream.ChannelTitle}", $"https://twitcasting.tv/{twitcastingStream.ChannelId}"))
-                    .WithUrl($"https://twitcasting.tv/{twitcastingStream.ChannelId}/movie/{twitcastingStream.StreamId}")
-                    .WithImageUrl(twitcastingStream.ThumbnailUrl)
-                    .AddField("需要密碼的私人直播", isPrivate ? "是" : "否", true);
-
-                if (!string.IsNullOrEmpty(twitcastingStream.StreamSubTitle)) embedBuilder.AddField("副標題", twitcastingStream.StreamSubTitle, true);
-                if (!string.IsNullOrEmpty(twitcastingStream.Category)) embedBuilder.AddField("分類", twitcastingStream.Category, true);
-
-                embedBuilder.AddField("開始時間", twitcastingStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
-
-                if (isPrivate) embedBuilder.WithErrorColor();
-                if (isRecord) embedBuilder.WithRecordColor();
-                else embedBuilder.WithOkColor();
+                EmbedBuilder embedBuilder = TwitcastingEmbedBuilderFactory.CreateStreamStarted(twitcastingStream, isPrivate, isRecord);
 
                 MessageComponent comp = new ComponentBuilder()
                         .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
@@ -215,13 +121,14 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                         var guild = _client.GetGuild(item.GuildId);
                         if (guild == null)
                         {
-                            // 不屬於本 Shard 或尚未 Ready，靜默略過，別刪設定（避免多 Shard 互刪）
+                            // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
                             if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
                                 continue;
 
                             Log.Warn($"TwitCasting 通知 ({item.DiscordChannelId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                             continue;
                         }
 
@@ -258,6 +165,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                             Log.Warn($"TwitCasting 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
                             db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
+                            _noticeCache.Invalidate();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
@@ -279,73 +187,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 }
             }
 #endif
-        }
-
-        private bool RecordTwitCasting(TwitcastingStream twitcastingStream)
-        {
-            Log.Info($"{twitcastingStream.ChannelTitle} ({twitcastingStream.StreamId}): {twitcastingStream.StreamTitle}");
-
-            try
-            {
-                if (!Directory.Exists(twitcastingRecordPath))
-                    Directory.CreateDirectory(twitcastingRecordPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"TwitCasting 保存路徑不存在且不可建立: {twitcastingRecordPath}");
-                Log.Error($"更改保存路徑至Data資料夾: {Utility.GetDataFilePath("")}");
-                Log.Error(ex.ToString());
-
-                twitcastingRecordPath = Utility.GetDataFilePath("");
-            }
-
-            // 自幹 Tc 錄影能錄但時間會出問題，還是用 StreamLink 方案好了
-            string procArgs = $"streamlink https://twitcasting.tv/{twitcastingStream.ChannelId} best --output \"{twitcastingRecordPath}[{twitcastingStream.ChannelId}]{twitcastingStream.StreamStartAt:yyyyMMdd} - {twitcastingStream.StreamId}.ts\"";
-            try
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"TwitCasting {twitcastingStream.ChannelId}\" {procArgs}");
-                else Process.Start(new ProcessStartInfo()
-                {
-                    FileName = "streamlink",
-                    Arguments = procArgs.Replace("streamlink", ""),
-                    CreateNoWindow = false,
-                    UseShellExecute = true
-                });
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "RecordTwitCasting 失敗，請確認是否已安裝 StreamLink");
-                return false;
-            }
-        }
-
-
-        // https://stackoverflow.com/questions/249760/how-can-i-convert-a-unix-timestamp-to-datetime-and-vice-versa
-        private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
-        {
-            // Unix timestamp is seconds past epoch
-            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-            return dateTime;
-        }
-
-        private string GetCategorieNameById(string categorieId)
-        {
-            string result = categorieId;
-
-            if (categories != null && categories.Any())
-            {
-                foreach (var item in categories)
-                {
-                    var subCategory = item.SubCategories.FirstOrDefault((x) => x.Id == categorieId);
-                    if (subCategory != null)
-                        result = subCategory.Name;
-                }
-            }
-
-            return result;
         }
     }
 }

@@ -42,6 +42,7 @@ namespace DiscordStreamNotifyBot
 
         private static DiscordSocketClient client;
         private static Timer timerUpdateStatus;
+        private static NotificationBusConsumer _busConsumer;
 
         public enum BotPlayingStatus { Guild, Member, Stream, StreamCount, Info }
 
@@ -241,6 +242,9 @@ namespace DiscordStreamNotifyBot
             var services = new ServiceCollection()
                 .AddHttpClient()
                 .AddSingleton(DbService)
+                .AddSingleton<Shared.YoutubeApiService>()
+                .AddSingleton<SharedService.EmojiService>()
+                .AddSingleton<SharedService.Twitch.TwitchApiService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
@@ -274,6 +278,22 @@ namespace DiscordStreamNotifyBot
             IServiceProvider serviceProvider = services.BuildServiceProvider();
             await serviceProvider.GetService<InteractionHandler>().InitializeAsync();
             await serviceProvider.GetService<CommandHandler>().InitializeAsync();
+            #endregion
+
+            #region 通知匯流排消費（Notifier 的通知一律來自 bot:notify Redis Stream；消費啟動失敗 = 無法服務，直接結束交由重啟）
+            try
+            {
+                _busConsumer = new NotificationBusConsumer(
+                    serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>(),
+                    serviceProvider.GetService<SharedService.Twitch.TwitchService>(),
+                    serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>());
+                await _busConsumer.StartAsync(_shardId);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "通知匯流排消費啟動失敗，Notifier 無法在沒有匯流排的情況下服務");
+                Environment.Exit(1);
+            }
             #endregion
 
             #region 註冊互動指令
@@ -398,7 +418,7 @@ namespace DiscordStreamNotifyBot
             await client.StopAsync();
 
             Redis.GetSubscriber().UnsubscribeAll();
-            SharedService.Youtube.YoutubeStreamService.SaveDateBase();
+            // 偵測資料庫保存改由 Scraper（DetectionHost.SaveStateBeforeShutdown）負責，Notifier 不再處理。
         }
 
         private void TimerHandler(object state)

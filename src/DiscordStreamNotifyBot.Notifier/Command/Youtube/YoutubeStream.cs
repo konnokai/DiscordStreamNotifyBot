@@ -2,6 +2,7 @@
 using DiscordStreamNotifyBot.Command.Attribute;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Interaction;
 using System.Text.RegularExpressions;
 
 namespace DiscordStreamNotifyBot.Command.Youtube
@@ -75,8 +76,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             var description = $"{Format.Url(video.Snippet.Title, $"https://www.youtube.com/watch?v={videoId}")}\n" +
                     $"{Format.Url(video.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{video.Snippet.ChannelId}")}";
 
-            if (!Extensions.HasStreamVideoByVideoId(videoId))
-                await _service.AddOtherDataAsync(video, true);
+            // 偵測資料的建立與排程移除由 Scraper 負責；此處發送 addVideo 控制訊息讓偵測器補資料
+            if (!SharedExtensions.HasStreamVideoByVideoId(videoId))
+                await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.addVideo", RedisChannel.PatternMode.Literal), videoId);
 
             try
             {
@@ -86,9 +88,6 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                     {
                         Log.Info($"已發送錄影請求: {videoId}");
                         await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
-
-                        if (_service.Reminders.TryRemove(videoId, out _))
-                            await Context.Channel.SendConfirmAsync("已從排程清單中移除該直播").ConfigureAwait(false);
                     }
                     else
                     {
@@ -151,10 +150,11 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 return;
             }
 
-            if (!Extensions.HasStreamVideoByVideoId(videoId))
+            if (!SharedExtensions.HasStreamVideoByVideoId(videoId))
             {
-                await _service.AddOtherDataAsync(video, false);
-                await Context.Channel.SendConfirmAsync($"已添加資料: {video.Snippet.ChannelTitle} - {video.Snippet.Title}");
+                // 新增影片資料由 Scraper 偵測器負責；發送 addVideo 控制訊息
+                await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.addVideo", RedisChannel.PatternMode.Literal), videoId);
+                await Context.Channel.SendConfirmAsync($"已要求偵測器添加資料: {video.Snippet.ChannelTitle} - {video.Snippet.Title}");
             }
             else
             {
@@ -217,7 +217,8 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             await db.SaveChangesAsync();
 
             await Context.Channel.SendConfirmAsync("已變更，等待爬蟲註冊中...");
-            await _service.SubscribePubSubAsync();
+            // PubSub 重新註冊由 Scraper 偵測器負責；發送控制訊息觸發
+            await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), "");
         }
 
         [RequireContext(ContextType.DM)]
@@ -400,9 +401,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [RequireOwner]
         public async Task ToggleRecord()
         {
-            _service.IsRecord = !_service.IsRecord;
-
-            await Context.Channel.SendConfirmAsync("直播錄影已" + (_service.IsRecord ? "開啟" : "關閉")).ConfigureAwait(false);
+            // 錄影開關狀態位於 Scraper 偵測器；發送控制訊息切換
+            await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.toggleRecord", RedisChannel.PatternMode.Literal), "");
+            await Context.Channel.SendConfirmAsync("已發送切換直播錄影的要求給偵測器").ConfigureAwait(false);
         }
 
         [RequireContext(ContextType.DM)]
@@ -423,7 +424,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             videoId = _service.GetVideoId(videoId);
 
-            var video = Extensions.GetStreamVideoByVideoId(videoId);
+            var video = SharedExtensions.GetStreamVideoByVideoId(videoId);
             if (video == null)
             {
                 await ReplyAsync($"不存在 {videoId} 的影片").ConfigureAwait(false);

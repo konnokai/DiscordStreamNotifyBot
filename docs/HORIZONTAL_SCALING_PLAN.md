@@ -339,13 +339,14 @@ services:
 - [x] 偵測 Timer **暫留** Notifier，功能不中斷（單程序全功能，維持單 shard 行為）。
 - 參考：`git show claude:src/DiscordStreamNotifyBot.Notifier/Bot.cs`、`.../Program.cs`。
 
-### 階段 3：Scraper 拆出 + Redis Streams 匯流排
-- [ ] （承階段 2）新增 Shared 的 `YoutubeApiService`/`TwitchApiService` + `HttpClients/` 純 HTTP client；指令層改呼叫 ApiService，斷開對偵測服務的相依。
-- [x] Shared 加 `Messages/` DTO（§4.2，欄位照搬 claude 最終版）與 streams publisher/consumer helper（§4：`NotificationBus` — XADD MAXLEN 修剪 / XGROUP CREATE 從 0 / XREADGROUP 短輪詢 / XACK / XAUTOCLAIM，傳輸層自寫，非抄 RabbitMQ）。純新增未接線，不影響現行行為；接線於下列子步驟。
-- [ ] 偵測 Timer、錄影訂閱、PubSub/EventSub 維護搬到 Scraper；偵測端 publish DTO、移除 Discord 呼叫。
-- [ ] Notifier 消費 group → 重建 embed → 發送（含 banner/活動）→ XACK；移除殘留偵測 Timer。
-- [ ] scraper leader 鎖。
-- 參考：`git show claude:src/DiscordStreamNotifyBot.Scraper/Detection/...`（偵測邏輯照搬）、`.../Shared/NotificationBusPublisher.cs` 與 `.../Notifier/NotificationBusConsumer.cs`（語意參考，傳輸層改 §4）、`.../Shared/RabbitMqService.cs`（**只看不抄** — 它是被否決的傳輸層）。
+### 階段 3：Scraper 拆出 + Redis Streams 匯流排（完成，正確性待測試環境驗）
+> 收割 claude 分支的偵測/發送實作，傳輸層一律改為自寫的 Redis Streams `NotificationBus`；master/claude 功能分岔僅 Attachments null（雙方皆已修），harvest 風險低。**僅編譯綠燈，§11 正確性由測試環境把關。**
+- [x] （3-2）新增 Shared 的 `YoutubeApiService`/`TwitchApiService`（= master 方法原樣 carve）+ `HttpClients/` 移入 Shared。指令層斷相依方式＝Notifier send-side 服務內部委派 ApiService（`GetChannelIdAsync` 等 → `_apiService`），指令模組不動 call-site。
+- [x] （3-1）Shared 加 `Messages/` DTO（§4.2）與 streams `NotificationBus`（§4：XADD MAXLEN / XGROUP CREATE 從 0 / XREADGROUP 短輪詢 / XACK / XAUTOCLAIM，傳輸層自寫非抄 RabbitMQ）。
+- [x] （3-3）偵測 Timer、錄影 Redis 訂閱、PubSub/EventSub 維護搬到 Scraper（`Detection/`）；發布端 `NotificationBusPublisher(RabbitMQ)` → `NotificationBus.PublishAsync(Streams)`、`NotifyRoutingKeys`→`NotifyType`；`using Bot = BotState` 別名；錄影 IPC pub/sub 契約不變。DetectionHost/ScraperService 組合根。
+- [x] （3-4）Notifier 改消費 `bot:notify`：`NotificationBusConsumer`（自寫 Streams 短輪詢 + 去重鍵 + XACK + XAUTOCLAIM）→ send-side 服務 `DispatchFromBusAsync` 重建 embed 發送（含 banner）。移除 Notifier 全部偵測（Schedule/Reminder/ChangeGuildBanner/Debounce/Json 刪除，搬至 Scraper）；owner 控制指令改 publish `youtube.control.*`（Scraper 訂閱執行）；`SharedExtensions` 抽出偵測與發送共用 helper。DI 補 `YoutubeApiService`/`TwitchApiService`/`EmojiService` + 消費端啟動。
+- [x] （3-5）scraper leader 鎖（`ScraperService` + `ClusterService`：`SET NX EX` 取鎖 + 續租 + 心跳，失鎖即結束避免雙偵測）。
+- 參考：`git show claude:src/DiscordStreamNotifyBot.Scraper/Detection/...`、`.../Notifier/NotificationBusConsumer.cs`（語意參考，傳輸層改 §4）。
 
 ### 階段 4：Coordinator
 - [ ] 心跳監控 + leader 鎖觀察 + `cluster:total_shards` 公告 + XPENDING 堆積監控。

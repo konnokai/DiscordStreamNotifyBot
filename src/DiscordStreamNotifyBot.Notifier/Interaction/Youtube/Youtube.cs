@@ -128,10 +128,19 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             {
                 List<Video> result = new List<Video>();
 
-                for (int i = 0; i < _service.Reminders.Count; i += 50)
+                // 接下來開台的清單改由 DB 查詢（偵測排程的 Reminders 在 Scraper 端，不跨程序共享）
+                List<string> videoIds = new List<string>();
+                using (var reminderDb = _dbService.GetDbContext())
+                {
+                    videoIds.AddRange(reminderDb.HoloVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate).Select((x) => x.VideoId));
+                    videoIds.AddRange(reminderDb.NijisanjiVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate).Select((x) => x.VideoId));
+                    videoIds.AddRange(reminderDb.OtherVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate).Select((x) => x.VideoId));
+                }
+
+                for (int i = 0; i < videoIds.Count; i += 50)
                 {
                     var yt = _service.YouTubeService.Videos.List("snippet,liveStreamingDetails");
-                    yt.Id = string.Join(',', _service.Reminders.Keys.Skip(i).Take(50));
+                    yt.Id = string.Join(',', videoIds.Skip(i).Take(50));
                     result.AddRange((await yt.ExecuteAsync().ConfigureAwait(false)).Items);
                 }
 
@@ -467,7 +476,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                         }
 
                         string addString = "\n如需調整影片上傳通知頻道請使用 `/youtube set-video-notice-channel`";
-                        if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId) && !Extensions.IsChannelInDb(channelId))
+                        if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId) && !SharedExtensions.IsChannelInDb(channelId))
                             addString += $"\n\n(注意: 該頻道未加入爬蟲清單\n如長時間無通知請使用 `/help get-command-help youtube-spider add` 查看說明並加入爬蟲)";
 
                         db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel()
