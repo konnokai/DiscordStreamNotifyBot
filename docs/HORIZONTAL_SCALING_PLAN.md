@@ -151,8 +151,7 @@ DiscordStreamNotifyBot.sln
 ```jsonc
 {
   // 既有: DiscordToken, GoogleApiKey, MySqlConnectionString, RedisOption, ApiServerDomain ...
-  "TotalShards": 4,
-  "ShardId": 0,                    // notifier 專用；租約模式可省略
+  "TotalShards": 4,                // 供 coordinator 公告；notifier 的 shard 身分改由啟動參數 [ShardId TotalShards] 決定，不設於此
   "HeartbeatIntervalSeconds": 10,
   "HeartbeatTtlSeconds": 30
 }

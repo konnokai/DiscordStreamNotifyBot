@@ -33,11 +33,11 @@ public class BotConfig
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
 
     #region 水平擴展（三層拆分）設定 (計畫 §3)
-    /// <summary>叢集 shard 總數（可由環境變數 TOTAL_SHARDS 或 notifier 啟動參數覆寫）。</summary>
+    /// <summary>
+    /// 叢集 shard 總數，供 Coordinator 公告 TOTAL_SHARDS 並比對存活 notifier 數（可由環境變數 TOTAL_SHARDS 覆寫）。
+    /// <para>Notifier 自身的 shard 身分與總數由啟動參數 <c>[ShardId TotalShards]</c> 決定，不讀本欄位。</para>
+    /// </summary>
     public int TotalShards { get; set; } = 1;
-
-    /// <summary>notifier 專用 shard id（用租約模式時可省略；可由啟動參數覆寫）。</summary>
-    public int ShardId { get; set; } = 0;
 
     /// <summary>各程序寫入心跳鍵的間隔秒數。</summary>
     public int HeartbeatIntervalSeconds { get; set; } = 10;
@@ -110,7 +110,6 @@ public class BotConfig
             PayPalEmoteId = config.PayPalEmoteId;
             ECPayEmoteId = config.ECPayEmoteId;
             TotalShards = config.TotalShards;
-            ShardId = config.ShardId;
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
 
@@ -149,7 +148,6 @@ public class BotConfig
         SetIfPresent("DISCORD_TOKEN", v => DiscordToken = v);
         SetIfPresent("GOOGLE_API_KEY", v => GoogleApiKey = v);
         SetIfPresentInt("TOTAL_SHARDS", v => TotalShards = v);
-        SetIfPresentInt("SHARD_ID", v => ShardId = v);
     }
 
     private static void SetIfPresent(string envName, Action<string> setter)
