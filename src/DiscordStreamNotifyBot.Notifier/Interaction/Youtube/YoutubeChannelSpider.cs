@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Interaction.Youtube
 {
@@ -12,6 +13,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
     {
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
+        private readonly ClusterQueryService _clusterQuery;
         public class GuildYoutubeChannelSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -68,10 +70,11 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             }
         }
 
-        public YoutubeChannelSpider(DiscordSocketClient client, MainDbService dbService)
+        public YoutubeChannelSpider(DiscordSocketClient client, MainDbService dbService, ClusterQueryService clusterQuery)
         {
             _client = client;
             _dbService = dbService;
+            _clusterQuery = clusterQuery;
 
             _client.ButtonExecuted += async (button) =>
             {
@@ -238,29 +241,38 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                     bool isGuildExist = true;
                     string guild = "";
 
-                    try
+                    // 跨 shard：用合併快照（B1）判定原持有伺服器是否仍在叢集，避免把別 shard 持有的伺服器誤判為已退出而搶走爬蟲
+                    if (item.GuildId == 0)
                     {
-                        guild = item.GuildId == 0 ? "Bot 擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
+                        guild = "Bot 擁有者";
                     }
-                    catch (Exception)
+                    else
                     {
-                        isGuildExist = false;
-
-                        try
+                        var guildMap = await _clusterQuery.GetGuildNameMapAsync();
+                        if (guildMap.TryGetValue(item.GuildId, out var ownerName))
                         {
-                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
-                                .SendMessageAsync(embed: new EmbedBuilder()
-                                    .WithOkColor()
-                                    .WithTitle("已更新 Youtube 爬蟲的持有伺服器")
-                                    .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
-                                    .AddField("原伺服器", Context.Guild.Id, false)
-                                    .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
+                            guild = ownerName;
                         }
-                        catch (Exception ex) { Log.Error(ex.ToString()); }
+                        else
+                        {
+                            isGuildExist = false;
 
-                        item.GuildId = Context.Guild.Id;
-                        db.YoutubeChannelSpider.Update(item);
-                        db.SaveChanges();
+                            try
+                            {
+                                await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
+                                    .SendMessageAsync(embed: new EmbedBuilder()
+                                        .WithOkColor()
+                                        .WithTitle("已更新 Youtube 爬蟲的持有伺服器")
+                                        .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
+                                        .AddField("原伺服器", item.GuildId, false)
+                                        .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
+                            }
+                            catch (Exception ex) { Log.Error(ex.ToString()); }
+
+                            item.GuildId = Context.Guild.Id;
+                            db.YoutubeChannelSpider.Update(item);
+                            db.SaveChanges();
+                        }
                     }
 
                     await Context.Interaction.SendConfirmAsync($"`{channelId}` 已在爬蟲清單內\n" +
@@ -371,8 +383,10 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
+                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
+                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
                 var list = db.YoutubeChannelSpider.Where((x) => x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
                 int warningChannelNum = db.YoutubeChannelSpider.Count((x) => !x.IsTrustedChannel);
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
@@ -393,8 +407,10 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
+                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
+                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
                 var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {

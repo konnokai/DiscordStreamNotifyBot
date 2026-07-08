@@ -1,4 +1,5 @@
 ﻿using Discord.Commands;
+using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Command.Normal
 {
@@ -6,11 +7,13 @@ namespace DiscordStreamNotifyBot.Command.Normal
     {
         private readonly DiscordSocketClient _client;
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
+        private readonly ClusterQueryService _clusterQuery;
 
-        public Normal(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient)
+        public Normal(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, ClusterQueryService clusterQuery)
         {
             _client = client;
             _discordWebhookClient = discordWebhookClient;
+            _clusterQuery = clusterQuery;
         }
 
         [Command("Ping")]
@@ -47,7 +50,9 @@ namespace DiscordStreamNotifyBot.Command.Normal
             embedBuilder.WithDescription($"建置版本 {Program.Version}");
             embedBuilder.AddField("作者", "孤之界#1121", true);
             embedBuilder.AddField("擁有者", $"{Bot.ApplicatonOwner.Username}#{Bot.ApplicatonOwner.Discriminator}", true);
-            embedBuilder.AddField("狀態", $"伺服器 {_client.Guilds.Count}\n服務成員數 {_client.Guilds.Sum((x) => x.MemberCount)}", false);
+            // 跨 shard：以合併快照（B1）彙總全叢集的伺服器數與成員數，而非只算本 shard
+            var mergedGuilds = await _clusterQuery.ReadMergedGuildsAsync();
+            embedBuilder.AddField("狀態", $"伺服器 {mergedGuilds.Count}\n服務成員數 {mergedGuilds.Sum((x) => x.MemberCount)}", false);
             embedBuilder.AddField("看過的直播數量", Utility.GetDbStreamCount(), true);
             embedBuilder.AddField("上線時間", $"{Bot.StopWatch.Elapsed:d\\天\\ hh\\:mm\\:ss}", false);
 

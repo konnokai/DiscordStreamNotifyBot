@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Interaction.Twitch
 {
@@ -12,6 +13,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
     {
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
+        private readonly ClusterQueryService _clusterQuery;
         public class GuildTwitchSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -68,10 +70,11 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             }
         }
 
-        public TwitchSpider(DiscordSocketClient client, MainDbService dbService)
+        public TwitchSpider(DiscordSocketClient client, MainDbService dbService, ClusterQueryService clusterQuery)
         {
             _client = client;
             _dbService = dbService;
+            _clusterQuery = clusterQuery;
 
             _client.ButtonExecuted += async (button) =>
             {
@@ -191,29 +194,39 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                     bool isGuildExist = true;
                     string guild = "";
 
-                    try
+                    // 跨 shard：用合併快照（B1）判定原持有伺服器是否仍在叢集，避免把別 shard 持有的伺服器誤判為已退出而搶走爬蟲
+                    if (item.GuildId == 0)
                     {
-                        guild = item.GuildId == 0 ? "Bot 擁有者" : $"{_client.GetGuild(item.GuildId).Name}";
+                        guild = "Bot 擁有者";
                     }
-                    catch (Exception)
+                    else
                     {
-                        isGuildExist = false;
-
-                        item.GuildId = Context.Guild.Id;
-                        db.TwitchSpider.Update(item);
-                        db.SaveChanges();
-
-                        try
+                        var guildMap = await _clusterQuery.GetGuildNameMapAsync();
+                        if (guildMap.TryGetValue(item.GuildId, out var ownerName))
                         {
-                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
-                                .SendMessageAsync(embed: new EmbedBuilder()
-                                    .WithOkColor()
-                                    .WithTitle("已更新 Twitch 爬蟲的持有伺服器")
-                                    .AddField("頻道", Format.Url(item.UserName, $"https://twitch.tv/{userData.Login}"), false)
-                                    .AddField("原伺服器", Context.Guild.Id, false)
-                                    .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
+                            guild = ownerName;
                         }
-                        catch (Exception ex) { Log.Error(ex.Demystify(), "Update Twitch Spider GuildId Error"); }
+                        else
+                        {
+                            isGuildExist = false;
+
+                            ulong originalGuildId = item.GuildId;
+                            item.GuildId = Context.Guild.Id;
+                            db.TwitchSpider.Update(item);
+                            db.SaveChanges();
+
+                            try
+                            {
+                                await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
+                                    .SendMessageAsync(embed: new EmbedBuilder()
+                                        .WithOkColor()
+                                        .WithTitle("已更新 Twitch 爬蟲的持有伺服器")
+                                        .AddField("頻道", Format.Url(item.UserName, $"https://twitch.tv/{userData.Login}"), false)
+                                        .AddField("原伺服器", originalGuildId, false)
+                                        .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
+                            }
+                            catch (Exception ex) { Log.Error(ex.Demystify(), "Update Twitch Spider GuildId Error"); }
+                        }
                     }
 
                     await Context.Interaction.SendConfirmAsync($"`{userData.DisplayName}` 已在爬蟲清單內\n" +
@@ -324,8 +337,10 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             {
                 try
                 {
+                    // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
+                    var guildMap = await _clusterQuery.GetGuildNameMapAsync();
                     var list = db.TwitchSpider.Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
-                        $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                        $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
                     int warningChannelNum = db.TwitchSpider.Count((x) => x.IsWarningUser);
 
                     await Context.SendPaginatedConfirmAsync(page, page =>
@@ -352,8 +367,10 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
 
             using (var db = _dbService.GetDbContext())
             {
+                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
+                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
                 var list = db.TwitchSpider.Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.UserName, $"https://twitch.tv/{x.UserLogin}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (_client.GetGuild(x.GuildId) != null ? _client.GetGuild(x.GuildId).Name : "已退出的伺服器")) + "` 新增");
+                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(page, page =>
                 {

@@ -25,6 +25,8 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             {
                 await Context.Channel.TriggerTypingAsync();
 
+                // 跨 shard：以合併快照（B1）判定伺服器是否真的退群，避免把別 shard 持有的伺服器誤判為已死去
+                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
                 var list = new List<string>();
                 var checkedGuildHashSet = new HashSet<ulong>();
                 foreach (var item in youtubeChannelSpiders)
@@ -34,8 +36,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
                     try
                     {
-                        var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null)
+                        if (!guildMap.ContainsKey(item.GuildId))
                         {
                             using (var db2 = _dbService.GetDbContext())
                             {
@@ -191,11 +192,13 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         {
             using (var db = _dbService.GetDbContext())
             {
+                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會 NRE，也不會被誤標為已退出
+                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
                 var list = db.YoutubeChannelSpider
                     .AsNoTracking()
                     .Where((x) => !x.IsTrustedChannel)
                     .Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                        $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : $"{_client.GetGuild(x.GuildId).Name}") + "` 新增");
+                        $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(0, page =>
                 {

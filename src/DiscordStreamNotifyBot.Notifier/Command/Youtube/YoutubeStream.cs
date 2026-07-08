@@ -12,12 +12,14 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         private readonly DiscordSocketClient _client;
         private readonly SharedService.Youtube.YoutubeStreamService _service;
         private readonly MainDbService _dbService;
+        private readonly SharedService.Cluster.ClusterQueryService _clusterQuery;
 
-        public YoutubeStream(DiscordSocketClient client, SharedService.Youtube.YoutubeStreamService service, MainDbService dbService)
+        public YoutubeStream(DiscordSocketClient client, SharedService.Youtube.YoutubeStreamService service, MainDbService dbService, SharedService.Cluster.ClusterQueryService clusterQuery)
         {
             _client = client;
             _service = service;
             _dbService = dbService;
+            _clusterQuery = clusterQuery;
         }
 
         [RequireContext(ContextType.DM)]

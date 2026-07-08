@@ -142,6 +142,18 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
             return result;
         }
 
+        /// <summary>
+        /// 取得「GuildId → 伺服器名稱」對照（跨 shard 合併快照，B1）。
+        /// <para>找不到某 key 代表全叢集皆無該伺服器（真正退群）；供爬蟲清單/持有權解析用，取代只看本 shard 的 <c>_client.GetGuild</c>。</para>
+        /// </summary>
+        public async Task<Dictionary<ulong, string>> GetGuildNameMapAsync()
+        {
+            var map = new Dictionary<ulong, string>();
+            foreach (var g in await ReadMergedGuildsAsync())
+                map[g.Id] = g.Name;
+            return map;
+        }
+
         /// <summary>從合併後的全叢集清單篩出「未設定任何通知/會限、且非官方白名單」的伺服器（依人數遞減）。</summary>
         public List<GuildSnapshot> FilterNoNotifyGuilds(List<GuildSnapshot> guilds)
         {
