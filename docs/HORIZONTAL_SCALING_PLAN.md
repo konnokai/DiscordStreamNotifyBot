@@ -341,7 +341,7 @@ services:
 
 ### 階段 3：Scraper 拆出 + Redis Streams 匯流排
 - [ ] （承階段 2）新增 Shared 的 `YoutubeApiService`/`TwitchApiService` + `HttpClients/` 純 HTTP client；指令層改呼叫 ApiService，斷開對偵測服務的相依。
-- [ ] Shared 加 `Messages/` DTO 與 streams publisher/consumer helper（§4）。
+- [x] Shared 加 `Messages/` DTO（§4.2，欄位照搬 claude 最終版）與 streams publisher/consumer helper（§4：`NotificationBus` — XADD MAXLEN 修剪 / XGROUP CREATE 從 0 / XREADGROUP 短輪詢 / XACK / XAUTOCLAIM，傳輸層自寫，非抄 RabbitMQ）。純新增未接線，不影響現行行為；接線於下列子步驟。
 - [ ] 偵測 Timer、錄影訂閱、PubSub/EventSub 維護搬到 Scraper；偵測端 publish DTO、移除 Discord 呼叫。
 - [ ] Notifier 消費 group → 重建 embed → 發送（含 banner/活動）→ XACK；移除殘留偵測 Timer。
 - [ ] scraper leader 鎖。
