@@ -358,9 +358,9 @@ services:
 - [x] `Utility.OfficialGuildList` 改存 Redis SET（`LoadOfficialGuildListFromRedisAsync`/`SaveOfficialGuildListToRedisAsync`）；`Program.cs` 首啟由 `OfficialList.json` 播種後改讀 Redis（解原 TODO）；Add/Remove 走 `SaveAndBroadcastOfficialGuildListAsync` → 廣播 reload。
 - [x] 狀態列伺服器/成員計數跨 shard 彙總（Redis HASH）。`Bot.GetAggregatedShardCountAsync` 寫 `cluster:stats:{guild,member}_count` HASH（field=shardId）並加總 `[0,TotalShardCount)`；`WriteGuildSnapshotAsync` 於 Ready/Joined/Left/15min timer 重寫 `cluster:stats:guild_snapshot`。
 
-### 階段 6：Docker 化與部署驗證
-- [ ] 單一 multi-stage Dockerfile + compose（方式 A）+ `.env.example`。
-- [ ] 跑完 §11 驗證清單。
+### 階段 6：Docker 化與部署驗證（檔案完成，實跑待測試環境）
+- [x] 單一 multi-stage `Dockerfile`（三 exe publish 至 `/app/{role}`，entrypoint 依 `$ROLE` 選執行檔，Notifier forward `[ShardId,TotalShards]`）+ `docker-compose.yml`（方式 A：coordinator/scraper/notifier-0..3，共用 image + `.env` + bot_config 掛載 + `host.docker.internal`）+ `.env.example` + `.dockerignore`。Dockerfile 照搬 claude 版（本就無 RabbitMQ）；compose/.env 去除 RabbitMQ（匯流排走 Redis Streams，無額外服務）；`.env` 加入 `.gitignore`。
+- [ ] 跑完 §11 驗證清單（需 docker + 外部 MySQL/Redis 的測試環境；本機無 docker 無法建 image，留待測試環境）。
 - 參考：`git show claude:Dockerfile`、`claude:docker-compose.yml`、`claude:.env.example`。
 
 ### 階段 7（收尾）：制度回填
