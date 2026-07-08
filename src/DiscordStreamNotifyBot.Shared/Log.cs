@@ -1,5 +1,10 @@
 ﻿public static class Log
 {
+    /// <summary>多程序部署的角色標籤（如 <c>scraper</c> / <c>notifier:0</c> / <c>coordinator</c>），跨程序追蹤用（計畫 §10）。空字串則不加。</summary>
+    public static string RolePrefix { get; set; } = "";
+
+    private static string Tag => string.IsNullOrEmpty(RolePrefix) ? "" : $"[{RolePrefix}] ";
+
     enum LogType { Verb, Stream, Info, Warn, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".log";
     static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.log";
@@ -14,7 +19,7 @@
 
         lock (writeLockObj)
         {
-            text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] [{type.ToString().ToUpper()}] | {text}\r\n";
+            text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {Tag}[{type.ToString().ToUpper()}] | {text}\r\n";
 
             switch (type)
             {
@@ -94,7 +99,7 @@
 
     public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray, bool newLine = true, bool isError = false)
     {
-        text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {text}";
+        text = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {Tag}{text}";
         Console.ForegroundColor = consoleColor;
 
         if (isError)

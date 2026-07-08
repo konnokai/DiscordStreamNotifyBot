@@ -13,37 +13,9 @@ namespace DiscordStreamNotifyBot.Interaction
         private static readonly IEmote arrow_left = new Emoji("\u2B05");
         private static readonly IEmote arrow_right = new Emoji("\u27A1");
 
-        public static EmbedBuilder WithOkColor(this EmbedBuilder eb) =>
-           eb.WithColor(00, 229, 132);
-        public static EmbedBuilder WithErrorColor(this EmbedBuilder eb) =>
-           eb.WithColor(40, 40, 40);
-        public static EmbedBuilder WithRecordColor(this EmbedBuilder eb) =>
-           eb.WithColor(255, 0, 0);
-
-        public static string ConvertDateTimeToDiscordMarkdown(this DateTime dateTime)
-        {
-            long UTCTime = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
-            return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
-        }
-
-        public static DataBase.Table.Video.YTChannelType GetProductionType(this DataBase.Table.Video streamVideo)
-        {
-            using (var db = Bot.DbService.GetDbContext())
-            {
-                DataBase.Table.Video.YTChannelType type;
-                var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
-
-                if (channel != null)
-                    type = channel.ChannelType;
-                else
-                    type = streamVideo.ChannelType;
-
-                return type;
-            }
-        }
-
-        public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
-                channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
+        // WithOkColor/WithErrorColor/WithRecordColor/ConvertDateTimeToDiscordMarkdown/
+        // GetProductionType/GetProductionName 已移至 Shared 的 SharedExtensions（同命名空間 Interaction，
+        // 供 Scraper 偵測層共用，計畫 §3-3）；此處刪除以免與其重複定義（擴充方法模稜兩可）。
 
         public static string GetCommandLine(this Process process)
         {
@@ -149,21 +121,7 @@ namespace DiscordStreamNotifyBot.Interaction
             return channelId;
         }
 
-        public static string GetNonApprovedChannelTitleByChannelId(this MainDbContext _, string channelId)
-        {
-            channelId = channelId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-
-            YoutubeChannelSpider youtubeChannelSpider;
-            if ((youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)
-                return youtubeChannelSpider.ChannelTitle;
-
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NonApprovedVideos.OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId).ChannelId;
-
-            return channelId;
-        }
+        // GetNonApprovedChannelTitleByChannelId 已移至 Shared 的 SharedExtensions（供偵測層共用）。
 
         public static string GetTwitCastingChannelTitleByScreenId(this MainDbContext _, string screenId)
         {

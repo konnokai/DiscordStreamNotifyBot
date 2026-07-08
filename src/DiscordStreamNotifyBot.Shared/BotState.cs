@@ -34,6 +34,18 @@ namespace DiscordStreamNotifyBot.Shared
         public static int ShardId { get; set; }
         public static int TotalShardCount { get; set; }
 
+        /// <summary>
+        /// 偵測宿主（Scraper）初始化：設定偵測服務所需的 DbService / Redis 相依，不建立 Discord 連線。
+        /// RedisConnection 已由 StartupPreflight 完成 Init。
+        /// </summary>
+        public static void InitDetectionDependencies(BotConfig botConfig)
+        {
+            DbService = new MainDbService(botConfig.MySqlConnectionString);
+            Redis = RedisConnection.Instance.ConnectionMultiplexer;
+            RedisSub = Redis.GetSubscriber();
+            RedisDb = Redis.GetDatabase();
+        }
+
         /// <summary>依 Discord 官方公式 <c>(guildId &gt;&gt; 22) % totalShards</c> 判斷該伺服器是否歸屬於本 Shard。</summary>
         public static bool IsServerOnThisShard(ulong guildId)
         {

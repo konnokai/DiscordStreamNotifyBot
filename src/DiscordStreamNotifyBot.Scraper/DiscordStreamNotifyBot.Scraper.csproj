@@ -10,12 +10,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- 偵測服務位於本專案 Detection/，僅參考 Shared（無狀態共用），不參考 Notifier -->
 		<ProjectReference Include="..\DiscordStreamNotifyBot.Shared\DiscordStreamNotifyBot.Shared.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<Using Include="Google.Apis.YouTube.v3.Data" />
+		<Using Include="Microsoft.EntityFrameworkCore" />
+		<Using Include="Newtonsoft.Json" />
+		<Using Include="StackExchange.Redis" />
 		<Using Include="System.Diagnostics" />
-		<Using Include="DiscordStreamNotifyBot.Shared" />
 	</ItemGroup>
 
 </Project>
