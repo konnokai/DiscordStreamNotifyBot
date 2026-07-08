@@ -303,11 +303,12 @@ namespace DiscordStreamNotifyBot
             #region 註冊互動指令
             try
             {
-                var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", serviceProvider.GetService<InteractionHandler>().CommandCount)).ToString();
-                if (commandCount != serviceProvider.GetService<InteractionHandler>().CommandCount.ToString())
-                {
-                    InteractionService interactionService = serviceProvider.GetService<InteractionService>();
+                InteractionService interactionService = serviceProvider.GetService<InteractionService>();
+                int localCommandCount = serviceProvider.GetService<InteractionHandler>().CommandCount;
 #if DEBUG
+                var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", localCommandCount)).ToString();
+                if (commandCount != localCommandCount.ToString())
+                {
                     if (_botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(_botConfig.TestSlashCommandGuildId) == null)
                         Log.Warn("未設定測試 Slash 指令的伺服器或伺服器不存在，略過");
                     else
@@ -325,46 +326,54 @@ namespace DiscordStreamNotifyBot
                             Log.Error(ex, "註冊伺服器專用 Slash 指令失敗");
                         }
                     }
+                }
 #elif RELEASE
+                // 全球指令對所有伺服器生效、與 shard 無關，且註冊有速率限制、生效慢：只由 shard 0 註冊，且僅在指令數量變更時才重註冊
+                if (_shardId == 0)
+                {
                     try
                     {
-                        if (_botConfig.TestSlashCommandGuildId != 0 && client.GetGuild(_botConfig.TestSlashCommandGuildId) != null)
+                        var commandCount = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_count", localCommandCount)).ToString();
+                        if (commandCount != localCommandCount.ToString())
                         {
-                            var result = await interactionService.RemoveModulesFromGuildAsync(_botConfig.TestSlashCommandGuildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
-                            Log.Info($"({_botConfig.TestSlashCommandGuildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
+                            await interactionService.RegisterCommandsGloballyAsync();
+                            Log.Info("已註冊全球指令");
                         }
-                        try
-                        {
-                            foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
-                            {
-                                var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.Single((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
-                                var guild = client.GetGuild(guildId.Value);
-
-                                if (guild == null)
-                                {
-                                    Log.Warn($"{item.Name} 註冊失敗，伺服器 {guildId} 不存在");
-                                    continue;
-                                }
-
-                                var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
-                                Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", item.SlashCommands.Select((x) => x.Name))}");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex, "註冊伺服器專用 Slash 指令失敗");
-                        }
-
-                        await interactionService.RegisterCommandsGloballyAsync();
-                        Log.Info("已註冊全球指令");
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "取得指令數量失敗，請確認 Redis 伺服器是否可以存取");
+                        Log.Error(ex, "註冊全球 Slash 指令失敗，請確認 Redis 伺服器是否可以存取");
                         IsDisconnect = true;
                     }
-#endif
                 }
+
+                // 伺服器專屬指令（RequireGuild / DontAutoRegister）需 GetGuild 取得該伺服器，只有「持有它的 shard」能註冊，與 shard 0 無關；
+                // 故不走上面的全域 command_count 閘門（否則只有其中一個 shard 會執行），每次啟動時各 shard 自行處理自己持有的伺服器。
+                try
+                {
+                    if (_botConfig.TestSlashCommandGuildId != 0 && client.GetGuild(_botConfig.TestSlashCommandGuildId) != null)
+                    {
+                        var result = await interactionService.RemoveModulesFromGuildAsync(_botConfig.TestSlashCommandGuildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
+                        Log.Info($"({_botConfig.TestSlashCommandGuildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
+                    }
+
+                    foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
+                    {
+                        var guildId = ((Interaction.Attribute.RequireGuildAttribute)item.Preconditions.Single((x) => x is Interaction.Attribute.RequireGuildAttribute)).GuildId;
+                        var guild = client.GetGuild(guildId.Value);
+
+                        if (guild == null)
+                            continue; // 該伺服器不在本 shard，交由持有它的 shard 註冊（非錯誤，故不記警告避免每個 shard 洗版）
+
+                        var result = await interactionService.AddModulesToGuildAsync(guild, false, item);
+                        Log.Info($"已在 {guild.Name}({guild.Id}) 註冊指令: {string.Join(", ", item.SlashCommands.Select((x) => x.Name))}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "註冊伺服器專用 Slash 指令失敗");
+                }
+#endif
             }
             catch (Exception ex)
             {
