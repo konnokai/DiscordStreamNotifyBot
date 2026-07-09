@@ -66,6 +66,13 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     {
         public TwitchNoticeType NoticeType { get; set; }
         public string UserId { get; set; }
+
+        /// <summary>
+        /// Twitch 直播場次 id（全域唯一）。StartStream/EndStream 帶入，供消費端以「場次」為單位去重
+        /// （避免同一實況主 5 分鐘內的新場次被舊場次的去重鍵誤擋）。ChangeStreamData 不帶＝該類型不去重。
+        /// </summary>
+        public string StreamId { get; set; }
+
         public string UserLogin { get; set; }
         public string UserName { get; set; }
 

@@ -123,6 +123,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                             {
                                 NoticeType = TwitchNoticeType.EndStream,
                                 UserId = data.BroadcasterUserId,
+                                StreamId = twitchStream?.StreamId,
                                 UserLogin = data.BroadcasterUserLogin,
                                 UserName = data.BroadcasterUserName,
                                 StreamTitle = twitchStream?.StreamTitle,
@@ -353,6 +354,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                                         {
                                             NoticeType = TwitchNoticeType.StartStream,
                                             UserId = twitchStream.UserId,
+                                            StreamId = twitchStream.StreamId,
                                             UserLogin = twitchStream.UserLogin,
                                             UserName = twitchStream.UserName,
                                             StreamTitle = twitchStream.StreamTitle,

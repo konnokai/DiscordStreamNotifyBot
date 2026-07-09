@@ -207,7 +207,7 @@ loop（吃 GracefulShutdown.Token）:
 ```
 
 - **StackExchange.Redis 不支援 blocking read**（`XREADGROUP ... BLOCK` 與多工連線模型不相容）→ 一律用**短輪詢**（1–2 秒），通知延遲可忽略。不要嘗試 BLOCK，也不要為此換函式庫。
-- **at-least-once → 可能重複**：發送成功後寫 Redis 短期去重鍵 `notified:{videoId}:{noticeType}` EX 數分鐘，重複訊息直接 ack 略過。
+- **at-least-once → 可能重複**：發送成功後寫 Redis 短期去重鍵 `notified:{shardId}:{videoId}:{noticeType}` EX 數分鐘，重複訊息直接 ack 略過。**去重鍵必須帶 shardId**：`bot:notify` 是廣播，每個 shard group 都會讀到同一則並各自對自己持有的伺服器發送；不分 shard 的去重鍵會讓先處理的 shard 擋掉其餘 shard 的發送。
 - **毒訊息**：同一訊息被 XAUTOCLAIM 認領超過 N 次（`delivery-count` 可得）→ log 完整 payload 後強制 ack 丟棄（等效 DLQ 的最簡版）。
 
 ### 4.4 建群與 Preflight

@@ -101,7 +101,7 @@ namespace DiscordStreamNotifyBot
                     return;
                 }
 
-                var dedupKey = TryGetDedupKey(type, payload);
+                var dedupKey = TryGetDedupKey(_shardId, type, payload);
 
                 // 送出成功但 ack 失敗 → XAUTOCLAIM 重投時，去重鍵已存在 → 直接 ack 略過（避免重複發送）
                 if (dedupKey != null && await db.KeyExistsAsync(dedupKey))
@@ -154,18 +154,31 @@ namespace DiscordStreamNotifyBot
             }
         }
 
-        /// <summary>依 DTO 主鍵與通知類型組去重鍵（§4.3）。解析失敗回傳 null＝不做去重（仍靠 XACK）。</summary>
-        private static string TryGetDedupKey(string type, string json)
+        /// <summary>
+        /// 依 DTO 主鍵與通知類型組去重鍵（§4.3）。解析失敗回傳 null＝不做去重（仍靠 XACK）。
+        /// <para>
+        /// 鍵必須帶 shardId：<c>bot:notify</c> 是廣播，每個 shard group 都會收到同一則訊息並各自對自己持有的伺服器發送。
+        /// 若去重鍵不分 shard，先處理的 shard 設鍵後，其餘 shard 會誤判為重複而整個略過發送（其伺服器永遠收不到通知）。
+        /// 去重只為吸收「同一 shard 送出成功但 ack 失敗，XAUTOCLAIM 重投」的重複，本就該按 shard 隔離。
+        /// </para>
+        /// </summary>
+        private static string TryGetDedupKey(int shardId, string type, string json)
         {
             try
             {
                 var jo = JObject.Parse(json);
                 return type switch
                 {
-                    NotifyType.Youtube => $"notified:yt:{jo.Value<string>("VideoId")}:{jo.Value<int?>("NoticeType")}",
-                    NotifyType.Twitch => $"notified:tw:{jo.Value<string>("UserId")}:{jo.Value<int?>("NoticeType")}",
-                    NotifyType.Twitcasting => $"notified:tc:{jo.Value<string>("ChannelId")}:{jo.Value<int?>("StreamId")}",
-                    NotifyType.Banner => $"notified:banner:{jo.Value<string>("ChannelId")}:{jo.Value<string>("VideoId")}",
+                    NotifyType.Youtube => $"notified:{shardId}:yt:{jo.Value<string>("VideoId")}:{jo.Value<int?>("NoticeType")}",
+                    // 以直播「場次」StreamId（非 UserId）為單位去重：避免同一實況主 5 分鐘內的新場次被舊場次去重鍵誤擋。
+                    // 保留 NoticeType：同場次的 Start/End 共用同一 StreamId，少了它會讓 End 被當成 Start 的重複吃掉。
+                    // StreamId 為空（如 ChangeStreamData 不帶、或 EndStream 抓不到 Redis 資料）＝不去重（回 null，仍靠 XACK），
+                    // 避免不同實況主因空 StreamId 互撞。
+                    NotifyType.Twitch => string.IsNullOrEmpty(jo.Value<string>("StreamId"))
+                        ? null
+                        : $"notified:{shardId}:tw:{jo.Value<string>("StreamId")}:{jo.Value<int?>("NoticeType")}",
+                    NotifyType.Twitcasting => $"notified:{shardId}:tc:{jo.Value<string>("ChannelId")}:{jo.Value<int?>("StreamId")}",
+                    NotifyType.Banner => $"notified:{shardId}:banner:{jo.Value<string>("ChannelId")}:{jo.Value<string>("VideoId")}",
                     _ => null,
                 };
             }

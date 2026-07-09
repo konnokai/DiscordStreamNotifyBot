@@ -46,8 +46,11 @@ description: >
    反序列化為 null 也不會呼叫發送。若懷疑壞訊息，在 `ProcessEntryAsync` 加 log 看 json 內容。
 
 ## 「重複通知」排查
-- **匯流排本質是 at-least-once**：發送成功後寫短期去重鍵 `notified:{...}`（`NotificationBusConsumer.TryGetDedupKey`
-  依 DTO 主鍵 + 類型組鍵），XAUTOCLAIM 重投時去重鍵已存在＝直接 ack 略過。確認去重鍵組法涵蓋該事件。
+- **匯流排本質是 at-least-once**：發送成功後寫短期去重鍵 `notified:{shardId}:{...}`（`NotificationBusConsumer.TryGetDedupKey`
+  依 shardId + DTO 主鍵 + 類型組鍵），XAUTOCLAIM 重投時去重鍵已存在＝直接 ack 略過。確認去重鍵組法涵蓋該事件。
+- **去重鍵漏帶 shardId ⇒ 「完全沒發、無 log」**：`bot:notify` 是廣播，每個 shard 都會讀到同一則；去重鍵若不分 shard，
+  先處理的 shard 設鍵後其餘 shard 會在 `DispatchAsync` 前就 ack 略過（連 `發送 XXX 通知` log 都不會印），
+  其伺服器永遠收不到。症狀：兩個 group 的 last-delivered-id 都已到最新（代表有讀到），但沒有任何發送 log。
 - 偵測端通常也有去重旗標/集合（如 YouTube 的 `_endLiveBag`、`newStreamList`，Twitcasting 既有列檢查）。確認去重的 key 與時機正確。
 - **未 ack 會重投**：`ProcessEntryAsync` 例外時**不 ack**（留在 PEL），交由 XAUTOCLAIM 逾時補救——這是設計，
   但若發送已成功卻在 ack 前丟例外，會靠去重鍵擋掉重複。確認去重鍵有寫入。
