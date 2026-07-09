@@ -815,9 +815,9 @@
     "semantic_hash": "92e1412486b963c560830ee9becca559"
   },
   "docker-compose.yml": {
-    "mtime": 1783485891.3408067,
-    "ast_hash": "8e483ac2beb1f02fe7f6efffa08dc71c",
-    "semantic_hash": "8e483ac2beb1f02fe7f6efffa08dc71c"
+    "mtime": 1783573750.3909495,
+    "ast_hash": "948e098575358582ae758c73e52d0156",
+    "semantic_hash": ""
   },
   "docs/HORIZONTAL_SCALING_PLAN.md": {
     "mtime": 1783566000.6491022,
@@ -842,6 +842,11 @@
   "bot_config_example.json": {
     "mtime": 1783563399.6138024,
     "ast_hash": "f712bf464f84c653c6c159360ff1bcf9",
+    "semantic_hash": ""
+  },
+  "docs/ADD_TWITCASTING_RECORDING_DELEGATION_PLAN.md": {
+    "mtime": 1783573349.1686535,
+    "ast_hash": "6e692b287ec153cc99cc760b538edc65",
     "semantic_hash": ""
   }
 }
