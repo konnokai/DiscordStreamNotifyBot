@@ -111,8 +111,39 @@ namespace DiscordStreamNotifyBot
                 Log.Error(ex.Demystify(), "載入官方伺服器白名單失敗");
             }
 
+            // 寫入 notifier 心跳（計畫 §5.2）：coordinator 依 cluster:heartbeat:notifier:* 的數量判斷有幾個 shard 有人認領。
+            // scraper / coordinator 已各自寫心跳，唯獨 notifier 先前漏寫，導致 coordinator 永遠顯示 notifier 存活=0。
+            // id 以 shard 為鍵（非 machine:pid）：同一 shard 被多個程序重複認領時會共用同一鍵，數量才等於「實際被涵蓋的 shard 數」。
+            _ = Task.Run(() => RunHeartbeatLoopAsync(preflightConfig, shardId, GracefulShutdown.Token));
+
             var bot = new Bot(shardId, totalShards);
             bot.StartAndBlockAsync().GetAwaiter().GetResult();
+        }
+
+        /// <summary>背景寫入本 notifier 程序的心跳鍵（帶 TTL），供 coordinator 監控存活。</summary>
+        private static async Task RunHeartbeatLoopAsync(BotConfig config, int shardId, CancellationToken cancellationToken)
+        {
+            var cluster = new ClusterService();
+            var instanceId = $"shard{shardId}";
+            var role = BotRole.Notifier.ToString().ToLowerInvariant();
+            var interval = TimeSpan.FromSeconds(Math.Max(1, config.HeartbeatIntervalSeconds));
+            // TTL 須明顯大於間隔，避免 GC 暫停導致誤判離線（與 scraper 同規則）
+            var ttl = TimeSpan.FromSeconds(Math.Max(config.HeartbeatTtlSeconds, config.HeartbeatIntervalSeconds * 3));
+
+            using var timer = new PeriodicTimer(interval);
+            do
+            {
+                try { await cluster.WriteHeartbeatAsync(role, instanceId, ttl); }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex) { Log.Error(ex.Demystify(), "[Notifier] 寫入心跳失敗"); }
+            }
+            while (await SafeWaitAsync(timer, cancellationToken));
+        }
+
+        private static async Task<bool> SafeWaitAsync(PeriodicTimer timer, CancellationToken cancellationToken)
+        {
+            try { return await timer.WaitForNextTickAsync(cancellationToken); }
+            catch (OperationCanceledException) { return false; }
         }
 
         public static string GetLinkerTime(Assembly assembly)
