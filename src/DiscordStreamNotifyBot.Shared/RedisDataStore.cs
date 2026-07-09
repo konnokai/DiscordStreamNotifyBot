@@ -3,7 +3,7 @@ using Google.Apis.Util.Store;
 
 namespace DiscordStreamNotifyBot
 {
-    public class RedisDataStore : IDataStore
+    public class RedisDataStore : ITokenDataStore
     {
         private readonly IDatabase _database;
         private readonly string _key = Utility.RedisKey;

@@ -45,7 +45,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     ClientSecret = _botConfig.GoogleClientSecret
                 },
                 Scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"],
-                DataStore = new RedisDataStore(RedisConnection.Instance.ConnectionMultiplexer)
+                DataStore = new MySqlDataStore(_dbService)
             });
 
             Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), async (channel, value) =>
@@ -159,49 +159,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 checkOrphanMemberRole = new Timer(new TimerCallback(async (_) => await ReconcileMemberRolesAsync()), null, TimeSpan.FromMinutes(5), TimeSpan.FromDays(1));
             }
 
-            // 啟動時的一次性 reconcile（Redis Token → DB），全域表只需一個 shard 做，收斂到 shard 0
-            if (Bot.ShardId == 0)
-            {
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        var redisKeyList = Bot.Redis.GetServer(Bot.Redis.GetEndPoints(true).First()).Keys(1, pattern: $"Google.Apis.Auth.OAuth2.Responses.TokenResponse:*", cursor: 0, pageSize: 20000);
-                        if (redisKeyList.Any())
-                        {
-                            Log.Info("開始儲存 Youtube Member Access Token");
-
-                            using var db = _dbService.GetDbContext();
-                            var redisDb = Bot.Redis.GetDatabase(1);
-
-                            foreach (var item in redisKeyList)
-                            {
-                                var userId = ulong.Parse(item.ToString().Split(':')[1]);
-                                var value = await redisDb.StringGetAsync(item);
-                                var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.SingleOrDefault((x) => x.DiscordUserId == userId);
-                                if (youtubeMemberAccessToken == null)
-                                {
-                                    youtubeMemberAccessToken = new YoutubeMemberAccessToken { DiscordUserId = userId, EncryptedAccessToken = value };
-                                    db.YoutubeMemberAccessToken.Add(youtubeMemberAccessToken);
-                                }
-                                else
-                                {
-                                    youtubeMemberAccessToken.EncryptedAccessToken = value;
-                                    db.YoutubeMemberAccessToken.Update(youtubeMemberAccessToken);
-                                }
-                            }
-
-                            await db.SaveChangesAsync();
-
-                            Log.Info("儲存 Youtube Member Access Token 完成");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex.Demystify(), "儲存 Youtube Member Access Token 失敗");
-                    }
-                });
-            }
+            // token 儲存已改走 MySQL（MySqlDataStore 為真實來源），不再需要啟動時 Redis→DB 備份。
+            // 一次性 backfill（切換前把 Redis TokenResponse:* 回填至 youtube_member_access_token）見 docs/MEMBER_TOKEN_STORE_MYSQL_PLAN.md 遷移章節。
 
             // 用 Utility.RedisKey（由 RedisTokenKeyProvisioner 佈建的叢集真實來源），而非 _botConfig.RedisTokenKey
             // （bootstrap 時非 shard 0 的設定檔可能仍為空）。只需公告一次，收斂到 shard 0。
@@ -215,7 +174,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
         public async Task<bool> IsExistUserTokenAsync(string discordUserId)
         {
-            return await ((RedisDataStore)flow.DataStore).IsExistUserTokenAsync<TokenResponse>(discordUserId);
+            return await ((ITokenDataStore)flow.DataStore).IsExistUserTokenAsync<TokenResponse>(discordUserId);
         }
 
         public async Task RevokeUserGoogleCertAsync(string discordUserId = "")
@@ -249,31 +208,32 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             {
                 using var db = _dbService.GetDbContext();
 
-                if (!db.YoutubeMemberCheck.Any((x) => x.UserId == userId))
+                var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId).ToList();
+                var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.FirstOrDefault((x) => x.DiscordUserId == userId);
+
+                // OAuth 資料清除與會限驗證資料解耦：只要任一存在就要清（有 token 無 member-check 的使用者 revoke 時也要刪 token）
+                if (youtubeMembers.Count == 0 && youtubeMemberAccessToken == null)
                 {
-                    Log.Warn($"YoutubeMemberCheck 資料表找不到該使用者，忽略: {userId}");
+                    Log.Warn($"找不到該使用者的會限驗證或 OAuth 資料，忽略: {userId}");
                     return;
                 }
 
-                Log.Info($"搜尋資料庫並移除此使用者的 MemberCheck 資料: {userId}");
+                Log.Info($"移除此使用者的會限驗證與 OAuth 資料: {userId}");
 
-                var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId);
-                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
-
-                if (guildYoutubeMemberConfigs.Any())
+                if (youtubeMembers.Count > 0)
                 {
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
                     foreach (var item in guildYoutubeMemberConfigs)
                     {
                         try { await _client.Rest.RemoveRoleAsync(item.GuildId, userId, item.MemberCheckGrantRoleId); }
                         catch { }
                     }
+                    db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
                 }
 
-                var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.FirstOrDefault((x) => x.DiscordUserId == userId);
                 if (youtubeMemberAccessToken != null)
                     db.YoutubeMemberAccessToken.Remove(youtubeMemberAccessToken);
 
-                db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
                 db.SaveChanges();
             }
             catch (Exception ex)
