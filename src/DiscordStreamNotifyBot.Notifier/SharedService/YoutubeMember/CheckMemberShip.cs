@@ -23,55 +23,25 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     .ToListAsync();
             }
 
-            if (isOldCheck && needCheckList.Count != 0)
-            {
-                try
-                {
-                    int splitDay = 3;
-                    int needCheckCount = needCheckList.Count / splitDay;
-                    int checkRound = 0, skipCount, lastSkipCount = 0;
-
-                    if (File.Exists(Utility.GetDataFilePath("MemberCheck.dat")))
-                    {
-                        string[] data = File.ReadAllText(Utility.GetDataFilePath("MemberCheck.dat")).Split(',');
-
-                        checkRound = int.Parse(data[0]);
-                        lastSkipCount = int.Parse(data[1]);
-                    }
-
-                    checkRound += 1;
-                    skipCount = lastSkipCount;
-
-                    if (checkRound >= splitDay)
-                    {
-                        needCheckCount = needCheckList.Count - lastSkipCount;
-                    }
-                    else
-                    {
-                        lastSkipCount += needCheckCount;
-                    }
-
-                    needCheckList = needCheckList.Skip(skipCount).Take(needCheckCount).ToList();
-
-                    if (checkRound >= splitDay)
-                    {
-                        checkRound = 0;
-                        lastSkipCount = 0;
-                    }
-
-                    File.WriteAllText(Utility.GetDataFilePath("MemberCheck.dat"), $"{checkRound},{lastSkipCount}");
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "Split member check list error");
-                }
-            }
-
             Log.Info((isOldCheck ? "舊" : "新") + $"會限檢查開始: {needCheckList.Count()} 個頻道");
+
+            // 舊會限三日分桶（沿用原 splitDay）：降低每日 API 配額，且以 guild 為單位保持驗證一致。
+            // 取代原 MemberCheck.dat 檔案游標（本機狀態、對未過濾全表切片、rescale 後失同步）。
+            const int SplitDay = 3;
 
             HashSet<string> checkedMemberSet = new();
             foreach (var guildYoutubeMemberConfig in needCheckList)
             {
+                // ① 分片：只處理本 shard 持有的 guild（省掉對別 shard config 的無謂 DB 查詢）
+                if (!Bot.IsServerOnThisShard(guildYoutubeMemberConfig.GuildId))
+                    continue;
+
+                // ② 舊檢查以 guild 為單位做三日分桶：同一 guild 恆落同一天一起驗證（避免不一致），
+                //    每天約 1/3 guild 被舊檢查，等價原三日分批但無狀態、rescale 友善（新 shard 沿用同一桶日）
+                if (isOldCheck &&
+                    (int)(guildYoutubeMemberConfig.GuildId % SplitDay) != DateTime.Now.DayOfYear % SplitDay)
+                    continue;
+
                 using var db = _dbService.GetDbContext();
 
                 var list = await db.YoutubeMemberCheck
@@ -222,10 +192,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                                     Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言");
                                     await Bot.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId}已關閉留言", logChannel);
 
-                                    //foreach (var item in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == guildYoutubeMemberConfig.MemberCheckChannelId))  
-                                    //{
-                                    //    db.Remove(item);
-                                    //}
+                                    // 手動 pin 的探測影片失效：videoId 設 "-" 暫停驗證，但保留 IsManualVideoId（Scraper 不會自動重挑高階影片），通知管理員重設
+                                    if (guildYoutubeMemberConfig.IsManualVideoId)
+                                    {
+                                        try { await logChannel.SendMessageAsync($"你手動指定的會限偵測影片 `{guildYoutubeMemberConfig.MemberCheckVideoId}` 已關閉留言而失效，請用 `/member-set set-check-video` 重設一支較低階的會限影片"); }
+                                        catch { }
+                                    }
 
                                     guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                                     db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
@@ -238,6 +210,13 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                                     Log.Warn($"CheckMemberStatus: {guildYoutubeMemberConfig.GuildId} - {member.UserId} \"{guildYoutubeMemberConfig.MemberCheckChannelTitle}\" 的會限資格取得失敗");
                                     Log.Warn($"{guildYoutubeMemberConfig.MemberCheckChannelTitle} ({guildYoutubeMemberConfig.MemberCheckChannelId}): {guildYoutubeMemberConfig.MemberCheckVideoId} 已刪除影片");
                                     await Bot.ApplicatonOwner.Id.SendErrorMessageAsync(_client, $"{guildYoutubeMemberConfig.GuildId} - {member.UserId} 會限資格取得失敗: {guildYoutubeMemberConfig.MemberCheckVideoId} 已刪除影片", logChannel);
+
+                                    // 手動 pin 的探測影片失效：videoId 設 "-" 暫停驗證，但保留 IsManualVideoId（Scraper 不會自動重挑高階影片），通知管理員重設
+                                    if (guildYoutubeMemberConfig.IsManualVideoId)
+                                    {
+                                        try { await logChannel.SendMessageAsync($"你手動指定的會限偵測影片 `{guildYoutubeMemberConfig.MemberCheckVideoId}` 已被刪除而失效，請用 `/member-set set-check-video` 重設一支較低階的會限影片"); }
+                                        catch { }
+                                    }
 
                                     guildYoutubeMemberConfig.MemberCheckVideoId = "-";
                                     db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
@@ -373,8 +352,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     bool isCantAddRold = true;
                     try
                     {
-                        if (!isOldCheck)
-                            await _client.Rest.AddRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
+                        // 任何驗證成功都確保給組（AddRole idempotent）：修復「已驗證會員被踢出後重加入，
+                        // 舊檢查成功卻不補組」的問題。確認訊息仍只在新檢查發（見下方 if (!isOldCheck && !isCantAddRold)），
+                        // 舊檢查靜默補組不 spam；若成員已離開，UnknownMember catch 會順便從 DB 清除。
+                        await _client.Rest.AddRoleAsync(guild.Id, member.UserId, role.Id).ConfigureAwait(false);
                         isCantAddRold = false;
                     }
                     catch (Discord.Net.HttpException httpEx)

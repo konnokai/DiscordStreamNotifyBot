@@ -15,7 +15,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
     {
         public bool IsEnable { get; private set; } = true;
 
-        Timer checkMemberShipOnlyVideoId, checkOldMemberStatus, checkNewMemberStatus;
+        Timer checkOldMemberStatus, checkNewMemberStatus;
+        Timer checkOrphanMemberRole; // 僅 EnableGuildMembersIntent 開啟時建立（孤兒會限身分組對帳）
         private readonly GoogleAuthorizationCodeFlow flow;
         private readonly YoutubeStreamService _streamService;
         private readonly DiscordSocketClient _client;
@@ -49,6 +50,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
             Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), async (channel, value) =>
             {
+                // 收斂到 shard 0：RemoveMemberCheckFromDbAsync 做的是全域 DB 刪除 + REST 移除用戶組（REST 跨 shard 有效），
+                // 單一 shard 處理即完整；每個 shard 都做只是重複工作與 concurrency 例外。
+                // 取捨：shard 0 當下離線時該次 revoke 會漏收，但每日 CheckMemberShip 會偵測 token 消失並移除，屬自癒。
+                if (Bot.ShardId != 0)
+                    return;
+
                 try
                 {
                     ulong userId = 0;
@@ -139,54 +146,70 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 }
             };
 
-            checkMemberShipOnlyVideoId = new Timer(CheckMemberShipOnlyVideoId, null, TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5));
+            // 會限影片探索（CheckMemberShipOnlyVideoId）已搬至 Scraper（避免多 shard 重複燒配額），此處不再排程。
             checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
             checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
 
-            Task.Run(async () =>
+            // GuildMembers 特權 intent 開啟時才啟用：會員重加入即時回補身分組 + 孤兒身分組每日對帳回收。
+            // 旗標關（預設）＝完全不訂閱事件、不建對帳 timer，行為與現況一致，避免未取得特權時影響既有功能。
+            if (_botConfig.EnableGuildMembersIntent)
             {
-                try
+                _client.UserJoined += OnUserJoinedRestoreMemberRoleAsync;
+                // 啟動 5 分鐘後（待 client Ready + 成員可下載）跑一次對帳，之後每日一次
+                checkOrphanMemberRole = new Timer(new TimerCallback(async (_) => await ReconcileMemberRolesAsync()), null, TimeSpan.FromMinutes(5), TimeSpan.FromDays(1));
+            }
+
+            // 啟動時的一次性 reconcile（Redis Token → DB），全域表只需一個 shard 做，收斂到 shard 0
+            if (Bot.ShardId == 0)
+            {
+                Task.Run(async () =>
                 {
-                    var redisKeyList = Bot.Redis.GetServer(Bot.Redis.GetEndPoints(true).First()).Keys(1, pattern: $"Google.Apis.Auth.OAuth2.Responses.TokenResponse:*", cursor: 0, pageSize: 20000);
-                    if (redisKeyList.Any())
+                    try
                     {
-                        Log.Info("開始儲存 Youtube Member Access Token");
-
-                        using var db = _dbService.GetDbContext();
-                        var redisDb = Bot.Redis.GetDatabase(1);
-
-                        foreach (var item in redisKeyList)
+                        var redisKeyList = Bot.Redis.GetServer(Bot.Redis.GetEndPoints(true).First()).Keys(1, pattern: $"Google.Apis.Auth.OAuth2.Responses.TokenResponse:*", cursor: 0, pageSize: 20000);
+                        if (redisKeyList.Any())
                         {
-                            var userId = ulong.Parse(item.ToString().Split(':')[1]);
-                            var value = await redisDb.StringGetAsync(item);
-                            var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.SingleOrDefault((x) => x.DiscordUserId == userId);
-                            if (youtubeMemberAccessToken == null)
+                            Log.Info("開始儲存 Youtube Member Access Token");
+
+                            using var db = _dbService.GetDbContext();
+                            var redisDb = Bot.Redis.GetDatabase(1);
+
+                            foreach (var item in redisKeyList)
                             {
-                                youtubeMemberAccessToken = new YoutubeMemberAccessToken { DiscordUserId = userId, EncryptedAccessToken = value };
-                                db.YoutubeMemberAccessToken.Add(youtubeMemberAccessToken);
+                                var userId = ulong.Parse(item.ToString().Split(':')[1]);
+                                var value = await redisDb.StringGetAsync(item);
+                                var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.SingleOrDefault((x) => x.DiscordUserId == userId);
+                                if (youtubeMemberAccessToken == null)
+                                {
+                                    youtubeMemberAccessToken = new YoutubeMemberAccessToken { DiscordUserId = userId, EncryptedAccessToken = value };
+                                    db.YoutubeMemberAccessToken.Add(youtubeMemberAccessToken);
+                                }
+                                else
+                                {
+                                    youtubeMemberAccessToken.EncryptedAccessToken = value;
+                                    db.YoutubeMemberAccessToken.Update(youtubeMemberAccessToken);
+                                }
                             }
-                            else
-                            {
-                                youtubeMemberAccessToken.EncryptedAccessToken = value;
-                                db.YoutubeMemberAccessToken.Update(youtubeMemberAccessToken);
-                            }
+
+                            await db.SaveChangesAsync();
+
+                            Log.Info("儲存 Youtube Member Access Token 完成");
                         }
-
-                        await db.SaveChangesAsync();
-
-                        Log.Info("儲存 Youtube Member Access Token 完成");
                     }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "儲存 Youtube Member Access Token 失敗");
-                }
-            });
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), "儲存 Youtube Member Access Token 失敗");
+                    }
+                });
+            }
 
             // 用 Utility.RedisKey（由 RedisTokenKeyProvisioner 佈建的叢集真實來源），而非 _botConfig.RedisTokenKey
-            // （bootstrap 時非 shard 0 的設定檔可能仍為空）。
-            Bot.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), Utility.RedisKey);
-            Log.Info("已同步 Redis Token");
+            // （bootstrap 時非 shard 0 的設定檔可能仍為空）。只需公告一次，收斂到 shard 0。
+            if (Bot.ShardId == 0)
+            {
+                Bot.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), Utility.RedisKey);
+                Log.Info("已同步 Redis Token");
+            }
             _dbService = dbService;
         }
 
@@ -327,6 +350,104 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
+        /// <summary>
+        /// 消費匯流排的會限影片探索 log 事件（Scraper 探索 → 各 Notifier shard 發送）。
+        /// bot owner DM 只在 shard 0 補送一次；log channel / guild owner 由 SendMsgToLogChannelAsync 依 shard 守衛處理。
+        /// </summary>
+        public async Task DispatchMemberVideoLogFromBusAsync(Shared.Messages.YoutubeMemberVideoLogNotification dto)
+        {
+            if (!string.IsNullOrEmpty(dto.BotOwnerMessage) && Bot.ShardId == 0 && Bot.ApplicatonOwner != null)
+            {
+                try { await Bot.ApplicatonOwner.SendMessageAsync(dto.BotOwnerMessage); } catch { }
+            }
+
+            await SendMsgToLogChannelAsync(dto.CheckChannelId, dto.Message, dto.IsNeedRemove, dto.IsNeedSendToOwner);
+        }
+
+        /// <summary>
+        /// （需 GuildMembers 特權 intent）會員重加入伺服器時，若 DB 仍有其 IsChecked 會限記錄則即時回補身分組。
+        /// UserJoined 只在持有該 guild 的 shard 觸發 → 天然 shard-safe。憑既有記錄回補，不當場重打 YouTube API，
+        /// 後續舊檢查會再校正（實際已失效者會被移除）。
+        /// </summary>
+        private async Task OnUserJoinedRestoreMemberRoleAsync(SocketGuildUser user)
+        {
+            try
+            {
+                using var db = _dbService.GetDbContext();
+                var checks = await db.YoutubeMemberCheck.AsNoTracking()
+                    .Where((x) => x.GuildId == user.Guild.Id && x.UserId == user.Id && x.IsChecked)
+                    .ToListAsync();
+                if (checks.Count == 0)
+                    return;
+
+                var configs = await db.GuildYoutubeMemberConfig.AsNoTracking()
+                    .Where((x) => x.GuildId == user.Guild.Id).ToListAsync();
+
+                foreach (var chk in checks)
+                {
+                    var cfg = configs.FirstOrDefault((c) => c.MemberCheckChannelId == chk.CheckYTChannelId);
+                    if (cfg == null || cfg.MemberCheckGrantRoleId == 0)
+                        continue;
+
+                    try { await _client.Rest.AddRoleAsync(cfg.GuildId, user.Id, cfg.MemberCheckGrantRoleId); } catch { }
+                }
+
+                Log.Info($"會員重加入自動回補會限身分組: {user.Guild.Id} / {user.Id}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "OnUserJoinedRestoreMemberRole");
+            }
+        }
+
+        /// <summary>
+        /// （需 GuildMembers 特權 intent）孤兒會限身分組回收：對各會限頻道的授予身分組成員做對帳，
+        /// 移除「持有身分組但 DB 無 IsChecked 記錄」者（曾驗證失敗但身分組沒拿掉、且 DB 已被清）。只查 DB，不打 YouTube API。
+        /// GetGuild != null 天然只處理本 shard 的 guild。
+        /// </summary>
+        private async Task ReconcileMemberRolesAsync()
+        {
+            try
+            {
+                using var db = _dbService.GetDbContext();
+                var configs = await db.GuildYoutubeMemberConfig.AsNoTracking()
+                    .Where((x) => x.MemberCheckGrantRoleId != 0).ToListAsync();
+
+                foreach (var cfg in configs)
+                {
+                    var guild = _client.GetGuild(cfg.GuildId);
+                    if (guild == null)
+                        continue; // 非本 shard 持有 → 交給擁有的 shard
+
+                    var role = guild.GetRole(cfg.MemberCheckGrantRoleId);
+                    if (role == null)
+                        continue;
+
+                    try { await guild.DownloadUsersAsync(); } catch { } // 需 GuildMembers intent 才有完整名單
+
+                    foreach (var user in role.Members.ToList())
+                    {
+                        bool hasRecord = await db.YoutubeMemberCheck.AsNoTracking().AnyAsync((x) =>
+                            x.GuildId == cfg.GuildId && x.UserId == user.Id &&
+                            x.CheckYTChannelId == cfg.MemberCheckChannelId && x.IsChecked);
+                        if (hasRecord)
+                            continue;
+
+                        try
+                        {
+                            await _client.Rest.RemoveRoleAsync(cfg.GuildId, user.Id, cfg.MemberCheckGrantRoleId);
+                            Log.Info($"孤兒會限身分組回收: {cfg.GuildId} / {user.Id}");
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "ReconcileMemberRoles");
+            }
+        }
+
         private async Task SendMsgToLogChannelAsync(string checkChannelId, string msg, bool isNeedRemove = true, bool isNeedSendToOwner = true)
         {
             using var db = _dbService.GetDbContext();
@@ -340,6 +461,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     var guild = _client.GetGuild(item.GuildId);
                     if (guild == null)
                     {
+                        // 非本 shard 持有或尚未 Ready，靜默略過，別刪設定（避免多 shard 互刪）。
+                        // 本方法會被 bus consumer 在每個 shard 呼叫，各 shard 只清自己持有的 guild。
+                        if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
+                            continue;
+
                         Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 不存在!");
                         db.GuildYoutubeMemberConfig.Remove(item);
                         continue;

@@ -31,6 +31,13 @@ public class BotConfig
     public ulong PayPalEmoteId { get; set; } = 1265158658015236107;
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
 
+    /// <summary>
+    /// 是否啟用 GuildMembers 特權 intent（會員重加入即時回補會限身分組 + 孤兒身分組回收對帳）。
+    /// <para>預設 false：未在 Discord 開發者後台開啟 Server Members Intent 前務必保持關閉，否則 bot login 會因
+    /// disallowed intent（4014）連線失敗。開啟特權並送審通過後才設 true（或環境變數 ENABLE_GUILD_MEMBERS_INTENT）。</para>
+    /// </summary>
+    public bool EnableGuildMembersIntent { get; set; } = false;
+
     #region 水平擴展（三層拆分）設定 (計畫 §3)
     /// <summary>
     /// 叢集 shard 總數，供 Coordinator 公告 TOTAL_SHARDS 並比對存活 notifier 數（可由環境變數 TOTAL_SHARDS 覆寫）。
@@ -107,6 +114,7 @@ public class BotConfig
             YouTubeEmoteId = config.YouTubeEmoteId;
             PayPalEmoteId = config.PayPalEmoteId;
             ECPayEmoteId = config.ECPayEmoteId;
+            EnableGuildMembersIntent = config.EnableGuildMembersIntent;
             TotalShards = config.TotalShards;
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
@@ -136,6 +144,7 @@ public class BotConfig
         SetIfPresent("DISCORD_TOKEN", v => DiscordToken = v);
         SetIfPresent("GOOGLE_API_KEY", v => GoogleApiKey = v);
         SetIfPresentInt("TOTAL_SHARDS", v => TotalShards = v);
+        SetIfPresentBool("ENABLE_GUILD_MEMBERS_INTENT", v => EnableGuildMembersIntent = v);
     }
 
     private static void SetIfPresent(string envName, Action<string> setter)
@@ -149,6 +158,13 @@ public class BotConfig
     {
         var value = Environment.GetEnvironmentVariable(envName);
         if (!string.IsNullOrWhiteSpace(value) && int.TryParse(value, out var parsed))
+            setter(parsed);
+    }
+
+    private static void SetIfPresentBool(string envName, Action<bool> setter)
+    {
+        var value = Environment.GetEnvironmentVariable(envName);
+        if (!string.IsNullOrWhiteSpace(value) && bool.TryParse(value, out var parsed))
             setter(parsed);
     }
 

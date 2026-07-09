@@ -440,6 +440,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             PeriodicRunner.RunAsync("YT-subscribePubSub", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30), SubscribePubSubAsync, token);
 
+            // 會限影片探索（原 Notifier 每 5 分鐘 Timer，搬來 Scraper 單例執行，避免多 shard 重複燒配額）
+            PeriodicRunner.RunAsync("YT-memberVideoCheck", TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5), CheckMemberShipOnlyVideoIdAsync, token);
+
             // 每日 00:00 定時檢查 YouTube 頻道名稱
             var now = DateTime.Now;
             var dueTime = now.Date.AddDays(1) - now;

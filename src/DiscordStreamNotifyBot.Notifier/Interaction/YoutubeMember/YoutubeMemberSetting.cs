@@ -3,6 +3,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
+using System.Text.RegularExpressions;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 {
@@ -302,6 +303,117 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     Log.Error(ex.ToString());
                 }
             }
+        }
+
+        [CommandSummary("手動指定會限驗證用的偵測影片\n" +
+            "用於頻道有多階會員時，指定「最低階」的會限影片，避免低階但合法的會員被誤判失敗\n" +
+            "指定後自動探索不會再覆寫此影片；該影片失效時會發送通知到通知頻道提醒需重設")]
+        [CommandExample("頻道名稱 https://youtu.be/xxxxxxxxxxx")]
+        [SlashCommand("set-check-video", "手動指定會限驗證探測影片")]
+        public async Task SetCheckVideoAsync(
+            [Summary("頻道名稱"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url,
+            [Summary("會限影片連結或ID")] string videoUrlOrId)
+        {
+            await DeferAsync(true);
+
+            string videoId = ExtractVideoId(videoUrlOrId);
+            if (string.IsNullOrEmpty(videoId))
+            {
+                await Context.Interaction.SendErrorAsync("無法解析影片 ID，請提供正確的 YouTube 影片連結或 11 碼影片 ID", true);
+                return;
+            }
+
+            using var db = _dbService.GetDbContext();
+            try
+            {
+                var channelId = await _ytservice.GetChannelIdAsync(url);
+                var config = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
+                if (config == null)
+                {
+                    await Context.Interaction.SendErrorAsync("未設定過該頻道的會限驗證，請先用 `/member-set add-member-check` 新增", true);
+                    return;
+                }
+
+                // 驗證：用 bot 金鑰探測留言。member-only → 403/forbidden；公開影片 → 200（不可當探針，否則所有人都會通過驗證）
+                try
+                {
+                    var ct = _ytservice.YouTubeService.CommentThreads.List("id");
+                    ct.VideoId = videoId;
+                    await ct.ExecuteAsync();
+
+                    // 可讀留言 ＝ 非會限影片
+                    await Context.Interaction.SendErrorAsync("這支影片不是會限影片（機器人可讀取其留言），若當作偵測用影片會導致所有人都通過驗證，請改指定會限影片", true);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message.ToLower().Contains("disabled comments"))
+                    {
+                        await Context.Interaction.SendErrorAsync("這支影片已關閉留言，無法當作會限偵測影片，請改指定其他會限影片", true);
+                        return;
+                    }
+                    // 403 / forbidden / not properly authorized ＝ 會限影片，符合預期，往下設定
+                }
+
+                config.MemberCheckVideoId = videoId;
+                config.IsManualVideoId = true;
+                db.GuildYoutubeMemberConfig.Update(config);
+                db.SaveChanges();
+
+                await Context.Interaction.SendConfirmAsync($"已將 `{channelId}` 的會限驗證偵測影片手動指定為 `{videoId}`\n" +
+                    "自動探索將不再覆寫此影片；若該影片失效會通知需要重設", true);
+            }
+            catch (Exception ex)
+            {
+                await Context.Interaction.SendErrorAsync(ex.Message, true);
+                Log.Error(ex.ToString());
+            }
+        }
+
+        [CommandSummary("改回自動挑選會限驗證偵測影片（取消手動指定）")]
+        [CommandExample("https://www.youtube.com/@998rrr")]
+        [SlashCommand("clear-check-video", "改回自動挑選會限驗證偵測影片")]
+        public async Task ClearCheckVideoAsync(
+            [Summary("頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
+        {
+            await DeferAsync(true);
+
+            using var db = _dbService.GetDbContext();
+            try
+            {
+                var channelId = await _ytservice.GetChannelIdAsync(url);
+                var config = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
+                if (config == null)
+                {
+                    await Context.Interaction.SendErrorAsync("未設定過該頻道的會限驗證", true);
+                    return;
+                }
+
+                config.IsManualVideoId = false;
+                config.MemberCheckVideoId = "-";
+                db.GuildYoutubeMemberConfig.Update(config);
+                db.SaveChanges();
+
+                await Context.Interaction.SendConfirmAsync($"已將 `{channelId}` 改回自動挑選會限偵測影片（約 5 分鐘後生效）", true);
+            }
+            catch (Exception ex)
+            {
+                await Context.Interaction.SendErrorAsync(ex.Message, true);
+                Log.Error(ex.ToString());
+            }
+        }
+
+        private static string ExtractVideoId(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return null;
+
+            input = input.Trim();
+            if (Regex.IsMatch(input, @"^[\w-]{11}$"))
+                return input;
+
+            var m = Regex.Match(input, @"(?:v=|youtu\.be/|/live/|/shorts/|/embed/)([\w-]{11})");
+            return m.Success ? m.Groups[1].Value : null;
         }
 
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]

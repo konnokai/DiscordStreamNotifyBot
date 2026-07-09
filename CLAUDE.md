@@ -56,7 +56,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 - **雙指令系統**（目錄結構對稱）：`Command/` = `s!` 前綴（擁有者/管理用）；`Interaction/` = Slash（一般使用者）。
 - **DI 反射自動載入**：實作 `IInteractionService` / `ICommandService` 的類別自動註冊 Singleton（`Interaction|Command/Extensions.cs`），新增服務不需手動登記。
 - DB：`MainDbService.GetDbContext()` 取短生命週期 context（`using var db = ...`），讀取一律 `.AsNoTracking()`。YouTube 影片四表（Holo/Nijisanji/Other/NonApproved）繼承 `Video`，依 videoId 查詢需依序探查四表。
-- 偵測與發送已拆分（計畫階段 3）：偵測（Timer/排程爬取/webhook 訂閱）在 **Scraper** `Detection/`，publish DTO 到 `bot:notify`；發送（`_client.GetGuild` + embed）在 **Notifier** `SharedService/`，消費匯流排後 `DispatchFromBusAsync` 重建 embed。跨層 DTO 在 `Shared/Messages/`。
+- 偵測與發送已拆分（計畫階段 3）：偵測（Timer/排程爬取/webhook 訂閱）在 **Scraper** `Detection/`，publish DTO 到 `bot:notify`；發送（`_client.GetGuild` + embed）在 **Notifier** `SharedService/`，消費匯流排後 `DispatchFromBusAsync` 重建 embed。跨層 DTO 在 `Shared/Messages/`。會限**逐使用者驗證**仍留 Notifier（shard 守衛天然分區）；但**會限影片探索**（頻道層級）在 Scraper，log 走 `YoutubeMemberVideoLog` 匯流排。會員重加入即時回補/孤兒身分組對帳需 `EnableGuildMembersIntent`（預設關，未開特權前勿設 true 以免 login 4014）。
 - **Coordinator**（階段 4）：`CoordinatorService` 心跳/leader 觀察/`TOTAL_SHARDS` 公告/`XINFO GROUPS` pending 監控，不負責重啟（交 Compose）。**跨 shard 指令**（階段 5，計畫 §7）：`Notifier/SharedService/Cluster/ClusterQueryService`（合併快照 + request-reply）+ `AdministrationService` 廣播；`OfficialGuildList` 存 Redis SET；狀態列計數走 `cluster:stats:*` HASH 彙總。部署見根目錄 `Dockerfile`/`docker-compose.yml`（方式 A）。
 
 ## 外部契約（不可片面更改）

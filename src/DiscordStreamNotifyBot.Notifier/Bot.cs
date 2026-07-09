@@ -104,7 +104,10 @@ namespace DiscordStreamNotifyBot
                 MessageCacheSize = 0,
                 // 因為沒有註冊事件，Discord .NET 建議可移除這兩個沒用到的特權
                 // https://dotblogs.com.tw/yc421206/2015/10/20/c_scharp_enum_of_flags
-                GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents,
+                // 會員重加入即時回補 / 孤兒身分組對帳需要 GuildMembers 特權 intent，僅在設定啟用時才請求，
+                // 否則未在 Discord 後台開特權會導致 login 4014 disallowed intent 連線失敗。
+                GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents
+                    | (_botConfig.EnableGuildMembersIntent ? GatewayIntents.GuildMembers : GatewayIntents.None),
                 AlwaysDownloadDefaultStickers = false,
                 AlwaysResolveStickers = false,
                 FormatUsersInBidirectionalUnicode = false,
@@ -290,7 +293,8 @@ namespace DiscordStreamNotifyBot
                 _busConsumer = new NotificationBusConsumer(
                     serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>(),
                     serviceProvider.GetService<SharedService.Twitch.TwitchService>(),
-                    serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>());
+                    serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>(),
+                    serviceProvider.GetService<SharedService.YoutubeMember.YoutubeMemberService>());
                 await _busConsumer.StartAsync(_shardId);
             }
             catch (Exception ex)

@@ -3,9 +3,10 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     /// <summary>
     /// Redis Streams 通知匯流排（<c>bot:notify</c>）的訊息 <c>type</c> 欄位值（計畫 §4.1）。
     /// <para>
-    /// 註：會限身分組（member）<b>不走匯流排</b> —— 會限檢查經 shard 守衛後天然按 shard 分區
-    /// （各 shard 只檢查自己持有伺服器的成員，OAuth quota 自動分攤），role 操作為 REST 不綁 gateway，
-    /// 且其多種檢查結果各對應不同 log/私訊內容，DTO 化高風險零收益。
+    /// 註：會限身分組的<b>逐使用者驗證</b>（member role 檢查）<b>不走匯流排</b> —— 經 shard 守衛後天然按 shard 分區
+    /// （各 shard 只檢查自己持有伺服器的成員，OAuth quota 自動分攤），role 操作為 REST 不綁 gateway。
+    /// 但「會限影片探索」（頻道層級、bot 金鑰、無逐使用者 token）改由 Scraper 偵測，其需寫入 guild log channel
+    /// 的結果走 <see cref="YoutubeMemberVideoLogNotification"/>（<see cref="YoutubeMemberVideoLog"/>）。
     /// </para>
     /// </summary>
     public static class NotifyType
@@ -14,6 +15,7 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public const string Twitch = "twitch";
         public const string Twitcasting = "twitcasting";
         public const string Banner = "banner";
+        public const string YoutubeMemberVideoLog = "youtube_member_video_log";
     }
 
     /// <summary>
@@ -121,5 +123,27 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     {
         public string ChannelId { get; set; }
         public string VideoId { get; set; }
+    }
+
+    /// <summary>
+    /// 跨層：會限影片探索（Scraper）需要寫入某會限頻道 log channel 的事件（notifier 端消費後依 shard 守衛發送）。
+    /// 對應原 <c>YoutubeMemberService.SendMsgToLogChannelAsync</c> 的參數。
+    /// </summary>
+    public class YoutubeMemberVideoLogNotification
+    {
+        /// <summary>會限頻道 Id（= SendMsgToLogChannelAsync 的 checkChannelId，用來反查各 guild 的 log channel）。</summary>
+        public string CheckChannelId { get; set; }
+
+        /// <summary>要送到 guild log channel / guild owner 的訊息。</summary>
+        public string Message { get; set; }
+
+        /// <summary>送出後是否移除該會限頻道設定（沿用 SendMsgToLogChannelAsync 語意，各 shard 依守衛刪自己的）。</summary>
+        public bool IsNeedRemove { get; set; } = true;
+
+        /// <summary>是否同時私訊 guild owner（沿用 SendMsgToLogChannelAsync 語意）。</summary>
+        public bool IsNeedSendToOwner { get; set; } = true;
+
+        /// <summary>非空時，Notifier shard 0 額外私訊 Bot 擁有者（ApplicatonOwner）此診斷訊息。</summary>
+        public string BotOwnerMessage { get; set; }
     }
 }

@@ -28,16 +28,19 @@ namespace DiscordStreamNotifyBot
         private readonly YoutubeStreamService _youtubeStreamService;
         private readonly SharedService.Twitch.TwitchService _twitchService;
         private readonly SharedService.Twitcasting.TwitcastingService _twitcastingService;
+        private readonly SharedService.YoutubeMember.YoutubeMemberService _youtubeMemberService;
 
         private int _shardId;
 
         public NotificationBusConsumer(YoutubeStreamService youtubeStreamService,
             SharedService.Twitch.TwitchService twitchService,
-            SharedService.Twitcasting.TwitcastingService twitcastingService)
+            SharedService.Twitcasting.TwitcastingService twitcastingService,
+            SharedService.YoutubeMember.YoutubeMemberService youtubeMemberService)
         {
             _youtubeStreamService = youtubeStreamService;
             _twitchService = twitchService;
             _twitcastingService = twitcastingService;
+            _youtubeMemberService = youtubeMemberService;
         }
 
         /// <summary>建立本 shard 的 consumer group 並於背景啟動消費迴圈（吃 GracefulShutdown.Token）。</summary>
@@ -148,6 +151,11 @@ namespace DiscordStreamNotifyBot
                     if (bannerDto != null) await _youtubeStreamService.DispatchBannerFromBusAsync(bannerDto);
                     break;
 
+                case NotifyType.YoutubeMemberVideoLog:
+                    var memberVideoLogDto = JsonConvert.DeserializeObject<YoutubeMemberVideoLogNotification>(json);
+                    if (memberVideoLogDto != null) await _youtubeMemberService.DispatchMemberVideoLogFromBusAsync(memberVideoLogDto);
+                    break;
+
                 default:
                     Log.Warn($"[NotificationBus] 尚未接線的 type: {type}，暫時 ack 略過");
                     break;
@@ -179,6 +187,8 @@ namespace DiscordStreamNotifyBot
                         : $"notified:{shardId}:tw:{jo.Value<string>("StreamId")}:{jo.Value<int?>("NoticeType")}",
                     NotifyType.Twitcasting => $"notified:{shardId}:tc:{jo.Value<string>("ChannelId")}:{jo.Value<int?>("StreamId")}",
                     NotifyType.Banner => $"notified:{shardId}:banner:{jo.Value<string>("ChannelId")}:{jo.Value<string>("VideoId")}",
+                    // 會限影片探索 log 偶發重送影響低；以 頻道+訊息雜湊 去重避免重複 log（含 shardId，因 bot:notify 為廣播）
+                    NotifyType.YoutubeMemberVideoLog => $"notified:{shardId}:ytmv:{jo.Value<string>("CheckChannelId")}:{(jo.Value<string>("Message") ?? "").GetHashCode()}",
                     _ => null,
                 };
             }

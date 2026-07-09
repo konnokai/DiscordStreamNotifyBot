@@ -15,7 +15,8 @@ description: >
 所以**偵測端不碰 Discord gateway**，只 publish 結構化 DTO；**發送端不做偵測**，只消費 DTO 重建 embed
 發給自己持有的伺服器。新增平台就是照這條線把三層補齊。
 
-> 反例提醒：會限（YoutubeMember）**不走匯流排**——它經 shard 守衛天然按 shard 分區，別照這個配方做。
+> 反例提醒：會限（YoutubeMember）的**逐使用者驗證不走匯流排**——它經 shard 守衛天然按 shard 分區，別照這個配方做。
+> （例外：**會限影片探索**是頻道層級工作，已搬 Scraper，其 log 走 `YoutubeMemberVideoLog` 匯流排——那部分才照配方。）
 
 ## 動工前先讀一個既有平台
 
