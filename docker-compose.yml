@@ -45,32 +45,20 @@ services:
       ROLE: scraper
     depends_on: [coordinator]
 
-  # 方式 A：固定 shard，每個 shard 一個服務、ShardId 寫死於 command；total 必須與 .env 的 TOTAL_SHARDS 一致
-  # 角色由 ROLE 決定：scraper 偵測並發布至 bot:notify；notifier 消費自己的 consumer group（shard-{id}）發送通知
+  # 方式 A：固定 shard，每個 shard 一個服務。ShardId 寫死於 command 第一參數；
+  # total（第二參數）由 .env 的 TOTAL_SHARDS 插值 → shard 總數單一真實來源（同時餵此處與 coordinator 的 env）。
+  # 【約束】notifier-N 服務的「數量」必須等於 TOTAL_SHARDS（此處 = 2）；要改 shard 數需同步增刪 notifier-N 服務。
+  # 角色由 ROLE 決定：scraper 偵測並發布至 bot:notify；notifier 消費自己的 consumer group（shard-{id}）發送通知。
   notifier-0:
     <<: *app-common
     environment:
       ROLE: notifier
-    command: ["0", "4"]
+    command: ["0", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
     depends_on: [coordinator]
 
   notifier-1:
     <<: *app-common
     environment:
       ROLE: notifier
-    command: ["1", "4"]
-    depends_on: [coordinator]
-
-  notifier-2:
-    <<: *app-common
-    environment:
-      ROLE: notifier
-    command: ["2", "4"]
-    depends_on: [coordinator]
-
-  notifier-3:
-    <<: *app-common
-    environment:
-      ROLE: notifier
-    command: ["3", "4"]
+    command: ["1", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
     depends_on: [coordinator]
