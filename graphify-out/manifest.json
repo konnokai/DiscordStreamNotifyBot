@@ -245,8 +245,8 @@
     "semantic_hash": "334332224510e02326d39d760ce01faa"
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/YoutubeMember/YoutubeMemberSetting.cs": {
-    "mtime": 1783588348.7584555,
-    "ast_hash": "ecb6c357d882862b5b562e26d2e7c1c8",
+    "mtime": 1783589373.8860729,
+    "ast_hash": "82758c18e8022a6b684513a8a0baf7d2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Youtube/Youtube.cs": {
@@ -310,13 +310,13 @@
     "semantic_hash": "c2b47578f3cb8f8a92a703b9037bb14f"
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/CheckMemberShip.cs": {
-    "mtime": 1783588243.981989,
-    "ast_hash": "3420bddb3bb93eecb6f4172ced8535ba",
+    "mtime": 1783589694.1323383,
+    "ast_hash": "88d6ab9b41c6a6e1ec3fbca9bb10d211",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberService.cs": {
-    "mtime": 1783588542.5169632,
-    "ast_hash": "4c6d3379597213193f0fad02e9f54b37",
+    "mtime": 1783591569.0554237,
+    "ast_hash": "665f97cd62c12f7bd7c1fc9952a11207",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/EmbedBuilderFactory.cs": {
@@ -857,6 +857,16 @@
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260709091318_AddManualMemberCheckVideoFlag.cs": {
     "mtime": 1783588398.5801747,
     "ast_hash": "f0b860f89c21a91502df627f7d82eefa",
+    "semantic_hash": ""
+  },
+  "migrate_AddManualMemberCheckVideoFlag.sql": {
+    "mtime": 1783591869.9713693,
+    "ast_hash": "4eaa9658825d57b894b1c3f62e604c72",
+    "semantic_hash": ""
+  },
+  "docs/MEMBER_TOKEN_STORE_MYSQL_PLAN.md": {
+    "mtime": 1783591086.6861336,
+    "ast_hash": "d27dbda1c53e5cb6b5086a834f8b9122",
     "semantic_hash": ""
   }
 }
