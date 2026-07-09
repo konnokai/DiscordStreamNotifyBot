@@ -4,7 +4,6 @@ using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
-using System.Runtime.InteropServices;
 
 using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
@@ -24,7 +23,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         private readonly BotConfig _botConfig;
 
         private List<Category> categories;
-        private string twitcastingRecordPath = "";
 
         public TwitcastingDetectionService(TwitcastingClient twitcastingClient, BotConfig botConfig, MainDbService dbService)
         {
@@ -38,10 +36,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             _twitcastingClient = twitcastingClient;
             _botConfig = botConfig;
             _dbService = dbService;
-
-            twitcastingRecordPath = botConfig.TwitCastingRecordPath;
-            if (string.IsNullOrEmpty(twitcastingRecordPath)) twitcastingRecordPath = Utility.GetDataFilePath("");
-            if (!twitcastingRecordPath.EndsWith(Utility.GetPlatformSlash())) twitcastingRecordPath += Utility.GetPlatformSlash();
 
             // 偵測排程（計畫 §12.1）：PeriodicTimer 背景輪詢，await 友善、無重入、吃 CancellationToken
             var token = GracefulShutdown.Token;
@@ -85,7 +79,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                 await db.SaveChangesAsync();
 
                 await PublishStartLiveAsync(twitcastingStream, webHookJson.Movie.IsProtected,
-                    !webHookJson.Movie.IsProtected && isRecord && RecordTwitCasting(twitcastingStream));
+                    !webHookJson.Movie.IsProtected && isRecord && await RecordTwitCastingAsync(twitcastingStream));
             });
         }
 
@@ -163,44 +157,25 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
 #endif
         }
 
-        private bool RecordTwitCasting(TwitcastingStream twitcastingStream)
+        /// <summary>
+        /// 錄影委派：比照 Twitch，publish <see cref="RedisChannels.Twitcasting.Record"/> 給錄影工具執行，
+        /// 不再於 Scraper 進程內本機 streamlink 錄影。回傳 subscriber 數判斷錄影端是否在線。
+        /// </summary>
+        private async Task<bool> RecordTwitCastingAsync(TwitcastingStream twitcastingStream)
         {
             Log.Info($"{twitcastingStream.ChannelTitle} ({twitcastingStream.StreamId}): {twitcastingStream.StreamTitle}");
 
-            try
-            {
-                if (!Directory.Exists(twitcastingRecordPath))
-                    Directory.CreateDirectory(twitcastingRecordPath);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"TwitCasting 保存路徑不存在且不可建立: {twitcastingRecordPath}");
-                Log.Error($"更改保存路徑至Data資料夾: {Utility.GetDataFilePath("")}");
-                Log.Error(ex.ToString());
+            if (Bot.Redis == null)
+                return false;
 
-                twitcastingRecordPath = Utility.GetDataFilePath("");
-            }
-
-            // 自幹 Tc 錄影能錄但時間會出問題，還是用 StreamLink 方案好了
-            string procArgs = $"streamlink https://twitcasting.tv/{twitcastingStream.ChannelId} best --output \"{twitcastingRecordPath}[{twitcastingStream.ChannelId}]{twitcastingStream.StreamStartAt:yyyyMMdd} - {twitcastingStream.StreamId}.ts\"";
-            try
+            if (await Bot.RedisSub.PublishAsync(new RedisChannel(RedisChannels.Twitcasting.Record, RedisChannel.PatternMode.Literal), twitcastingStream.ChannelId) != 0)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("tmux", $"new-window -d -n \"TwitCasting {twitcastingStream.ChannelId}\" {procArgs}");
-                else Process.Start(new ProcessStartInfo()
-                {
-                    FileName = "streamlink",
-                    Arguments = procArgs.Replace("streamlink", ""),
-                    CreateNoWindow = false,
-                    UseShellExecute = true
-                });
-
+                Log.Info($"已發送 TwitCasting 錄影請求: {twitcastingStream.ChannelId}");
                 return true;
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "RecordTwitCasting 失敗，請確認是否已安裝 StreamLink");
-                return false;
-            }
+
+            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {twitcastingStream.ChannelId}");
+            return false;
         }
 
         // https://stackoverflow.com/questions/249760/how-can-i-convert-a-unix-timestamp-to-datetime-and-vice-versa

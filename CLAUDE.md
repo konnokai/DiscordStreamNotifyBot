@@ -67,7 +67,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 |------|------|
 | YouTube | `youtube.startstream` `youtube.endstream` `youtube.addstream` `youtube.deletestream` `youtube.unarchived` `youtube.memberonly` `youtube.record` `youtube.429error` `youtube.pubsub.{CreateOrUpdate,Deleted,NeedRegister}` |
 | Twitch | `twitch.record` `twitch:channel_update` `twitch:stream_offline` |
-| TwitCasting | `twitcasting.pubsub.startlive` |
+| TwitCasting | `twitcasting.pubsub.startlive` `twitcasting.record` |
 | 會限 | `member.revokeToken` `member.syncRedisToken` |
 
 改名 = 破壞另外兩個 repo。`Auth/`（TokenManager，AES-CBC+HMAC，金鑰 `RedisTokenKey`）與後端共享，同屬契約。

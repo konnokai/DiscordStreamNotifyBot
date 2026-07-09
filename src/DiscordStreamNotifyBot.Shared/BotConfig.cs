@@ -20,7 +20,6 @@ public class BotConfig
 
     public string TwitCastingClientId { get; set; } = "";
     public string TwitCastingClientSecret { get; set; } = "";
-    public string TwitCastingRecordPath { get; set; } = "";
 
     // https://streamlink.github.io/cli/plugins/twitch.html#authentication
     // 先放著，未來可能會用到
@@ -99,7 +98,6 @@ public class BotConfig
             TestSlashCommandGuildIds = config.TestSlashCommandGuildIds ?? [];
             TwitCastingClientId = config.TwitCastingClientId;
             TwitCastingClientSecret = config.TwitCastingClientSecret;
-            TwitCastingRecordPath = config.TwitCastingRecordPath;
             TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;
             TwitchClientSecret = config.TwitchClientSecret;

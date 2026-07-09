@@ -47,10 +47,13 @@ namespace DiscordStreamNotifyBot.Shared
             public const string WebhookSecret = "twitch:webhook_secret";
         }
 
-        /// <summary>TwitCasting IPC 頻道（與後端共用契約）。</summary>
+        /// <summary>TwitCasting IPC 頻道（與後端 / 錄影工具共用契約）。</summary>
         public static class Twitcasting
         {
             public const string PubSubStartLive = "twitcasting.pubsub.startlive";
+
+            /// <summary>TwitCasting 錄影 IPC 頻道（與錄影工具共用契約）。</summary>
+            public const string Record = "twitcasting.record";
         }
 
         /// <summary>YouTube 會限 OAuth Token IPC 頻道（與後端共用契約）。</summary>

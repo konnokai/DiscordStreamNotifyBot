@@ -23,7 +23,7 @@ description: >
 
 兩個獨立通道，別搞混：
 - **Redis Streams 匯流排**（`bot:notify`）＝偵測→發送的內部通知（YouTube/Twitch/Twitcasting/Banner）。
-- **Redis pub/sub**＝和外部錄影工具 / 後端的 IPC（`youtube.startstream`、`youtube.record`、`twitch.record`、
+- **Redis pub/sub**＝和外部錄影工具 / 後端的 IPC（`youtube.startstream`、`youtube.record`、`twitch.record`、`twitcasting.record`、
   `youtube.pubsub.*` 等，見 `Shared/RedisChannels.cs`）。錄影工具偵測到開台是走 Redis pub/sub 進來，再由 Scraper 轉成匯流排 DTO。
 
 ## 「沒收到通知」依序排查
