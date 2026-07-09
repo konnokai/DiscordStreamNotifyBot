@@ -11,7 +11,7 @@ public class BotConfig
     public string UptimeKumaPushUrl { get; set; } = "";
 
     public string DiscordToken { get; set; } = "";
-    public ulong TestSlashCommandGuildId { get; set; } = 0;
+    public ulong[] TestSlashCommandGuildIds { get; set; } = [];
     public string WebHookUrl { get; set; } = "";
 
     public string GoogleApiKey { get; set; } = "";
@@ -96,7 +96,7 @@ public class BotConfig
             DiscordToken = config.DiscordToken;
             WebHookUrl = config.WebHookUrl;
             GoogleApiKey = config.GoogleApiKey;
-            TestSlashCommandGuildId = config.TestSlashCommandGuildId;
+            TestSlashCommandGuildIds = config.TestSlashCommandGuildIds ?? [];
             TwitCastingClientId = config.TwitCastingClientId;
             TwitCastingClientSecret = config.TwitCastingClientSecret;
             TwitCastingRecordPath = config.TwitCastingRecordPath;

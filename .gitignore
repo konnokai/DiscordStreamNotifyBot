@@ -364,6 +364,7 @@ FodyWeavers.xsd
 
 DbTrackerLog.txt
 bot_config.json
+bot_config_example.json
 
 # Docker Compose 部署密鑰（範例 .env.example 才進版控，見計畫 §6）
 .env

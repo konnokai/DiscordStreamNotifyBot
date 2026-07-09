@@ -31,7 +31,7 @@ dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier -- 0 4 # [Sh
 | 組態 | 行為 |
 |------|------|
 | `Release` | 完整功能；全球註冊 Slash 指令 |
-| `Debug` | 登入 Discord，指令只註冊到 `TestSlashCommandGuildId` |
+| `Debug` | 登入 Discord，指令只註冊到 `TestSlashCommandGuildIds`（各 shard 只註冊自己持有的伺服器） |
 | `Debug_DontRegisterCommand` | 略過指令註冊 |
 | `Debug_API` | 單次 YouTube API 呼叫後立即返回 |
 

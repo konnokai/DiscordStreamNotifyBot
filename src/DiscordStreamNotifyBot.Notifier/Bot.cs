@@ -307,24 +307,33 @@ namespace DiscordStreamNotifyBot
                 // 以「指令規格雜湊」判斷是否需重註冊：只要 Slash 指令的名稱/參數/型別等規格有變動，雜湊即改變（取代僅比對指令總數）
                 string localCommandSignature = serviceProvider.GetService<InteractionHandler>().CommandSignature;
 #if DEBUG
-                var commandSignature = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_signature", localCommandSignature)).ToString();
+                // 雜湊鍵帶 shardId：多 shard 併跑時若共用同一鍵，先啟動的 shard 會把雜湊設成最新，其餘 shard 讀到相同值而整個略過註冊，
+                // 導致自己持有的測試伺服器沒有指令（正是 shard 1 沒指令的原因）。每個 shard 各自維護雜湊才能各自註冊自己持有的伺服器。
+                var commandSignature = (await RedisDb.StringGetSetAsync($"discord_stream_bot:command_signature:{_shardId}", localCommandSignature)).ToString();
                 if (commandSignature != localCommandSignature)
                 {
-                    if (_botConfig.TestSlashCommandGuildId == 0 || client.GetGuild(_botConfig.TestSlashCommandGuildId) == null)
-                        Log.Warn("未設定測試 Slash 指令的伺服器或伺服器不存在，略過");
+                    if (_botConfig.TestSlashCommandGuildIds.Length == 0)
+                        Log.Warn("未設定測試 Slash 指令的伺服器，略過");
                     else
                     {
-                        try
+                        foreach (var guildId in _botConfig.TestSlashCommandGuildIds)
                         {
-                            var result = await interactionService.RegisterCommandsToGuildAsync(_botConfig.TestSlashCommandGuildId);
-                            Log.Info($"已註冊指令 ({_botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+                            // 只註冊本 shard 持有的伺服器；其餘交由持有它的 shard 註冊（非錯誤，不記警告避免各 shard 洗版）
+                            if (client.GetGuild(guildId) == null)
+                                continue;
 
-                            result = await interactionService.AddModulesToGuildAsync(_botConfig.TestSlashCommandGuildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
-                            Log.Info($"已註冊指令 ({_botConfig.TestSlashCommandGuildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex, "註冊伺服器專用 Slash 指令失敗");
+                            try
+                            {
+                                var result = await interactionService.RegisterCommandsToGuildAsync(guildId);
+                                Log.Info($"已註冊指令 ({guildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+
+                                result = await interactionService.AddModulesToGuildAsync(guildId, false, interactionService.Modules.Where((x) => x.DontAutoRegister).ToArray());
+                                Log.Info($"已註冊指令 ({guildId}) : {string.Join(", ", result.Select((x) => x.Name))}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Error(ex, $"註冊伺服器專用 Slash 指令失敗 ({guildId})");
+                            }
                         }
                     }
                 }
@@ -352,10 +361,13 @@ namespace DiscordStreamNotifyBot
                 // 故不走上面的全域 command_count 閘門（否則只有其中一個 shard 會執行），每次啟動時各 shard 自行處理自己持有的伺服器。
                 try
                 {
-                    if (_botConfig.TestSlashCommandGuildId != 0 && client.GetGuild(_botConfig.TestSlashCommandGuildId) != null)
+                    foreach (var guildId in _botConfig.TestSlashCommandGuildIds)
                     {
-                        var result = await interactionService.RemoveModulesFromGuildAsync(_botConfig.TestSlashCommandGuildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
-                        Log.Info($"({_botConfig.TestSlashCommandGuildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
+                        if (client.GetGuild(guildId) == null)
+                            continue;
+
+                        var result = await interactionService.RemoveModulesFromGuildAsync(guildId, interactionService.Modules.Where((x) => !x.DontAutoRegister).ToArray());
+                        Log.Info($"({guildId}) 已移除測試指令，剩餘指令: {string.Join(", ", result.Select((x) => x.Name))}");
                     }
 
                     foreach (var item in interactionService.Modules.Where((x) => x.Preconditions.Any((x) => x is Interaction.Attribute.RequireGuildAttribute)))
