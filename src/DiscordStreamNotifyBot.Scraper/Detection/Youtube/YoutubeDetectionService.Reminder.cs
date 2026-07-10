@@ -185,7 +185,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private async Task HandleStreamTimeChangedAsync(TableVideo streamVideo, YTApiVideo videoResult, MainDbContext db, DateTime startTime)
         {
-            Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+            var previousScheduledStartTime = streamVideo.ScheduledStartTime;
+            Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}: {previousScheduledStartTime:O} -> {startTime:O}");
 
             streamVideo.ScheduledStartTime = startTime;
             var video = GetDbVideoByType(db, streamVideo);
@@ -210,7 +211,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
             }
 
-            await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime).ConfigureAwait(false);
+            await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
+                previousScheduledStartTime: previousScheduledStartTime).ConfigureAwait(false);
 
             if (Reminders.TryRemove(streamVideo.VideoId, out var t))
                 t.Timer.Change(Timeout.Infinite, Timeout.Infinite);

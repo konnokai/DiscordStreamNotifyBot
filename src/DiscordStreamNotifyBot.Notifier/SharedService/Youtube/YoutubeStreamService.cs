@@ -166,7 +166,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         dto.ActualStartTime ?? dto.ScheduledStartTime,
                         dto.ActualEndTime ?? DateTime.Now).Build();
                 case YoutubeNoticeType.ChangeTime:
-                    return EmbedBuilderFactory.CreateStreamTimeChanged(video, dto.ScheduledStartTime).Build();
+                    return EmbedBuilderFactory.CreateStreamTimeChangedReminder(
+                        video,
+                        dto.PreviousScheduledStartTime ?? dto.ScheduledStartTime).Build();
                 case YoutubeNoticeType.Delete:
                     return EmbedBuilderFactory.CreateStreamDeleted(video).Build();
                 default:

@@ -452,7 +452,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         #region 匯流排發布 helper
         /// <summary>偵測端：由 <see cref="TableVideo"/> 建立 DTO 並 publish 至通知匯流排。</summary>
         internal async Task PublishYoutubeNotificationAsync(TableVideo streamVideo, YoutubeNoticeType noticeType,
-            DateTime? actualStart = null, DateTime? actualEnd = null, bool isMemberOnly = false)
+            DateTime? actualStart = null, DateTime? actualEnd = null, bool isMemberOnly = false,
+            DateTime? previousScheduledStartTime = null)
         {
             try
             {
@@ -464,6 +465,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     ChannelTitle = streamVideo.ChannelTitle,
                     VideoTitle = streamVideo.VideoTitle,
                     ScheduledStartTime = streamVideo.ScheduledStartTime,
+                    PreviousScheduledStartTime = previousScheduledStartTime,
                     ActualStartTime = actualStart,
                     ActualEndTime = actualEnd,
                     IsMemberOnly = isMemberOnly,

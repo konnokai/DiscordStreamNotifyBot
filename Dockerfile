@@ -10,6 +10,8 @@ RUN dotnet publish src/DiscordStreamNotifyBot.Notifier/DiscordStreamNotifyBot.No
 RUN dotnet publish src/DiscordStreamNotifyBot.Coordinator/DiscordStreamNotifyBot.Coordinator.csproj -c Release -o /app/coordinator --no-restore
 
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
+# 程式與既有 MySQL 時間欄位皆以台灣本地時間運作，避免容器預設 UTC 造成排程誤判。
+ENV TZ=Asia/Taipei
 # WORKDIR 為 /app：應用程式以 cwd 解析 bot_config.json（compose 將其掛載到 /app/bot_config.json）
 WORKDIR /app
 COPY --from=build /app /app

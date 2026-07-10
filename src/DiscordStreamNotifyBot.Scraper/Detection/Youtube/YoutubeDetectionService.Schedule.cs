@@ -514,7 +514,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 continue;
                             }
 
-                            if (reminder.Value.StreamVideo.ScheduledStartTime != DateTime.Parse(item.LiveStreamingDetails.ScheduledStartTimeRaw))
+                            if (!DateTime.TryParse(item.LiveStreamingDetails.ScheduledStartTimeRaw, out var startTime))
+                            {
+                                Log.Error($"CheckScheduleTime-Parse: {reminder.Key} / {item.LiveStreamingDetails.ScheduledStartTimeRaw}");
+                                continue;
+                            }
+
+                            var previousScheduledStartTime = reminder.Value.StreamVideo.ScheduledStartTime;
+                            if (previousScheduledStartTime != startTime)
                             {
                                 changeVideoNum++;
                                 try
@@ -525,16 +532,31 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                         t.Timer.Dispose();
                                     }
 
-                                    var startTime = DateTime.Parse(item.LiveStreamingDetails.ScheduledStartTimeRaw);
                                     var streamVideo = BuildStreamVideo(item, startTime, reminder.Value.StreamVideo.ChannelType);
 
-                                    db.UpdateAndSave(reminder.Value.StreamVideo);
+                                    var persistedVideo = GetDbVideoByType(db, reminder.Value.StreamVideo);
+                                    if (persistedVideo != null)
+                                    {
+                                        persistedVideo.ChannelTitle = streamVideo.ChannelTitle;
+                                        persistedVideo.VideoTitle = streamVideo.VideoTitle;
+                                        persistedVideo.ScheduledStartTime = streamVideo.ScheduledStartTime;
+                                        db.UpdateAndSave(persistedVideo);
+                                    }
+                                    else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
+                                    {
+                                        addNewStreamVideo[streamVideo.VideoId] = streamVideo;
+                                    }
+                                    else
+                                    {
+                                        Log.Error($"({streamVideo.ChannelType}) 直播時間變更保存失敗，找不到資料: {streamVideo.VideoId}");
+                                    }
 
-                                    Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                                    Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}: {previousScheduledStartTime:O} -> {startTime:O}");
 
                                     if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                                     {
-                                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime).ConfigureAwait(false);
+                                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
+                                            previousScheduledStartTime: previousScheduledStartTime).ConfigureAwait(false);
                                         StartReminder(streamVideo, streamVideo.ChannelType);
                                     }
                                 }

@@ -44,6 +44,7 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public string ChannelTitle { get; set; }
         public string VideoTitle { get; set; }
         public DateTime ScheduledStartTime { get; set; }
+        public DateTime? PreviousScheduledStartTime { get; set; }
         public DateTime? ActualStartTime { get; set; }
         public DateTime? ActualEndTime { get; set; }
         public bool IsMemberOnly { get; set; }
