@@ -10,8 +10,8 @@
     "semantic_hash": "248181ec7d571344b88a9c80a1c03c3b"
   },
   "src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs": {
-    "mtime": 1783782974.6958454,
-    "ast_hash": "529940e80ebafc5b8d4edb40aaa60230",
+    "mtime": 1783784184.839569,
+    "ast_hash": "0851c4e5643ab5c27f2c31c251d265b1",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/DiscordStreamNotifyBot.Coordinator.csproj": {
@@ -20,8 +20,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Program.cs": {
-    "mtime": 1783782974.6985915,
-    "ast_hash": "ad355533cdca8c7abfdbfaeeccdc3fa8",
+    "mtime": 1783784184.836103,
+    "ast_hash": "2622781458e55ef545a07bee05f02d44",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Properties/launchSettings.json": {
@@ -265,8 +265,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Program.cs": {
-    "mtime": 1783748647.0454712,
-    "ast_hash": "04210c9fbfc35183086d4a272138356e",
+    "mtime": 1783784184.842513,
+    "ast_hash": "c979366ecb591741b0bf1e136ae1ef49",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Properties/launchSettings.json": {

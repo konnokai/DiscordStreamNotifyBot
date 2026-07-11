@@ -13,7 +13,6 @@ namespace DiscordStreamNotifyBot
 
         static async Task Main(string[] args)
         {
-            Log.Info(Version + " 初始化中");
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             // 統一優雅關閉（SIGINT/SIGTERM，計畫 §9-1）：取消時橋接至既有的 Bot.IsDisconnect 關閉路徑
@@ -44,6 +43,9 @@ namespace DiscordStreamNotifyBot
                     totalShards = shardCount;
                 }
             }
+
+            Log.RolePrefix = $"notifier:{shardId}";
+            Log.Info(Version + " 初始化中");
 
             // 啟動連線檢查（計畫 §5.3）：進入主邏輯前確認 MySQL / Redis 可連線，失敗印訊息後 Exit(1) 交給 Compose restart
             var preflightConfig = new BotConfig();
@@ -175,7 +177,7 @@ namespace DiscordStreamNotifyBot
             {
                 try { await cluster.WriteHeartbeatAsync(role, instanceId, ttl); }
                 catch (OperationCanceledException) { break; }
-                catch (Exception ex) { Log.Error(ex.Demystify(), "[Notifier] 寫入心跳失敗"); }
+                catch (Exception ex) { Log.Error(ex.Demystify(), "寫入心跳失敗"); }
             }
             while (await SafeWaitAsync(timer, cancellationToken));
         }

@@ -32,7 +32,7 @@ namespace DiscordStreamNotifyBot.Coordinator
             try
             {
                 metricServer.Start();
-                Log.Info($"[Coordinator] Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
+                Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
 
                 var service = new CoordinatorService(config, metrics);
                 await service.RunAsync(GracefulShutdown.Token);

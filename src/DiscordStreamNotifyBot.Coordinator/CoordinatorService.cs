@@ -33,7 +33,7 @@ namespace DiscordStreamNotifyBot.Coordinator
         {
             // 公告叢集真實 shard 總數
             await _cluster.AnnounceTotalShardsAsync(_config.TotalShards);
-            Log.Info($"[Coordinator] 已公告 TOTAL_SHARDS = {_config.TotalShards}");
+            Log.Info($"已公告 TOTAL_SHARDS = {_config.TotalShards}");
 
             var heartbeatInterval = TimeSpan.FromSeconds(Math.Max(1, _config.HeartbeatIntervalSeconds));
             var heartbeatTtl = TimeSpan.FromSeconds(Math.Max(2, _config.HeartbeatTtlSeconds));
@@ -58,12 +58,12 @@ namespace DiscordStreamNotifyBot.Coordinator
                 catch (Exception ex)
                 {
                     _metrics.RecordCycleFailure();
-                    Log.Error(ex.Demystify(), "[Coordinator] 監控迴圈發生錯誤");
+                    Log.Error(ex.Demystify(), "監控迴圈發生錯誤");
                 }
             }
             while (await SafeWaitAsync(timer, cancellationToken));
 
-            Log.Info("[Coordinator] 已停止監控迴圈");
+            Log.Info("已停止監控迴圈");
         }
 
         private static async Task<bool> SafeWaitAsync(PeriodicTimer timer, CancellationToken cancellationToken)
@@ -94,7 +94,7 @@ namespace DiscordStreamNotifyBot.Coordinator
                 ? $"（注意：存活 notifier {aliveNotifiers} < TOTAL_SHARDS {_config.TotalShards}，可能有 shard 未認領）"
                 : "";
 
-            Log.Info($"[Coordinator] 叢集狀態 | leader={leaderText} | scraper存活={scraperAlive} | " +
+            Log.Info($"叢集狀態 | leader={leaderText} | scraper存活={scraperAlive} | " +
                      $"notifier存活={aliveNotifiers}/{_config.TotalShards} {missingHint} | 心跳鍵數={aliveKeys.Count}");
         }
 
@@ -108,19 +108,19 @@ namespace DiscordStreamNotifyBot.Coordinator
             _metrics.UpdateBus(groups, PendingBacklogWarnThreshold);
             if (groups.Length == 0)
             {
-                Log.Info($"[Coordinator] 匯流排 {NotificationBus.StreamKey} 尚無 consumer group（notifier 未啟動或 stream 未建立）");
+                Log.Info($"匯流排 {NotificationBus.StreamKey} 尚無 consumer group（notifier 未啟動或 stream 未建立）");
                 return;
             }
 
             foreach (var group in groups)
             {
                 if (group.ConsumerCount == 0)
-                    Log.Warn($"[Coordinator] 匯流排 group {group.Name} 無 consumer，pending={group.PendingMessageCount}（訊息無人處理）");
+                    Log.Warn($"匯流排 group {group.Name} 無 consumer，pending={group.PendingMessageCount}（訊息無人處理）");
                 else if (group.PendingMessageCount >= PendingBacklogWarnThreshold)
-                    Log.Warn($"[Coordinator] 匯流排 group {group.Name} pending={group.PendingMessageCount} 已達門檻 {PendingBacklogWarnThreshold}，消費端可能落後");
+                    Log.Warn($"匯流排 group {group.Name} pending={group.PendingMessageCount} 已達門檻 {PendingBacklogWarnThreshold}，消費端可能落後");
             }
 
-            Log.Info($"[Coordinator] 匯流排 {NotificationBus.StreamKey} | groups={groups.Length} | " +
+            Log.Info($"匯流排 {NotificationBus.StreamKey} | groups={groups.Length} | " +
                      $"總pending={groups.Sum(g => g.PendingMessageCount)}");
         }
     }
