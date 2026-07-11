@@ -359,6 +359,7 @@ services:
 
 ### 階段 6：Docker 化與部署驗證（檔案完成，實跑待測試環境）
 - [x] 單一 multi-stage `Dockerfile`（三 exe publish 至 `/app/{role}`，entrypoint 依 `$ROLE` 選執行檔，Notifier forward `[ShardId,TotalShards]`）+ `docker-compose.yml`（方式 A：coordinator/scraper/notifier-0..3，共用 image + `.env` + bot_config 掛載 + `host.docker.internal`）+ `.env.example` + `.dockerignore`。Dockerfile 照搬 claude 版（本就無 RabbitMQ）；compose/.env 去除 RabbitMQ（匯流排走 Redis Streams，無額外服務）；`.env` 加入 `.gitignore`。
+- [x] 共用 image 設為 `pull_policy: build`，固定由本 repo 的 Dockerfile 建置，避免 Compose 誤向 registry 拉取 `discord-stream-notify-bot:latest`。
 - [ ] 跑完 §11 驗證清單（需 docker + 外部 MySQL/Redis 的測試環境；本機無 docker 無法建 image，留待測試環境）。
 - 參考：`git show claude:Dockerfile`、`claude:docker-compose.yml`、`claude:.env.example`。
 

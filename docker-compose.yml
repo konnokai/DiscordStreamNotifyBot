@@ -10,9 +10,8 @@
 #   2. 複製 .env.example -> .env 並填入連線資訊與 Token。
 #   3. 準備 bot_config.json（含 RedisTokenKey〔與後端共用〕、WebHookUrl、ApiServerDomain 等非 env 設定）。
 #
-# 首次建置 / 啟動：
-#   docker compose build      # 只會建置一個 image（discord-stream-notify-bot），三角色共用
-#   docker compose up -d
+# 建置 / 啟動：
+#   docker compose up -d      # pull_policy=build，從本 repo 建置單一 image，三角色共用
 
 # 讓容器都能用 host.docker.internal 連回主機（Linux 必要；Docker Desktop 可省）
 x-host: &host-gateway
@@ -22,6 +21,8 @@ x-host: &host-gateway
 # 各角色共用設定錨點：單一 image + 連線設定 + bot_config 掛載
 x-app: &app-common
   image: discord-stream-notify-bot:latest
+  # 此 image 只由本 repo 的 Dockerfile 建置，不從 registry 拉取，避免出現 pull access denied。
+  pull_policy: build
   build:
     context: .
     dockerfile: Dockerfile
