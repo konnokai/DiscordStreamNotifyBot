@@ -3,6 +3,11 @@
     /// <summary>多程序部署的角色標籤（如 <c>scraper</c> / <c>notifier:0</c> / <c>coordinator</c>），跨程序追蹤用（計畫 §10）。空字串則不加。</summary>
     public static string RolePrefix { get; set; } = "";
 
+    /// <summary>Docker／Container 環境只輸出 stdout/stderr，不在暫存檔案系統寫入 Log。</summary>
+    public static bool IsRunningInContainer { get; } =
+        IsTrueEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ||
+        IsTrueEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINERS");
+
     private static string Tag => string.IsNullOrEmpty(RolePrefix) ? "" : $"[{RolePrefix}] ";
 
     enum LogType { Verb, Stream, Info, Warn, Error }
@@ -14,7 +19,7 @@
 
     private static void WriteLogToFile(LogType type, string text)
     {
-        if (Debugger.IsAttached)
+        if (Debugger.IsAttached || IsRunningInContainer)
             return;
 
         lock (writeLockObj)
@@ -33,6 +38,12 @@
 
             File.AppendAllText(logPath, text);
         }
+    }
+
+    private static bool IsTrueEnvironmentVariable(string name)
+    {
+        string value = Environment.GetEnvironmentVariable(name);
+        return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) || value == "1";
     }
 
     public static void New(string text, bool newLine = true)

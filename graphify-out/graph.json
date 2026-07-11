@@ -334,7 +334,7 @@
       "label": "DiscordStreamNotifyBot",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L14",
+      "source_location": "L15",
       "type": "namespace",
       "metadata": {
         "kind": "csharp_namespace",
@@ -349,11 +349,11 @@
       "label": "Bot",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L16",
+      "source_location": "L17",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
         ]
       },
       "_origin": "ast",
@@ -425,11 +425,11 @@
       "label": ".IsServerOnThisShard()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L39",
+      "source_location": "L40",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
         ]
       },
       "_origin": "ast",
@@ -441,16 +441,16 @@
       "label": ".ShouldDeleteMissingGuild()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L41",
+      "source_location": "L42",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
         ]
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_shoulddeletemissingguild",
-      "community": 16,
+      "community": 30,
       "norm_label": ".shoulddeletemissingguild()"
     },
     {
@@ -477,12 +477,12 @@
       "label": "BotPlayingStatus",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L47",
+      "source_location": "L48",
       "metadata": {
         "is_nested_type": true,
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
         ]
       },
       "_origin": "ast",
@@ -504,16 +504,16 @@
       "label": ".StartAndBlockAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L96",
+      "source_location": "L104",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
         ]
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
-      "community": 44,
+      "community": 30,
       "norm_label": ".startandblockasync()"
     },
     {
@@ -527,14 +527,40 @@
       "norm_label": "task"
     },
     {
-      "label": ".TimerHandler()",
+      "label": ".TryShutdownOnDiscordAuthorizationFailure()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L456",
+      "source_location": "L472",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
+        ]
+      },
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_tryshutdownondiscordauthorizationfailure",
+      "community": 30,
+      "norm_label": ".tryshutdownondiscordauthorizationfailure()"
+    },
+    {
+      "label": "HttpException",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "httpexception",
+      "community": 30,
+      "norm_label": "httpexception"
+    },
+    {
+      "label": ".TimerHandler()",
+      "file_type": "code",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
+      "source_location": "L496",
+      "metadata": {
+        "namespace": "DiscordStreamNotifyBot",
+        "scope_chain": [
+          "s442"
         ]
       },
       "_origin": "ast",
@@ -546,11 +572,11 @@
       "label": ".GetAggregatedShardCountAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L471",
+      "source_location": "L511",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
         ]
       },
       "_origin": "ast",
@@ -562,11 +588,11 @@
       "label": ".ChangeStatus()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L497",
+      "source_location": "L537",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s427"
+          "s442"
         ]
       },
       "_origin": "ast",
@@ -581,7 +607,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice",
-      "community": 24,
+      "community": 28,
       "norm_label": "administraitonservice.cs"
     },
     {
@@ -596,7 +622,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:aac03251c6dd0a67",
-      "community": 24,
+      "community": 28,
       "norm_label": "discordstreamnotifybot.command.admin"
     },
     {
@@ -612,7 +638,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
-      "community": 14,
+      "community": 33,
       "norm_label": "administrationservice"
     },
     {
@@ -632,7 +658,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_cs_string",
-      "community": 14,
+      "community": 33,
       "norm_label": "string"
     },
     {
@@ -642,14 +668,14 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_cs_discordsocketclient",
-      "community": 14,
+      "community": 33,
       "norm_label": "discordsocketclient"
     },
     {
       "label": ".BroadcastShutdownAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L74",
+      "source_location": "L67",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Command.Admin",
         "scope_chain": [
@@ -658,7 +684,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastshutdownasync",
-      "community": 14,
+      "community": 33,
       "norm_label": ".broadcastshutdownasync()"
     },
     {
@@ -668,11 +694,27 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_cs_task",
-      "community": 14,
+      "community": 33,
       "norm_label": "task"
     },
     {
       "label": ".BroadcastLeaveGuildAsync()",
+      "file_type": "code",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
+      "source_location": "L71",
+      "metadata": {
+        "namespace": "DiscordStreamNotifyBot.Command.Admin",
+        "scope_chain": [
+          "s136"
+        ]
+      },
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastleaveguildasync",
+      "community": 33,
+      "norm_label": ".broadcastleaveguildasync()"
+    },
+    {
+      "label": ".BroadcastLeaveNoNotifyAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
       "source_location": "L78",
@@ -683,24 +725,8 @@
         ]
       },
       "_origin": "ast",
-      "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastleaveguildasync",
-      "community": 14,
-      "norm_label": ".broadcastleaveguildasync()"
-    },
-    {
-      "label": ".BroadcastLeaveNoNotifyAsync()",
-      "file_type": "code",
-      "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L85",
-      "metadata": {
-        "namespace": "DiscordStreamNotifyBot.Command.Admin",
-        "scope_chain": [
-          "s136"
-        ]
-      },
-      "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastleavenonotifyasync",
-      "community": 14,
+      "community": 33,
       "norm_label": ".broadcastleavenonotifyasync()"
     },
     {
@@ -710,7 +736,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "total",
-      "community": 14,
+      "community": 33,
       "norm_label": "total"
     },
     {
@@ -720,7 +746,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_cs_responded",
-      "community": 14,
+      "community": 33,
       "norm_label": "responded"
     },
     {
@@ -730,14 +756,14 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_cs_expected",
-      "community": 14,
+      "community": 33,
       "norm_label": "expected"
     },
     {
       "label": ".LeaveNoNotifyGuildsLocally()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L110",
+      "source_location": "L103",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Command.Admin",
         "scope_chain": [
@@ -746,14 +772,14 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_leavenonotifyguildslocally",
-      "community": 14,
+      "community": 33,
       "norm_label": ".leavenonotifyguildslocally()"
     },
     {
       "label": ".ClearUser()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L136",
+      "source_location": "L129",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Command.Admin",
         "scope_chain": [
@@ -762,7 +788,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_clearuser",
-      "community": 14,
+      "community": 33,
       "norm_label": ".clearuser()"
     },
     {
@@ -772,14 +798,14 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_cs_itextchannel",
-      "community": 14,
+      "community": 33,
       "norm_label": "itextchannel"
     },
     {
       "label": ".SaveAndBroadcastOfficialGuildListAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L145",
+      "source_location": "L138",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Command.Admin",
         "scope_chain": [
@@ -788,14 +814,14 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_saveandbroadcastofficialguildlistasync",
-      "community": 14,
+      "community": 33,
       "norm_label": ".saveandbroadcastofficialguildlistasync()"
     },
     {
       "label": ".GetNoNotifyGuilds()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L163",
+      "source_location": "L156",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Command.Admin",
         "scope_chain": [
@@ -804,7 +830,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_getnonotifyguilds",
-      "community": 14,
+      "community": 33,
       "norm_label": ".getnonotifyguilds()"
     },
     {
@@ -814,7 +840,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "ireadonlycollection",
-      "community": 14,
+      "community": 33,
       "norm_label": "ireadonlycollection"
     },
     {
@@ -824,7 +850,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "socketguild",
-      "community": 14,
+      "community": 33,
       "norm_label": "socketguild"
     },
     {
@@ -834,7 +860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration",
-      "community": 24,
+      "community": 28,
       "norm_label": "administration.cs"
     },
     {
@@ -850,7 +876,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration",
-      "community": 14,
+      "community": 3,
       "norm_label": "administration"
     },
     {
@@ -870,7 +896,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_cs_discordsocketclient",
-      "community": 14,
+      "community": 3,
       "norm_label": "discordsocketclient"
     },
     {
@@ -886,7 +912,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_listserverasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".listserverasync()"
     },
     {
@@ -896,7 +922,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_cs_task",
-      "community": 14,
+      "community": 3,
       "norm_label": "task"
     },
     {
@@ -906,7 +932,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_cs_requirecontext",
-      "community": 14,
+      "community": 3,
       "norm_label": "requirecontext"
     },
     {
@@ -916,7 +942,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_cs_command",
-      "community": 14,
+      "community": 3,
       "norm_label": "command"
     },
     {
@@ -926,7 +952,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_cs_summary",
-      "community": 14,
+      "community": 3,
       "norm_label": "summary"
     },
     {
@@ -936,7 +962,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_cs_alias",
-      "community": 14,
+      "community": 3,
       "norm_label": "alias"
     },
     {
@@ -946,7 +972,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_cs_requireowner",
-      "community": 14,
+      "community": 3,
       "norm_label": "requireowner"
     },
     {
@@ -962,7 +988,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_searchserverasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".searchserverasync()"
     },
     {
@@ -978,7 +1004,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_dieasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".dieasync()"
     },
     {
@@ -994,7 +1020,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_leaveasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".leaveasync()"
     },
     {
@@ -1010,7 +1036,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_getinviteurlasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".getinviteurlasync()"
     },
     {
@@ -1026,7 +1052,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_guildinfo",
-      "community": 14,
+      "community": 3,
       "norm_label": ".guildinfo()"
     },
     {
@@ -1042,7 +1068,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_userinfo",
-      "community": 14,
+      "community": 3,
       "norm_label": ".userinfo()"
     },
     {
@@ -1058,7 +1084,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_addofficiallistasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".addofficiallistasync()"
     },
     {
@@ -1074,7 +1100,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_removeofficiallistasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".removeofficiallistasync()"
     },
     {
@@ -1090,7 +1116,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_listofficiallistasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".listofficiallistasync()"
     },
     {
@@ -1106,7 +1132,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_listnonotifyguildasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".listnonotifyguildasync()"
     },
     {
@@ -1122,7 +1148,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_admin_administration_discordstreamnotifybot_command_admin_administration_leavenonotifyguildasync",
-      "community": 14,
+      "community": 3,
       "norm_label": ".leavenonotifyguildasync()"
     },
     {
@@ -1132,7 +1158,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_attribute_commandexampleattribute",
-      "community": 12,
+      "community": 39,
       "norm_label": "commandexampleattribute.cs"
     },
     {
@@ -1147,7 +1173,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:af0fa6f2163f5c13",
-      "community": 12,
+      "community": 39,
       "norm_label": "discordstreamnotifybot.command.attribute"
     },
     {
@@ -1163,7 +1189,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_attribute_commandexampleattribute_discordstreamnotifybot_command_attribute_commandexampleattribute",
-      "community": 28,
+      "community": 39,
       "norm_label": "commandexampleattribute"
     },
     {
@@ -1173,7 +1199,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "attribute",
-      "community": 28,
+      "community": 39,
       "norm_label": "attribute"
     },
     {
@@ -1183,7 +1209,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_attribute_commandexampleattribute_cs_string",
-      "community": 28,
+      "community": 39,
       "norm_label": "string"
     },
     {
@@ -1387,7 +1413,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler",
-      "community": 10,
+      "community": 74,
       "norm_label": "commandhandler.cs"
     },
     {
@@ -1402,7 +1428,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:d75fae4b8c48bc4f",
-      "community": 10,
+      "community": 74,
       "norm_label": "discordstreamnotifybot.command"
     },
     {
@@ -1418,7 +1444,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler_discordstreamnotifybot_command_commandhandler",
-      "community": 10,
+      "community": 74,
       "norm_label": "commandhandler"
     },
     {
@@ -1428,7 +1454,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler_cs_discordsocketclient",
-      "community": 10,
+      "community": 74,
       "norm_label": "discordsocketclient"
     },
     {
@@ -1438,7 +1464,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler_cs_commandservice",
-      "community": 10,
+      "community": 74,
       "norm_label": "commandservice"
     },
     {
@@ -1448,7 +1474,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler_cs_iserviceprovider",
-      "community": 10,
+      "community": 74,
       "norm_label": "iserviceprovider"
     },
     {
@@ -1464,7 +1490,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler_discordstreamnotifybot_command_commandhandler_initializeasync",
-      "community": 10,
+      "community": 74,
       "norm_label": ".initializeasync()"
     },
     {
@@ -1474,7 +1500,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler_cs_task",
-      "community": 10,
+      "community": 74,
       "norm_label": "task"
     },
     {
@@ -1490,7 +1516,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commandhandler_discordstreamnotifybot_command_commandhandler_handlecommandasync",
-      "community": 10,
+      "community": 74,
       "norm_label": ".handlecommandasync()"
     },
     {
@@ -1500,7 +1526,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "socketmessage",
-      "community": 10,
+      "community": 74,
       "norm_label": "socketmessage"
     },
     {
@@ -1510,7 +1536,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commonequalitycomparer",
-      "community": 143,
+      "community": 74,
       "norm_label": "commonequalitycomparer.cs"
     },
     {
@@ -1526,7 +1552,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commonequalitycomparer_discordstreamnotifybot_command_commonequalitycomparer",
-      "community": 143,
+      "community": 74,
       "norm_label": "commonequalitycomparer"
     },
     {
@@ -1546,7 +1572,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commonequalitycomparer_cs_func",
-      "community": 143,
+      "community": 74,
       "norm_label": "func"
     },
     {
@@ -1562,7 +1588,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commonequalitycomparer_discordstreamnotifybot_command_commonequalitycomparer_equals",
-      "community": 143,
+      "community": 74,
       "norm_label": ".equals()"
     },
     {
@@ -1578,7 +1604,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_commonequalitycomparer_discordstreamnotifybot_command_commonequalitycomparer_gethashcode",
-      "community": 143,
+      "community": 74,
       "norm_label": ".gethashcode()"
     },
     {
@@ -1588,7 +1614,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions",
-      "community": 10,
+      "community": 74,
       "norm_label": "extensions.cs"
     },
     {
@@ -1672,7 +1698,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_discordstreamnotifybot_command_extensions_convertdatetimetodiscordmarkdown",
-      "community": 3,
+      "community": 15,
       "norm_label": ".convertdatetimetodiscordmarkdown()"
     },
     {
@@ -1682,7 +1708,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_cs_datetime",
-      "community": 3,
+      "community": 15,
       "norm_label": "datetime"
     },
     {
@@ -1698,7 +1724,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_discordstreamnotifybot_command_extensions_getproductionname",
-      "community": 3,
+      "community": 15,
       "norm_label": ".getproductionname()"
     },
     {
@@ -1708,7 +1734,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_cs_ytchanneltype",
-      "community": 3,
+      "community": 15,
       "norm_label": "ytchanneltype"
     },
     {
@@ -1740,7 +1766,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_discordstreamnotifybot_command_extensions_getstreamvideobyvideoid",
-      "community": 3,
+      "community": 15,
       "norm_label": ".getstreamvideobyvideoid()"
     },
     {
@@ -1750,7 +1776,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_cs_video",
-      "community": 3,
+      "community": 15,
       "norm_label": "video"
     },
     {
@@ -1906,7 +1932,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_discordstreamnotifybot_command_extensions_loadcommandfrom",
-      "community": 3,
+      "community": 15,
       "norm_label": ".loadcommandfrom()"
     },
     {
@@ -1916,7 +1942,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_cs_iservicecollection",
-      "community": 3,
+      "community": 15,
       "norm_label": "iservicecollection"
     },
     {
@@ -1926,7 +1952,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_cs_assembly",
-      "community": 3,
+      "community": 15,
       "norm_label": "assembly"
     },
     {
@@ -1936,7 +1962,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_cs_ienumerable",
-      "community": 3,
+      "community": 15,
       "norm_label": "ienumerable"
     },
     {
@@ -1946,7 +1972,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_extensions_cs_type",
-      "community": 3,
+      "community": 15,
       "norm_label": "type"
     },
     {
@@ -2377,7 +2403,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_icommandservice",
-      "community": 10,
+      "community": 74,
       "norm_label": "icommandservice.cs"
     },
     {
@@ -2393,7 +2419,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_icommandservice_discordstreamnotifybot_command_icommandservice",
-      "community": 10,
+      "community": 74,
       "norm_label": "icommandservice"
     },
     {
@@ -2403,7 +2429,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal",
-      "community": 14,
+      "community": 125,
       "norm_label": "normal.cs"
     },
     {
@@ -2418,7 +2444,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:766fe094b5d2bbbf",
-      "community": 14,
+      "community": 125,
       "norm_label": "discordstreamnotifybot.command.normal"
     },
     {
@@ -2434,7 +2460,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_discordstreamnotifybot_command_normal_normal",
-      "community": 14,
+      "community": 125,
       "norm_label": "normal"
     },
     {
@@ -2444,7 +2470,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_cs_discordsocketclient",
-      "community": 14,
+      "community": 125,
       "norm_label": "discordsocketclient"
     },
     {
@@ -2454,7 +2480,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_cs_discordwebhookclient",
-      "community": 14,
+      "community": 125,
       "norm_label": "discordwebhookclient"
     },
     {
@@ -2470,7 +2496,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_discordstreamnotifybot_command_normal_normal_pingasync",
-      "community": 14,
+      "community": 125,
       "norm_label": ".pingasync()"
     },
     {
@@ -2480,7 +2506,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_cs_task",
-      "community": 14,
+      "community": 125,
       "norm_label": "task"
     },
     {
@@ -2490,7 +2516,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_cs_command",
-      "community": 14,
+      "community": 125,
       "norm_label": "command"
     },
     {
@@ -2500,7 +2526,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_cs_summary",
-      "community": 14,
+      "community": 125,
       "norm_label": "summary"
     },
     {
@@ -2516,7 +2542,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_discordstreamnotifybot_command_normal_normal_inviteasync",
-      "community": 14,
+      "community": 125,
       "norm_label": ".inviteasync()"
     },
     {
@@ -2532,7 +2558,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_discordstreamnotifybot_command_normal_normal_statusasync",
-      "community": 14,
+      "community": 125,
       "norm_label": ".statusasync()"
     },
     {
@@ -2542,7 +2568,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_normal_normal_cs_alias",
-      "community": 14,
+      "community": 125,
       "norm_label": "alias"
     },
     {
@@ -2552,7 +2578,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_reactioneventwrapper",
-      "community": 10,
+      "community": 74,
       "norm_label": "reactioneventwrapper.cs"
     },
     {
@@ -2578,7 +2604,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "idisposable",
-      "community": 74,
+      "community": 13,
       "norm_label": "idisposable"
     },
     {
@@ -2738,7 +2764,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_toplevelmodule",
-      "community": 139,
+      "community": 74,
       "norm_label": "toplevelmodule.cs"
     },
     {
@@ -2754,7 +2780,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_toplevelmodule_discordstreamnotifybot_command_toplevelmodule",
-      "community": 139,
+      "community": 74,
       "norm_label": "toplevelmodule"
     },
     {
@@ -2764,7 +2790,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "modulebase",
-      "community": 139,
+      "community": 74,
       "norm_label": "modulebase"
     },
     {
@@ -2780,7 +2806,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_toplevelmodule_discordstreamnotifybot_command_toplevelmodule_promptuserconfirmasync",
-      "community": 139,
+      "community": 74,
       "norm_label": ".promptuserconfirmasync()"
     },
     {
@@ -2790,7 +2816,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_toplevelmodule_cs_embedbuilder",
-      "community": 139,
+      "community": 74,
       "norm_label": "embedbuilder"
     },
     {
@@ -2800,7 +2826,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_toplevelmodule_cs_task",
-      "community": 139,
+      "community": 74,
       "norm_label": "task"
     },
     {
@@ -2816,7 +2842,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_toplevelmodule_discordstreamnotifybot_command_toplevelmodule_getuserinputasync",
-      "community": 139,
+      "community": 74,
       "norm_label": ".getuserinputasync()"
     },
     {
@@ -2933,7 +2959,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_twitch_twitch",
-      "community": 12,
+      "community": 39,
       "norm_label": "twitch.cs"
     },
     {
@@ -2948,7 +2974,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:ee9826d14fe4cd81",
-      "community": 12,
+      "community": 39,
       "norm_label": "discordstreamnotifybot.command.twitch"
     },
     {
@@ -3182,7 +3208,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember",
-      "community": 33,
+      "community": 41,
       "norm_label": "youtubemember.cs"
     },
     {
@@ -3197,7 +3223,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:891eabe78a1a555c",
-      "community": 33,
+      "community": 41,
       "norm_label": "discordstreamnotifybot.command.youtubemember"
     },
     {
@@ -3213,7 +3239,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_discordstreamnotifybot_command_youtubemember_youtubemember",
-      "community": 33,
+      "community": 41,
       "norm_label": "youtubemember"
     },
     {
@@ -3223,7 +3249,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_youtubestreamservice",
-      "community": 33,
+      "community": 41,
       "norm_label": "youtubestreamservice"
     },
     {
@@ -3233,7 +3259,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_youtubememberservice",
-      "community": 33,
+      "community": 41,
       "norm_label": "youtubememberservice"
     },
     {
@@ -3249,7 +3275,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_discordstreamnotifybot_command_youtubemember_youtubemember_listallguildcheckedmemberasync",
-      "community": 33,
+      "community": 41,
       "norm_label": ".listallguildcheckedmemberasync()"
     },
     {
@@ -3259,7 +3285,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_task",
-      "community": 33,
+      "community": 41,
       "norm_label": "task"
     },
     {
@@ -3269,7 +3295,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_command",
-      "community": 33,
+      "community": 41,
       "norm_label": "command"
     },
     {
@@ -3279,7 +3305,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_summary",
-      "community": 33,
+      "community": 41,
       "norm_label": "summary"
     },
     {
@@ -3289,7 +3315,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_alias",
-      "community": 33,
+      "community": 41,
       "norm_label": "alias"
     },
     {
@@ -3299,7 +3325,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_requirecontext",
-      "community": 33,
+      "community": 41,
       "norm_label": "requirecontext"
     },
     {
@@ -3309,7 +3335,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_cs_requireowner",
-      "community": 33,
+      "community": 41,
       "norm_label": "requireowner"
     },
     {
@@ -3325,7 +3351,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_discordstreamnotifybot_command_youtubemember_youtubemember_setmembercheckvideoidasync",
-      "community": 33,
+      "community": 41,
       "norm_label": ".setmembercheckvideoidasync()"
     },
     {
@@ -3341,7 +3367,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtubemember_youtubemember_discordstreamnotifybot_command_youtubemember_youtubemember_startnewmembercheck",
-      "community": 33,
+      "community": 41,
       "norm_label": ".startnewmembercheck()"
     },
     {
@@ -3351,7 +3377,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_command_youtube_youtubechannelspider",
-      "community": 12,
+      "community": 39,
       "norm_label": "youtubechannelspider.cs"
     },
     {
@@ -3366,7 +3392,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:9791dad6fa7b7038",
-      "community": 12,
+      "community": 39,
       "norm_label": "discordstreamnotifybot.command.youtube"
     },
     {
@@ -4118,7 +4144,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_attribute_commandexampleattribute",
-      "community": 28,
+      "community": 39,
       "norm_label": "commandexampleattribute.cs"
     },
     {
@@ -4149,7 +4175,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_attribute_commandexampleattribute_discordstreamnotifybot_interaction_attribute_commandexampleattribute",
-      "community": 28,
+      "community": 39,
       "norm_label": "commandexampleattribute"
     },
     {
@@ -4159,7 +4185,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_attribute_commandexampleattribute_cs_string",
-      "community": 28,
+      "community": 39,
       "norm_label": "string"
     },
     {
@@ -4169,7 +4195,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_attribute_commandsummaryattribute",
-      "community": 28,
+      "community": 39,
       "norm_label": "commandsummaryattribute.cs"
     },
     {
@@ -4185,7 +4211,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_attribute_commandsummaryattribute_discordstreamnotifybot_interaction_attribute_commandsummaryattribute",
-      "community": 28,
+      "community": 39,
       "norm_label": "commandsummaryattribute"
     },
     {
@@ -4195,7 +4221,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_attribute_commandsummaryattribute_cs_string",
-      "community": 28,
+      "community": 39,
       "norm_label": "string"
     },
     {
@@ -4742,7 +4768,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_extensions_discordstreamnotifybot_interaction_extensions_getyoutubechanneltitlebychannelid",
-      "community": 13,
+      "community": 0,
       "norm_label": ".getyoutubechanneltitlebychannelid()"
     },
     {
@@ -4758,7 +4784,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_extensions_discordstreamnotifybot_interaction_extensions_gettwitcastingchanneltitlebyscreenid",
-      "community": 13,
+      "community": 0,
       "norm_label": ".gettwitcastingchanneltitlebyscreenid()"
     },
     {
@@ -4774,7 +4800,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_extensions_discordstreamnotifybot_interaction_extensions_gettwitchusernamebyuserid",
-      "community": 13,
+      "community": 0,
       "norm_label": ".gettwitchusernamebyuserid()"
     },
     {
@@ -5110,7 +5136,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "autocompletehandler",
-      "community": 54,
+      "community": 28,
       "norm_label": "autocompletehandler"
     },
     {
@@ -5750,7 +5776,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice",
-      "community": 21,
+      "community": 150,
       "norm_label": "sendmsgtoallguildservice.cs"
     },
     {
@@ -5765,7 +5791,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:9cdb392b1d1dd548",
-      "community": 21,
+      "community": 150,
       "norm_label": "discordstreamnotifybot.interaction.owneronly.service"
     },
     {
@@ -5781,7 +5807,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_discordstreamnotifybot_interaction_owneronly_service_sendmsgtoallguildservice",
-      "community": 19,
+      "community": 150,
       "norm_label": "sendmsgtoallguildservice"
     },
     {
@@ -5798,7 +5824,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_discordstreamnotifybot_interaction_owneronly_service_noticetype",
-      "community": 21,
+      "community": 150,
       "norm_label": "noticetype"
     },
     {
@@ -5815,7 +5841,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_discordstreamnotifybot_interaction_owneronly_service_buttoncheckdata",
-      "community": 19,
+      "community": 150,
       "norm_label": "buttoncheckdata"
     },
     {
@@ -5825,7 +5851,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "sendallpayload",
-      "community": 19,
+      "community": 150,
       "norm_label": "sendallpayload"
     },
     {
@@ -5842,7 +5868,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_discordstreamnotifybot_interaction_owneronly_service_sendallpayload",
-      "community": 21,
+      "community": 150,
       "norm_label": "sendallpayload"
     },
     {
@@ -5852,7 +5878,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_cs_discordsocketclient",
-      "community": 19,
+      "community": 150,
       "norm_label": "discordsocketclient"
     },
     {
@@ -5862,7 +5888,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_cs_bool",
-      "community": 19,
+      "community": 150,
       "norm_label": "bool"
     },
     {
@@ -5878,7 +5904,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_discordstreamnotifybot_interaction_owneronly_service_sendmsgtoallguildservice_buildembed",
-      "community": 19,
+      "community": 150,
       "norm_label": ".buildembed()"
     },
     {
@@ -5888,7 +5914,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_cs_embed",
-      "community": 19,
+      "community": 150,
       "norm_label": "embed"
     },
     {
@@ -5904,7 +5930,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_discordstreamnotifybot_interaction_owneronly_service_sendmsgtoallguildservice_startsendmessage",
-      "community": 44,
+      "community": 150,
       "norm_label": ".startsendmessage()"
     },
     {
@@ -5914,7 +5940,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_cs_task",
-      "community": 44,
+      "community": 150,
       "norm_label": "task"
     },
     {
@@ -5930,7 +5956,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_owneronly_service_sendmsgtoallguildservice_discordstreamnotifybot_interaction_owneronly_service_sendmsgtoallguildservice_getnoticetypedisplayname",
-      "community": 19,
+      "community": 150,
       "norm_label": ".getnoticetypedisplayname()"
     },
     {
@@ -6132,7 +6158,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_toplevelmodule_discordstreamnotifybot_interaction_toplevelmodule",
-      "community": 138,
+      "community": 18,
       "norm_label": "toplevelmodule"
     },
     {
@@ -6142,7 +6168,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "interactionmodulebase",
-      "community": 138,
+      "community": 18,
       "norm_label": "interactionmodulebase"
     },
     {
@@ -6152,7 +6178,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "socketinteractioncontext",
-      "community": 138,
+      "community": 18,
       "norm_label": "socketinteractioncontext"
     },
     {
@@ -6168,7 +6194,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_toplevelmodule_discordstreamnotifybot_interaction_toplevelmodule_promptuserconfirmasync",
-      "community": 138,
+      "community": 18,
       "norm_label": ".promptuserconfirmasync()"
     },
     {
@@ -6178,7 +6204,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_toplevelmodule_cs_task",
-      "community": 138,
+      "community": 18,
       "norm_label": "task"
     },
     {
@@ -6194,7 +6220,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_toplevelmodule_discordstreamnotifybot_interaction_toplevelmodule_getuserclickasync",
-      "community": 138,
+      "community": 18,
       "norm_label": ".getuserclickasync()"
     },
     {
@@ -6210,7 +6236,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_toplevelmodule_discordstreamnotifybot_interaction_toplevelmodule_checkisfirstsetnoticeandsendwarningmessageasync",
-      "community": 138,
+      "community": 18,
       "norm_label": ".checkisfirstsetnoticeandsendwarningmessageasync()"
     },
     {
@@ -6778,7 +6804,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_twitch",
-      "community": 60,
+      "community": 47,
       "norm_label": "twitch"
     },
     {
@@ -6788,7 +6814,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_discordsocketclient",
-      "community": 60,
+      "community": 47,
       "norm_label": "discordsocketclient"
     },
     {
@@ -6805,7 +6831,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_guildnoticetwitchchannelidautocompletehandler",
-      "community": 34,
+      "community": 28,
       "norm_label": "guildnoticetwitchchannelidautocompletehandler"
     },
     {
@@ -6871,7 +6897,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_task",
-      "community": 60,
+      "community": 47,
       "norm_label": "task"
     },
     {
@@ -6897,7 +6923,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_twitch_addchannel",
-      "community": 60,
+      "community": 47,
       "norm_label": ".addchannel()"
     },
     {
@@ -6907,7 +6933,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_ichannel",
-      "community": 60,
+      "community": 47,
       "norm_label": "ichannel"
     },
     {
@@ -6917,7 +6943,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_commandexample",
-      "community": 60,
+      "community": 47,
       "norm_label": "commandexample"
     },
     {
@@ -6927,7 +6953,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_slashcommand",
-      "community": 60,
+      "community": 47,
       "norm_label": "slashcommand"
     },
     {
@@ -6943,7 +6969,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_twitch_removechannel",
-      "community": 60,
+      "community": 47,
       "norm_label": ".removechannel()"
     },
     {
@@ -6959,7 +6985,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_twitch_listchannel",
-      "community": 60,
+      "community": 47,
       "norm_label": ".listchannel()"
     },
     {
@@ -6975,7 +7001,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_twitch_setmessage",
-      "community": 60,
+      "community": 47,
       "norm_label": ".setmessage()"
     },
     {
@@ -6985,7 +7011,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_noticetype",
-      "community": 16,
+      "community": 30,
       "norm_label": "noticetype"
     },
     {
@@ -6995,7 +7021,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_requirebotpermission",
-      "community": 60,
+      "community": 47,
       "norm_label": "requirebotpermission"
     },
     {
@@ -7005,7 +7031,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_cs_commandsummary",
-      "community": 60,
+      "community": 47,
       "norm_label": "commandsummary"
     },
     {
@@ -7021,7 +7047,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_twitch_getcurrectmessage",
-      "community": 60,
+      "community": 47,
       "norm_label": ".getcurrectmessage()"
     },
     {
@@ -7037,7 +7063,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitch_discordstreamnotifybot_interaction_twitch_twitch_listmessage",
-      "community": 60,
+      "community": 47,
       "norm_label": ".listmessage()"
     },
     {
@@ -7116,7 +7142,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitchspider_discordstreamnotifybot_interaction_twitch_guildtwitchspiderautocompletehandler_generatesuggestionsasync",
-      "community": 142,
+      "community": 16,
       "norm_label": ".generatesuggestionsasync()"
     },
     {
@@ -7126,7 +7152,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitchspider_cs_iinteractioncontext",
-      "community": 142,
+      "community": 16,
       "norm_label": "iinteractioncontext"
     },
     {
@@ -7136,7 +7162,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitchspider_cs_iautocompleteinteraction",
-      "community": 142,
+      "community": 16,
       "norm_label": "iautocompleteinteraction"
     },
     {
@@ -7146,7 +7172,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitchspider_cs_iparameterinfo",
-      "community": 142,
+      "community": 16,
       "norm_label": "iparameterinfo"
     },
     {
@@ -7156,7 +7182,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitchspider_cs_iserviceprovider",
-      "community": 142,
+      "community": 16,
       "norm_label": "iserviceprovider"
     },
     {
@@ -7176,7 +7202,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_twitch_twitchspider_cs_autocompletionresult",
-      "community": 142,
+      "community": 16,
       "norm_label": "autocompletionresult"
     },
     {
@@ -7331,7 +7357,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_utility_utility",
-      "community": 24,
+      "community": 28,
       "norm_label": "utility.cs"
     },
     {
@@ -7346,7 +7372,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:640d79277e99bbe9",
-      "community": 24,
+      "community": 28,
       "norm_label": "discordstreamnotifybot.interaction.utility"
     },
     {
@@ -7532,7 +7558,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember",
-      "community": 54,
+      "community": 12,
       "norm_label": "youtubemember.cs"
     },
     {
@@ -7547,7 +7573,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:6903850c30365d62",
-      "community": 54,
+      "community": 12,
       "norm_label": "discordstreamnotifybot.interaction.youtubemember"
     },
     {
@@ -7563,7 +7589,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_discordstreamnotifybot_interaction_youtubemember_youtubemember",
-      "community": 41,
+      "community": 56,
       "norm_label": "youtubemember"
     },
     {
@@ -7579,7 +7605,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_discordstreamnotifybot_interaction_youtubemember_youtubemember_checkasync",
-      "community": 41,
+      "community": 56,
       "norm_label": ".checkasync()"
     },
     {
@@ -7589,7 +7615,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_cs_task",
-      "community": 41,
+      "community": 56,
       "norm_label": "task"
     },
     {
@@ -7599,7 +7625,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_cs_requirecontext",
-      "community": 41,
+      "community": 56,
       "norm_label": "requirecontext"
     },
     {
@@ -7609,7 +7635,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_cs_slashcommand",
-      "community": 41,
+      "community": 56,
       "norm_label": "slashcommand"
     },
     {
@@ -7625,7 +7651,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_discordstreamnotifybot_interaction_youtubemember_youtubemember_cancelmembercheckasync",
-      "community": 41,
+      "community": 56,
       "norm_label": ".cancelmembercheckasync()"
     },
     {
@@ -7641,7 +7667,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_discordstreamnotifybot_interaction_youtubemember_youtubemember_unlinkasync",
-      "community": 41,
+      "community": 56,
       "norm_label": ".unlinkasync()"
     },
     {
@@ -7657,7 +7683,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_discordstreamnotifybot_interaction_youtubemember_youtubemember_listcheckchannel",
-      "community": 41,
+      "community": 56,
       "norm_label": ".listcheckchannel()"
     },
     {
@@ -7673,7 +7699,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemember_discordstreamnotifybot_interaction_youtubemember_youtubemember_showyoutubeaccountasync",
-      "community": 41,
+      "community": 56,
       "norm_label": ".showyoutubeaccountasync()"
     },
     {
@@ -7683,7 +7709,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting",
-      "community": 54,
+      "community": 12,
       "norm_label": "youtubemembersetting.cs"
     },
     {
@@ -7699,7 +7725,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting",
-      "community": 105,
+      "community": 24,
       "norm_label": "youtubemembersetting"
     },
     {
@@ -7709,7 +7735,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_discordsocketclient",
-      "community": 105,
+      "community": 24,
       "norm_label": "discordsocketclient"
     },
     {
@@ -7726,7 +7752,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_guildyoutubemembercheckchannelidautocompletehandler",
-      "community": 54,
+      "community": 28,
       "norm_label": "guildyoutubemembercheckchannelidautocompletehandler"
     },
     {
@@ -7742,7 +7768,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_guildyoutubemembercheckchannelidautocompletehandler_generatesuggestionsasync",
-      "community": 56,
+      "community": 28,
       "norm_label": ".generatesuggestionsasync()"
     },
     {
@@ -7752,7 +7778,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_iinteractioncontext",
-      "community": 56,
+      "community": 28,
       "norm_label": "iinteractioncontext"
     },
     {
@@ -7762,7 +7788,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_iautocompleteinteraction",
-      "community": 56,
+      "community": 28,
       "norm_label": "iautocompleteinteraction"
     },
     {
@@ -7772,7 +7798,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_iparameterinfo",
-      "community": 56,
+      "community": 28,
       "norm_label": "iparameterinfo"
     },
     {
@@ -7782,7 +7808,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_iserviceprovider",
-      "community": 56,
+      "community": 28,
       "norm_label": "iserviceprovider"
     },
     {
@@ -7792,7 +7818,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_task",
-      "community": 105,
+      "community": 24,
       "norm_label": "task"
     },
     {
@@ -7802,7 +7828,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_autocompletionresult",
-      "community": 56,
+      "community": 28,
       "norm_label": "autocompletionresult"
     },
     {
@@ -7818,7 +7844,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting_setnoticememberstatuschannel",
-      "community": 105,
+      "community": 24,
       "norm_label": ".setnoticememberstatuschannel()"
     },
     {
@@ -7828,7 +7854,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_itextchannel",
-      "community": 105,
+      "community": 24,
       "norm_label": "itextchannel"
     },
     {
@@ -7838,7 +7864,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_slashcommand",
-      "community": 105,
+      "community": 24,
       "norm_label": "slashcommand"
     },
     {
@@ -7854,7 +7880,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting_addmembercheckasync",
-      "community": 105,
+      "community": 24,
       "norm_label": ".addmembercheckasync()"
     },
     {
@@ -7864,7 +7890,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "irole",
-      "community": 105,
+      "community": 24,
       "norm_label": "irole"
     },
     {
@@ -7874,7 +7900,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_requireguildmembercount",
-      "community": 105,
+      "community": 24,
       "norm_label": "requireguildmembercount"
     },
     {
@@ -7884,7 +7910,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_commandsummary",
-      "community": 105,
+      "community": 24,
       "norm_label": "commandsummary"
     },
     {
@@ -7894,7 +7920,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_cs_commandexample",
-      "community": 105,
+      "community": 24,
       "norm_label": "commandexample"
     },
     {
@@ -7910,7 +7936,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting_removemembercheckasync",
-      "community": 105,
+      "community": 24,
       "norm_label": ".removemembercheckasync()"
     },
     {
@@ -7926,7 +7952,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting_setcheckvideoasync",
-      "community": 105,
+      "community": 24,
       "norm_label": ".setcheckvideoasync()"
     },
     {
@@ -7942,7 +7968,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting_clearcheckvideoasync",
-      "community": 105,
+      "community": 24,
       "norm_label": ".clearcheckvideoasync()"
     },
     {
@@ -7958,7 +7984,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting_extractvideoid",
-      "community": 105,
+      "community": 24,
       "norm_label": ".extractvideoid()"
     },
     {
@@ -7974,7 +8000,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtubemember_youtubemembersetting_discordstreamnotifybot_interaction_youtubemember_youtubemembersetting_listcheckedmemberasync",
-      "community": 105,
+      "community": 24,
       "norm_label": ".listcheckedmemberasync()"
     },
     {
@@ -7984,7 +8010,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube",
-      "community": 54,
+      "community": 28,
       "norm_label": "youtube.cs"
     },
     {
@@ -7999,7 +8025,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:d5df3e52753bd665",
-      "community": 54,
+      "community": 28,
       "norm_label": "discordstreamnotifybot.interaction.youtube"
     },
     {
@@ -8042,7 +8068,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube_discordstreamnotifybot_interaction_youtube_guildnoticeyoutubechannelidautocompletehandler",
-      "community": 54,
+      "community": 28,
       "norm_label": "guildnoticeyoutubechannelidautocompletehandler"
     },
     {
@@ -8058,7 +8084,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube_discordstreamnotifybot_interaction_youtube_guildnoticeyoutubechannelidautocompletehandler_generatesuggestionsasync",
-      "community": 54,
+      "community": 65,
       "norm_label": ".generatesuggestionsasync()"
     },
     {
@@ -8068,7 +8094,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube_cs_iinteractioncontext",
-      "community": 54,
+      "community": 65,
       "norm_label": "iinteractioncontext"
     },
     {
@@ -8078,7 +8104,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube_cs_iautocompleteinteraction",
-      "community": 54,
+      "community": 65,
       "norm_label": "iautocompleteinteraction"
     },
     {
@@ -8088,7 +8114,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube_cs_iparameterinfo",
-      "community": 54,
+      "community": 65,
       "norm_label": "iparameterinfo"
     },
     {
@@ -8098,7 +8124,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube_cs_iserviceprovider",
-      "community": 54,
+      "community": 65,
       "norm_label": "iserviceprovider"
     },
     {
@@ -8118,7 +8144,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtube_cs_autocompletionresult",
-      "community": 54,
+      "community": 65,
       "norm_label": "autocompletionresult"
     },
     {
@@ -8200,7 +8226,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "nowstreaminghost",
-      "community": 46,
+      "community": 18,
       "norm_label": "nowstreaminghost"
     },
     {
@@ -8436,7 +8462,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtubechannelspider",
-      "community": 54,
+      "community": 28,
       "norm_label": "youtubechannelspider.cs"
     },
     {
@@ -8489,7 +8515,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_interaction_youtube_youtubechannelspider_discordstreamnotifybot_interaction_youtube_guildyoutubechannelspiderautocompletehandler",
-      "community": 54,
+      "community": 28,
       "norm_label": "guildyoutubechannelspiderautocompletehandler"
     },
     {
@@ -8669,7 +8695,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_notificationbusconsumer",
-      "community": 1,
+      "community": 21,
       "norm_label": "notificationbusconsumer.cs"
     },
     {
@@ -8872,11 +8898,11 @@
       "label": "Program",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L6",
+      "source_location": "L7",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s69"
+          "s112"
         ]
       },
       "_origin": "ast",
@@ -8885,14 +8911,24 @@
       "norm_label": "program"
     },
     {
+      "label": "int",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_notifier_program_cs_int",
+      "community": 67,
+      "norm_label": "int"
+    },
+    {
       "label": ".Main()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L12",
+      "source_location": "L14",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s69"
+          "s112"
         ]
       },
       "_origin": "ast",
@@ -8911,14 +8947,56 @@
       "norm_label": "task"
     },
     {
-      "label": ".RunHeartbeatLoopAsync()",
+      "label": ".RegisterUnhandledExceptionHandler()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L124",
+      "source_location": "L104",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s69"
+          "s112"
+        ]
+      },
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_registerunhandledexceptionhandler",
+      "community": 67,
+      "norm_label": ".registerunhandledexceptionhandler()"
+    },
+    {
+      "label": ".BuildUnhandledExceptionWebhookMessage()",
+      "file_type": "code",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L146",
+      "metadata": {
+        "namespace": "DiscordStreamNotifyBot",
+        "scope_chain": [
+          "s112"
+        ]
+      },
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_buildunhandledexceptionwebhookmessage",
+      "community": 67,
+      "norm_label": ".buildunhandledexceptionwebhookmessage()"
+    },
+    {
+      "label": "Exception",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_notifier_program_cs_exception",
+      "community": 67,
+      "norm_label": "exception"
+    },
+    {
+      "label": ".RunHeartbeatLoopAsync()",
+      "file_type": "code",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L164",
+      "metadata": {
+        "namespace": "DiscordStreamNotifyBot",
+        "scope_chain": [
+          "s112"
         ]
       },
       "_origin": "ast",
@@ -8940,11 +9018,11 @@
       "label": ".SafeWaitAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L143",
+      "source_location": "L183",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s69"
+          "s112"
         ]
       },
       "_origin": "ast",
@@ -8966,11 +9044,11 @@
       "label": ".GetLinkerTime()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L149",
+      "source_location": "L189",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot",
         "scope_chain": [
-          "s69"
+          "s112"
         ]
       },
       "_origin": "ast",
@@ -8995,7 +9073,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice",
-      "community": 14,
+      "community": 54,
       "norm_label": "clusterqueryservice.cs"
     },
     {
@@ -9010,7 +9088,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:bddf460115ed2716",
-      "community": 24,
+      "community": 28,
       "norm_label": "discordstreamnotifybot.sharedservice.cluster"
     },
     {
@@ -9043,7 +9121,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_clusterquerytype",
-      "community": 14,
+      "community": 54,
       "norm_label": "clusterquerytype"
     },
     {
@@ -9060,7 +9138,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_guildsnapshot",
-      "community": 14,
+      "community": 54,
       "norm_label": "guildsnapshot"
     },
     {
@@ -9077,7 +9155,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_queryrequest",
-      "community": 14,
+      "community": 54,
       "norm_label": "queryrequest"
     },
     {
@@ -9094,7 +9172,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_userinforesponse",
-      "community": 14,
+      "community": 54,
       "norm_label": "userinforesponse"
     },
     {
@@ -9121,7 +9199,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_guildinforesponse",
-      "community": 14,
+      "community": 54,
       "norm_label": "guildinforesponse"
     },
     {
@@ -9131,7 +9209,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "dictionary",
-      "community": 14,
+      "community": 54,
       "norm_label": "dictionary"
     },
     {
@@ -9148,7 +9226,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_inviteresponse",
-      "community": 14,
+      "community": 54,
       "norm_label": "inviteresponse"
     },
     {
@@ -9158,7 +9236,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "channelinfo",
-      "community": 14,
+      "community": 54,
       "norm_label": "channelinfo"
     },
     {
@@ -9175,7 +9253,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_channelinfo",
-      "community": 14,
+      "community": 54,
       "norm_label": "channelinfo"
     },
     {
@@ -9502,7 +9580,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_discordstreamnotifybot_sharedservice_noticecache",
-      "community": 16,
+      "community": 30,
       "norm_label": "noticecache"
     },
     {
@@ -9512,7 +9590,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_cs_func",
-      "community": 16,
+      "community": 30,
       "norm_label": "func"
     },
     {
@@ -9522,7 +9600,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_cs_timespan",
-      "community": 16,
+      "community": 30,
       "norm_label": "timespan"
     },
     {
@@ -9532,7 +9610,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_cs_object",
-      "community": 16,
+      "community": 30,
       "norm_label": "object"
     },
     {
@@ -9542,7 +9620,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_cs_list",
-      "community": 16,
+      "community": 30,
       "norm_label": "list"
     },
     {
@@ -9552,7 +9630,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_cs_datetime",
-      "community": 16,
+      "community": 30,
       "norm_label": "datetime"
     },
     {
@@ -9568,7 +9646,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_discordstreamnotifybot_sharedservice_noticecache_get",
-      "community": 16,
+      "community": 30,
       "norm_label": ".get()"
     },
     {
@@ -9584,7 +9662,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_noticecache_discordstreamnotifybot_sharedservice_noticecache_invalidate",
-      "community": 16,
+      "community": 30,
       "norm_label": ".invalidate()"
     },
     {
@@ -9594,7 +9672,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingembedbuilderfactory",
-      "community": 12,
+      "community": 0,
       "norm_label": "twitcastingembedbuilderfactory.cs"
     },
     {
@@ -9609,7 +9687,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:3f419b0e3b1edd81",
-      "community": 12,
+      "community": 0,
       "norm_label": "discordstreamnotifybot.sharedservice.twitcasting"
     },
     {
@@ -9625,7 +9703,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingembedbuilderfactory_discordstreamnotifybot_sharedservice_twitcasting_twitcastingembedbuilderfactory",
-      "community": 140,
+      "community": 0,
       "norm_label": "twitcastingembedbuilderfactory"
     },
     {
@@ -9641,7 +9719,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingembedbuilderfactory_discordstreamnotifybot_sharedservice_twitcasting_twitcastingembedbuilderfactory_createstreamstarted",
-      "community": 140,
+      "community": 0,
       "norm_label": ".createstreamstarted()"
     },
     {
@@ -9651,7 +9729,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingembedbuilderfactory_cs_embedbuilder",
-      "community": 140,
+      "community": 0,
       "norm_label": "embedbuilder"
     },
     {
@@ -9661,7 +9739,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice",
-      "community": 12,
+      "community": 0,
       "norm_label": "twitcastingservice.cs"
     },
     {
@@ -9677,7 +9755,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_discordstreamnotifybot_sharedservice_twitcasting_twitcastingservice",
-      "community": 47,
+      "community": 63,
       "norm_label": "twitcastingservice"
     },
     {
@@ -9687,7 +9765,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_cs_discordsocketclient",
-      "community": 47,
+      "community": 63,
       "norm_label": "discordsocketclient"
     },
     {
@@ -9697,7 +9775,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_cs_emojiservice",
-      "community": 47,
+      "community": 63,
       "norm_label": "emojiservice"
     },
     {
@@ -9707,7 +9785,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_cs_noticecache",
-      "community": 47,
+      "community": 63,
       "norm_label": "noticecache"
     },
     {
@@ -9723,7 +9801,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_discordstreamnotifybot_sharedservice_twitcasting_twitcastingservice_getchannelnameandtitleasync",
-      "community": 47,
+      "community": 63,
       "norm_label": ".getchannelnameandtitleasync()"
     },
     {
@@ -9733,7 +9811,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_cs_task",
-      "community": 47,
+      "community": 63,
       "norm_label": "task"
     },
     {
@@ -9743,7 +9821,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_cs_broadcaster",
-      "community": 47,
+      "community": 63,
       "norm_label": "broadcaster"
     },
     {
@@ -9759,7 +9837,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_discordstreamnotifybot_sharedservice_twitcasting_twitcastingservice_getchanneltitleasync",
-      "community": 47,
+      "community": 63,
       "norm_label": ".getchanneltitleasync()"
     },
     {
@@ -9801,7 +9879,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_discordstreamnotifybot_sharedservice_twitcasting_twitcastingservice_sendstreammessageasync",
-      "community": 16,
+      "community": 30,
       "norm_label": ".sendstreammessageasync()"
     },
     {
@@ -9811,7 +9889,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitch_twitchembedbuilderfactory",
-      "community": 28,
+      "community": 64,
       "norm_label": "twitchembedbuilderfactory.cs"
     },
     {
@@ -9826,7 +9904,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:b3389652ca4d1e2c",
-      "community": 28,
+      "community": 64,
       "norm_label": "discordstreamnotifybot.sharedservice.twitch"
     },
     {
@@ -10279,7 +10357,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitch_twitchservice_discordstreamnotifybot_sharedservice_twitch_twitchservice_sendstreammessageasync",
-      "community": 16,
+      "community": 30,
       "norm_label": ".sendstreammessageasync()"
     },
     {
@@ -10289,7 +10367,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_twitch_twitchservice_cs_embed",
-      "community": 16,
+      "community": 30,
       "norm_label": "embed"
     },
     {
@@ -10299,7 +10377,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtubemember_checkmembership",
-      "community": 54,
+      "community": 56,
       "norm_label": "checkmembership.cs"
     },
     {
@@ -10314,7 +10392,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:4b66cad185d30dfe",
-      "community": 54,
+      "community": 12,
       "norm_label": "discordstreamnotifybot.sharedservice.youtubemember"
     },
     {
@@ -10330,7 +10408,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtubemember_checkmembership_discordstreamnotifybot_sharedservice_youtubemember_youtubememberservice",
-      "community": 44,
+      "community": 56,
       "norm_label": "youtubememberservice"
     },
     {
@@ -10346,7 +10424,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtubemember_checkmembership_discordstreamnotifybot_sharedservice_youtubemember_youtubememberservice_checkmembership",
-      "community": 44,
+      "community": 140,
       "norm_label": ".checkmembership()"
     },
     {
@@ -10356,7 +10434,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtubemember_checkmembership_cs_task",
-      "community": 44,
+      "community": 140,
       "norm_label": "task"
     },
     {
@@ -10454,7 +10532,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtubemember_youtubememberservice_discordstreamnotifybot_sharedservice_youtubemember_youtubememberservice_revokeusergooglecertasync",
-      "community": 44,
+      "community": 140,
       "norm_label": ".revokeusergooglecertasync()"
     },
     {
@@ -10470,7 +10548,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtubemember_youtubememberservice_discordstreamnotifybot_sharedservice_youtubemember_youtubememberservice_removemembercheckfromdbasync",
-      "community": 44,
+      "community": 140,
       "norm_label": ".removemembercheckfromdbasync()"
     },
     {
@@ -10745,7 +10823,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:2cb25e4823358b5b",
-      "community": 54,
+      "community": 21,
       "norm_label": "discordstreamnotifybot.sharedservice.youtube"
     },
     {
@@ -11307,7 +11385,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_dispatchfrombusasync",
-      "community": 11,
+      "community": 46,
       "norm_label": ".dispatchfrombusasync()"
     },
     {
@@ -11355,7 +11433,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_mapnoticetype",
-      "community": 11,
+      "community": 46,
       "norm_label": ".mapnoticetype()"
     },
     {
@@ -11371,14 +11449,14 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_sendstreammessageasync",
-      "community": 16,
+      "community": 30,
       "norm_label": ".sendstreammessageasync()"
     },
     {
       "label": ".ChangeGuildBannerAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
-      "source_location": "L482",
+      "source_location": "L485",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.SharedService.Youtube",
         "scope_chain": [
@@ -11387,7 +11465,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_changeguildbannerasync",
-      "community": 16,
+      "community": 30,
       "norm_label": ".changeguildbannerasync()"
     },
     {
@@ -11528,7 +11606,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detectionhost_discordstreamnotifybot_scraper_detectionhost",
-      "community": 36,
+      "community": 43,
       "norm_label": "detectionhost"
     },
     {
@@ -11538,7 +11616,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "serviceprovider",
-      "community": 36,
+      "community": 43,
       "norm_label": "serviceprovider"
     },
     {
@@ -11570,7 +11648,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detectionhost_discordstreamnotifybot_scraper_detectionhost_savestatebeforeshutdown",
-      "community": 36,
+      "community": 43,
       "norm_label": ".savestatebeforeshutdown()"
     },
     {
@@ -11653,7 +11731,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice",
-      "community": 55,
+      "community": 21,
       "norm_label": "twitcastingdetectionservice.cs"
     },
     {
@@ -11669,7 +11747,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice",
-      "community": 140,
+      "community": 63,
       "norm_label": "twitcastingdetectionservice"
     },
     {
@@ -11679,7 +11757,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_cs_list",
-      "community": 140,
+      "community": 63,
       "norm_label": "list"
     },
     {
@@ -11705,7 +11783,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_cs_task",
-      "community": 140,
+      "community": 63,
       "norm_label": "task"
     },
     {
@@ -11721,7 +11799,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_publishstartliveasync",
-      "community": 140,
+      "community": 63,
       "norm_label": ".publishstartliveasync()"
     },
     {
@@ -11753,7 +11831,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_unixtimestamptodatetime",
-      "community": 140,
+      "community": 63,
       "norm_label": ".unixtimestamptodatetime()"
     },
     {
@@ -11763,7 +11841,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_cs_datetime",
-      "community": 140,
+      "community": 63,
       "norm_label": "datetime"
     },
     {
@@ -11779,7 +11857,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_discordstreamnotifybot_scraper_detection_twitcasting_twitcastingdetectionservice_getcategorienamebyid",
-      "community": 140,
+      "community": 63,
       "norm_label": ".getcategorienamebyid()"
     },
     {
@@ -11876,7 +11954,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_debounce_debouncechannelupdatemessage_discordstreamnotifybot_scraper_detection_twitch_debounce_debouncechannelupdatemessage_debouncer_debounced",
-      "community": 66,
+      "community": 58,
       "norm_label": "._debouncer_debounced()"
     },
     {
@@ -11886,7 +11964,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "debouncedeventargs",
-      "community": 66,
+      "community": 58,
       "norm_label": "debouncedeventargs"
     },
     {
@@ -11969,7 +12047,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
-      "community": 66,
+      "community": 2,
       "norm_label": "twitchdetectionservice"
     },
     {
@@ -11979,7 +12057,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_cs_hashset",
-      "community": 66,
+      "community": 2,
       "norm_label": "hashset"
     },
     {
@@ -11989,7 +12067,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_cs_concurrentdictionary",
-      "community": 66,
+      "community": 2,
       "norm_label": "concurrentdictionary"
     },
     {
@@ -12005,7 +12083,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_timerhandel",
-      "community": 66,
+      "community": 2,
       "norm_label": ".timerhandel()"
     },
     {
@@ -12015,7 +12093,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_cs_task",
-      "community": 66,
+      "community": 2,
       "norm_label": "task"
     },
     {
@@ -12031,7 +12109,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_publishchannelupdateasync",
-      "community": 66,
+      "community": 2,
       "norm_label": ".publishchannelupdateasync()"
     },
     {
@@ -12047,7 +12125,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_recordtwitchasync",
-      "community": 66,
+      "community": 2,
       "norm_label": ".recordtwitchasync()"
     },
     {
@@ -12088,7 +12166,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_membervideo_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice",
-      "community": 1,
+      "community": 140,
       "norm_label": "youtubedetectionservice"
     },
     {
@@ -12104,7 +12182,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_membervideo_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_checkmembershiponlyvideoidasync",
-      "community": 1,
+      "community": 140,
       "norm_label": ".checkmembershiponlyvideoidasync()"
     },
     {
@@ -12114,7 +12192,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_membervideo_cs_task",
-      "community": 1,
+      "community": 140,
       "norm_label": "task"
     },
     {
@@ -12130,7 +12208,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_membervideo_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_publishmembervideologasync",
-      "community": 1,
+      "community": 140,
       "norm_label": ".publishmembervideologasync()"
     },
     {
@@ -12408,7 +12486,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice",
-      "community": 22,
+      "community": 10,
       "norm_label": "youtubedetectionservice"
     },
     {
@@ -12424,7 +12502,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_reschedulereminder",
-      "community": 22,
+      "community": 10,
       "norm_label": ".reschedulereminder()"
     },
     {
@@ -12440,7 +12518,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_holoscheduleasync",
-      "community": 22,
+      "community": 27,
       "norm_label": ".holoscheduleasync()"
     },
     {
@@ -12450,7 +12528,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_cs_task",
-      "community": 22,
+      "community": 27,
       "norm_label": "task"
     },
     {
@@ -12466,7 +12544,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_nijisanjischeduleasync",
-      "community": 22,
+      "community": 10,
       "norm_label": ".nijisanjischeduleasync()"
     },
     {
@@ -12482,7 +12560,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_otherscheduleasync",
-      "community": 22,
+      "community": 10,
       "norm_label": ".otherscheduleasync()"
     },
     {
@@ -12524,7 +12602,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_cs_video",
-      "community": 22,
+      "community": 10,
       "norm_label": "video"
     },
     {
@@ -12540,7 +12618,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_savedatebase",
-      "community": 22,
+      "community": 10,
       "norm_label": ".savedatebase()"
     },
     {
@@ -12556,7 +12634,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_buildstreamvideo",
-      "community": 22,
+      "community": 10,
       "norm_label": ".buildstreamvideo()"
     },
     {
@@ -12566,7 +12644,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_cs_datetime",
-      "community": 22,
+      "community": 10,
       "norm_label": "datetime"
     },
     {
@@ -12576,7 +12654,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_cs_ytchanneltype",
-      "community": 22,
+      "community": 10,
       "norm_label": "ytchanneltype"
     },
     {
@@ -12592,7 +12670,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_savevideosbytype",
-      "community": 22,
+      "community": 10,
       "norm_label": ".savevideosbytype()"
     },
     {
@@ -12602,7 +12680,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_cs_maindbcontext",
-      "community": 22,
+      "community": 10,
       "norm_label": "maindbcontext"
     },
     {
@@ -12612,7 +12690,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_cs_dbset",
-      "community": 22,
+      "community": 10,
       "norm_label": "dbset"
     },
     {
@@ -12628,7 +12706,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_oldytinitialdataregex",
-      "community": 22,
+      "community": 10,
       "norm_label": ".oldytinitialdataregex()"
     },
     {
@@ -12638,7 +12716,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_cs_regex",
-      "community": 22,
+      "community": 10,
       "norm_label": "regex"
     },
     {
@@ -12648,7 +12726,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "generatedregex",
-      "community": 22,
+      "community": 10,
       "norm_label": "generatedregex"
     },
     {
@@ -12664,7 +12742,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_schedule_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_newytinitialdataregex",
-      "community": 22,
+      "community": 10,
       "norm_label": ".newytinitialdataregex()"
     },
     {
@@ -12674,7 +12752,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice",
-      "community": 64,
+      "community": 12,
       "norm_label": "youtubedetectionservice.cs"
     },
     {
@@ -12870,7 +12948,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_getvideosasync",
-      "community": 25,
+      "community": 10,
       "norm_label": ".getvideosasync()"
     },
     {
@@ -12880,7 +12958,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_cs_ienumerable",
-      "community": 25,
+      "community": 10,
       "norm_label": "ienumerable"
     },
     {
@@ -12986,7 +13064,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_subscribepubsubasync",
-      "community": 44,
+      "community": 25,
       "norm_label": ".subscribepubsubasync()"
     },
     {
@@ -13002,7 +13080,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_checkandupdateyoutubechanneltitlesasync",
-      "community": 44,
+      "community": 140,
       "norm_label": ".checkandupdateyoutubechanneltitlesasync()"
     },
     {
@@ -13087,7 +13165,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_detection_youtube_youtubedetectionservice_discordstreamnotifybot_scraper_detection_youtube_ytnotificationtype",
-      "community": 64,
+      "community": 12,
       "norm_label": "ytnotificationtype"
     },
     {
@@ -13149,7 +13227,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_program_discordstreamnotifybot_scraper_program",
-      "community": 67,
+      "community": 38,
       "norm_label": "program"
     },
     {
@@ -13165,7 +13243,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_program_discordstreamnotifybot_scraper_program_main",
-      "community": 67,
+      "community": 38,
       "norm_label": ".main()"
     },
     {
@@ -13175,7 +13253,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_scraper_program_cs_task",
-      "community": 67,
+      "community": 38,
       "norm_label": "task"
     },
     {
@@ -13324,7 +13402,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:42e55eef223b8ca9",
-      "community": 21,
+      "community": 20,
       "norm_label": "discordstreamnotifybot.auth"
     },
     {
@@ -13476,7 +13554,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_botconfig_botconfig_initbotconfig",
-      "community": 67,
+      "community": 38,
       "norm_label": ".initbotconfig()"
     },
     {
@@ -13536,7 +13614,7 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_botconfig_botconfig_requirefield",
-      "community": 67,
+      "community": 38,
       "norm_label": ".requirefield()"
     },
     {
@@ -13546,7 +13624,7 @@
       "source_location": "L182",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_botconfig_botconfig_genrandomkey",
-      "community": 37,
+      "community": 36,
       "norm_label": ".genrandomkey()"
     },
     {
@@ -13556,7 +13634,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_botrole",
-      "community": 67,
+      "community": 38,
       "norm_label": "botrole.cs"
     },
     {
@@ -13587,7 +13665,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_botrole_discordstreamnotifybot_shared_botrole",
-      "community": 67,
+      "community": 38,
       "norm_label": "botrole"
     },
     {
@@ -13711,7 +13789,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_clusterservice",
-      "community": 21,
+      "community": 31,
       "norm_label": "clusterservice.cs"
     },
     {
@@ -14010,7 +14088,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_maindbcontext_discordstreamnotifybot_database_maindbcontext",
-      "community": 27,
+      "community": 0,
       "norm_label": "maindbcontext"
     },
     {
@@ -14020,7 +14098,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "dbcontext",
-      "community": 27,
+      "community": 0,
       "norm_label": "dbcontext"
     },
     {
@@ -14030,7 +14108,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_maindbcontext_cs_dbset",
-      "community": 27,
+      "community": 0,
       "norm_label": "dbset"
     },
     {
@@ -14134,7 +14212,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_maindbservice",
-      "community": 39,
+      "community": 141,
       "norm_label": "maindbservice.cs"
     },
     {
@@ -14150,7 +14228,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice",
-      "community": 39,
+      "community": 141,
       "norm_label": "maindbservice"
     },
     {
@@ -14160,7 +14238,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "dbcontextoptions",
-      "community": 39,
+      "community": 141,
       "norm_label": "dbcontextoptions"
     },
     {
@@ -14170,7 +14248,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_maindbservice_cs_string",
-      "community": 39,
+      "community": 141,
       "norm_label": "string"
     },
     {
@@ -14186,7 +14264,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice_getdbcontext",
-      "community": 39,
+      "community": 60,
       "norm_label": ".getdbcontext()"
     },
     {
@@ -14569,7 +14647,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_twitcastingstream",
-      "community": 140,
+      "community": 0,
       "norm_label": "twitcastingstream.cs"
     },
     {
@@ -14585,7 +14663,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_twitcastingstream_discordstreamnotifybot_database_table_twitcastingstream",
-      "community": 140,
+      "community": 0,
       "norm_label": "twitcastingstream"
     },
     {
@@ -14595,7 +14673,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_twitcastingstream_cs_datetime",
-      "community": 140,
+      "community": 0,
       "norm_label": "datetime"
     },
     {
@@ -14641,7 +14719,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_twitchstream",
-      "community": 66,
+      "community": 0,
       "norm_label": "twitchstream.cs"
     },
     {
@@ -14657,7 +14735,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_twitchstream_discordstreamnotifybot_database_table_twitchstream",
-      "community": 66,
+      "community": 0,
       "norm_label": "twitchstream"
     },
     {
@@ -14667,7 +14745,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_twitchstream_cs_datetime",
-      "community": 66,
+      "community": 0,
       "norm_label": "datetime"
     },
     {
@@ -14788,7 +14866,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_youtubechannelownedtype",
-      "community": 90,
+      "community": 236,
       "norm_label": "youtubechannelownedtype.cs"
     },
     {
@@ -14804,7 +14882,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_youtubechannelownedtype_discordstreamnotifybot_database_table_youtubechannelownedtype",
-      "community": 90,
+      "community": 236,
       "norm_label": "youtubechannelownedtype"
     },
     {
@@ -14814,7 +14892,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_youtubechannelownedtype_cs_ytchanneltype",
-      "community": 90,
+      "community": 236,
       "norm_label": "ytchanneltype"
     },
     {
@@ -14824,7 +14902,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_database_table_youtubechannelownedtype_cs_datetime",
-      "community": 90,
+      "community": 236,
       "norm_label": "datetime"
     },
     {
@@ -15220,7 +15298,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient",
-      "community": 19,
+      "community": 258,
       "norm_label": "discordwebhookclient.cs"
     },
     {
@@ -15235,7 +15313,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:15b01edcac18bfd0",
-      "community": 12,
+      "community": 21,
       "norm_label": "discordstreamnotifybot.httpclients"
     },
     {
@@ -15251,7 +15329,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient",
-      "community": 19,
+      "community": 258,
       "norm_label": "discordwebhookclient"
     },
     {
@@ -15261,7 +15339,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_cs_httpclient",
-      "community": 19,
+      "community": 258,
       "norm_label": "httpclient"
     },
     {
@@ -15271,7 +15349,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_cs_discordsocketclient",
-      "community": 19,
+      "community": 258,
       "norm_label": "discordsocketclient"
     },
     {
@@ -15287,14 +15365,50 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscord",
-      "community": 19,
+      "community": 258,
       "norm_label": ".sendmessagetodiscord()"
+    },
+    {
+      "label": ".SendMessageToDiscordAsync()",
+      "file_type": "code",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
+      "source_location": "L38",
+      "metadata": {
+        "namespace": "DiscordStreamNotifyBot.HttpClients",
+        "scope_chain": [
+          "s25"
+        ]
+      },
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscordasync",
+      "community": 258,
+      "norm_label": ".sendmessagetodiscordasync()"
+    },
+    {
+      "label": "CancellationToken",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_cs_cancellationtoken",
+      "community": 258,
+      "norm_label": "cancellationtoken"
+    },
+    {
+      "label": "Task",
+      "file_type": "code",
+      "source_file": "",
+      "source_location": "",
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_cs_task",
+      "community": 258,
+      "norm_label": "task"
     },
     {
       "label": "Message",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
-      "source_location": "L39",
+      "source_location": "L59",
       "metadata": {
         "is_nested_type": true,
         "namespace": "DiscordStreamNotifyBot.HttpClients",
@@ -15304,7 +15418,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_message",
-      "community": 19,
+      "community": 258,
       "norm_label": "message"
     },
     {
@@ -15314,7 +15428,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_categoriesjson",
-      "community": 65,
+      "community": 63,
       "norm_label": "categoriesjson.cs"
     },
     {
@@ -15329,7 +15443,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:399843f99d71aff0",
-      "community": 81,
+      "community": 63,
       "norm_label": "discordstreamnotifybot.httpclients.twitcasting.model"
     },
     {
@@ -15345,7 +15459,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_categoriesjson_discordstreamnotifybot_httpclients_twitcasting_model_category",
-      "community": 65,
+      "community": 63,
       "norm_label": "category"
     },
     {
@@ -15355,7 +15469,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_categoriesjson_cs_list",
-      "community": 65,
+      "community": 63,
       "norm_label": "list"
     },
     {
@@ -15371,7 +15485,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_categoriesjson_discordstreamnotifybot_httpclients_twitcasting_model_categoriesjson",
-      "community": 65,
+      "community": 63,
       "norm_label": "categoriesjson"
     },
     {
@@ -15387,7 +15501,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_categoriesjson_discordstreamnotifybot_httpclients_twitcasting_model_subcategory",
-      "community": 65,
+      "community": 63,
       "norm_label": "subcategory"
     },
     {
@@ -15397,7 +15511,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getallregistedwebhookjson",
-      "community": 146,
+      "community": 63,
       "norm_label": "getallregistedwebhookjson.cs"
     },
     {
@@ -15413,7 +15527,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getallregistedwebhookjson_discordstreamnotifybot_httpclients_twitcasting_model_getallregistedwebhookjson",
-      "community": 146,
+      "community": 63,
       "norm_label": "getallregistedwebhookjson"
     },
     {
@@ -15423,7 +15537,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getallregistedwebhookjson_cs_list",
-      "community": 146,
+      "community": 63,
       "norm_label": "list"
     },
     {
@@ -15439,7 +15553,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getallregistedwebhookjson_discordstreamnotifybot_httpclients_twitcasting_model_webhook",
-      "community": 146,
+      "community": 63,
       "norm_label": "webhook"
     },
     {
@@ -15449,7 +15563,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getmovieinforesponse",
-      "community": 81,
+      "community": 63,
       "norm_label": "getmovieinforesponse.cs"
     },
     {
@@ -15465,7 +15579,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getmovieinforesponse_discordstreamnotifybot_httpclients_twitcasting_model_broadcaster",
-      "community": 81,
+      "community": 63,
       "norm_label": "broadcaster"
     },
     {
@@ -15481,7 +15595,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getmovieinforesponse_discordstreamnotifybot_httpclients_twitcasting_model_movie",
-      "community": 81,
+      "community": 63,
       "norm_label": "movie"
     },
     {
@@ -15497,7 +15611,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getmovieinforesponse_discordstreamnotifybot_httpclients_twitcasting_model_getmovieinforesponse",
-      "community": 81,
+      "community": 63,
       "norm_label": "getmovieinforesponse"
     },
     {
@@ -15507,7 +15621,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getmovieinforesponse_cs_list",
-      "community": 81,
+      "community": 63,
       "norm_label": "list"
     },
     {
@@ -15517,7 +15631,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getuserinforesponse",
-      "community": 81,
+      "community": 63,
       "norm_label": "getuserinforesponse.cs"
     },
     {
@@ -15533,7 +15647,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_getuserinforesponse_discordstreamnotifybot_httpclients_twitcasting_model_getuserinforesponse",
-      "community": 81,
+      "community": 63,
       "norm_label": "getuserinforesponse"
     },
     {
@@ -15543,7 +15657,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata",
-      "community": 137,
+      "community": 63,
       "norm_label": "tcbackendstreamdata.cs"
     },
     {
@@ -15559,7 +15673,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_tcbackendstreamdata",
-      "community": 137,
+      "community": 63,
       "norm_label": "tcbackendstreamdata"
     },
     {
@@ -15575,7 +15689,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_fmp4",
-      "community": 137,
+      "community": 63,
       "norm_label": "fmp4"
     },
     {
@@ -15591,7 +15705,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_hls",
-      "community": 137,
+      "community": 63,
       "norm_label": "hls"
     },
     {
@@ -15607,7 +15721,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_llfmp4",
-      "community": 137,
+      "community": 63,
       "norm_label": "llfmp4"
     },
     {
@@ -15623,7 +15737,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_backendmovie",
-      "community": 137,
+      "community": 63,
       "norm_label": "backendmovie"
     },
     {
@@ -15639,7 +15753,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_streams",
-      "community": 137,
+      "community": 63,
       "norm_label": "streams"
     },
     {
@@ -15655,7 +15769,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_webrtc",
-      "community": 137,
+      "community": 63,
       "norm_label": "webrtc"
     },
     {
@@ -15671,7 +15785,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_model_tcbackendstreamdata_discordstreamnotifybot_httpclients_twitcasting_model_app",
-      "community": 137,
+      "community": 63,
       "norm_label": "app"
     },
     {
@@ -15681,7 +15795,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_twitcastingclient",
-      "community": 81,
+      "community": 63,
       "norm_label": "twitcastingclient.cs"
     },
     {
@@ -15785,7 +15899,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_twitcastingclient_discordstreamnotifybot_httpclients_twitcastingclient_getmovieinfoasync",
-      "community": 81,
+      "community": 63,
       "norm_label": ".getmovieinfoasync()"
     },
     {
@@ -15801,7 +15915,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_httpclients_twitcasting_twitcastingclient_discordstreamnotifybot_httpclients_twitcastingclient_getuserinfoasync",
-      "community": 47,
+      "community": 63,
       "norm_label": ".getuserinfoasync()"
     },
     {
@@ -15921,7 +16035,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log",
-      "community": 30,
+      "community": 22,
       "norm_label": "log.cs"
     },
     {
@@ -15931,20 +16045,20 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log",
-      "community": 30,
+      "community": 22,
       "norm_label": "log"
     },
     {
       "label": "LogType",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L8",
+      "source_location": "L13",
       "metadata": {
         "is_nested_type": true
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_logtype",
-      "community": 30,
+      "community": 22,
       "norm_label": "logtype"
     },
     {
@@ -15954,7 +16068,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_cs_string",
-      "community": 30,
+      "community": 22,
       "norm_label": "string"
     },
     {
@@ -15964,24 +16078,34 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_cs_object",
-      "community": 30,
+      "community": 22,
       "norm_label": "object"
     },
     {
       "label": ".WriteLogToFile()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L15",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_writelogtofile",
-      "community": 30,
+      "community": 22,
       "norm_label": ".writelogtofile()"
+    },
+    {
+      "label": ".IsTrueEnvironmentVariable()",
+      "file_type": "code",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "src_discordstreamnotifybot_shared_log_log_istrueenvironmentvariable",
+      "community": 22,
+      "norm_label": ".istrueenvironmentvariable()"
     },
     {
       "label": ".New()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L38",
+      "source_location": "L49",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_new",
       "community": 22,
@@ -15991,40 +16115,40 @@
       "label": ".Debug()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L47",
+      "source_location": "L58",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_debug",
-      "community": 30,
+      "community": 22,
       "norm_label": ".debug()"
     },
     {
       "label": ".Info()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L58",
+      "source_location": "L69",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_info",
-      "community": 44,
+      "community": 140,
       "norm_label": ".info()"
     },
     {
       "label": ".Warn()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L67",
+      "source_location": "L78",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_warn",
-      "community": 44,
+      "community": 140,
       "norm_label": ".warn()"
     },
     {
       "label": ".Error()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L76",
+      "source_location": "L87",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_error",
-      "community": 30,
+      "community": 22,
       "norm_label": ".error()"
     },
     {
@@ -16033,18 +16157,18 @@
       "source_file": "",
       "source_location": "",
       "_origin": "ast",
-      "id": "exception",
-      "community": 30,
+      "id": "src_discordstreamnotifybot_shared_log_cs_exception",
+      "community": 22,
       "norm_label": "exception"
     },
     {
       "label": ".FormatColorWrite()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L100",
+      "source_location": "L111",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
-      "community": 30,
+      "community": 22,
       "norm_label": ".formatcolorwrite()"
     },
     {
@@ -16054,17 +16178,17 @@
       "source_location": "",
       "_origin": "ast",
       "id": "consolecolor",
-      "community": 30,
+      "community": 22,
       "norm_label": "consolecolor"
     },
     {
       "label": ".LogMsg()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L131",
+      "source_location": "L142",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_log_logmsg",
-      "community": 30,
+      "community": 22,
       "norm_label": ".logmsg()"
     },
     {
@@ -16074,7 +16198,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "logmessage",
-      "community": 30,
+      "community": 22,
       "norm_label": "logmessage"
     },
     {
@@ -16084,7 +16208,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_log_cs_task",
-      "community": 30,
+      "community": 22,
       "norm_label": "task"
     },
     {
@@ -16094,7 +16218,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications",
-      "community": 11,
+      "community": 46,
       "norm_label": "notifications.cs"
     },
     {
@@ -16125,7 +16249,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_discordstreamnotifybot_shared_messages_notifytype",
-      "community": 11,
+      "community": 46,
       "norm_label": "notifytype"
     },
     {
@@ -16135,7 +16259,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_cs_string",
-      "community": 11,
+      "community": 46,
       "norm_label": "string"
     },
     {
@@ -16151,7 +16275,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_discordstreamnotifybot_shared_messages_youtubenoticetype",
-      "community": 11,
+      "community": 46,
       "norm_label": "youtubenoticetype"
     },
     {
@@ -16167,7 +16291,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_discordstreamnotifybot_shared_messages_youtubenotification",
-      "community": 11,
+      "community": 46,
       "norm_label": "youtubenotification"
     },
     {
@@ -16177,7 +16301,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_cs_datetime",
-      "community": 11,
+      "community": 46,
       "norm_label": "datetime"
     },
     {
@@ -16187,7 +16311,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_cs_ytchanneltype",
-      "community": 11,
+      "community": 46,
       "norm_label": "ytchanneltype"
     },
     {
@@ -16203,7 +16327,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_discordstreamnotifybot_shared_messages_twitchnoticetype",
-      "community": 11,
+      "community": 46,
       "norm_label": "twitchnoticetype"
     },
     {
@@ -16219,7 +16343,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_discordstreamnotifybot_shared_messages_twitchnotification",
-      "community": 11,
+      "community": 46,
       "norm_label": "twitchnotification"
     },
     {
@@ -16235,7 +16359,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_discordstreamnotifybot_shared_messages_twitcastingnotification",
-      "community": 11,
+      "community": 46,
       "norm_label": "twitcastingnotification"
     },
     {
@@ -16267,7 +16391,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_messages_notifications_discordstreamnotifybot_shared_messages_youtubemembervideolognotification",
-      "community": 11,
+      "community": 46,
       "norm_label": "youtubemembervideolognotification"
     },
     {
@@ -16980,7 +17104,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_discordstreamnotifybot_mysqldatastore",
-      "community": 39,
+      "community": 60,
       "norm_label": "mysqldatastore"
     },
     {
@@ -16990,7 +17114,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_cs_string",
-      "community": 39,
+      "community": 60,
       "norm_label": "string"
     },
     {
@@ -17006,7 +17130,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_discordstreamnotifybot_mysqldatastore_clearasync",
-      "community": 39,
+      "community": 60,
       "norm_label": ".clearasync()"
     },
     {
@@ -17016,7 +17140,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_cs_task",
-      "community": 39,
+      "community": 60,
       "norm_label": "task"
     },
     {
@@ -17032,7 +17156,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_discordstreamnotifybot_mysqldatastore_storeasync",
-      "community": 39,
+      "community": 60,
       "norm_label": ".storeasync()"
     },
     {
@@ -17048,7 +17172,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_discordstreamnotifybot_mysqldatastore_getasync",
-      "community": 39,
+      "community": 60,
       "norm_label": ".getasync()"
     },
     {
@@ -17064,7 +17188,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_discordstreamnotifybot_mysqldatastore_deleteasync",
-      "community": 39,
+      "community": 60,
       "norm_label": ".deleteasync()"
     },
     {
@@ -17080,7 +17204,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_mysqldatastore_discordstreamnotifybot_mysqldatastore_isexistusertokenasync",
-      "community": 39,
+      "community": 60,
       "norm_label": ".isexistusertokenasync()"
     },
     {
@@ -17625,7 +17749,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_redisconnection",
-      "community": 70,
+      "community": 59,
       "norm_label": "redisconnection.cs"
     },
     {
@@ -17635,7 +17759,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_redisconnection_redisconnection",
-      "community": 70,
+      "community": 59,
       "norm_label": "redisconnection"
     },
     {
@@ -17645,7 +17769,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_redisconnection_cs_lazy",
-      "community": 70,
+      "community": 59,
       "norm_label": "lazy"
     },
     {
@@ -17655,7 +17779,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_redisconnection_cs_string",
-      "community": 70,
+      "community": 59,
       "norm_label": "string"
     },
     {
@@ -17665,7 +17789,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_redisconnection_cs_connectionmultiplexer",
-      "community": 70,
+      "community": 59,
       "norm_label": "connectionmultiplexer"
     },
     {
@@ -17675,7 +17799,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_redisconnection_redisconnection_init",
-      "community": 70,
+      "community": 59,
       "norm_label": ".init()"
     },
     {
@@ -17685,7 +17809,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_redisdatastore",
-      "community": 21,
+      "community": 20,
       "norm_label": "redisdatastore.cs"
     },
     {
@@ -18145,7 +18269,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_sharedextensions_discordstreamnotifybot_interaction_sharedextensions_hasstreamvideobyvideoid",
-      "community": 22,
+      "community": 10,
       "norm_label": ".hasstreamvideobyvideoid()"
     },
     {
@@ -18193,7 +18317,7 @@
       },
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_sharedextensions_discordstreamnotifybot_interaction_sharedextensions_ischannelindb",
-      "community": 52,
+      "community": 18,
       "norm_label": ".ischannelindb()"
     },
     {
@@ -18219,7 +18343,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_sharedservice_twitch_twitchapiservice",
-      "community": 2,
+      "community": 64,
       "norm_label": "twitchapiservice.cs"
     },
     {
@@ -18788,7 +18912,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_startuppreflight",
-      "community": 59,
+      "community": 21,
       "norm_label": "startuppreflight.cs"
     },
     {
@@ -18908,7 +19032,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_utility",
-      "community": 48,
+      "community": 21,
       "norm_label": "utility.cs"
     },
     {
@@ -19086,7 +19210,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_youtubeapiservice",
-      "community": 25,
+      "community": 21,
       "norm_label": "youtubeapiservice.cs"
     },
     {
@@ -21104,7 +21228,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "buttoncheckdata",
-      "community": 19,
+      "community": 150,
       "norm_label": "buttoncheckdata"
     },
     {
@@ -21114,7 +21238,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "clusterquerytype",
-      "community": 14,
+      "community": 54,
       "norm_label": "clusterquerytype"
     },
     {
@@ -21144,7 +21268,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "logtype",
-      "community": 30,
+      "community": 22,
       "norm_label": "logtype"
     },
     {
@@ -21212,7 +21336,7 @@
       "contributor": null,
       "community": 104,
       "norm_label": ".claude/claude.md (graphify trigger)",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude"
     },
     {
       "label": "Knowledge graph (graph.json)",
@@ -22320,7 +22444,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot",
       "target": "csharp_namespace:d80a92a569afcb1c",
@@ -22362,7 +22486,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
@@ -22372,7 +22496,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L47",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_botplayingstatus",
@@ -22392,7 +22516,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program",
       "target": "csharp_namespace:d80a92a569afcb1c",
@@ -22458,7 +22582,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L19",
+      "source_location": "L20",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22472,7 +22596,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L23",
+      "source_location": "L24",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22486,7 +22610,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L43",
+      "source_location": "L44",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22500,7 +22624,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L25",
+      "source_location": "L26",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22514,7 +22638,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L51",
+      "source_location": "L52",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22528,7 +22652,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L24",
+      "source_location": "L25",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22542,7 +22666,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L28",
+      "source_location": "L29",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22556,7 +22680,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L44",
+      "source_location": "L45",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22570,7 +22694,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L497",
+      "source_location": "L537",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_changestatus",
@@ -22580,7 +22704,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L471",
+      "source_location": "L511",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_getaggregatedshardcountasync",
@@ -22590,7 +22714,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L39",
+      "source_location": "L40",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_isserveronthisshard",
@@ -22600,7 +22724,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L41",
+      "source_location": "L42",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_shoulddeletemissingguild",
@@ -22610,7 +22734,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L96",
+      "source_location": "L104",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
@@ -22620,17 +22744,27 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L456",
+      "source_location": "L496",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_timerhandler",
       "confidence_score": 1.0
     },
     {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
+      "source_location": "L472",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot",
+      "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_tryshutdownondiscordauthorizationfailure",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L45",
+      "source_location": "L46",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22644,7 +22778,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L49",
+      "source_location": "L50",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22658,7 +22792,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L26",
+      "source_location": "L27",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22672,7 +22806,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L18",
+      "source_location": "L19",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -22688,7 +22822,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L39",
+      "source_location": "L40",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_isserveronthisshard",
       "target": "src_discordstreamnotifybot_shared_botstate_discordstreamnotifybot_shared_botstate_isserveronthisshard"
@@ -22710,7 +22844,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L41",
+      "source_location": "L42",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_shoulddeletemissingguild",
       "target": "src_discordstreamnotifybot_shared_botstate_discordstreamnotifybot_shared_botstate_shoulddeletemissingguild"
@@ -22743,7 +22877,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
-      "source_location": "L506",
+      "source_location": "L509",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_changeguildbannerasync",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_shoulddeletemissingguild"
@@ -22785,7 +22919,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L96",
+      "source_location": "L104",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -22798,10 +22932,21 @@
     {
       "relation": "calls",
       "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
+      "source_location": "L242",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
+      "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_tryshutdownondiscordauthorizationfailure",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L298",
+      "source_location": "L310",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
       "target": "src_discordstreamnotifybot_notifier_notificationbusconsumer_discordstreamnotifybot_notificationbusconsumer_startasync"
@@ -22812,7 +22957,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L245",
+      "source_location": "L257",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
       "target": "src_discordstreamnotifybot_notifier_uptimekumaclient_uptimekumaclient_init"
@@ -22823,7 +22968,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L128",
+      "source_location": "L136",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
       "target": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice_getdbcontext"
@@ -22834,7 +22979,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L148",
+      "source_location": "L156",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
       "target": "src_discordstreamnotifybot_shared_log_log_info"
@@ -22845,7 +22990,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L320",
+      "source_location": "L332",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync",
       "target": "src_discordstreamnotifybot_shared_log_log_warn"
@@ -22856,7 +23001,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L120",
+      "source_location": "L101",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_startandblockasync"
@@ -22865,7 +23010,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L471",
+      "source_location": "L511",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -22876,11 +23021,60 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
+      "source_location": "L472",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "metadata": {
+        "ref_token": "HttpException",
+        "qualified": true,
+        "ref_qualifier": "Discord.Net"
+      },
+      "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_tryshutdownondiscordauthorizationfailure",
+      "target": "httpexception",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Twitcasting/TwitcastingService.cs",
+      "source_location": "L163",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_sharedservice_twitcasting_twitcastingservice_discordstreamnotifybot_sharedservice_twitcasting_twitcastingservice_sendstreammessageasync",
+      "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_tryshutdownondiscordauthorizationfailure"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Twitch/TwitchService.cs",
+      "source_location": "L209",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_sharedservice_twitch_twitchservice_discordstreamnotifybot_sharedservice_twitch_twitchservice_sendstreammessageasync",
+      "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_tryshutdownondiscordauthorizationfailure"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
+      "source_location": "L452",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_sendstreammessageasync",
+      "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_tryshutdownondiscordauthorizationfailure"
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L460",
+      "source_location": "L500",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_timerhandler",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_changestatus",
@@ -22891,7 +23085,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L504",
+      "source_location": "L544",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_changestatus",
       "target": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_getaggregatedshardcountasync",
@@ -22903,7 +23097,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Bot.cs",
-      "source_location": "L519",
+      "source_location": "L559",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_bot_discordstreamnotifybot_bot_changestatus",
       "target": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice_getdbcontext"
@@ -23031,7 +23225,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L78",
+      "source_location": "L71",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastleaveguildasync",
@@ -23041,7 +23235,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L85",
+      "source_location": "L78",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastleavenonotifyasync",
@@ -23051,7 +23245,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L74",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastshutdownasync",
@@ -23061,7 +23255,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L136",
+      "source_location": "L129",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_clearuser",
@@ -23071,7 +23265,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L163",
+      "source_location": "L156",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_getnonotifyguilds",
@@ -23081,7 +23275,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L110",
+      "source_location": "L103",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_leavenonotifyguildslocally",
@@ -23091,7 +23285,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L145",
+      "source_location": "L138",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_saveandbroadcastofficialguildlistasync",
@@ -23208,7 +23402,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L74",
+      "source_location": "L67",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -23222,7 +23416,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L78",
+      "source_location": "L71",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -23236,7 +23430,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L85",
+      "source_location": "L78",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -23250,7 +23444,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L136",
+      "source_location": "L129",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -23264,7 +23458,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L145",
+      "source_location": "L138",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -23278,7 +23472,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L85",
+      "source_location": "L78",
       "weight": 1.0,
       "context": "generic_arg",
       "metadata": {
@@ -23292,7 +23486,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L85",
+      "source_location": "L78",
       "weight": 1.0,
       "context": "generic_arg",
       "metadata": {
@@ -23307,7 +23501,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L89",
+      "source_location": "L82",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastleavenonotifyasync",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_leavenonotifyguildslocally",
@@ -23319,7 +23513,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L94",
+      "source_location": "L87",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_broadcastleavenonotifyasync",
       "target": "src_discordstreamnotifybot_notifier_sharedservice_cluster_clusterqueryservice_discordstreamnotifybot_sharedservice_cluster_clusterqueryservice_collectasync"
@@ -23328,7 +23522,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L85",
+      "source_location": "L78",
       "weight": 1.0,
       "context": "generic_arg",
       "metadata": {
@@ -23343,7 +23537,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L112",
+      "source_location": "L105",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_leavenonotifyguildslocally",
       "target": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_getnonotifyguilds",
@@ -23355,7 +23549,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L124",
+      "source_location": "L117",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_leavenonotifyguildslocally",
       "target": "src_discordstreamnotifybot_shared_log_log_info"
@@ -23364,7 +23558,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L136",
+      "source_location": "L129",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -23378,7 +23572,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L163",
+      "source_location": "L156",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -23392,7 +23586,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L163",
+      "source_location": "L156",
       "weight": 1.0,
       "context": "generic_arg",
       "metadata": {
@@ -23408,7 +23602,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs",
-      "source_location": "L166",
+      "source_location": "L159",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_command_admin_administraitonservice_discordstreamnotifybot_command_admin_administrationservice_getnonotifyguilds",
       "target": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice_getdbcontext"
@@ -41435,6 +41629,22 @@
       "weight": 1.0,
       "metadata": {
         "using_kind": "namespace",
+        "target_fqn": "DiscordStreamNotifyBot.HttpClients",
+        "scope_kind": "file"
+      },
+      "source": "src_discordstreamnotifybot_notifier_program",
+      "target": "csharp_namespace:15b01edcac18bfd0",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L2",
+      "weight": 1.0,
+      "metadata": {
+        "using_kind": "namespace",
         "target_fqn": "DiscordStreamNotifyBot.Shared",
         "scope_kind": "file"
       },
@@ -41446,17 +41656,41 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program",
       "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L10",
+      "weight": 1.0,
+      "context": "field",
+      "metadata": {
+        "ref_token": "int"
+      },
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
+      "target": "src_discordstreamnotifybot_notifier_program_cs_int",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L149",
+      "source_location": "L146",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
+      "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_buildunhandledexceptionwebhookmessage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L189",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
       "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_getlinkertime",
@@ -41466,7 +41700,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L12",
+      "source_location": "L14",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
       "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
@@ -41476,7 +41710,17 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L124",
+      "source_location": "L104",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
+      "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_registerunhandledexceptionhandler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L164",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
       "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_runheartbeatloopasync",
@@ -41486,7 +41730,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L143",
+      "source_location": "L183",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program",
       "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_safewaitasync",
@@ -41496,7 +41740,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L8",
+      "source_location": "L9",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -41510,7 +41754,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L12",
+      "source_location": "L14",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -41525,7 +41769,18 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L117",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
+      "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_registerunhandledexceptionhandler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
       "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_runheartbeatloopasync",
@@ -41537,7 +41792,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L73",
+      "source_location": "L52",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
       "target": "src_discordstreamnotifybot_shared_botconfig_botconfig_initbotconfig"
@@ -41548,7 +41803,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L18",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
       "target": "src_discordstreamnotifybot_shared_gracefulshutdown_discordstreamnotifybot_shared_gracefulshutdown_init"
@@ -41559,7 +41814,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
       "target": "src_discordstreamnotifybot_shared_log_log_info"
@@ -41570,7 +41825,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L86",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
       "target": "src_discordstreamnotifybot_shared_redistokenkeyprovisioner_discordstreamnotifybot_shared_redistokenkeyprovisioner_ensureasync"
@@ -41581,7 +41836,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L74",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_main",
       "target": "src_discordstreamnotifybot_shared_startuppreflight_discordstreamnotifybot_shared_startuppreflight_ensureasync"
@@ -41590,7 +41845,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L124",
+      "source_location": "L164",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -41604,7 +41859,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L143",
+      "source_location": "L183",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -41615,10 +41870,60 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L128",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_registerunhandledexceptionhandler",
+      "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_buildunhandledexceptionwebhookmessage",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L124",
+      "source_location": "L104",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "metadata": {
+        "ref_token": "BotConfig"
+      },
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_registerunhandledexceptionhandler",
+      "target": "src_discordstreamnotifybot_shared_botconfig_botconfig",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L129",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_registerunhandledexceptionhandler",
+      "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscordasync"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L146",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "metadata": {
+        "ref_token": "Exception"
+      },
+      "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_buildunhandledexceptionwebhookmessage",
+      "target": "src_discordstreamnotifybot_notifier_program_cs_exception",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
+      "source_location": "L164",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -41633,7 +41938,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L140",
+      "source_location": "L180",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_runheartbeatloopasync",
       "target": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_safewaitasync",
@@ -41643,7 +41948,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L124",
+      "source_location": "L164",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -41659,7 +41964,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L136",
+      "source_location": "L176",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_program_discordstreamnotifybot_program_runheartbeatloopasync",
       "target": "src_discordstreamnotifybot_shared_clusterservice_discordstreamnotifybot_shared_clusterservice_writeheartbeatasync"
@@ -41668,7 +41973,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L143",
+      "source_location": "L183",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -41682,7 +41987,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L143",
+      "source_location": "L183",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -41696,7 +42001,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/Program.cs",
-      "source_location": "L149",
+      "source_location": "L189",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -46075,7 +46380,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
-      "source_location": "L482",
+      "source_location": "L485",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice",
       "target": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_changeguildbannerasync",
@@ -46238,7 +46543,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
-      "source_location": "L482",
+      "source_location": "L485",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -46663,7 +46968,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
-      "source_location": "L489",
+      "source_location": "L492",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_changeguildbannerasync",
       "target": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice_getdbcontext"
@@ -46674,7 +46979,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
-      "source_location": "L553",
+      "source_location": "L556",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_changeguildbannerasync",
       "target": "src_discordstreamnotifybot_shared_log_log_info"
@@ -46685,7 +46990,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs",
-      "source_location": "L509",
+      "source_location": "L512",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_notifier_sharedservice_youtube_youtubestreamservice_discordstreamnotifybot_sharedservice_youtube_youtubestreamservice_changeguildbannerasync",
       "target": "src_discordstreamnotifybot_shared_log_log_warn"
@@ -54363,7 +54668,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
-      "source_location": "L39",
+      "source_location": "L59",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient",
       "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_message",
@@ -54415,6 +54720,69 @@
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient",
       "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscord",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient",
+      "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscordasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "metadata": {
+        "ref_token": "HttpClient"
+      },
+      "source": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscordasync",
+      "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_cs_httpclient",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
+      "source_location": "L34",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscord",
+      "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscordasync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "context": "parameter_type",
+      "metadata": {
+        "ref_token": "CancellationToken"
+      },
+      "source": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscordasync",
+      "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_cs_cancellationtoken",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs",
+      "source_location": "L45",
+      "weight": 1.0,
+      "context": "return_type",
+      "metadata": {
+        "ref_token": "Task"
+      },
+      "source": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_discordstreamnotifybot_httpclients_discordwebhookclient_sendmessagetodiscordasync",
+      "target": "src_discordstreamnotifybot_shared_httpclients_discordwebhookclient_cs_task",
       "confidence_score": 1.0
     },
     {
@@ -55296,7 +55664,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L8",
+      "source_location": "L13",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log",
       "target": "src_discordstreamnotifybot_shared_log_logtype",
@@ -55306,7 +55674,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L13",
+      "source_location": "L18",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -55320,7 +55688,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L11",
+      "source_location": "L16",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -55334,7 +55702,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L47",
+      "source_location": "L58",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_debug",
@@ -55344,7 +55712,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L85",
+      "source_location": "L96",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_error",
@@ -55354,7 +55722,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L100",
+      "source_location": "L111",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
@@ -55364,7 +55732,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L58",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_info",
@@ -55374,7 +55742,17 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L131",
+      "source_location": "L43",
+      "weight": 1.0,
+      "source": "src_discordstreamnotifybot_shared_log_log",
+      "target": "src_discordstreamnotifybot_shared_log_log_istrueenvironmentvariable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
+      "source_location": "L142",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_logmsg",
@@ -55384,7 +55762,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L38",
+      "source_location": "L49",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_new",
@@ -55394,7 +55772,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L67",
+      "source_location": "L78",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_warn",
@@ -55404,7 +55782,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L15",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log",
       "target": "src_discordstreamnotifybot_shared_log_log_writelogtofile",
@@ -55415,7 +55793,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L81",
+      "source_location": "L92",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_error",
       "target": "src_discordstreamnotifybot_shared_log_log_writelogtofile",
@@ -55426,7 +55804,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L63",
+      "source_location": "L74",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_info",
       "target": "src_discordstreamnotifybot_shared_log_log_writelogtofile",
@@ -55437,7 +55815,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L151",
+      "source_location": "L162",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_logmsg",
       "target": "src_discordstreamnotifybot_shared_log_log_writelogtofile",
@@ -55448,7 +55826,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L43",
+      "source_location": "L54",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_new",
       "target": "src_discordstreamnotifybot_shared_log_log_writelogtofile",
@@ -55459,7 +55837,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L72",
+      "source_location": "L83",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_warn",
       "target": "src_discordstreamnotifybot_shared_log_log_writelogtofile",
@@ -55469,7 +55847,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L15",
+      "source_location": "L20",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -55484,7 +55862,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L42",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_new",
       "target": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
@@ -55495,7 +55873,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L54",
+      "source_location": "L65",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_debug",
       "target": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
@@ -55506,7 +55884,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L62",
+      "source_location": "L73",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_info",
       "target": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
@@ -55561,7 +55939,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L71",
+      "source_location": "L82",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_warn",
       "target": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
@@ -55648,14 +56026,14 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L85",
+      "source_location": "L96",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
         "ref_token": "Exception"
       },
       "source": "src_discordstreamnotifybot_shared_log_log_error",
-      "target": "exception",
+      "target": "src_discordstreamnotifybot_shared_log_cs_exception",
       "confidence_score": 1.0
     },
     {
@@ -55663,7 +56041,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L80",
+      "source_location": "L91",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_error",
       "target": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
@@ -55673,7 +56051,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L100",
+      "source_location": "L111",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -55688,7 +56066,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L149",
+      "source_location": "L160",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_shared_log_log_logmsg",
       "target": "src_discordstreamnotifybot_shared_log_log_formatcolorwrite",
@@ -55698,7 +56076,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L131",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -55712,7 +56090,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Shared/Log.cs",
-      "source_location": "L131",
+      "source_location": "L142",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -61358,5 +61736,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "e17f5f04198db7c45a9ebf80a796a87838eb3d99"
+  "built_at_commit": "8798468842c42f06f12954af60776708e1be0869"
 }

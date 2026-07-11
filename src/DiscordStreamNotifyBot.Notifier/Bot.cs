@@ -9,6 +9,7 @@ using DiscordStreamNotifyBot.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
+using System.Net;
 using System.Reflection;
 
 namespace DiscordStreamNotifyBot
@@ -69,6 +70,13 @@ namespace DiscordStreamNotifyBot
                 Redis = RedisConnection.Instance.ConnectionMultiplexer;
                 RedisSub = Redis.GetSubscriber();
                 RedisDb = Redis.GetDatabase();
+
+                // 必須在 Discord 登入前訂閱，確保任一 shard 發現 token 失效時，其他仍在線的 shard 也會立即斷線。
+                RedisSub.Subscribe(new RedisChannel(RedisChannels.Notifier.Shutdown, RedisChannel.PatternMode.Literal), (_, value) =>
+                {
+                    Log.Info($"收到關閉廣播，準備關閉本 shard: {value}");
+                    IsDisconnect = true;
+                });
 
                 Log.Info("Redis已連線");
 
@@ -230,6 +238,10 @@ namespace DiscordStreamNotifyBot
             {
                 await client.LoginAsync(TokenType.Bot, _botConfig.DiscordToken);
                 await client.StartAsync();
+            }
+            catch (Discord.Net.HttpException ex) when (TryShutdownOnDiscordAuthorizationFailure(ex, "Discord 登入"))
+            {
+                return;
             }
             catch (Exception ex)
             {
@@ -451,6 +463,34 @@ namespace DiscordStreamNotifyBot
 
             Redis.GetSubscriber().UnsubscribeAll();
             // 偵測資料庫保存改由 Scraper（DetectionHost.SaveStateBeforeShutdown）負責，Notifier 不再處理。
+        }
+
+        /// <summary>
+        /// Discord token 被重設後，既有 Gateway 連線可能不會立刻中斷，只會在下一次 REST 呼叫收到授權錯誤。
+        /// 一旦確認為 token 層級錯誤，立即廣播所有 Notifier shard 一起關閉，交由部署層重新啟動。
+        /// </summary>
+        public static bool TryShutdownOnDiscordAuthorizationFailure(Discord.Net.HttpException exception, string source)
+        {
+            bool isUnauthorized = exception.HttpCode == HttpStatusCode.Unauthorized;
+            bool isUnclassifiedForbidden = exception.HttpCode == HttpStatusCode.Forbidden && !exception.DiscordCode.HasValue;
+            if (!isUnauthorized && !isUnclassifiedForbidden)
+                return false;
+
+            Log.Error(exception.Demystify(), $"{source} 偵測到 Discord Bot Token 授權失效，廣播關閉所有 Notifier shard");
+            IsDisconnect = true;
+
+            try
+            {
+                RedisSub?.Publish(
+                    new RedisChannel(RedisChannels.Notifier.Shutdown, RedisChannel.PatternMode.Literal),
+                    $"Discord 授權失效，來源 shard {ShardId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "廣播 Discord 授權失效關閉訊號失敗");
+            }
+
+            return true;
         }
 
         private void TimerHandler(object state)

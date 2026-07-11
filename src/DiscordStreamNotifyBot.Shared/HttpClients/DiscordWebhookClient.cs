@@ -18,22 +18,42 @@ namespace DiscordStreamNotifyBot.HttpClients
 
         public void SendMessageToDiscord(string content)
         {
-            Message message = new Message();
-
+            string username;
+            string avatarUrl;
             if (_client.CurrentUser != null)
             {
-                message.username = _client.CurrentUser.Username;
-                message.avatar_url = _client.CurrentUser.GetAvatarUrl();
+                username = _client.CurrentUser.Username;
+                avatarUrl = _client.CurrentUser.GetAvatarUrl();
             }
             else
             {
-                message.username = "Bot";
-                message.avatar_url = "";
+                username = "Bot";
+                avatarUrl = "";
             }
 
-            message.content = content;
-            var httpContent = new StringContent(JsonConvert.SerializeObject(message), Encoding.UTF8, "application/json");
-            _httpClient.PostAsync(_botConfig.WebHookUrl, httpContent);
+            _ = SendMessageToDiscordAsync(_httpClient, _botConfig.WebHookUrl, content, username, avatarUrl);
+        }
+
+        /// <summary>等待 Discord webhook 接受訊息，供程序即將結束、不能使用 fire-and-forget 的情境。</summary>
+        public static async Task SendMessageToDiscordAsync(string webhookUrl, string content, string username, CancellationToken cancellationToken = default)
+        {
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            httpClient.DefaultRequestHeaders.Add("UserAgent", "DiscordStreamNotifyBot-CrashReporter");
+            await SendMessageToDiscordAsync(httpClient, webhookUrl, content, username, "", cancellationToken);
+        }
+
+        private static async Task SendMessageToDiscordAsync(HttpClient httpClient, string webhookUrl, string content,
+            string username, string avatarUrl, CancellationToken cancellationToken = default)
+        {
+            var message = new Message
+            {
+                username = username,
+                avatar_url = avatarUrl,
+                content = content,
+            };
+            using var httpContent = new StringContent(JsonConvert.SerializeObject(message), Encoding.UTF8, "application/json");
+            using var response = await httpClient.PostAsync(webhookUrl, httpContent, cancellationToken);
+            response.EnsureSuccessStatusCode();
         }
 
         class Message

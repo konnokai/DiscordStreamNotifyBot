@@ -206,6 +206,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
+                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"Twitch 通知 ({twitchUserId})"))
+                            throw;
+
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
                             Log.Warn($"Twitch 通知 ({twitchUserId}) | 遺失權限 {item.GuildId} / {item.DiscordChannelId}");

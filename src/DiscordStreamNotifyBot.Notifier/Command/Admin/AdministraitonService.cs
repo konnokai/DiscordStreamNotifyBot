@@ -31,13 +31,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
                 }
             });
 
-            // die 指令只會被單一 shard 收到，透過 Redis 廣播讓所有 Notifier shard 一起關閉
-            Bot.RedisSub.Subscribe(new RedisChannel(RedisChannels.Notifier.Shutdown, RedisChannel.PatternMode.Literal), (_, _) =>
-            {
-                Log.Info("收到關閉廣播，準備關閉本 shard");
-                Bot.IsDisconnect = true;
-            });
-
             // leave 指令廣播：目標伺服器只在單一 shard，非持有 shard 自動 no-op
             Bot.RedisSub.Subscribe(new RedisChannel(RedisChannels.Notifier.LeaveGuild, RedisChannel.PatternMode.Literal), async (_, value) =>
             {

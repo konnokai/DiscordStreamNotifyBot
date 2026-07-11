@@ -1,4 +1,5 @@
-﻿using DiscordStreamNotifyBot.Shared;
+﻿using DiscordStreamNotifyBot.HttpClients;
+using DiscordStreamNotifyBot.Shared;
 using System.Reflection;
 
 namespace DiscordStreamNotifyBot
@@ -6,6 +7,7 @@ namespace DiscordStreamNotifyBot
     public class Program
     {
         private const BotRole Role = BotRole.Notifier;
+        private static int _isHandlingUnhandledException;
 
         public static string Version => GetLinkerTime(Assembly.GetEntryAssembly());
 
@@ -17,29 +19,6 @@ namespace DiscordStreamNotifyBot
             // 統一優雅關閉（SIGINT/SIGTERM，計畫 §9-1）：取消時橋接至既有的 Bot.IsDisconnect 關閉路徑
             GracefulShutdown.Init();
             GracefulShutdown.Token.Register(() => Bot.IsDisconnect = true);
-
-            // https://stackoverflow.com/q/5710148/15800522
-            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
-            {
-                Exception ex = (Exception)e.ExceptionObject;
-
-                try
-                {
-                    if (!Debugger.IsAttached)
-                    {
-                        StreamWriter sw = new StreamWriter($"{DateTime.Now:yyyy-MM-dd hh-mm-ss}_crash.log");
-                        sw.WriteLine("### Bot Crash ###");
-                        sw.WriteLine(ex.Demystify().ToString());
-                        sw.Close();
-                    }
-
-                    Log.Error(ex.Demystify(), "UnhandledException", true, false);
-                }
-                finally
-                {
-                    Environment.Exit(1);
-                }
-            };
 
             if (!Directory.Exists(Path.GetDirectoryName(Utility.GetDataFilePath(""))))
                 Directory.CreateDirectory(Path.GetDirectoryName(Utility.GetDataFilePath("")));
@@ -78,6 +57,8 @@ namespace DiscordStreamNotifyBot
                 Log.Error(ex.Demystify(), "StartupPreflight 失敗");
                 Environment.Exit(1);
             }
+
+            RegisterUnhandledExceptionHandler(preflightConfig, shardId, totalShards);
 
             // RedisTokenKey 叢集佈建（僅 shard 0 有權建立，以 Redis 為單一真實來源同步至各 shard 與後端）。
             // 必須在建立 Bot（其 YoutubeMemberService/RedisDataStore 會捕捉 Utility.RedisKey）之前完成。
@@ -118,6 +99,65 @@ namespace DiscordStreamNotifyBot
 
             var bot = new Bot(shardId, totalShards);
             bot.StartAndBlockAsync().GetAwaiter().GetResult();
+        }
+
+        private static void RegisterUnhandledExceptionHandler(BotConfig config, int shardId, int totalShards)
+        {
+            // https://stackoverflow.com/q/5710148/15800522
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                if (Interlocked.Exchange(ref _isHandlingUnhandledException, 1) != 0)
+                    return;
+
+                var exception = e.ExceptionObject as Exception ?? new Exception(e.ExceptionObject?.ToString() ?? "未知的未處理例外");
+                var demystified = exception.Demystify();
+
+                try
+                {
+                    if (!Debugger.IsAttached && !Log.IsRunningInContainer)
+                    {
+                        using var writer = new StreamWriter($"{DateTime.Now:yyyy-MM-dd HH-mm-ss}_crash.log");
+                        writer.WriteLine("### Bot Crash ###");
+                        writer.WriteLine(demystified.ToString());
+                    }
+
+                    Log.Error(demystified, "UnhandledException", true, false);
+
+                    try
+                    {
+                        string content = BuildUnhandledExceptionWebhookMessage(demystified, shardId, totalShards);
+                        DiscordWebhookClient.SendMessageToDiscordAsync(
+                            config.WebHookUrl,
+                            content,
+                            "直播小幫手 Crash Monitor").GetAwaiter().GetResult();
+                    }
+                    catch (Exception webhookException)
+                    {
+                        Log.Error(webhookException.Demystify(), "UnhandledException webhook 發送失敗");
+                    }
+                }
+                finally
+                {
+                    Environment.Exit(1);
+                }
+            };
+        }
+
+        private static string BuildUnhandledExceptionWebhookMessage(Exception exception, int shardId, int totalShards)
+        {
+            string header = $"**Notifier 發生未處理例外，Container 將保持停止**\n" +
+                $"版本: `{Version}`\n" +
+                $"Shard: `{shardId} / {totalShards}`\n" +
+                $"主機: `{Environment.MachineName}`\n" +
+                $"時間: `{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}`";
+            string details = exception.ToString().Replace("```", "'''");
+            string prefix = $"{header}\n```text\n";
+            const string suffix = "\n```";
+            int maxDetailsLength = Math.Max(0, 2000 - prefix.Length - suffix.Length);
+            if (details.Length > maxDetailsLength)
+                details = details[..Math.Max(0, maxDetailsLength - 3)] + "...";
+
+            return prefix + details + suffix;
         }
 
         /// <summary>背景寫入本 notifier 程序的心跳鍵（帶 TTL），供 coordinator 監控存活。</summary>

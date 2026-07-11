@@ -449,6 +449,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
+                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"YouTube 通知 ({streamVideo.VideoId})"))
+                            throw;
+
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
                             Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 遺失權限");

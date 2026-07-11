@@ -160,6 +160,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
+                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"TwitCasting 通知 ({item.DiscordChannelId})"))
+                            throw;
+
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
                             Log.Warn($"TwitCasting 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");

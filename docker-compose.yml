@@ -51,6 +51,8 @@ services:
   # 角色由 ROLE 決定：scraper 偵測並發布至 bot:notify；notifier 消費自己的 consumer group（shard-{id}）發送通知。
   notifier-0:
     <<: *app-common
+    # Discord token／未處理例外屬人工介入事件，退出後保持停止，避免無限重啟觸發 Discord 風控。
+    restart: "no"
     environment:
       ROLE: notifier
     command: ["0", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
@@ -58,6 +60,8 @@ services:
 
   notifier-1:
     <<: *app-common
+    # 任一 shard 廣播授權失效後兩個 Notifier 都會退出，保持停止直到人工更新 token 後再啟動。
+    restart: "no"
     environment:
       ROLE: notifier
     command: ["1", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
