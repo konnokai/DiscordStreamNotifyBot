@@ -38,6 +38,9 @@ services:
     <<: *app-common
     environment:
       ROLE: coordinator
+    ports:
+      # Prometheus metrics endpoint；若 Prometheus 與本 stack 共用 Docker network，可改成只 expose 9464。
+      - "9464:9464"
 
   scraper:
     <<: *app-common

@@ -16,6 +16,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Using Include="System.Diagnostics" />
 		<Using Include="DiscordStreamNotifyBot.Shared" />
 	</ItemGroup>

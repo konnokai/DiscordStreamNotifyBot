@@ -10,18 +10,18 @@
     "semantic_hash": "248181ec7d571344b88a9c80a1c03c3b"
   },
   "src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs": {
-    "mtime": 1783744856.1145563,
-    "ast_hash": "510b31ee6993666f771af2b76ba72016",
+    "mtime": 1783782974.6958454,
+    "ast_hash": "529940e80ebafc5b8d4edb40aaa60230",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/DiscordStreamNotifyBot.Coordinator.csproj": {
-    "mtime": 1783744856.1171095,
-    "ast_hash": "af604df5ec4b394c5999248a2aa6cf1f",
+    "mtime": 1783782974.6858826,
+    "ast_hash": "6bcd3e1073ea8aba44a16d9a327b934b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Program.cs": {
-    "mtime": 1783744856.1195953,
-    "ast_hash": "e384a9eb247dd4d8f4829323c5bc7cc8",
+    "mtime": 1783782974.6985915,
+    "ast_hash": "ad355533cdca8c7abfdbfaeeccdc3fa8",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Properties/launchSettings.json": {
@@ -265,8 +265,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Program.cs": {
-    "mtime": 1783748409.9700737,
-    "ast_hash": "59ccea72ee0693cb6ee6d7fb03e81fc4",
+    "mtime": 1783748647.0454712,
+    "ast_hash": "04210c9fbfc35183086d4a272138356e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Properties/launchSettings.json": {
@@ -795,8 +795,8 @@
     "semantic_hash": "cf674c49c862f93be0e5c1aae0c2fb24"
   },
   "CLAUDE.md": {
-    "mtime": 1783744855.975684,
-    "ast_hash": "4b8ad54048b991e6829d93086ef937dc",
+    "mtime": 1783783122.84771,
+    "ast_hash": "617ee887d16c295eaf2f5afb05e129e6",
     "semantic_hash": ""
   },
   "LICENSE.txt": {
@@ -810,13 +810,13 @@
     "semantic_hash": "92e1412486b963c560830ee9becca559"
   },
   "docker-compose.yml": {
-    "mtime": 1783747690.6077409,
-    "ast_hash": "0d58f25a0deca95ab8c2ecf854847f8f",
+    "mtime": 1783783122.8364298,
+    "ast_hash": "7f74eac7729cf20b4e48c536b18989b2",
     "semantic_hash": ""
   },
   "docs/HORIZONTAL_SCALING_PLAN.md": {
-    "mtime": 1783744855.9977684,
-    "ast_hash": "fdacde69148363a04c6c7462516ea1d7",
+    "mtime": 1783783122.8448653,
+    "ast_hash": "8d14abcb219e646500459ec69ffc8826",
     "semantic_hash": ""
   },
   "docs/LETTER_TO_FUTURE_SESSIONS.md": {
@@ -872,6 +872,21 @@
   "src/DiscordStreamNotifyBot.Shared/MySqlDataStore.cs": {
     "mtime": 1783744856.8212414,
     "ast_hash": "adfa704b28ab99dc60b322f516fe5ba9",
+    "semantic_hash": ""
+  },
+  "deploy/grafana/dashboards/coordinator-prometheus.json": {
+    "mtime": 1783783090.1292653,
+    "ast_hash": "bd96c6d48b5193eeb81997791e4ecc36",
+    "semantic_hash": ""
+  },
+  "src/DiscordStreamNotifyBot.Coordinator/CoordinatorMetrics.cs": {
+    "mtime": 1783783090.118681,
+    "ast_hash": "084c876445216f5779a02f8c907b6ede",
+    "semantic_hash": ""
+  },
+  "docs/PROMETHEUS_GRAFANA.md": {
+    "mtime": 1783783122.8418865,
+    "ast_hash": "c25d6f076e2974e40a36a181a719b31d",
     "semantic_hash": ""
   }
 }

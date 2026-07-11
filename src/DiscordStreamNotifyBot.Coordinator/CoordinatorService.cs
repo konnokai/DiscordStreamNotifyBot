@@ -17,13 +17,15 @@ namespace DiscordStreamNotifyBot.Coordinator
         private readonly BotConfig _config;
         private readonly ClusterService _cluster;
         private readonly IDatabase _db;
+        private readonly CoordinatorMetrics _metrics;
         private readonly string _instanceId;
 
-        public CoordinatorService(BotConfig config)
+        public CoordinatorService(BotConfig config, CoordinatorMetrics metrics)
         {
             _config = config;
             _cluster = new ClusterService();
             _db = RedisConnection.Instance.ConnectionMultiplexer.GetDatabase();
+            _metrics = metrics;
             _instanceId = $"{Environment.MachineName}:{Environment.ProcessId}";
         }
 
@@ -47,6 +49,7 @@ namespace DiscordStreamNotifyBot.Coordinator
 
                     await ReportClusterStatusAsync();
                     await ReportBusBacklogAsync();
+                    _metrics.RecordCycleSuccess();
                 }
                 catch (OperationCanceledException)
                 {
@@ -54,6 +57,7 @@ namespace DiscordStreamNotifyBot.Coordinator
                 }
                 catch (Exception ex)
                 {
+                    _metrics.RecordCycleFailure();
                     Log.Error(ex.Demystify(), "[Coordinator] 監控迴圈發生錯誤");
                 }
             }
@@ -79,7 +83,12 @@ namespace DiscordStreamNotifyBot.Coordinator
 
             // 檢查每個 notifier shard 是否有人認領（依心跳鍵中的 id 難以直接對應 shardId，故以數量粗略判斷）
             int aliveNotifiers = aliveKeys.Count(k => k.Contains(":notifier:"));
-            bool scraperAlive = aliveKeys.Any(k => k.Contains(":scraper:"));
+            int aliveScrapers = aliveKeys.Count(k => k.Contains(":scraper:"));
+            int aliveCoordinators = aliveKeys.Count(k => k.Contains(":coordinator:"));
+            bool scraperAlive = aliveScrapers > 0;
+
+            _metrics.UpdateCluster(_config.TotalShards, aliveCoordinators, aliveScrapers,
+                aliveNotifiers, leader is not null);
 
             var missingHint = aliveNotifiers < _config.TotalShards
                 ? $"（注意：存活 notifier {aliveNotifiers} < TOTAL_SHARDS {_config.TotalShards}，可能有 shard 未認領）"
@@ -96,6 +105,7 @@ namespace DiscordStreamNotifyBot.Coordinator
         private async Task ReportBusBacklogAsync()
         {
             var groups = await NotificationBus.GetGroupsAsync(_db);
+            _metrics.UpdateBus(groups, PendingBacklogWarnThreshold);
             if (groups.Length == 0)
             {
                 Log.Info($"[Coordinator] 匯流排 {NotificationBus.StreamKey} 尚無 consumer group（notifier 未啟動或 stream 未建立）");

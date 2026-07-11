@@ -4,6 +4,7 @@ namespace DiscordStreamNotifyBot.Coordinator
     internal class Program
     {
         private const BotRole Role = BotRole.Coordinator;
+        private const int MetricsPort = 9464;
 
         private static async Task<int> Main(string[] args)
         {
@@ -24,9 +25,29 @@ namespace DiscordStreamNotifyBot.Coordinator
                 return 1;
             }
 
-            var service = new CoordinatorService(config);
-            try { await service.RunAsync(GracefulShutdown.Token); }
+            var metrics = new CoordinatorMetrics();
+            metrics.Start(config.TotalShards);
+
+            using var metricServer = new Prometheus.KestrelMetricServer(port: MetricsPort);
+            try
+            {
+                metricServer.Start();
+                Log.Info($"[Coordinator] Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
+
+                var service = new CoordinatorService(config, metrics);
+                await service.RunAsync(GracefulShutdown.Token);
+            }
             catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "Coordinator 執行失敗");
+                return 1;
+            }
+            finally
+            {
+                metrics.Stop();
+                await metricServer.StopAsync();
+            }
 
             Log.Info($"{Role} 已關閉");
             return 0;
