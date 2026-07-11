@@ -1,16 +1,16 @@
-# Graph Report - DiscordStreamNotifyBot  (2026-07-10)
+# Graph Report - DiscordStreamNotifyBot  (2026-07-11)
 
 ## Corpus Check
-- 169 files · ~76,384 words
+- 169 files · ~76,390 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1700 nodes · 3246 edges · 123 communities (98 shown, 25 thin omitted)
+- 1700 nodes · 3246 edges · 121 communities (94 shown, 27 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 228 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a13e16c2`
+- Built from commit: `e17f5f04`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -104,7 +104,6 @@
 - AddMaxSpiderCountSettingField
 - SyncModelDrift
 - AddManualMemberCheckVideoFlag
-- 5. Shard 歸屬與生命週期
 - YoutubeChannelOwnedType
 - 20250320095452_RefactorDbContext.Designer.cs
 - 20250603065853_ModifyTwitCastingTable.Designer.cs
@@ -113,7 +112,6 @@
 - 20250603065853_ModifyTwitCastingTable.Designer.cs
 - 20250620094111_AddMaxSpiderCountSettingField.Designer.cs
 - TwitchSpider
-- 20260709091318_AddManualMemberCheckVideoFlag.Designer.cs
 - graphify reference: GitHub clone and cross-repo merge
 - graphify reference: transcribe video and audio
 - graphify
@@ -156,33 +154,33 @@
   src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs → src/DiscordStreamNotifyBot.Shared/BotConfig.cs
 - `CoordinatorService` --references--> `ClusterService`  [EXTRACTED]
   src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs → src/DiscordStreamNotifyBot.Shared/ClusterService.cs
-- `Bot` --references--> `NotificationBusConsumer`  [EXTRACTED]
-  src/DiscordStreamNotifyBot.Notifier/Bot.cs → src/DiscordStreamNotifyBot.Notifier/NotificationBusConsumer.cs
 - `Bot` --references--> `BotConfig`  [EXTRACTED]
   src/DiscordStreamNotifyBot.Notifier/Bot.cs → src/DiscordStreamNotifyBot.Shared/BotConfig.cs
 - `Bot` --references--> `MainDbService`  [EXTRACTED]
   src/DiscordStreamNotifyBot.Notifier/Bot.cs → src/DiscordStreamNotifyBot.Shared/DataBase/MainDbService.cs
+- `AdministrationService` --references--> `MainDbService`  [EXTRACTED]
+  src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs → src/DiscordStreamNotifyBot.Shared/DataBase/MainDbService.cs
 
 ## Import Cycles
 - None detected.
 
-## Communities (123 total, 25 thin omitted)
+## Communities (121 total, 27 thin omitted)
 
 ### Community 0 - "Admin Broadcast Commands"
-Cohesion: 0.06
-Nodes (24): DiscordStreamNotifyBot.DataBase.Table, DiscordStreamNotifyBot.Command.Youtube, DiscordStreamNotifyBot.Command.Attribute, DiscordStreamNotifyBot.Command.Twitch, BannerChange, DateTime, DbEntity, GuildConfig (+16 more)
+Cohesion: 0.07
+Nodes (21): DiscordStreamNotifyBot.DataBase.Table, BannerChange, DateTime, DbEntity, GuildConfig, GuildYoutubeMemberConfig, NoticeTwitcastingStreamChannel, NoticeTwitchStreamChannel (+13 more)
 
 ### Community 1 - "YouTube Stream Commands"
-Cohesion: 0.09
-Nodes (22): RedisValue, CancellationToken, IDatabase, int, StreamEntry, Task, TimeSpan, TwitcastingService (+14 more)
+Cohesion: 0.06
+Nodes (33): BotPlayingStatus, RedisValue, ConnectionMultiplexer, DiscordSocketClient, IDatabase, int, ISubscriber, IUser (+25 more)
 
 ### Community 2 - "Twitch Commands"
-Cohesion: 0.07
+Cohesion: 0.06
 Nodes (41): Alias, Command, CommandExample, RequireContext, RequireOwner, Summary, Task, TwitchService (+33 more)
 
 ### Community 3 - "Twitcasting Service & DbContext"
-Cohesion: 0.16
-Nodes (11): BotPlayingStatus, ConnectionMultiplexer, DiscordSocketClient, IDatabase, int, ISubscriber, IUser, Task (+3 more)
+Cohesion: 0.13
+Nodes (7): Assembly, DateTime, IEnumerable, IServiceCollection, Type, Video, YTChannelType
 
 ### Community 4 - "Solution & Dependencies"
 Cohesion: 0.04
@@ -193,8 +191,8 @@ Cohesion: 0.33
 Nodes (11): DateTime, List, Attributes, Data, Liver, NijisanjiStreamJson, Relationships, YoutubeChannel (+3 more)
 
 ### Community 6 - "Notification Bus Consumer"
-Cohesion: 0.15
-Nodes (14): AutocompletionResult, CommandExample, CommandSummary, DiscordSocketClient, IAutocompleteInteraction, IChannel, IInteractionContext, IParameterInfo (+6 more)
+Cohesion: 0.14
+Nodes (15): AutocompletionResult, CommandExample, CommandSummary, DiscordSocketClient, IAutocompleteInteraction, IChannel, IInteractionContext, IParameterInfo (+7 more)
 
 ### Community 7 - "Help Autocomplete Handlers"
 Cohesion: 0.13
@@ -205,28 +203,28 @@ Cohesion: 0.05
 Nodes (31): PreconditionAttribute, CommandInfo, ICommandContext, IServiceProvider, PreconditionResult, Task, RequireGuildMemberCountAttribute, CommandInfo (+23 more)
 
 ### Community 10 - "Command Handler"
-Cohesion: 0.32
-Nodes (6): SocketMessage, CommandService, DiscordSocketClient, IServiceProvider, Task, CommandHandler
+Cohesion: 0.18
+Nodes (8): DiscordStreamNotifyBot.Command, SocketMessage, CommandService, DiscordSocketClient, IServiceProvider, Task, CommandHandler, ICommandService
 
 ### Community 11 - "Embed Builder Factory"
-Cohesion: 0.22
-Nodes (6): DateTime, EmbedBuilder, YTApiVideo, EmbedBuilderFactory, DateTime, Video
+Cohesion: 0.08
+Nodes (21): DateTime, EmbedBuilder, YTApiVideo, EmbedBuilderFactory, HoloVideos, NijisanjiVideos, NonApprovedVideos, OtherVideos (+13 more)
 
 ### Community 12 - "Scaling Architecture Docs"
-Cohesion: 0.47
-Nodes (3): DiscordStreamNotifyBot.SharedService.Youtube, DiscordStreamNotifyBot.SharedService.YoutubeMember, DiscordStreamNotifyBot.Interaction.YoutubeMember
+Cohesion: 0.13
+Nodes (10): DiscordStreamNotifyBot.HttpClients, DiscordStreamNotifyBot.SharedService.Twitcasting, DiscordStreamNotifyBot.SharedService, DiscordStreamNotifyBot.Command.Youtube, DiscordStreamNotifyBot.Command.Attribute, DiscordStreamNotifyBot.DataBase, DiscordStreamNotifyBot.Command.Twitch, DiscordStreamNotifyBot.Interaction (+2 more)
 
 ### Community 13 - "Interaction Extensions"
-Cohesion: 0.08
-Nodes (17): IDiscordInteraction, Process, Assembly, DiscordSocketClient, EmbedBuilder, Func, IEmote, IEnumerable (+9 more)
+Cohesion: 0.06
+Nodes (25): IDiscordInteraction, Process, Assembly, DiscordSocketClient, EmbedBuilder, Func, IEmote, IEnumerable (+17 more)
 
 ### Community 14 - "Command Help Module"
-Cohesion: 0.07
-Nodes (39): ChannelInfo, ClusterQueryType, Dictionary, GuildSnapshot, IReadOnlyCollection, Replies, Responses, SocketGuild (+31 more)
+Cohesion: 0.06
+Nodes (47): ChannelInfo, ClusterQueryType, DiscordStreamNotifyBot.Command.Normal, Dictionary, GuildSnapshot, IReadOnlyCollection, Replies, Responses (+39 more)
 
 ### Community 15 - "Video/Embed Extensions"
-Cohesion: 0.10
-Nodes (19): SocketCommandContext, Assembly, DateTime, DiscordSocketClient, EmbedBuilder, Func, ICommandContext, IEmote (+11 more)
+Cohesion: 0.17
+Nodes (12): SocketCommandContext, DiscordSocketClient, EmbedBuilder, Func, ICommandContext, IEmote, IMessage, IMessageChannel (+4 more)
 
 ### Community 16 - "SharedService Core"
 Cohesion: 0.20
@@ -241,28 +239,28 @@ Cohesion: 0.27
 Nodes (12): CommandExample, CommandSummary, DefaultMemberPermissions, DiscordSocketClient, IChannel, NoticeType, RequireBotPermission, RequireContext (+4 more)
 
 ### Community 19 - "Bot Startup & Membership"
-Cohesion: 0.09
-Nodes (20): DiscordStreamNotifyBot.Interaction.Utility.Service, DiscordStreamNotifyBot.Interaction.Help.Service, IInteractionService, EmbedBuilder, SlashCommandInfo, HelpService, UtilityService, DefaultMemberPermissions (+12 more)
+Cohesion: 0.07
+Nodes (27): ButtonCheckData, DiscordStreamNotifyBot.Interaction.Utility.Service, DiscordStreamNotifyBot.Interaction.Help.Service, IInteractionService, SendAllPayload, EmbedBuilder, SlashCommandInfo, HelpService (+19 more)
 
 ### Community 20 - "Auth / Token Crypto"
-Cohesion: 0.11
-Nodes (11): DiscordStreamNotifyBot.Auth, IDataStore, TokenCrypto, TokenManager, Task, ITokenDataStore, IDatabase, string (+3 more)
+Cohesion: 0.12
+Nodes (10): IDataStore, TokenCrypto, TokenManager, Task, ITokenDataStore, IDatabase, string, Task (+2 more)
 
 ### Community 21 - "Bot Entry Points"
-Cohesion: 0.18
-Nodes (6): DiscordStreamNotifyBot.HttpClients, DiscordStreamNotifyBot.Scraper, DiscordStreamNotifyBot.Shared, DiscordStreamNotifyBot, DiscordStreamNotifyBot.Scraper.Detection.Twitcasting, BotPlayingStatus
+Cohesion: 0.16
+Nodes (7): DiscordStreamNotifyBot.Auth, DiscordStreamNotifyBot.Scraper, DiscordStreamNotifyBot.Shared, DiscordStreamNotifyBot.Interaction.OwnerOnly.Service, DiscordStreamNotifyBot, NoticeType, SendAllPayload
 
 ### Community 22 - "YouTube Reminder Scheduler"
 Cohesion: 0.17
-Nodes (10): GeneratedRegex, YTChannelType, DateTime, DbSet, MainDbContext, Regex, Task, Video (+2 more)
+Nodes (9): GeneratedRegex, DateTime, DbSet, MainDbContext, Regex, Task, Video, YTChannelType (+1 more)
 
 ### Community 23 - "Interaction Handler"
-Cohesion: 0.10
-Nodes (15): DiscordStreamNotifyBot.SharedService, Emote, IResult, SocketInteraction, SocketSlashCommandDataOption, IInteractionService, DiscordSocketClient, IInteractionContext (+7 more)
+Cohesion: 0.12
+Nodes (14): Emote, IResult, SocketInteraction, SocketSlashCommandDataOption, IInteractionService, DiscordSocketClient, IInteractionContext, InteractionService (+6 more)
 
 ### Community 24 - "Command/Interaction Modules"
-Cohesion: 0.21
-Nodes (9): DiscordStreamNotifyBot.Interaction.Utility, DiscordStreamNotifyBot.Interaction.Attribute, DiscordStreamNotifyBot.Interaction.TwitCasting, DiscordStreamNotifyBot.Command.Admin, DiscordStreamNotifyBot.Interaction.Twitch, DiscordStreamNotifyBot.SharedService.Cluster, DiscordStreamNotifyBot.DataBase, GuildNoticeTwitCastingChannelIdAutocompleteHandler (+1 more)
+Cohesion: 0.40
+Nodes (3): DiscordStreamNotifyBot.Interaction.Utility, DiscordStreamNotifyBot.Command.Admin, DiscordStreamNotifyBot.SharedService.Cluster
 
 ### Community 25 - "YouTube Member Service"
 Cohesion: 0.07
@@ -273,12 +271,12 @@ Cohesion: 0.11
 Nodes (17): 1. 背景與動機, 2. 新增跨 repo 契約, 3. A（小幫手）改動, 4. B（StreamRecordTools）改動, 5. 部署順序與相容性, 6. 驗證, 7. 影響範圍, A1. `Shared/RedisChannels.cs` (+9 more)
 
 ### Community 27 - "YouTube Reminder Timer"
-Cohesion: 0.22
-Nodes (9): DbContext, DateTime, int, Task, YTApiVideo, YoutubeDetectionService, DbSet, Video (+1 more)
+Cohesion: 0.19
+Nodes (10): DbContext, DateTime, int, Task, YTApiVideo, YTChannelType, YoutubeDetectionService, DbSet (+2 more)
 
 ### Community 28 - "Command Attributes"
-Cohesion: 0.20
-Nodes (7): Attribute, string, CommandExampleAttribute, string, CommandExampleAttribute, string, CommandSummaryAttribute
+Cohesion: 0.12
+Nodes (13): Attribute, DiscordStreamNotifyBot.Interaction.Attribute, DiscordStreamNotifyBot.Interaction.TwitCasting, DiscordStreamNotifyBot.SharedService.Twitch, DiscordStreamNotifyBot.Interaction.Twitch, string, CommandExampleAttribute, string (+5 more)
 
 ### Community 29 - "Graphify Tooling Docs"
 Cohesion: 0.08
@@ -293,16 +291,16 @@ Cohesion: 0.26
 Nodes (5): IDatabase, string, Task, TimeSpan, ClusterService
 
 ### Community 32 - "Member Check Settings"
-Cohesion: 0.17
-Nodes (10): GoogleAuthorizationCodeFlow, SocketGuildUser, SocketMessageComponent, Task, Task, Timer, YoutubeMemberService, TokenResponse (+2 more)
+Cohesion: 0.13
+Nodes (15): GoogleAuthorizationCodeFlow, IDMChannel, SocketGuildUser, SocketMessageComponent, DiscordSocketClient, EmbedBuilder, ITextChannel, IUserMessage (+7 more)
 
 ### Community 33 - "YouTube Spider Commands"
-Cohesion: 0.44
-Nodes (9): ICommandService, Alias, Command, CommandExample, RequireContext, RequireOwner, Summary, Task (+1 more)
+Cohesion: 0.18
+Nodes (19): DiscordStreamNotifyBot.Command.YoutubeMember, ICommandService, Alias, Command, CommandExample, RequireContext, RequireOwner, Summary (+11 more)
 
 ### Community 34 - "Twitch Channel Commands"
-Cohesion: 0.33
-Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider
+Cohesion: 0.29
+Nodes (6): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider, GuildNoticeTwitchChannelIdAutocompleteHandler
 
 ### Community 35 - "Twitcasting Detection"
 Cohesion: 0.33
@@ -325,12 +323,12 @@ Cohesion: 0.26
 Nodes (6): DbContextOptions, string, MainDbService, string, Task, MySqlDataStore
 
 ### Community 40 - "Twitcasting Commands"
-Cohesion: 0.16
-Nodes (13): AutocompletionResult, CommandExample, CommandSummary, DiscordSocketClient, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider (+5 more)
+Cohesion: 0.29
+Nodes (8): CommandExample, CommandSummary, DiscordSocketClient, RequireGuildMemberCount, SlashCommand, Task, TwitcastingService, TwitcastingSpider
 
 ### Community 41 - "YouTube Member Interaction"
-Cohesion: 0.36
-Nodes (5): RequireContext, SlashCommand, Task, YoutubeMember, YoutubeMemberService
+Cohesion: 0.50
+Nodes (4): RequireContext, SlashCommand, Task, YoutubeMember
 
 ### Community 42 - "DB Query Extensions"
 Cohesion: 0.24
@@ -341,56 +339,56 @@ Cohesion: 0.39
 Nodes (6): CancellationToken, PeriodicTimer, string, Task, TimeSpan, ScraperService
 
 ### Community 44 - "Twitcasting Spider Commands"
-Cohesion: 0.19
-Nodes (7): bool, DiscordSocketClient, HttpClient, string, Task, Timer, UptimeKumaClient
+Cohesion: 0.15
+Nodes (10): Task, Task, YoutubeMemberService, bool, DiscordSocketClient, HttpClient, string, Task (+2 more)
 
 ### Community 45 - "Redis Channels"
 Cohesion: 0.23
 Nodes (9): string, Cluster, Member, Notifier, RedisChannels, SharedState, Twitcasting, Twitch (+1 more)
 
 ### Community 46 - "Twitch Spider Commands"
-Cohesion: 0.08
-Nodes (39): NowStreamingHost, Alias, ClusterQueryService, Command, CommandExample, DiscordSocketClient, IEnumerable, List (+31 more)
+Cohesion: 0.11
+Nodes (29): NowStreamingHost, Alias, ClusterQueryService, Command, CommandExample, DiscordSocketClient, IEnumerable, List (+21 more)
 
 ### Community 47 - "Nijisanji Stream JSON"
 Cohesion: 0.25
 Nodes (6): Broadcaster, DiscordSocketClient, EmojiService, NoticeCache, Task, TwitcastingService
 
 ### Community 48 - "Utility & Official Guilds"
-Cohesion: 0.11
-Nodes (10): CancellationToken, Func, Task, TimeSpan, PeriodicRunner, HashSet, List, string (+2 more)
+Cohesion: 0.18
+Nodes (5): HashSet, List, string, Task, Utility
 
 ### Community 49 - "Detection Host Bootstrap"
-Cohesion: 0.13
-Nodes (14): DiscordStreamNotifyBot.Command.Help, Alias, Command, CommandInfo, CommandService, IServiceProvider, string, Summary (+6 more)
+Cohesion: 0.06
+Nodes (31): DiscordStreamNotifyBot.Command.Help, DiscordStreamNotifyBot.Interaction.Help, IEqualityComparer, Alias, Command, CommandInfo, CommandService, IServiceProvider (+23 more)
 
 ### Community 50 - "YouTube Channel Spider"
-Cohesion: 0.16
-Nodes (11): ButtonCheckData, DiscordStreamNotifyBot.Interaction.OwnerOnly.Service, SendAllPayload, bool, DiscordSocketClient, Embed, Task, ButtonCheckData (+3 more)
+Cohesion: 0.29
+Nodes (5): CancellationToken, Func, Task, TimeSpan, PeriodicRunner
 
 ### Community 51 - "Twitcasting HTTP Client"
 Cohesion: 0.18
 Nodes (11): 10. 可優化項目（claude 分支已有成品，對應階段順手移植）, 11. 驗證清單（部署前全過）, 1. 目標架構, 3. 設定, 6.1 方式 A：固定 shard 服務（初期採用）, 6.2 方式 B：`--scale` + shard 租約（主控層租約成熟後再切）, 6. Docker Compose, 7. 跨 shard 指令（Redis 三機制） (+3 more)
 
 ### Community 52 - "Twitch Update Debounce"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (5): DateTime, EmbedBuilder, Video, YTChannelType, SharedExtensions
 
 ### Community 53 - "YouTube Member Modules"
-Cohesion: 0.18
-Nodes (5): HoloVideos, DateTime, YoutubeChannelSpider, DateTime, YoutubeMemberAccessToken
+Cohesion: 0.33
+Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider
 
 ### Community 54 - "Uptime Kuma Client"
-Cohesion: 0.22
-Nodes (7): DiscordStreamNotifyBot.Interaction.Youtube, AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider, GuildNoticeYoutubeChannelIdAutocompleteHandler
+Cohesion: 0.12
+Nodes (13): AutocompleteHandler, DiscordStreamNotifyBot.SharedService.Youtube, DiscordStreamNotifyBot.SharedService.YoutubeMember, DiscordStreamNotifyBot.Interaction.YoutubeMember, DiscordStreamNotifyBot.Interaction.Youtube, AutocompletionResult, IAutocompleteInteraction, IInteractionContext (+5 more)
 
 ### Community 55 - "Redis Token Provisioner"
-Cohesion: 0.83
-Nodes (3): Broadcaster, Movie, TwitCastingWebHookJson
+Cohesion: 0.47
+Nodes (4): DiscordStreamNotifyBot.Scraper.Detection.Twitcasting, Broadcaster, Movie, TwitCastingWebHookJson
 
 ### Community 56 - "Twitcasting Channel Info"
-Cohesion: 0.26
-Nodes (8): DiscordStreamNotifyBot.Command.Normal, Alias, Command, DiscordSocketClient, DiscordWebhookClient, Summary, Task, Normal
+Cohesion: 0.33
+Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider
 
 ### Community 57 - "Scraper Service"
 Cohesion: 0.28
@@ -417,28 +415,24 @@ Cohesion: 0.22
 Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only if --wiki flag), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag), Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag), Step 7b - SVG export (only if --svg flag), Step 7c - GraphML export (only if --graphml flag), Step 7d - MCP server (only if --mcp flag), Step 8 - Token reduction benchmark (only if total_words > 5000)
 
 ### Community 63 - "Twitch Autocomplete"
-Cohesion: 0.29
+Cohesion: 0.31
 Nodes (5): HttpClient, List, string, Task, TwitcastingClient
 
 ### Community 64 - "YouTube Autocomplete"
-Cohesion: 0.10
-Nodes (16): DiscordStreamNotifyBot.Scraper.Detection.Youtube, DiscordStreamNotifyBot.SharedService.Twitcasting, DiscordStreamNotifyBot.Scraper.Detection.Twitch, DiscordStreamNotifyBot.SharedService.Twitch, DiscordStreamNotifyBot.SharedService.Youtube.Json, DiscordStreamNotifyBot.Shared.Messages, DiscordStreamNotifyBot.Interaction, NoticeType (+8 more)
+Cohesion: 0.13
+Nodes (12): DiscordStreamNotifyBot.Scraper.Detection.Youtube, DiscordStreamNotifyBot.Scraper.Detection.Twitch, DiscordStreamNotifyBot.SharedService.Youtube.Json, DiscordStreamNotifyBot.Shared.Messages, NoticeType, NowStreamingHost, YTNotificationType, ConnectionMultiplexer (+4 more)
 
 ### Community 65 - "Notifier Program Entry"
-Cohesion: 0.36
-Nodes (6): IDMChannel, DiscordSocketClient, EmbedBuilder, ITextChannel, IUserMessage, Ext
+Cohesion: 0.70
+Nodes (4): List, CategoriesJson, Category, SubCategory
 
 ### Community 66 - "Periodic Runner"
 Cohesion: 0.21
 Nodes (7): DebouncedEventArgs, ConcurrentDictionary, HashSet, Task, TwitchDetectionService, DateTime, TwitchStream
 
 ### Community 67 - "Interaction Base Module"
-Cohesion: 0.36
-Nodes (5): Assembly, CancellationToken, PeriodicTimer, Task, Program
-
-### Community 68 - "TwitCasting DB Fix Command"
-Cohesion: 0.27
-Nodes (10): DiscordStreamNotifyBot.Command.YoutubeMember, Alias, Command, RequireContext, RequireOwner, Summary, Task, YoutubeMemberService (+2 more)
+Cohesion: 0.18
+Nodes (8): Assembly, CancellationToken, PeriodicTimer, Task, Program, Task, Program, BotRole
 
 ### Community 69 - "Twitcasting Movie Info"
 Cohesion: 0.22
@@ -452,25 +446,21 @@ Nodes (4): ConnectionMultiplexer, Lazy, string, RedisConnection
 Cohesion: 0.25
 Nodes (7): EF Core 遷移與基線化（本專案版）, 一次性基線化（舊的 EnsureCreated 正式庫）, 一般變更流程, 你必須先知道的三件專案特例, 啟動時不碰資料庫（重要）, 套用：本地/開發 vs 正式環境, 收尾
 
-### Community 73 - "Nijisanji Liver JSON"
-Cohesion: 0.33
-Nodes (6): HelpService, InteractionService, IServiceProvider, SlashCommand, Task, Help
-
 ### Community 74 - "TwitCasting Webhook JSON"
-Cohesion: 0.13
-Nodes (17): IDisposable, bool, Cacheable, DiscordSocketClient, IMessageChannel, IUserMessage, SocketReaction, Task (+9 more)
+Cohesion: 0.26
+Nodes (9): IDisposable, bool, Cacheable, DiscordSocketClient, IMessageChannel, IUserMessage, SocketReaction, Task (+1 more)
 
 ### Community 80 - "DiscordSocketClient"
 Cohesion: 0.29
 Nodes (5): 一、`claude` 分支是你最大的資產，也是最大的陷阱, 三、使用者已做的決策，不要重新辯論, 二、你在活的生產系統旁施工, 給未來 session 的信, 這套制度最可能的退化方式，與預防
 
 ### Community 81 - "EmbedBuilder"
-Cohesion: 0.23
-Nodes (10): DiscordStreamNotifyBot.HttpClients.Twitcasting.Model, List, CategoriesJson, Category, SubCategory, List, Broadcaster, GetMovieInfoResponse (+2 more)
+Cohesion: 0.27
+Nodes (6): DiscordStreamNotifyBot.HttpClients.Twitcasting.Model, List, Broadcaster, GetMovieInfoResponse, Movie, GetUserInfoResponse
 
 ### Community 82 - "ITextChannel"
-Cohesion: 0.10
-Nodes (12): DiscordStreamNotifyBot.Migrations, Migration, MigrationBuilder, ModelBuilder, RefactorDbContext, RefactorDbContext, MigrationBuilder, AddMaxSpiderCountSettingField (+4 more)
+Cohesion: 0.50
+Nodes (3): Migration, MigrationBuilder, RefactorDbContext
 
 ### Community 83 - "IUserMessage"
 Cohesion: 0.40
@@ -484,17 +474,9 @@ Nodes (8): DiscordStreamNotifyBot.Interaction.OwnerOnly, SendMsgToAllGuildServic
 Cohesion: 0.33
 Nodes (5): For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
 
-### Community 86 - "AddMaxSpiderCountSettingField"
-Cohesion: 0.25
-Nodes (6): DiscordStreamNotifyBot.Interaction.Help, AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, HelpGetModulesAutocompleteHandler
-
-### Community 87 - "SyncModelDrift"
-Cohesion: 0.29
-Nodes (3): Task, Program, BotRole
-
 ### Community 88 - "AddManualMemberCheckVideoFlag"
-Cohesion: 0.29
-Nodes (6): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider, GuildYoutubeChannelSpiderAutocompleteHandler
+Cohesion: 0.33
+Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider
 
 ### Community 90 - "YoutubeChannelOwnedType"
 Cohesion: 0.50
@@ -533,7 +515,7 @@ Cohesion: 0.44
 Nodes (8): App, BackendMovie, Fmp4, Hls, Llfmp4, Streams, TcBackendStreamData, Webrtc
 
 ### Community 138 - ".PromptUserConfirmAsync"
-Cohesion: 0.39
+Cohesion: 0.48
 Nodes (4): InteractionModuleBase, SocketInteractionContext, Task, TopLevelModule
 
 ### Community 139 - "TopLevelModule"
@@ -549,36 +531,36 @@ Cohesion: 0.22
 Nodes (7): DiscordStreamNotifyBot.Command.TwitCasting, Alias, Command, RequireContext, RequireOwner, Task, TwitCasting
 
 ### Community 142 - ".GenerateSuggestionsAsync"
-Cohesion: 0.12
-Nodes (14): AutocompleteHandler, GuildTwitCastingSpiderAutocompleteHandler, AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider, GuildTwitchSpiderAutocompleteHandler (+6 more)
-
-### Community 143 - "CommonEqualityComparer"
-Cohesion: 0.18
-Nodes (5): IEqualityComparer, Func, CommonEqualityComparer, Func, CommonEqualityComparer
+Cohesion: 0.33
+Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider
 
 ### Community 146 - "GetAllRegistedWebHookJson.cs"
 Cohesion: 0.67
 Nodes (3): List, GetAllRegistedWebHookJson, Webhook
 
+### Community 147 - "20250620094111_AddMaxSpiderCountSettingField.Designer.cs"
+Cohesion: 0.33
+Nodes (3): DiscordStreamNotifyBot.Migrations, ModelBuilder, AddMaxSpiderCountSettingField
+
 ## Knowledge Gaps
 - **207 isolated node(s):** `net8.0`, `Microsoft.NET.Sdk`, `BotPlayingStatus`, `DiscordStreamNotifyBot.Command.Normal`, `DiscordStreamNotifyBot.Command.TwitCasting` (+202 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **25 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **27 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DiscordStreamNotifyBot.DataBase` connect `Command/Interaction Modules` to `Admin Broadcast Commands`, `EF Migrations`, `.PromptUserConfirmAsync`, `Scaling Architecture Docs`, `Interaction Extensions`, `.FixTCDbAsync`, `Command Help Module`, `20250620094111_AddMaxSpiderCountSettingField.Designer.cs`, `20260709091318_AddManualMemberCheckVideoFlag.Designer.cs`, `Bot Entry Points`, `Auth / Token Crypto`, `Interaction Handler`, `YouTube Member Service`, `YouTube Member Commands`, `YouTube Channel Spider`, `Twitch Update Debounce`, `Uptime Kuma Client`, `Startup Preflight`, `YouTube Autocomplete`, `TwitCasting DB Fix Command`, `Twitcasting Categories JSON`, `ITextChannel`, `IUserMessage`, `20250603065853_ModifyTwitCastingTable.Designer.cs`?**
+- **Why does `DiscordStreamNotifyBot.DataBase` connect `Scaling Architecture Docs` to `Admin Broadcast Commands`, `EF Migrations`, `.FixTCDbAsync`, `Command Help Module`, `20250620094111_AddMaxSpiderCountSettingField.Designer.cs`, `20260709091318_AddManualMemberCheckVideoFlag.Designer.cs`, `Bot Entry Points`, `Command/Interaction Modules`, `YouTube Member Service`, `Command Attributes`, `YouTube Spider Commands`, `YouTube Member Commands`, `Uptime Kuma Client`, `Redis Token Provisioner`, `Startup Preflight`, `YouTube Autocomplete`, `Twitcasting Categories JSON`, `IUserMessage`, `SyncModelDrift`, `20250603065853_ModifyTwitCastingTable.Designer.cs`?**
   _High betweenness centrality (0.131) - this node is a cross-community bridge._
-- **Why does `MainDbService` connect `YouTube Member Commands` to `Twitch Commands`, `Twitcasting Service & DbContext`, `Notification Bus Consumer`, `TwitcastingDetectionService`, `.FixTCDbAsync`, `Command Help Module`, `SharedService Core`, `YouTube Slash Commands`, `Bot Startup & Membership`, `YouTube Member Service`, `Member Check Settings`, `Twitcasting Detection`, `Twitcasting Commands`, `YouTube Member Interaction`, `Twitch Spider Commands`, `Nijisanji Stream JSON`, `YouTube Channel Spider`, `Scraper Service`, `Twitcasting Webhook Models`, `YouTube Autocomplete`, `Periodic Runner`, `TwitCasting DB Fix Command`, `DetectionHost (Scraper composition root)`?**
+- **Why does `MainDbService` connect `YouTube Member Commands` to `YouTube Stream Commands`, `Twitch Commands`, `Notification Bus Consumer`, `TwitcastingDetectionService`, `.FixTCDbAsync`, `Command Help Module`, `SharedService Core`, `YouTube Slash Commands`, `Bot Startup & Membership`, `YouTube Member Service`, `Member Check Settings`, `YouTube Spider Commands`, `Twitcasting Detection`, `Twitcasting Commands`, `YouTube Member Interaction`, `Twitch Spider Commands`, `Nijisanji Stream JSON`, `Scraper Service`, `Twitcasting Webhook Models`, `YouTube Autocomplete`, `Periodic Runner`, `DetectionHost (Scraper composition root)`?**
   _High betweenness centrality (0.114) - this node is a cross-community bridge._
-- **Why does `DiscordStreamNotifyBot.Command` connect `5. Shard 歸屬與生命週期` to `TopLevelModule`, `Bot Entry Points`, `Command Help Module`, `CommonEqualityComparer`?**
+- **Why does `DiscordStreamNotifyBot.Command` connect `Command Handler` to `TopLevelModule`, `Scaling Architecture Docs`, `Command Help Module`, `CommonEqualityComparer`?**
   _High betweenness centrality (0.055) - this node is a cross-community bridge._
 - **What connects `net8.0`, `Microsoft.NET.Sdk`, `BotPlayingStatus` to the rest of the system?**
   _207 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Admin Broadcast Commands` be split into smaller, more focused modules?**
-  _Cohesion score 0.05813953488372093 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06984126984126984 - nodes in this community are weakly interconnected._
 - **Should `YouTube Stream Commands` be split into smaller, more focused modules?**
-  _Cohesion score 0.08780487804878048 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05779220779220779 - nodes in this community are weakly interconnected._
 - **Should `Twitch Commands` be split into smaller, more focused modules?**
-  _Cohesion score 0.06572769953051644 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06430745814307458 - nodes in this community are weakly interconnected._

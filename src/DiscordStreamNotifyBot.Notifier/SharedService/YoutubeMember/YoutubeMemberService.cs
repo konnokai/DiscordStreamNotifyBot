@@ -108,8 +108,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             return;
                         }
 
-                        var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId && x.GuildId == guildId);
-                        var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
+                        var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId && x.GuildId == guildId).ToList();
+                        var guildYoutubeMemberConfigs = youtubeMembers.Count == 0
+                            ? []
+                            : db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guildId).ToList();
 
                         db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
                         db.SaveChanges();
@@ -222,7 +224,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
                 if (youtubeMembers.Count > 0)
                 {
-                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => youtubeMembers.Any((x2) => x2.GuildId == x.GuildId));
+                    var guildIds = youtubeMembers.Select((x) => x.GuildId).Distinct().ToList();
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => guildIds.Contains(x.GuildId));
                     foreach (var item in guildYoutubeMemberConfigs)
                     {
                         try { await _client.Rest.RemoveRoleAsync(item.GuildId, userId, item.MemberCheckGrantRoleId); }
