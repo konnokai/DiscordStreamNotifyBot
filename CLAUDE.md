@@ -74,7 +74,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 
 ## Conventions
 
-- Log：靜態 `Log.Info/Warn/Error`；例外一律 `.Demystify()` 後再記。
+- Log：靜態 `Log.Info/Warn/Error`；例外一律 `.Demystify()` 後再記；輸出格式與 Loki patterns 見 [docs/LOGGING.md](docs/LOGGING.md)。
 - JSON：`Newtonsoft.Json`（`JsonConvert`）；**不使用 `System.Text.Json`**。
 - Global usings 已在 csproj 宣告：`Discord`、`Discord.WebSocket`、`Newtonsoft.Json`、`StackExchange.Redis`、`Microsoft.EntityFrameworkCore`、`System.Diagnostics`、`Google.Apis.YouTube.v3.Data`。
 - Embed 顏色：`WithOkColor()`（綠）/ `WithErrorColor()`（深灰）/ `WithRecordColor()`（紅）。

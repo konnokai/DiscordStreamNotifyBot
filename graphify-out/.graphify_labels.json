@@ -113,11 +113,17 @@
   "111": "Knowledge graph (graph.json)",
   "112": "Semantic extraction (parallel subagents)",
   "113": "Task",
-  "125": "Task",
+  "114": "StreamGroupInfo",
+  "115": "string",
+  "116": "CancellationToken",
+  "117": "IDatabase",
+  "118": "int",
+  "119": "PeriodicTimer",
+  "120": "string",
+  "121": "Task",
+  "122": "int",
   "136": "HelpDescription (bot feature summary)",
   "140": "TwitcastingDetectionService",
   "147": "20250620094111_AddMaxSpiderCountSettingField.Designer.cs",
-  "148": "20260709091318_AddManualMemberCheckVideoFlag.Designer.cs",
-  "236": "DateTime",
-  "258": "DiscordSocketClient"
+  "148": "20260709091318_AddManualMemberCheckVideoFlag.Designer.cs"
 }

@@ -43,8 +43,8 @@ namespace DiscordStreamNotifyBot.Command
 
                     if (!result.IsSuccess)
                     {
-                        Log.FormatColorWrite($"[{context.Guild?.Name}/{context.Message.Channel?.Name}] {message.Author.Username} 執行 {context.Message} 發生錯誤", ConsoleColor.Red);
-                        Log.FormatColorWrite(result.ErrorReason, ConsoleColor.Red);
+                        Log.Error($"[{context.Guild?.Name}/{context.Message.Channel?.Name}] {message.Author.Username} 執行 {context.Message} 發生錯誤");
+                        Log.Error(result.ErrorReason);
                         await context.Channel.SendErrorAsync(result.ErrorReason);
                     }
                     else
