@@ -14,7 +14,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
     {
         private static ConcurrentDictionary<string, DataBase.Table.Video> addNewStreamVideo = new();
         private static HashSet<string> newStreamList = new();
-        private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
+        private bool isFirstOther = true;
 
         private void ReScheduleReminder()
         {
@@ -137,9 +137,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                         try
                                         {
                                             Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
-
-                                            await Bot.ApplicatonOwner.SendMessageAsync($"`{item.ChannelTitle}` ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
-
                                             // Todo: 頻道錯誤通知後移除爬蟲
                                             //db.YoutubeChannelSpider.Remove(item);
                                             //db.SaveChanges();
