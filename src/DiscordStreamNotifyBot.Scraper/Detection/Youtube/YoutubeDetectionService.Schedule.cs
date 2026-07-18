@@ -155,8 +155,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             {
                 Bot.IsNijisanjiChannelSpider = true;
 
-                List<Data> datas = new List<Data>();
-                NijisanjiStreamJson nijisanjiStreamJson = null;
+                var nijisanjiStreamList = new List<NijisanjiStreamJson>();
 
                 for (int i = -1; i <= 1; i++)
                 {
@@ -166,9 +165,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         if (result.Contains("ERROR</h1>"))
                             continue;
 
-                        nijisanjiStreamJson = JsonConvert.DeserializeObject<NijisanjiStreamJson>(result);
-                        datas.AddRange(nijisanjiStreamJson.Included);
-                        datas.AddRange(nijisanjiStreamJson.Data);
+                        var nijisanjiStreamJson = JsonConvert.DeserializeObject<List<NijisanjiStreamJson>>(result);
+                        nijisanjiStreamList.AddRange(nijisanjiStreamJson);
                     }
                     catch (Exception ex)
                     {
@@ -178,7 +176,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     }
                 }
 
-                if (!datas.Any())
+                if (!nijisanjiStreamList.Any())
                 {
                     Log.Warn("NijisanjiScheduleAsync: 直播清單無資料");
                     Bot.IsNijisanjiChannelSpider = false;
@@ -186,13 +184,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
 
                 // 先收集本次要查的 (item, videoId)，再批次查 YouTube API（一次 50 筆省 quota，§12.4）
-                var pendingItems = new List<(Data item, string videoId)>();
-                foreach (var item in datas)
+                var pendingItems = new List<(NijisanjiStreamJson item, string videoId)>();
+                foreach (var item in nijisanjiStreamList)
                 {
-                    if (item.Type != "youtube_event")
+                    if (item.Platform != "youtube")
                         continue;
 
-                    string videoId = item.Attributes.Url.Split("?v=")[1].Trim();
+                    string videoId = item.Url.Split("?v=")[1].Trim();
                     if (newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId)) continue;
                     newStreamList.Add(videoId);
                     pendingItems.Add((item, videoId));
@@ -224,16 +222,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     }
 
                     Log.Info($"Nijisanji Id: {videoId}");
-                    DataBase.Table.Video streamVideo = BuildStreamVideo(video, item.Attributes.StartAt.Value, DataBase.Table.Video.YTChannelType.Nijisanji);
+                    DataBase.Table.Video streamVideo = BuildStreamVideo(video, item.StartAt.Value, DataBase.Table.Video.YTChannelType.Nijisanji);
 
-                    if (item.Attributes.Status == "on_air") // 已開台
+                    if (item.Status == "on_air") // 已開台
                     {
                         Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             StartReminder(streamVideo, streamVideo.ChannelType);
                     }
-                    else if (!item.Attributes.EndAt.HasValue) // 沒有關台時間但又沒開台就當是新的直播
+                    else if (!item.EndAt.HasValue) // 沒有關台時間但又沒開台就當是新的直播
                     {
                         try
                         {
@@ -242,7 +240,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             {
                                 // 會遇到尚未開台但已過開始時間的情況，所以還是先判定開始時間大於現在時間後再傳送新直播通知
-                                if (!isFirst2434 && item.Attributes.StartAt > DateTime.Now)
+                                if (!isFirst2434 && item.StartAt > DateTime.Now)
                                     await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewStream).ConfigureAwait(false);
 
                                 StartReminder(streamVideo, streamVideo.ChannelType);
