@@ -16,6 +16,7 @@ namespace DiscordStreamNotifyBot.DataBase
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
         public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
         public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
+        public DbSet<TwitchBroadcasterAuthorization> TwitchBroadcasterAuthorization { get; set; }
         public DbSet<TwitchSpider> TwitchSpider { get; set; }
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
@@ -31,6 +32,26 @@ namespace DiscordStreamNotifyBot.DataBase
         public DbSet<TwitcastingStream> TwitcastingStreams { get; set; }
         public DbSet<TwitchStream> TwitchStreams { get; set; }
         #endregion
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<TwitchBroadcasterAuthorization>(entity =>
+            {
+                entity.HasKey(x => x.TwitchUserId);
+                entity.HasIndex(x => x.DiscordUserId).IsUnique();
+                entity.Property(x => x.TwitchUserId).IsRequired();
+                entity.Property(x => x.ClientId).IsRequired();
+                entity.Property(x => x.UserLogin).IsRequired();
+                entity.Property(x => x.DisplayName).IsRequired();
+                entity.Property(x => x.ProfileImageUrl).IsRequired();
+                entity.Property(x => x.Scopes).IsRequired();
+                entity.Property(x => x.TokenExpiresAt).HasColumnType("datetime(6)");
+                entity.Property(x => x.LastValidatedAt).HasColumnType("datetime(6)");
+                entity.Property(x => x.AuthorizedAt).HasColumnType("datetime(6)");
+                entity.Property(x => x.RevokedAt).HasColumnType("datetime(6)");
+                entity.Property(x => x.DateUpdated).HasColumnType("datetime(6)");
+            });
+        }
 
         public bool UpdateAndSave(Table.Video video)
         {

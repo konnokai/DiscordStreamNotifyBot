@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Interaction.Twitch
@@ -14,6 +15,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
         private readonly ClusterQueryService _clusterQuery;
+        private readonly BotConfig _botConfig;
         public class GuildTwitchSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -70,11 +72,12 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             }
         }
 
-        public TwitchSpider(DiscordSocketClient client, MainDbService dbService, ClusterQueryService clusterQuery)
+        public TwitchSpider(DiscordSocketClient client, MainDbService dbService, ClusterQueryService clusterQuery, BotConfig botConfig)
         {
             _client = client;
             _dbService = dbService;
             _clusterQuery = clusterQuery;
+            _botConfig = botConfig;
 
             _client.ButtonExecuted += async (button) =>
             {
@@ -106,6 +109,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                         twitchSpider.IsWarningUser = !twitchSpider.IsWarningUser;
                         db.TwitchSpider.Update(twitchSpider);
                         db.SaveChanges();
+                        await PublishReconcileRequestedAsync(twitchSpider.UserId, "warning_changed");
 
                         await button.SendConfirmAsync($"已切換 `{twitchSpider.UserName}` 為 `" + (twitchSpider.IsWarningUser ? "警告" : "普通") + "` 狀態", true, true);
                     }
@@ -161,7 +165,6 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             };
         }
 
-        [RequireGuildMemberCount(200)]
         [CommandSummary("新增 Twitch 頻道爬蟲\n" +
            "伺服器需大於 200 人才可使用\n" +
            "未來會根據情況增減可新增的頻道數量\n" +
@@ -188,6 +191,32 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
 
             using (var db = _dbService.GetDbContext())
             {
+                bool hasGeneralEligibility = Context.User.Id == Bot.ApplicatonOwner.Id ||
+                    DiscordStreamNotifyBot.Utility.OfficialGuildContains(Context.Guild.Id) ||
+                    Context.Guild.MemberCount >= 200;
+                bool hasOAuthEligibility = await db.TwitchBroadcasterAuthorization.AsNoTracking().AnyAsync(x =>
+                    x.RevokedAt == null &&
+                    x.ClientId == _botConfig.TwitchClientId &&
+                    x.DiscordUserId == Context.User.Id &&
+                    x.TwitchUserId == userData.Id);
+                if (!hasGeneralEligibility && !hasOAuthEligibility)
+                {
+                    await Context.Interaction.SendErrorAsync("此伺服器不可使用本指令，指令要求伺服器人數至少 `200` 人\n" +
+                        "若已連結 Twitch，只有授權者本人新增自己的 Twitch 頻道時可忽略人數限制\n" +
+                        $"目前 Bot 所取得的伺服器人數: `{Context.Guild.MemberCount}` 人\n" +
+                        $"由於快取的關係，可能會遇到伺服器人數錯誤的問題\n" +
+                        $"如有任何需要請聯繫 Bot 擁有者處理 (你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息))", true).ConfigureAwait(false);
+                    return;
+                }
+
+                bool usedOAuthBypass = !hasGeneralEligibility && hasOAuthEligibility;
+                var guildConfig = db.GuildConfig.AsNoTracking().FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
+                int maxCount = guildConfig != null && guildConfig.MaxTwitchSpiderCount > 0
+                    ? (int)guildConfig.MaxTwitchSpiderCount
+                    : 3;
+                bool reachedSpiderLimit = !DiscordStreamNotifyBot.Utility.OfficialGuildContains(Context.Guild.Id) &&
+                    db.TwitchSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= maxCount;
+
                 if (db.TwitchSpider.Any((x) => x.UserId == userData.Id))
                 {
                     var item = db.TwitchSpider.FirstOrDefault((x) => x.UserId == userData.Id);
@@ -208,12 +237,21 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                         }
                         else
                         {
+                            if (reachedSpiderLimit)
+                            {
+                                await Context.Interaction.SendErrorAsync(
+                                    $"此伺服器已設定 {maxCount} 個 Twitch 爬蟲頻道，無法新增此爬蟲", true)
+                                    .ConfigureAwait(false);
+                                return;
+                            }
+
                             isGuildExist = false;
 
                             ulong originalGuildId = item.GuildId;
                             item.GuildId = Context.Guild.Id;
                             db.TwitchSpider.Update(item);
                             db.SaveChanges();
+                            await PublishReconcileRequestedAsync(item.UserId, "spider_owner_changed");
 
                             try
                             {
@@ -235,13 +273,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                     return;
                 }
 
-                // 取得最大數量設定
-                var guildConfig = db.GuildConfig.AsNoTracking().FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
-                int maxCount = 3;
-                if (guildConfig != null && guildConfig.MaxTwitchSpiderCount > 0)
-                    maxCount = (int)guildConfig.MaxTwitchSpiderCount;
-
-                if (!DiscordStreamNotifyBot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitchSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= maxCount)
+                if (reachedSpiderLimit)
                 {
                     await Context.Interaction.SendErrorAsync($"此伺服器已設定 {maxCount} 個 Twitch 爬蟲頻道，請移除後再試\n" +
                         $"如有特殊需求請向 Bot 擁有者詢問\n" +
@@ -264,6 +296,8 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
 
                 db.TwitchSpider.Add(spider);
                 db.SaveChanges();
+                await PublishReconcileRequestedAsync(spider.UserId,
+                    usedOAuthBypass ? "oauth_bypass_addition" : "spider_added");
 
                 await Context.Interaction.SendConfirmAsync($"已將 `{userData.DisplayName}` 加入到爬蟲清單內\n" +
                     $"請到通知頻道內使用 `/twitch add {userData.Login}` 來開啟通知", true, true).ConfigureAwait(false);
@@ -275,7 +309,8 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                             .WithTitle("已新增 Twitch 頻道爬蟲")
                             .AddField("頻道", Format.Url(userData.DisplayName, $"https://twitch.tv/{userData.Login}"), false)
                             .AddField("伺服器", spider.GuildId != 0 ? $"{Context.Guild.Name} ({Context.Guild.Id})" : "擁有者", false)
-                            .AddField("執行者", $"{Context.User} ({Context.User.Id})", false)
+                            .AddField("執行者", $"{Context.User.GlobalName} ({Context.User} / {Context.User.Id})", false)
+                            .AddField("是否使用 OAuth 忽略人數要求", usedOAuthBypass ? "是" : "否", false)
                             .AddField("頻道狀態", "普通", true)
                             .AddField("頻道錄影", "關閉", true).Build(),
                         components: new ComponentBuilder()
@@ -313,6 +348,8 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                 db.TwitchSpider.Remove(twitchSpider);
                 db.SaveChanges();
             }
+
+            await PublishReconcileRequestedAsync(twitchId, "spider_removed");
 
             await Context.Interaction.SendConfirmAsync($"已移除 {twitchSpider?.UserName}", true).ConfigureAwait(false);
 
@@ -381,6 +418,13 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                         .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道");
                 }, list.Count(), 10, false, true).ConfigureAwait(false);
             }
+        }
+
+        private static Task PublishReconcileRequestedAsync(string twitchUserId, string reason)
+        {
+            return Bot.RedisSub.PublishAsync(
+                new RedisChannel(RedisChannels.Twitch.ReconcileRequested, RedisChannel.PatternMode.Literal),
+                JsonConvert.SerializeObject(new { TwitchUserId = twitchUserId, Reason = reason }));
         }
     }
 }

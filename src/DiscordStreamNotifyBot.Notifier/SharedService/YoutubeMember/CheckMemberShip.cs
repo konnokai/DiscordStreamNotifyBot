@@ -126,7 +126,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             await RemoveMemberCheckFromDbAsync(member.UserId);
 
                             await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "未登入");
-                            await member.UserId.SendErrorMessageAsync(_client, $"未登入，請至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入並再次於伺服器執行 `/member check`", logChannel);
+                            await member.UserId.SendErrorMessageAsync(_client, $"未登入，請至 {Format.Url("此網站", "https://stream-bot.konnokai.me/")} 登入並再次於伺服器執行 `/member check`", logChannel);
 
                             continue;
                         }
@@ -145,7 +145,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                                 await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "無法重複驗證");
                                 await member.UserId.SendErrorMessageAsync(_client, $"無法重新刷新您的授權\n" +
                                     $"請到 {Format.Url("Google 安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                    $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
+                                    $"至 {Format.Url("此網站", "https://stream-bot.konnokai.me/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
 
                                 continue;
                             }
@@ -161,7 +161,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
                             await member.UserId.SendErrorMessageAsync(_client, $"您的 Google 認證已失效\n" +
                                 $"請到 {Format.Url("Google 安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
+                                $"至 {Format.Url("此網站", "https://stream-bot.konnokai.me/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
 
                             continue;
                         }
@@ -284,7 +284,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                                     await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "認證過期");
                                     await member.UserId.SendErrorMessageAsync(_client, $"您的 Google 認證已失效\n" +
                                         $"請到 {Format.Url("Google 安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
+                                        $"至 {Format.Url("此網站", "https://stream-bot.konnokai.me/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
                                     continue;
                                 }
                                 else if (ex.Message.ToLower().Contains("the added or subtracted value results in an un-representable"))
@@ -297,7 +297,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                                     await logChannel.SendErrorMessageAsync(_client, member.UserId, guildYoutubeMemberConfig.MemberCheckChannelTitle, "時間加減錯誤");
                                     await member.UserId.SendErrorMessageAsync(_client, $"遇到已知但尚未處理的問題，您可以重新嘗試登入\n" +
                                         $"請到 {Format.Url("Google 安全性", "https://myaccount.google.com/permissions?continue=https%3A%2F%2Fmyaccount.google.com%2Fsecurity")} 移除 `直播小幫手會限確認` 的應用程式存取權後\n" +
-                                        $"至 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
+                                        $"至 {Format.Url("此網站", "https://stream-bot.konnokai.me/")} 重新登入並再次於伺服器執行 `/member check`", logChannel);
                                     continue;
                                 }
                                 else if (ex.Message.ToLower().Contains("500") || ex.Message.ToLower().Contains("badgateway") || ex.Message.ToLower().Contains("internalservererror"))

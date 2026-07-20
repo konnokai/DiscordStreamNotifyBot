@@ -1,6 +1,7 @@
 using DiscordStreamNotifyBot.Command;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
 using System.Collections.Concurrent;
 
 namespace DiscordStreamNotifyBot.SharedService.Cluster
@@ -21,15 +22,6 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
     {
         /// <summary>跨 shard 查詢類型。</summary>
         public enum ClusterQueryType { UserInfo, GuildInfo, GetInviteUrl }
-
-        /// <summary>單一伺服器的快照（B1，寫入 <see cref="RedisChannels.SharedState.GuildSnapshotHash"/>）。</summary>
-        public class GuildSnapshot
-        {
-            public ulong Id { get; set; }
-            public string Name { get; set; }
-            public ulong OwnerId { get; set; }
-            public int MemberCount { get; set; }
-        }
 
         private class QueryRequest
         {
@@ -100,7 +92,15 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
                     .Select((g) => new GuildSnapshot { Id = g.Id, Name = g.Name, OwnerId = g.OwnerId, MemberCount = g.MemberCount })
                     .ToList();
 
-                await Bot.RedisDb.HashSetAsync(RedisChannels.SharedState.GuildSnapshotHash, Bot.ShardId, JsonConvert.SerializeObject(list));
+                var envelope = new GuildSnapshotEnvelope
+                {
+                    ShardId = Bot.ShardId,
+                    UpdatedAtUtc = DateTime.UtcNow,
+                    IsConnected = client.ConnectionState == ConnectionState.Connected,
+                    Guilds = list
+                };
+
+                await Bot.RedisDb.HashSetAsync(RedisChannels.SharedState.GuildSnapshotHash, Bot.ShardId, JsonConvert.SerializeObject(envelope));
             }
             catch (Exception ex)
             {
@@ -129,7 +129,7 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
                     if (!int.TryParse(entry.Name, out int sid) || sid == Bot.ShardId || sid >= total)
                         continue; // 本 shard 用即時資料；跳過縮容殘留
 
-                    var list = JsonConvert.DeserializeObject<List<GuildSnapshot>>(entry.Value);
+                    var list = DeserializeGuildSnapshot(entry.Value);
                     if (list != null)
                         result.AddRange(list);
                 }
@@ -140,6 +140,18 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
             }
 
             return result;
+        }
+
+        private static List<GuildSnapshot> DeserializeGuildSnapshot(string json)
+        {
+            var token = Newtonsoft.Json.Linq.JToken.Parse(json);
+            if (token.Type == Newtonsoft.Json.Linq.JTokenType.Array)
+                return token.ToObject<List<GuildSnapshot>>();
+
+            if (token.Type == Newtonsoft.Json.Linq.JTokenType.Object)
+                return token.ToObject<GuildSnapshotEnvelope>()?.Guilds;
+
+            return null;
         }
 
         /// <summary>

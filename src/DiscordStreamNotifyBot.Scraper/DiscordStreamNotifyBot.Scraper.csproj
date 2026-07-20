@@ -17,6 +17,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Using Include="Google.Apis.YouTube.v3.Data" />
 		<Using Include="Microsoft.EntityFrameworkCore" />
 		<Using Include="Newtonsoft.Json" />

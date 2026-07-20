@@ -42,9 +42,15 @@ namespace DiscordStreamNotifyBot.Shared
         public static class Twitch
         {
             public const string Record = "twitch.record";
+            public const string StreamOnline = "twitch:stream_online";
             public const string ChannelUpdate = "twitch:channel_update";
             public const string StreamOffline = "twitch:stream_offline";
+            public const string AuthorizationChanged = "twitch:authorization_changed";
+            public const string ReconcileRequested = "twitch:reconcile_requested";
             public const string WebhookSecret = "twitch:webhook_secret";
+
+            public static string StreamData(string userId) => $"twitch:stream_data:{userId}";
+            public static string StreamNotification(string streamId) => $"twitch:stream_notified:{streamId}";
         }
 
         /// <summary>TwitCasting IPC 頻道（與後端 / 錄影工具共用契約）。</summary>

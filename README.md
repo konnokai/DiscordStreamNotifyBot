@@ -1,11 +1,11 @@
 # 直播小幫手 [點我邀請到你的 Discord 內](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
 
-![Discord-Stream-Notify-Bot](https://socialify.git.ci/konnokai/Discord-Stream-Notify-Bot/image?description=1&descriptionEditable=%E4%B8%80%E5%80%8B%E5%8F%AF%E4%BB%A5%E8%AE%93%E4%BD%A0%E5%9C%A8%20Discord%20%E4%B8%8A%E9%80%9A%E7%9F%A5%20Vtuber%20%E7%9B%B4%E6%92%AD%E7%9A%84%E5%B0%8F%E5%B9%AB%E6%89%8B&font=Inter&language=1&name=1&owner=1&pattern=Plus&stargazers=1&theme=Auto)
+![DiscordStreamNotifyBot](https://socialify.git.ci/konnokai/DiscordStreamNotifyBot/image?description=1&descriptionEditable=%E4%B8%80%E5%80%8B%E5%8F%AF%E4%BB%A5%E8%AE%93%E4%BD%A0%E5%9C%A8%20Discord%20%E4%B8%8A%E9%80%9A%E7%9F%A5%20Vtuber%20%E7%9B%B4%E6%92%AD%E7%9A%84%E5%B0%8F%E5%B9%AB%E6%89%8B&font=Inter&language=1&name=1&owner=1&pattern=Plus&stargazers=1&theme=Auto)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonnokai%2FDiscordStreamNotifyBot.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonnokai%2FDiscordStreamNotifyBot?ref=badge_shield)
 
-[![Website dcbot.konnokai.me](https://img.shields.io/website-up-down-green-red/http/dcbot.konnokai.me/stream.svg)](http://dcbot.konnokai.me/stream)
-[![GitHub commits](https://badgen.net/github/commits/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/commit/)
-[![GitHub latest commit](https://badgen.net/github/last-commit/konnokai/Discord-Stream-Notify-Bot)](https://GitHub.com/konnokai/Discord-Stream-Notify-Bot/commit/)
+[![Website stream-bot.konnokai.me](https://img.shields.io/website-up-down-green-red/https/stream-bot.konnokai.me.svg)](https://stream-bot.konnokai.me/)
+[![GitHub commits](https://badgen.net/github/commits/konnokai/DiscordStreamNotifyBot)](https://GitHub.com/konnokai/DiscordStreamNotifyBot/commit/)
+[![GitHub latest commit](https://badgen.net/github/last-commit/konnokai/DiscordStreamNotifyBot)](https://GitHub.com/konnokai/DiscordStreamNotifyBot/commit/)
 
 自行運行所需環境與參數
 -
@@ -33,14 +33,14 @@
 
 \*\* 未設定的話則僅該功能無法使用，在使用該功能的時會有錯誤提示
 
-建置&測試環境
+建置 & 測試環境
 - 
-- Visual Studio 2022
+- Visual Studio 2026
 - .NET SDK 8.0
-- Windows 10 & 11 Pro
-- Debian 11
-- MySQL 8.0
-- Redis 7.0.4
+- Windows 11 Pro
+- Debian 13
+- MariaDB 10.11
+- Redis 8.4.0
 
 參考專案
 -
@@ -53,7 +53,7 @@
 
 授權
 -
-- 此專案採用 [MIT](https://github.com/konnokai/Discord-Stream-Notify-Bot/blob/master/LICENSE.txt) 授權
+- 此專案採用 [MIT](https://github.com/konnokai/DiscordStreamNotifyBot/blob/master/LICENSE.txt) 授權
 
 
 ## License

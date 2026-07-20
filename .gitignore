@@ -372,7 +372,7 @@ bot_config_example.json
 # Docker Compose 部署密鑰（範例 .env.example 才進版控，見計畫 §6）
 .env
 
-# 參考用外部專案（非本專案程式碼，見 CLAUDE.md）
+# 參考用外部專案（非本專案程式碼，見 AGENTS.md）
 /nadekobot/
 
 # graphify

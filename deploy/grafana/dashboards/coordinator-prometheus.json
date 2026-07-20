@@ -3,7 +3,7 @@
     {
       "name": "DS_PROMETHEUS",
       "label": "Prometheus",
-      "description": "請選擇抓取 Coordinator /metrics 的 Prometheus datasource。",
+      "description": "請選擇抓取 Coordinator、Scraper 與 Backend 指標的 Prometheus datasource。",
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
@@ -27,6 +27,18 @@
       "id": "timeseries",
       "name": "Time series",
       "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "bargauge",
+      "name": "Bar gauge",
+      "version": ""
     }
   ],
   "annotations": {
@@ -45,7 +57,7 @@
       }
     ]
   },
-  "description": "直播小幫手 Coordinator、Scraper leader、Notifier shard 與 Redis Streams consumer group 監控。",
+  "description": "直播小幫手整體服務監控：Coordinator 叢集與 Redis Streams、Scraper Twitch spider/EventSub/reconcile/cleanup、Backend OAuth/token/Webhook。所有 PromQL 只依固定低基數 label 聚合。",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -55,7 +67,7 @@
   "panels": [
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "Coordinator metrics server 是否可被 Prometheus 正常抓取。",
+      "description": "Prometheus 是否可正常抓取 Coordinator endpoint。",
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -66,14 +78,105 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
       "id": 1,
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
       "targets": [
-        { "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max(discord_stream_notify_coordinator_up{job=~\"$job\", instance=~\"$instance\"})", "instant": true, "legendFormat": "Coordinator", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "max(up{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"})", "instant": true, "legendFormat": "Coordinator", "range": false, "refId": "A" }
       ],
-      "title": "Coordinator 狀態",
+      "title": "Coordinator Endpoint",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Prometheus 是否可正常抓取 Scraper endpoint。",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "color": "red", "text": "離線" }, "1": { "color": "green", "text": "在線" } }, "type": "value" }
+          ],
+          "noValue": "無資料",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "max(up{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "Scraper", "range": false, "refId": "A" }
+      ],
+      "title": "Scraper Endpoint",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Prometheus 是否可正常抓取 Backend endpoint。",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "color": "red", "text": "離線" }, "1": { "color": "green", "text": "在線" } }, "type": "value" }
+          ],
+          "noValue": "無資料",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "max(up{job=~\"$backend_job\", instance=~\"$backend_instance\"})", "instant": true, "legendFormat": "Backend", "range": false, "refId": "A" }
+      ],
+      "title": "Backend Endpoint",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "id": 100,
+      "panels": [],
+      "title": "Coordinator 與 Redis Streams",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "id": 4,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "max by (role) (discord_stream_notify_cluster_alive_instances{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"})", "legendFormat": "{{role}}", "range": true, "refId": "A" }
+      ],
+      "title": "各角色存活數",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "TOTAL_SHARDS 減去存活 Notifier 數。0 代表 shard 完整。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "無資料",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 5 },
+      "id": 5,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "max(discord_stream_notify_cluster_total_shards{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"}) - max(discord_stream_notify_cluster_alive_instances{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\", role=\"notifier\"})", "instant": true, "legendFormat": "缺少 shard", "range": false, "refId": "A" }
+      ],
+      "title": "缺少 Notifier Shard",
       "type": "stat"
     },
     {
@@ -81,259 +184,625 @@
       "description": "Scraper leader 鎖是否有持有者。",
       "fieldConfig": {
         "defaults": {
-          "mappings": [{ "options": { "0": { "color": "red", "text": "無 Leader" }, "1": { "color": "green", "text": "正常" } }, "type": "value" }],
-          "noValue": "無資料",
+          "mappings": [
+            { "options": { "0": { "color": "red", "text": "無 Leader" }, "1": { "color": "green", "text": "正常" } }, "type": "value" }
+          ],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
-      "id": 2,
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 5 },
+      "id": 6,
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max(discord_stream_notify_scraper_leader_present{job=~\"$job\", instance=~\"$instance\"})", "instant": true, "legendFormat": "Leader", "range": false, "refId": "A" }],
+      "targets": [
+        { "editorMode": "code", "expr": "max(discord_stream_notify_scraper_leader_present{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"})", "instant": true, "legendFormat": "Leader", "range": false, "refId": "A" }
+      ],
       "title": "Scraper Leader",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "目前有心跳的 Notifier instance 數。應等於 TOTAL_SHARDS。",
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "無資料", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 1 }, { "color": "green", "value": 2 }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
-      "id": 3,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max(discord_stream_notify_cluster_alive_instances{job=~\"$job\", instance=~\"$instance\", role=\"notifier\"})", "instant": true, "legendFormat": "存活 Notifier", "range": false, "refId": "A" }],
-      "title": "存活 Notifier",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "Coordinator 公告的 Discord shard 總數。",
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "無資料", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
-      "id": 4,
-      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max(discord_stream_notify_cluster_total_shards{job=~\"$job\", instance=~\"$instance\"})", "instant": true, "legendFormat": "TOTAL_SHARDS", "range": false, "refId": "A" }],
-      "title": "TOTAL_SHARDS",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "所有 consumer group 尚未 ACK 的訊息總數。",
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "0", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 100 }, { "color": "red", "value": 500 }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
-      "id": 5,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "sum(discord_stream_notify_bus_pending_messages{job=~\"$job\", instance=~\"$instance\", group=~\"$group\"})", "instant": true, "legendFormat": "Pending", "range": false, "refId": "A" }],
-      "title": "匯流排總 Pending",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "符合 no_consumer 或 backlog 條件的 group / reason 組合數。",
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "0", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
-      "id": 6,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "sum(discord_stream_notify_bus_group_unhealthy{job=~\"$job\", instance=~\"$instance\", group=~\"$group\"})", "instant": true, "legendFormat": "異常", "range": false, "refId": "A" }],
-      "title": "Group 異常數",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
-      "id": 20,
-      "panels": [],
-      "title": "叢集狀態",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Instance 數", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 12, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } }, "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
       "id": 7,
-      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max by (role) (discord_stream_notify_cluster_alive_instances{job=~\"$job\", instance=~\"$instance\"})", "legendFormat": "{{role}}", "range": true, "refId": "A" }],
-      "title": "各角色存活數",
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "max by (group) (discord_stream_notify_bus_pending_messages{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\", group=~\"$group\"})", "legendFormat": "{{group}}", "range": true, "refId": "A" }
+      ],
+      "title": "各 Consumer Group Pending",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "最後一次完整完成 Redis 監控迴圈距今秒數；持續上升代表 Coordinator 或 Redis 查詢異常。",
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "無成功紀錄", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 30 }, { "color": "red", "value": 90 }] }, "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 5 },
+      "description": "目前符合 no_consumer 或 backlog 條件的 group / reason 組合數。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 13 },
       "id": 8,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "time() - max(discord_stream_notify_coordinator_last_success_unixtime{job=~\"$job\", instance=~\"$instance\"})", "instant": true, "legendFormat": "距今", "range": false, "refId": "A" }],
-      "title": "最後成功監控距今",
+      "targets": [
+        { "editorMode": "code", "expr": "sum(discord_stream_notify_bus_group_unhealthy{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\", group=~\"$group\"})", "instant": true, "legendFormat": "異常", "range": false, "refId": "A" }
+      ],
+      "title": "Consumer Group 異常數",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "存活 Notifier 與 TOTAL_SHARDS 的差值。0 代表 shard 數量完整。",
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "無資料", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 0 }, { "color": "red", "value": 1 }] } }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 5 },
+      "description": "Coordinator 監控迴圈成功與失敗速率。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 13 },
       "id": 9,
-      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max(discord_stream_notify_cluster_total_shards{job=~\"$job\", instance=~\"$instance\"}) - max(discord_stream_notify_cluster_alive_instances{job=~\"$job\", instance=~\"$instance\", role=\"notifier\"})", "instant": true, "legendFormat": "缺少 shard", "range": false, "refId": "A" }],
-      "title": "缺少 Notifier Shard",
-      "type": "stat"
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (result) (rate(discord_stream_notify_coordinator_monitor_cycles_total{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"}[$__rate_interval]))", "legendFormat": "{{result}}", "range": true, "refId": "A" }
+      ],
+      "title": "Coordinator 監控迴圈",
+      "type": "timeseries"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
-      "id": 21,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "id": 101,
       "panels": [],
-      "title": "Redis Streams 匯流排",
+      "title": "OAuth 與 Token",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "Pending", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 15, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "line" } }, "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 500 }] } }, "overrides": [] },
-      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 14 },
+      "description": "Google 與 Twitch OAuth 嘗試依 provider/result 聚合，不包含使用者識別碼。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 22 },
       "id": 10,
-      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max by (group) (discord_stream_notify_bus_pending_messages{job=~\"$job\", instance=~\"$instance\", group=~\"$group\"})", "legendFormat": "{{group}}", "range": true, "refId": "A" }],
-      "title": "各 Group Pending",
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (provider, result) (rate(discord_stream_notify_oauth_attempts_total{job=~\"$backend_job\", instance=~\"$backend_instance\"}[$__rate_interval]))", "legendFormat": "{{provider}} / {{result}}", "range": true, "refId": "A" }
+      ],
+      "title": "Google / Twitch OAuth 成功與失敗率",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "無資料", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } }, "overrides": [] },
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 14 },
+      "description": "各 provider 的有效、撤銷、失效等固定狀態帳號數。",
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 8, "y": 22 },
       "id": 11,
-      "options": { "displayMode": "gradient", "maxVizHeight": 300, "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max by (group) (discord_stream_notify_bus_consumers{job=~\"$job\", instance=~\"$instance\", group=~\"$group\"})", "instant": true, "legendFormat": "{{group}}", "range": false, "refId": "A" }],
-      "title": "各 Group Consumer 數",
+      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (provider, status) (discord_stream_notify_oauth_linked_accounts{job=~\"$backend_job\", instance=~\"$backend_instance\"})", "instant": true, "legendFormat": "{{provider}} / {{status}}", "range": false, "refId": "A" }
+      ],
+      "title": "OAuth 連結帳號狀態",
       "type": "bargauge"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "只列出目前異常的 group。reason=no_consumer 代表無消費者；backlog 代表 pending 已達 500。",
-      "fieldConfig": { "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "color-background" }, "inspect": false }, "mappings": [{ "options": { "1": { "color": "red", "text": "異常" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }, "overrides": [] },
-      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 23 },
+      "description": "Token validation 與 refresh 的非成功結果速率。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 22 },
       "id": 12,
-      "options": { "cellHeight": "sm", "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [] },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max by (group, reason) (discord_stream_notify_bus_group_unhealthy{job=~\"$job\", instance=~\"$instance\", group=~\"$group\"}) == 1", "format": "table", "instant": true, "legendFormat": "{{group}} {{reason}}", "range": false, "refId": "A" }],
-      "title": "異常 Consumer Group",
-      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true }, "indexByName": { "group": 0, "reason": 1, "Value": 2 }, "renameByName": { "Value": "狀態", "group": "Consumer Group", "reason": "原因" } } }],
-      "type": "table"
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (provider, result) (rate(discord_stream_notify_oauth_token_validations_total{job=~\"$backend_job\", instance=~\"$backend_instance\", result!=\"success\"}[$__rate_interval]))", "legendFormat": "validate {{provider}} / {{result}}", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "sum by (provider, result) (rate(discord_stream_notify_oauth_token_refreshes_total{job=~\"$backend_job\", instance=~\"$backend_instance\", result!=\"success\"}[$__rate_interval]))", "legendFormat": "refresh {{provider}} / {{result}}", "range": true, "refId": "B" }
+      ],
+      "title": "Token Validation / Refresh 失敗",
+      "type": "timeseries"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
-      "id": 22,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "id": 102,
       "panels": [],
-      "title": "Coordinator 健康度",
+      "title": "Twitch Spider 與 EventSub",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "次 / 秒", "axisPlacement": "auto", "barAlignment": 0, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "none", "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" } }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "ops" }, "overrides": [{ "matcher": { "id": "byName", "options": "failure" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+      "description": "固定模式為 oauth、fallback、warning、unmonitored。",
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 32 },
       "id": 13,
-      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "sum by (result) (rate(discord_stream_notify_coordinator_monitor_cycles_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]))", "legendFormat": "{{result}}", "range": true, "refId": "A" }],
-      "title": "監控迴圈執行率",
+      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (mode) (discord_stream_notify_twitch_spiders{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "{{mode}}", "range": false, "refId": "A" }
+      ],
+      "title": "Twitch Spider Mode 分布",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "EventSub subscription 只依固定 type、mode、status 聚合。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 16, "x": 8, "y": 32 },
+      "id": 14,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (type, mode, status) (discord_stream_notify_twitch_eventsub_subscriptions{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "legendFormat": "{{type}} / {{mode}} / {{status}}", "range": true, "refId": "A" }
+      ],
+      "title": "EventSub Type / Mode / Status",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "最近一小時監控迴圈失敗增加量。",
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 0, "noValue": "0", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 4, "x": 12, "y": 31 },
-      "id": 14,
-      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "sum(increase(discord_stream_notify_coordinator_monitor_cycles_total{job=~\"$job\", instance=~\"$instance\", result=\"failure\"}[1h]))", "instant": true, "legendFormat": "失敗", "range": false, "refId": "A" }],
-      "title": "近一小時錯誤",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "decimals": 1, "noValue": "無資料", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.7 }, { "color": "red", "value": 0.9 }] }, "unit": "percentunit" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 4, "x": 16, "y": 31 },
+      "description": "EventSub 目前總成本與 Twitch 回報的最大總成本。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 41 },
       "id": 15,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "sum(rate(process_cpu_seconds_total{job=~\"$job\", instance=~\"$instance\"}[$__rate_interval]))", "instant": true, "legendFormat": "CPU", "range": false, "refId": "A" }],
-      "title": "Process CPU",
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "max(discord_stream_notify_twitch_eventsub_total_cost{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "legendFormat": "Total Cost", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "max(discord_stream_notify_twitch_eventsub_max_total_cost{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "legendFormat": "Max Cost", "range": true, "refId": "B" }
+      ],
+      "title": "EventSub Cost / Max Cost",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "total cost / max total cost。max cost 為 0 時以 1 避免除以零。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "noValue": "無資料",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 5, "x": 10, "y": 41 },
+      "id": 16,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "100 * max(discord_stream_notify_twitch_eventsub_total_cost{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}) / clamp_min(max(discord_stream_notify_twitch_eventsub_max_total_cost{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}), 1)", "instant": true, "legendFormat": "使用率", "range": false, "refId": "A" }
+      ],
+      "title": "EventSub 成本使用率",
       "type": "stat"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "noValue": "無資料", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 536870912 }, { "color": "red", "value": 1073741824 }] }, "unit": "bytes" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 4, "x": 20, "y": 31 },
-      "id": 16,
-      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
-      "pluginVersion": "10.0.0",
-      "targets": [{ "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }, "editorMode": "code", "expr": "max(process_working_set_bytes{job=~\"$job\", instance=~\"$instance\"})", "instant": true, "legendFormat": "記憶體", "range": false, "refId": "A" }],
-      "title": "Working Set",
+      "description": "最後一次成功 reconcile 距今秒數。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "尚未成功",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 600 }, { "color": "red", "value": 1200 }] },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 4, "x": 15, "y": 41 },
+      "id": 17,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "time() - max(discord_stream_notify_twitch_reconcile_last_success_unixtime{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "距今", "range": false, "refId": "A" }
+      ],
+      "title": "最近 Reconcile 距今",
       "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "最近區間 polling success / 全部 polling。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "noValue": "無資料",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 90 }, { "color": "green", "value": 99 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 5, "x": 19, "y": 41 },
+      "id": 18,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "100 * sum(rate(discord_stream_notify_twitch_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\", result=\"success\"}[$__rate_interval])) / clamp_min(sum(rate(discord_stream_notify_twitch_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__rate_interval])), 0.000001)", "instant": true, "legendFormat": "成功率", "range": false, "refId": "A" }
+      ],
+      "title": "Polling 成功率",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+      "id": 103,
+      "panels": [],
+      "title": "Twitch Webhook",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Webhook 事件依 type/result 聚合；失敗系列可直接觀察錯誤率。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 50 },
+      "id": 19,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (type, result) (rate(discord_stream_notify_twitch_webhook_events_total{job=~\"$backend_job\", instance=~\"$backend_instance\"}[$__rate_interval]))", "legendFormat": "{{type}} / {{result}}", "range": true, "refId": "A" }
+      ],
+      "title": "Webhook 接收率與錯誤率",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "各 Webhook type 最近接收距今秒數。",
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 3600 }, { "color": "red", "value": 21600 }] }, "unit": "s" },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 12, "y": 50 },
+      "id": 20,
+      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
+      "targets": [
+        { "editorMode": "code", "expr": "time() - max by (type) (discord_stream_notify_twitch_webhook_last_received_unixtime{job=~\"$backend_job\", instance=~\"$backend_instance\"})", "instant": true, "legendFormat": "{{type}}", "range": false, "refId": "A" }
+      ],
+      "title": "Webhook 最後接收距今",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Webhook queue 累計 drop。正常值應持續為 0。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 4, "x": 20, "y": 50 },
+      "id": 21,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "sum(discord_stream_notify_twitch_webhook_queue_dropped_total{job=~\"$backend_job\", instance=~\"$backend_instance\"})", "instant": true, "legendFormat": "Dropped", "range": false, "refId": "A" }
+      ],
+      "title": "Webhook Queue Drop",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 59 },
+      "id": 104,
+      "panels": [],
+      "title": "授權變更與 Cleanup",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Scraper 處理授權變更的固定結果分布。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 60 },
+      "id": 22,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (result) (rate(discord_stream_notify_twitch_authorization_changes_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__rate_interval]))", "legendFormat": "{{result}}", "range": true, "refId": "A" }
+      ],
+      "title": "授權狀態變更",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "目前 dashboard 時間範圍內，授權失效後自動移除 spider 的數量。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "bars", "fillOpacity": 65, "lineWidth": 1, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "normal" } },
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 60 },
+      "id": 23,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (reason) (increase(discord_stream_notify_twitch_spider_removals_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__range]))", "legendFormat": "{{reason}}", "range": true, "refId": "A" }
+      ],
+      "title": "授權失效後自動移除 Spider",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "等待 guild snapshot、Notifier 健康或授權狀態確認的 cleanup 數。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 4, "x": 12, "y": 60 },
+      "id": 24,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "sum(discord_stream_notify_twitch_spider_cleanup_pending{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "Pending", "range": false, "refId": "A" }
+      ],
+      "title": "等待 Guild 資格確認",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "直播中或外部狀態不可確認時延後的 EventSub cleanup。",
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] }, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 5, "x": 16, "y": 60 },
+      "id": 25,
+      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (reason) (discord_stream_notify_twitch_eventsub_cleanup_deferred{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "{{reason}}", "range": false, "refId": "A" }
+      ],
+      "title": "延後 EventSub Cleanup",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "使用 Twitch OAuth 豁免 200 人限制新增 spider 的累計次數。",
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "noValue": "0", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 3, "x": 21, "y": 60 },
+      "id": 26,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "sum(discord_stream_notify_twitch_oauth_bypass_additions_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "OAuth 豁免", "range": false, "refId": "A" }
+      ],
+      "title": "OAuth 豁免新增",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 68 },
+      "id": 105,
+      "panels": [],
+      "title": "程序資源",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "三個服務各 instance 的程序 CPU 使用率。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 69 },
+      "id": 27,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (instance) (rate(process_cpu_seconds_total{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"}[$__rate_interval]))", "legendFormat": "Coordinator {{instance}}", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "sum by (instance) (rate(process_cpu_seconds_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__rate_interval]))", "legendFormat": "Scraper {{instance}}", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "sum by (instance) (rate(process_cpu_seconds_total{job=~\"$backend_job\", instance=~\"$backend_instance\"}[$__rate_interval]))", "legendFormat": "Backend {{instance}}", "range": true, "refId": "C" }
+      ],
+      "title": "Process CPU",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "三個服務各 instance 的 working set。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 69 },
+      "id": 28,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "max by (instance) (process_working_set_bytes{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"})", "legendFormat": "Coordinator {{instance}}", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "max by (instance) (process_working_set_bytes{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "legendFormat": "Scraper {{instance}}", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "max by (instance) (process_working_set_bytes{job=~\"$backend_job\", instance=~\"$backend_instance\"})", "legendFormat": "Backend {{instance}}", "range": true, "refId": "C" }
+      ],
+      "title": "Working Set",
+      "type": "timeseries"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["discord-stream-notify-bot", "coordinator", "prometheus"],
+  "tags": [
+    "discord-stream-notify-bot",
+    "prometheus",
+    "coordinator",
+    "scraper",
+    "backend",
+    "oauth",
+    "twitch-eventsub"
+  ],
   "templating": {
     "list": [
       {
         "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
         "hide": 0,
         "includeAll": true,
-        "label": "Prometheus Job",
+        "label": "Coordinator Job",
         "multi": true,
-        "name": "job",
+        "name": "coordinator_job",
         "options": [],
-        "query": { "query": "label_values(discord_stream_notify_coordinator_up, job)", "refId": "PrometheusVariableQueryEditor-Job" },
+        "query": { "query": "label_values(discord_stream_notify_coordinator_up, job)", "refId": "PrometheusVariableQueryEditor-CoordinatorJob" },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query",
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
         "allValue": ".*"
       },
       {
         "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
         "hide": 0,
         "includeAll": true,
         "label": "Coordinator Instance",
         "multi": true,
-        "name": "instance",
+        "name": "coordinator_instance",
         "options": [],
-        "query": { "query": "label_values(discord_stream_notify_coordinator_up{job=~\"$job\"}, instance)", "refId": "PrometheusVariableQueryEditor-Instance" },
+        "query": { "query": "label_values(discord_stream_notify_coordinator_up{job=~\"$coordinator_job\"}, instance)", "refId": "PrometheusVariableQueryEditor-CoordinatorInstance" },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query",
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
         "allValue": ".*"
       },
       {
         "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Scraper Job",
+        "multi": true,
+        "name": "scraper_job",
+        "options": [],
+        "query": { "query": "label_values(discord_stream_notify_twitch_eventsub_total_cost, job)", "refId": "PrometheusVariableQueryEditor-ScraperJob" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Scraper Instance",
+        "multi": true,
+        "name": "scraper_instance",
+        "options": [],
+        "query": { "query": "label_values(discord_stream_notify_twitch_eventsub_total_cost{job=~\"$scraper_job\"}, instance)", "refId": "PrometheusVariableQueryEditor-ScraperInstance" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Backend Job",
+        "multi": true,
+        "name": "backend_job",
+        "options": [],
+        "query": { "query": "label_values(discord_stream_notify_oauth_linked_accounts, job)", "refId": "PrometheusVariableQueryEditor-BackendJob" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Backend Instance",
+        "multi": true,
+        "name": "backend_instance",
+        "options": [],
+        "query": { "query": "label_values(discord_stream_notify_oauth_linked_accounts{job=~\"$backend_job\"}, instance)", "refId": "PrometheusVariableQueryEditor-BackendInstance" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query",
+        "allValue": ".*"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
         "hide": 0,
         "includeAll": true,
         "label": "Consumer Group",
         "multi": true,
         "name": "group",
         "options": [],
-        "query": { "query": "label_values(discord_stream_notify_bus_pending_messages{job=~\"$job\", instance=~\"$instance\"}, group)", "refId": "PrometheusVariableQueryEditor-Group" },
+        "query": { "query": "label_values(discord_stream_notify_bus_pending_messages{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"}, group)", "refId": "PrometheusVariableQueryEditor-Group" },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query",
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
         "allValue": ".*"
       }
     ]
@@ -341,8 +810,8 @@
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "直播小幫手 - Coordinator",
+  "title": "直播小幫手 - 整體服務",
   "uid": "discord-stream-coordinator",
-  "version": 1,
+  "version": 2,
   "weekStart": "monday"
 }

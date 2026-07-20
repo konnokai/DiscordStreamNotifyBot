@@ -1,7 +1,10 @@
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using DiscordStreamNotifyBot.Shared;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
 using TwitchLib.Api.Core.Exceptions;
+using TwitchLib.Api.Helix.Models.EventSub;
 using Clip = TwitchLib.Api.Helix.Models.Clips.GetClips.Clip;
 using Stream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
@@ -20,8 +23,16 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         public bool IsEnable { get; private set; } = true;
         public Lazy<TwitchAPI> TwitchApi { get; }
         public string ApiServerUrl { get; }
+        public string EventSubCallbackUrl { get; }
         public string WebHookSecret { get; private set; }
 
+        private static readonly HttpClient OAuthHttpClient = new();
+        private static readonly Uri TwitchTokenEndpoint = new("https://id.twitch.tv/oauth2/token");
+        private readonly string _twitchClientId;
+        private readonly string _twitchClientSecret;
+        private readonly SemaphoreSlim _appTokenLock = new(1, 1);
+        private string _appAccessToken;
+        private DateTime _appAccessTokenExpiresAtUtc;
         private readonly Regex _userLoginRegex = new(@"twitch.tv/(?<name>[\w\d\-_]+)/?",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -34,15 +45,21 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 return;
             }
 
+            _twitchClientId = botConfig.TwitchClientId;
+            _twitchClientSecret = botConfig.TwitchClientSecret;
+
             try
             {
-                WebHookSecret = Bot.RedisDb.StringGet("twitch:webhook_secret");
+                WebHookSecret = Bot.RedisDb.StringGet(RedisChannels.Twitch.WebhookSecret);
                 if (string.IsNullOrEmpty(WebHookSecret))
                 {
                     Log.Warn("缺少 TwitchWebHookSecret，嘗試重新建立...");
 
-                    WebHookSecret = BotConfig.GenRandomKey(64);
-                    Bot.RedisDb.StringSet("twitch:webhook_secret", WebHookSecret);
+                    var candidate = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
+                    Bot.RedisDb.StringSet(RedisChannels.Twitch.WebhookSecret, candidate, when: When.NotExists);
+                    WebHookSecret = Bot.RedisDb.StringGet(RedisChannels.Twitch.WebhookSecret);
+                    if (string.IsNullOrEmpty(WebHookSecret))
+                        throw new InvalidOperationException("建立 TwitchWebHookSecret 後無法自 Redis 讀回");
                 }
             }
             catch (Exception ex)
@@ -53,6 +70,16 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
 
             ApiServerUrl = botConfig.ApiServerDomain;
+            try
+            {
+                EventSubCallbackUrl = NormalizeEventSubCallbackUrl(ApiServerUrl);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "Twitch EventSub callback URL 設定無效，無法運行 Twitch 類功能");
+                IsEnable = false;
+                return;
+            }
 
             TwitchApi = new(() => new()
             {
@@ -65,6 +92,81 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     }
                 }
             });
+        }
+
+        private static string NormalizeEventSubCallbackUrl(string apiServerUrl)
+        {
+            if (string.IsNullOrWhiteSpace(apiServerUrl))
+                throw new ArgumentException("API server URL 不可為空", nameof(apiServerUrl));
+
+            string value = apiServerUrl.Trim();
+            bool suppliedAbsoluteUri = Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) && !string.IsNullOrEmpty(uri.Host);
+            if (!suppliedAbsoluteUri)
+                Uri.TryCreate($"https://{value.TrimStart('/')}", UriKind.Absolute, out uri);
+
+            if (uri == null || string.IsNullOrEmpty(uri.Host))
+                throw new ArgumentException("API server URL 格式錯誤", nameof(apiServerUrl));
+            if (uri.Scheme == Uri.UriSchemeHttp && !uri.IsLoopback)
+                throw new ArgumentException("非本機 Twitch callback 必須使用 HTTPS", nameof(apiServerUrl));
+
+            var builder = new UriBuilder(uri)
+            {
+                Port = uri.IsDefaultPort ? -1 : uri.Port,
+                Path = "/TwitchWebHooks",
+                Query = string.Empty,
+                Fragment = string.Empty
+            };
+            return builder.Uri.AbsoluteUri.TrimEnd('/');
+        }
+
+        private async Task<string> GetAppAccessTokenAsync()
+        {
+            if (!string.IsNullOrEmpty(_appAccessToken) && DateTime.UtcNow < _appAccessTokenExpiresAtUtc)
+                return _appAccessToken;
+
+            await _appTokenLock.WaitAsync();
+            try
+            {
+                if (!string.IsNullOrEmpty(_appAccessToken) && DateTime.UtcNow < _appAccessTokenExpiresAtUtc)
+                    return _appAccessToken;
+
+                using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["client_id"] = _twitchClientId,
+                    ["client_secret"] = _twitchClientSecret,
+                    ["grant_type"] = "client_credentials"
+                });
+                using var response = await OAuthHttpClient.PostAsync(TwitchTokenEndpoint, content);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+                var tokenResponse = JsonConvert.DeserializeObject<TwitchAppAccessTokenResponse>(json);
+                if (string.IsNullOrEmpty(tokenResponse?.AccessToken))
+                    throw new InvalidOperationException("Twitch App Access Token 回應缺少 access_token");
+
+                _appAccessToken = tokenResponse.AccessToken;
+                _appAccessTokenExpiresAtUtc = DateTime.UtcNow.AddSeconds(Math.Max(0, tokenResponse.ExpiresIn - 60));
+                return _appAccessToken;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "取得 Twitch App Access Token 失敗");
+                throw;
+            }
+            finally
+            {
+                _appTokenLock.Release();
+            }
+        }
+
+        private sealed class TwitchAppAccessTokenResponse
+        {
+            [JsonProperty("access_token")]
+            public string AccessToken { get; set; }
+
+            [JsonProperty("expires_in")]
+            public int ExpiresIn { get; set; }
         }
 
         public string GetUserLoginByUrl(string url)
@@ -104,31 +206,140 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public async Task<bool> CreateEventSubSubscriptionAsync(string broadcasterUserId)
         {
+            var result = await EnsureEventSubSubscriptionsAsync(broadcasterUserId, TwitchEventSubEnsureMode.Fallback);
+            return result.IsSuccess;
+        }
+
+        public async Task<TwitchEventSubEnsureResult> EnsureEventSubSubscriptionsAsync(
+            string broadcasterUserId, TwitchEventSubEnsureMode mode)
+        {
+            if (string.IsNullOrWhiteSpace(broadcasterUserId))
+            {
+                Log.Error("建立 Twitch EventSub 時 broadcaster user ID 不可為空");
+                return new TwitchEventSubEnsureResult { Mode = mode };
+            }
+
+            var current = await GetEventSubSubscriptionsResultAsync(broadcasterUserId);
+            if (!current.IsSuccess)
+                return CreateEnsureFailure(mode, current);
+
+            var desired = mode == TwitchEventSubEnsureMode.PermanentOAuth
+                ? new[] { (Type: "stream.online", Version: "1"), (Type: "channel.update", Version: "2"), (Type: "stream.offline", Version: "1") }
+                : new[] { (Type: "channel.update", Version: "2"), (Type: "stream.offline", Version: "1") };
+            string[] managedTypes = ["stream.online", "channel.update", "stream.offline"];
+            var relevant = current.Subscriptions.Where(x => managedTypes.Contains(x.Type) &&
+                HasBroadcasterCondition(x, broadcasterUserId)).ToArray();
+            var deleteIds = new List<string>();
+            var missing = new List<(string Type, string Version)>();
+
+            foreach (var spec in desired)
+            {
+                var candidates = relevant.Where(x => x.Type == spec.Type).ToArray();
+                var valid = candidates.Where(x => IsExactEventSub(x, spec.Type, spec.Version, broadcasterUserId)).ToArray();
+                if (valid.Length == 0)
+                    missing.Add(spec);
+
+                deleteIds.AddRange(candidates.Where(x => valid.Length == 0 || x.Id != valid[0].Id).Select(x => x.Id));
+            }
+
+            var desiredTypes = desired.Select(x => x.Type).ToHashSet(StringComparer.Ordinal);
+            deleteIds.AddRange(relevant.Where(x => !desiredTypes.Contains(x.Type)).Select(x => x.Id));
+            deleteIds = deleteIds.Distinct(StringComparer.Ordinal).ToList();
+
+            string appAccessToken;
+            int deletedCount = 0;
             try
             {
-                var eventSubList = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: broadcasterUserId);
-
-                if (!eventSubList.Subscriptions.Any((x) => x.Type == "channel.update"))
+                appAccessToken = await GetAppAccessTokenAsync();
+                foreach (string subscriptionId in deleteIds)
                 {
-                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("channel.update", "2", new() { { "broadcaster_user_id", broadcasterUserId } },
-                        EventSubTransportMethod.Webhook, webhookCallback: $"https://{ApiServerUrl}/TwitchWebHooks", webhookSecret: WebHookSecret);
+                    bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
+                        subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
+                    if (!deleted)
+                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID: {subscriptionId}");
+                    deletedCount++;
                 }
-
-                if (!eventSubList.Subscriptions.Any((x) => x.Type == "stream.offline"))
-                {
-                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync("stream.offline", "1", new() { { "broadcaster_user_id", broadcasterUserId } },
-                        EventSubTransportMethod.Webhook, webhookCallback: $"https://{ApiServerUrl}/TwitchWebHooks", webhookSecret: WebHookSecret);
-                }
-
-                return true;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"註冊 {broadcasterUserId} 的 Twitch WebHook 失敗，也許是已經註冊過了?");
+                Log.Error(ex.Demystify(), $"清理 broadcaster {broadcasterUserId} 的 Twitch EventSub 失敗");
+                return new TwitchEventSubEnsureResult
+                {
+                    Mode = mode,
+                    DeletedCount = deletedCount,
+                    Subscriptions = current
+                };
             }
 
-            return false;
+            int createdCount = 0;
+            try
+            {
+                foreach (var spec in missing)
+                {
+                    await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync(
+                        spec.Type, spec.Version, new() { ["broadcaster_user_id"] = broadcasterUserId },
+                        EventSubTransportMethod.Webhook, webhookCallback: EventSubCallbackUrl,
+                        webhookSecret: WebHookSecret, clientId: _twitchClientId, accessToken: appAccessToken);
+                    createdCount++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"建立 broadcaster {broadcasterUserId} 的 Twitch EventSub 失敗");
+                return new TwitchEventSubEnsureResult
+                {
+                    Mode = mode,
+                    CreatedCount = createdCount,
+                    DeletedCount = deletedCount,
+                    Subscriptions = current
+                };
+            }
+
+            var final = await GetEventSubSubscriptionsResultAsync(broadcasterUserId);
+            bool allDesiredEnabled = final.IsSuccess && desired.All(spec => final.Subscriptions.Any(x =>
+                IsExactEventSub(x, spec.Type, spec.Version, broadcasterUserId)));
+            bool permanentCostValid = mode != TwitchEventSubEnsureMode.PermanentOAuth ||
+                desired.All(spec => final.Subscriptions.Any(x =>
+                    IsExpectedEventSubConfiguration(x, spec.Type, spec.Version, broadcasterUserId) && x.Cost == 0));
+            if (final.IsSuccess && !permanentCostValid)
+                Log.Warn($"broadcaster {broadcasterUserId} 的永久 Twitch EventSub 成本不是預期的 0");
+
+            return new TwitchEventSubEnsureResult
+            {
+                IsSuccess = allDesiredEnabled && permanentCostValid,
+                Mode = mode,
+                CreatedCount = createdCount,
+                DeletedCount = deletedCount,
+                IsPermanentCostValid = permanentCostValid,
+                Subscriptions = final
+            };
         }
+
+        private TwitchEventSubEnsureResult CreateEnsureFailure(
+            TwitchEventSubEnsureMode mode, TwitchEventSubSubscriptionsResult subscriptions)
+            => new()
+            {
+                Mode = mode,
+                Subscriptions = subscriptions
+            };
+
+        private bool IsExactEventSub(EventSubSubscription subscription, string type, string version,
+            string broadcasterUserId)
+            => subscription.Status == "enabled" &&
+                IsExpectedEventSubConfiguration(subscription, type, version, broadcasterUserId);
+
+        private bool IsExpectedEventSubConfiguration(EventSubSubscription subscription, string type, string version,
+            string broadcasterUserId)
+            => subscription.Type == type && subscription.Version == version &&
+                HasBroadcasterCondition(subscription, broadcasterUserId) && subscription.Condition.Count == 1 &&
+                subscription.Transport?.Method == "webhook" &&
+                string.Equals(subscription.Transport.Callback?.TrimEnd('/'), EventSubCallbackUrl,
+                    StringComparison.Ordinal);
+
+        private static bool HasBroadcasterCondition(EventSubSubscription subscription, string broadcasterUserId)
+            => subscription.Condition != null &&
+                subscription.Condition.TryGetValue("broadcaster_user_id", out string conditionUserId) &&
+                conditionUserId == broadcasterUserId;
 
         #region TwitchAPI
         public async Task<User> GetUserAsync(string twitchUserId = "", string twitchUserLogin = "")
@@ -230,73 +441,144 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
         }
 
-        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
+        public async Task<TwitchStreamsResult> GetNowStreamsResultAsync(params string[] twitchUserIds)
         {
             try
             {
                 List<Stream> result = new();
+                string appAccessToken = await GetAppAccessTokenAsync();
                 foreach (var item in twitchUserIds.Chunk(100))
                 {
-                    var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(first: 100, userIds: [.. twitchUserIds]);
+                    var streams = await TwitchApi.Value.Helix.Streams.GetStreamsAsync(
+                        first: 100, userIds: [.. item], accessToken: appAccessToken);
                     if (streams.Streams.Length != 0)
                     {
                         result.AddRange(streams.Streams);
                     }
                 }
 
-                return result;
+                return new TwitchStreamsResult { IsSuccess = true, Streams = result };
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
-                return Array.Empty<Stream>();
+                return new TwitchStreamsResult();
             }
         }
 
-        public async Task<IReadOnlyList<TwitchLib.Api.Helix.Models.EventSub.EventSubSubscription>> GetEventSubSubscriptionsAsync(string userId = null)
+        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
+            => (await GetNowStreamsResultAsync(twitchUserIds)).Streams;
+
+        public async Task<TwitchEventSubSubscriptionsResult> GetEventSubSubscriptionsResultAsync(string userId = null)
         {
             try
             {
-                var eventSubList = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: userId);
-                if (eventSubList.Subscriptions.Length != 0)
+                string appAccessToken = await GetAppAccessTokenAsync();
+                string cursor = null;
+                var seenCursors = new HashSet<string>(StringComparer.Ordinal);
+                var subscriptions = new List<EventSubSubscription>();
+                int total = 0, totalCost = 0, maxTotalCost = 0;
+
+                do
                 {
-                    return eventSubList.Subscriptions;
+                    var page = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(
+                        userId: userId, after: cursor, clientId: _twitchClientId, accessToken: appAccessToken);
+                    subscriptions.AddRange(page.Subscriptions ?? Array.Empty<EventSubSubscription>());
+                    total = page.Total;
+                    totalCost = page.TotalCost;
+                    maxTotalCost = page.MaxTotalCost;
+                    cursor = page.Pagination?.Cursor;
+
+                    if (!string.IsNullOrEmpty(cursor) && !seenCursors.Add(cursor))
+                        throw new InvalidOperationException("Twitch EventSub pagination 回傳重複 cursor");
                 }
-                else
+                while (!string.IsNullOrEmpty(cursor));
+
+                return new TwitchEventSubSubscriptionsResult
                 {
-                    return null;
-                }
+                    IsSuccess = true,
+                    Subscriptions = subscriptions,
+                    Total = total,
+                    TotalCost = totalCost,
+                    MaxTotalCost = maxTotalCost
+                };
             }
-            catch (BadRequestException)
+            catch (BadRequestException ex)
             {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {userId}");
-                return null;
+                Log.Error(ex.Demystify(), $"取得 broadcaster {userId} 的 Twitch EventSub 分頁遭 Twitch API 拒絕");
+                return new TwitchEventSubSubscriptionsResult();
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {userId}");
-                return null;
+                Log.Error(ex.Demystify(), $"取得 broadcaster {userId} 的 Twitch EventSub 分頁失敗");
+                return new TwitchEventSubSubscriptionsResult();
+            }
+        }
+
+        public async Task<IReadOnlyList<EventSubSubscription>> GetEventSubSubscriptionsAsync(string userId = null)
+        {
+            var result = await GetEventSubSubscriptionsResultAsync(userId);
+            return result.IsSuccess && result.Subscriptions.Count != 0 ? result.Subscriptions : null;
+        }
+
+        public async Task<TwitchEventSubDeleteResult> DeleteEventSubSubscriptionResultAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                Log.Error("刪除 Twitch EventSub 時 broadcaster user ID 不可為空");
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.ApiFailure };
+            }
+
+            var streams = await GetNowStreamsResultAsync(userId);
+            if (!streams.IsSuccess)
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.ApiFailure };
+            if (streams.Streams.Any(x => x.UserId == userId))
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.DeferredLive };
+
+            var subscriptions = await GetEventSubSubscriptionsResultAsync(userId);
+            if (!subscriptions.IsSuccess)
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.ApiFailure };
+
+            string[] subscriptionIds = subscriptions.Subscriptions.Select(x => x.Id)
+                .Where(x => !string.IsNullOrEmpty(x)).Distinct(StringComparer.Ordinal).ToArray();
+            if (subscriptionIds.Length == 0)
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.NoSubscriptions };
+
+            var deletedIds = new List<string>();
+            try
+            {
+                string appAccessToken = await GetAppAccessTokenAsync();
+                foreach (string subscriptionId in subscriptionIds)
+                {
+                    bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
+                        subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
+                    if (!deleted)
+                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID: {subscriptionId}");
+                    deletedIds.Add(subscriptionId);
+                }
+
+                Log.Info($"已刪除 broadcaster {userId} 的 {deletedIds.Count} 筆 Twitch EventSub");
+                return new TwitchEventSubDeleteResult
+                {
+                    Status = TwitchEventSubDeleteStatus.Deleted,
+                    DeletedSubscriptionIds = deletedIds
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"刪除 broadcaster {userId} 的 Twitch EventSub 失敗");
+                return new TwitchEventSubDeleteResult
+                {
+                    Status = TwitchEventSubDeleteStatus.ApiFailure,
+                    DeletedSubscriptionIds = deletedIds
+                };
             }
         }
 
         public async Task<bool> DeleteEventSubSubscriptionAsync(string userId)
         {
-            try
-            {
-                var list = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(userId: userId);
-                foreach (var item in list.Subscriptions)
-                {
-                    Log.Info($"Delete EventSub: {item.Id} ({item.Type})");
-                    await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(item.Id);
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"Event Delete Error: {userId}");
-                return false;
-            }
+            var result = await DeleteEventSubSubscriptionResultAsync(userId);
+            return result.Status is TwitchEventSubDeleteStatus.Deleted or TwitchEventSubDeleteStatus.NoSubscriptions;
         }
         #endregion
     }

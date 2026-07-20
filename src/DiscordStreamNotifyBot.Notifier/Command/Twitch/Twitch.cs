@@ -2,6 +2,7 @@
 using DiscordStreamNotifyBot.Command.Attribute;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Shared;
 
 namespace DiscordStreamNotifyBot.Command.Twitch
 {
@@ -43,6 +44,7 @@ namespace DiscordStreamNotifyBot.Command.Twitch
 
                 db.TwitchSpider.Add(new TwitchSpider() { UserId = user.Id, GuildId = guildId, UserLogin = user.Login, IsWarningUser = false, UserName = user.DisplayName });
                 await db.SaveChangesAsync();
+                await PublishReconcileRequestedAsync(user.Id, "spider_added");
 
                 await Context.Channel.SendConfirmAsync($"已將 `{user.DisplayName}` (`{user.Login}`) 設定至 `{guildId}`").ConfigureAwait(false);
             }
@@ -66,6 +68,7 @@ namespace DiscordStreamNotifyBot.Command.Twitch
                     twitchSpider.GuildId = guildId;
                     db.TwitchSpider.Update(twitchSpider);
                     await db.SaveChangesAsync();
+                    await PublishReconcileRequestedAsync(twitchSpider.UserId, "spider_owner_changed");
 
                     await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
                 }
@@ -94,6 +97,7 @@ namespace DiscordStreamNotifyBot.Command.Twitch
                     twitchSpider.IsWarningUser = !twitchSpider.IsWarningUser;
                     db.TwitchSpider.Update(twitchSpider);
                     await db.SaveChangesAsync();
+                    await PublishReconcileRequestedAsync(twitchSpider.UserId, "warning_changed");
 
                     await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 為 __" + (twitchSpider.IsWarningUser ? "已" : "未") + "__ 認可頻道").ConfigureAwait(false);
                 }
@@ -121,6 +125,7 @@ namespace DiscordStreamNotifyBot.Command.Twitch
                 {
                     db.TwitchSpider.Remove(twitchSpider);
                     await db.SaveChangesAsync();
+                    await PublishReconcileRequestedAsync(twitchSpider.UserId, "spider_removed");
 
                     await Context.Channel.SendConfirmAsync($"已移除 `{twitchSpider.UserName}` 的爬蟲").ConfigureAwait(false);
                 }
@@ -255,6 +260,13 @@ namespace DiscordStreamNotifyBot.Command.Twitch
                 Log.Error(ex.Demystify(), "TwitchGetLatestVOD Error");
                 await Context.Channel.SendErrorAsync("Error");
             }
+        }
+
+        private static Task PublishReconcileRequestedAsync(string twitchUserId, string reason)
+        {
+            return Bot.RedisSub.PublishAsync(
+                new RedisChannel(RedisChannels.Twitch.ReconcileRequested, RedisChannel.PatternMode.Literal),
+                JsonConvert.SerializeObject(new { TwitchUserId = twitchUserId, Reason = reason }));
         }
     }
 }

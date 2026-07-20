@@ -16,14 +16,16 @@ namespace DiscordStreamNotifyBot.Scraper
     public class ScraperService
     {
         private readonly BotConfig _config;
+        private readonly ScraperMetrics _metrics;
         private readonly ClusterService _cluster;
         private readonly string _instanceId;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _leaderTtl;
 
-        public ScraperService(BotConfig config)
+        public ScraperService(BotConfig config, ScraperMetrics metrics)
         {
             _config = config;
+            _metrics = metrics;
             _cluster = new ClusterService();
             _instanceId = $"{Environment.MachineName}:{Environment.ProcessId}";
             _heartbeatInterval = TimeSpan.FromSeconds(Math.Max(1, config.HeartbeatIntervalSeconds));
@@ -34,6 +36,9 @@ namespace DiscordStreamNotifyBot.Scraper
         /// <returns>程序退出碼：0＝正常關閉；1＝失去 leader（需重啟重新取鎖）。</returns>
         public async Task<int> RunAsync(CancellationToken cancellationToken)
         {
+            await Utility.LoadOfficialGuildListFromRedisAsync();
+            Log.Info($"[Scraper] 官方伺服器白名單已自 Redis 載入（{Utility.OfficialGuildList.Count} 筆）");
+
             // 取得 leader 鎖（叢集唯一），拿不到則待命重試
             await AcquireLeadershipAsync(cancellationToken);
             if (cancellationToken.IsCancellationRequested)
@@ -42,7 +47,7 @@ namespace DiscordStreamNotifyBot.Scraper
             Log.Info($"[Scraper] 已取得 leader 鎖（{_instanceId}）");
 
             // 取得 leader 後才啟動偵測（叢集單例保證：同時只有一個程序在偵測與發布）
-            var detectionHost = new DetectionHost();
+            var detectionHost = new DetectionHost(_metrics);
             detectionHost.Start(_config);
 
             int exitCode = 0;

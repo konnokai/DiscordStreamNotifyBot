@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 **「直播小幫手」(Discord Stream Notify Bot)** — 通知 Discord 伺服器 Vtuber 直播的機器人（YouTube / Twitch / TwitCasting）。Discord.Net、.NET 8.0、MySQL (EF Core + Pomelo)、Redis (StackExchange.Redis)。
 
@@ -10,6 +10,7 @@
 
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
 - **三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）程式碼全數完成（階段 0-7）**，權威設計見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)。Coordinator 已提供 `:9464/metrics` 與可匯入 Grafana dashboard（[監控說明](docs/PROMETHEUS_GRAFANA.md)）。**僅編譯綠燈驗證；§11 執行期正確性 + Docker 實建 image 待測試環境**（本機無 docker）。
+- **Twitch OAuth 零成本 EventSub 三 repo 程式碼已完成**：Backend provider-specific OAuth/token 維護/Webhook/metrics、Frontend 選用 Twitch 綁定與 Cloudflare Pages 單一 SPA（`https://stream-bot.konnokai.me/`）、Bot 永久 0-cost EventSub/fallback polling/安全清理/Scraper `:9465/metrics` 均已實作；權威計畫與尚待部署環境驗證項目見 [docs/TWITCH_OAUTH_EVENTSUB_PLAN.md](docs/TWITCH_OAUTH_EVENTSUB_PLAN.md)。
 - **`claude` 分支 = RabbitMQ 版三層拆分的完整參考實作。只用 `git show claude:<path>` 閱讀收割，永不合併、永不 checkout 到工作樹。**
 - `nadekobot/` = 參考用外部專案（已 gitignore），非本專案程式碼。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
@@ -57,6 +58,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 - **DI 反射自動載入**：實作 `IInteractionService` / `ICommandService` 的類別自動註冊 Singleton（`Interaction|Command/Extensions.cs`），新增服務不需手動登記。
 - DB：`MainDbService.GetDbContext()` 取短生命週期 context（`using var db = ...`），讀取一律 `.AsNoTracking()`。YouTube 影片四表（Holo/Nijisanji/Other/NonApproved）繼承 `Video`，依 videoId 查詢需依序探查四表。
 - 偵測與發送已拆分（計畫階段 3）：偵測（Timer/排程爬取/webhook 訂閱）在 **Scraper** `Detection/`，publish DTO 到 `bot:notify`；發送（`_client.GetGuild` + embed）在 **Notifier** `SharedService/`，消費匯流排後 `DispatchFromBusAsync` 重建 embed。跨層 DTO 在 `Shared/Messages/`。會限**逐使用者驗證**仍留 Notifier（shard 守衛天然分區）；但**會限影片探索**（頻道層級）在 Scraper，log 走 `YoutubeMemberVideoLog` 匯流排。會員重加入即時回補/孤兒身分組對帳需 `EnableGuildMembersIntent`（預設關，未開特權前勿設 true 以免 login 4014）。
+- Twitch 偵測採雙模式：有效 broadcaster OAuth 由 Scraper 永久維持 `stream.online`/`channel.update`/`stream.offline` 三種 EventSub並低頻補償；未授權頻道維持 30 秒 polling、直播期間暫時 update/offline。授權失效時先以 Helix確認離線，直播中禁止刪 EventSub，離線後依 Shared guild snapshot/Notifier健康守衛決定保留或移除 spider；通知設定不隨 spider 自動刪除。
 - **Coordinator**（階段 4）：`CoordinatorService` 心跳/leader 觀察/`TOTAL_SHARDS` 公告/`XINFO GROUPS` pending 監控，不負責重啟（交 Compose）；Prometheus `:9464/metrics` 只輸出監控迴圈快照，scrape 不查 Redis。**跨 shard 指令**（階段 5，計畫 §7）：`Notifier/SharedService/Cluster/ClusterQueryService`（合併快照 + request-reply）+ `AdministrationService` 廣播；`OfficialGuildList` 存 Redis SET；狀態列計數走 `cluster:stats:*` HASH 彙總。部署見根目錄 `Dockerfile`/`docker-compose.yml`（方式 A）。
 
 ## 外部契約（不可片面更改）
@@ -66,7 +68,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 | 分類 | 頻道 |
 |------|------|
 | YouTube | `youtube.startstream` `youtube.endstream` `youtube.addstream` `youtube.deletestream` `youtube.unarchived` `youtube.memberonly` `youtube.record` `youtube.429error` `youtube.pubsub.{CreateOrUpdate,Deleted,NeedRegister}` |
-| Twitch | `twitch.record` `twitch:channel_update` `twitch:stream_offline` |
+| Twitch | `twitch.record` `twitch:stream_online` `twitch:channel_update` `twitch:stream_offline` `twitch:authorization_changed` |
 | TwitCasting | `twitcasting.pubsub.startlive` `twitcasting.record` |
 | 會限 | `member.revokeToken` `member.syncRedisToken` |
 
@@ -87,7 +89,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 
 ## 制度條款
 
-1. 架構或慣例變更，**同一個 commit** 更新 CLAUDE.md 對應段落（尤其「目前狀態」）。
+1. 架構或慣例變更，**同一個 commit** 更新 AGENTS.md 對應段落（尤其「目前狀態」）。
 2. 本檔上限 **150 行**：要加新規則，先刪或合併一條舊的；長內容放 `docs/` 用連結引用。
 3. 狀態判讀的信任順序：**工作樹 > git 歷史 > memory > 文件**。文件與程式碼矛盾時，以程式碼為準並回頭修文件。
 4. 重構每完成一個階段：勾計畫 checkbox + commit + 更新本檔「目前狀態」。進度必須存在 repo，不存在任何 session 的記憶裡。

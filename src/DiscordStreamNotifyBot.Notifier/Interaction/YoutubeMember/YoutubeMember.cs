@@ -44,7 +44,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
                     if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                     {
-                        await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://dcbot.konnokai.me/stream/")} 登入 Discord 以及 Google\n登入完後再輸入一次本指令", true);
+                        await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://stream-bot.konnokai.me/")} 登入 Discord 以及 Google\n登入完後再輸入一次本指令", true);
                         return;
                     }
 

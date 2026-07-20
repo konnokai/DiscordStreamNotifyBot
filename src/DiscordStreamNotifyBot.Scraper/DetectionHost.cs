@@ -20,7 +20,13 @@ namespace DiscordStreamNotifyBot.Scraper
     /// </summary>
     public class DetectionHost
     {
+        private readonly ScraperMetrics _metrics;
         private ServiceProvider _serviceProvider;
+
+        public DetectionHost(ScraperMetrics metrics)
+        {
+            _metrics = metrics;
+        }
 
         /// <summary>初始化靜態相依並啟動偵測服務（建構子內即啟動 Timer 與 Redis 訂閱）。</summary>
         public void Start(BotConfig config)
@@ -34,7 +40,9 @@ namespace DiscordStreamNotifyBot.Scraper
             var services = new ServiceCollection()
                 .AddHttpClient()
                 .AddSingleton(config)
+                .AddSingleton(_metrics)
                 .AddSingleton(BotState.DbService)
+                .AddSingleton<ClusterService>()
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton<Detection.Youtube.YoutubeDetectionService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
