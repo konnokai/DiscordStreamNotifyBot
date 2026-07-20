@@ -355,8 +355,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs": {
-    "mtime": 1784540066.3804424,
-    "ast_hash": "3b01cd668859cda427278cc4bf6c152e",
+    "mtime": 1784546950.5191693,
+    "ast_hash": "003589900e23fcda2d897251c2b3db51",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeDetectionService.Reminder.cs": {
@@ -930,13 +930,13 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1784543941.823368,
-    "ast_hash": "024f640b4273885fad32210063d3e62b",
+    "mtime": 1784546795.9675376,
+    "ast_hash": "388571c90ab3122a30abffd50393cf5e",
     "semantic_hash": ""
   },
   "migrate_AddTwitchBroadcasterAuthorization.sql": {
-    "mtime": 1784544257.0903182,
-    "ast_hash": "6957d0befaab90ab6883fae08a95994f",
+    "mtime": 1784544862.2686558,
+    "ast_hash": "a61dffc00231ed1203c5ad535e97450f",
     "semantic_hash": ""
   }
 }

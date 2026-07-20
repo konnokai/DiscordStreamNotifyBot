@@ -1,7 +1,7 @@
 # Graph Report - DiscordStreamNotifyBot  (2026-07-20)
 
 ## Corpus Check
-- 182 files · ~91,142 words
+- 182 files · ~91,163 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d86294e4`
+- Built from commit: `ea74c48f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -503,13 +503,13 @@ Nodes (5): For /graphify explain, For /graphify path, graphify reference: query,
 Cohesion: 0.44
 Nodes (8): App, BackendMovie, Fmp4, Hls, Llfmp4, Streams, TcBackendStreamData, Webrtc
 
-### Community 87 - "SyncModelDrift"
-Cohesion: 0.33
-Nodes (3): DiscordStreamNotifyBot.Migrations, ModelBuilder, RefactorDbContext
-
 ### Community 88 - ".SendConfirmMessageAsync"
 Cohesion: 0.36
 Nodes (6): IDMChannel, DiscordSocketClient, EmbedBuilder, ITextChannel, IUserMessage, Ext
+
+### Community 89 - "CommandTextEqualityComparer"
+Cohesion: 0.50
+Nodes (3): Migration, MigrationBuilder, AddMaxSpiderCountSettingField
 
 ### Community 91 - "20250320095452_RefactorDbContext.Designer.cs"
 Cohesion: 0.33
@@ -538,10 +538,6 @@ Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify refer
 ### Community 97 - "TwitchSpider"
 Cohesion: 0.50
 Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
-
-### Community 98 - "RecordYoutubeChannel"
-Cohesion: 0.50
-Nodes (3): Migration, MigrationBuilder, AddManualMemberCheckVideoFlag
 
 ### Community 105 - ".LoadInteractionFrom"
 Cohesion: 0.29
@@ -658,6 +654,10 @@ Nodes (3): 13.1 Backend 指標, 13.2 Scraper 指標, 13. Prometheus
 ### Community 145 - "4. 安全刪除狀態機"
 Cohesion: 0.67
 Nodes (3): 4.1 直播中授權失效, 4.2 關台後重新判斷, 4. 安全刪除狀態機
+
+### Community 147 - "20250620094111_AddMaxSpiderCountSettingField.Designer.cs"
+Cohesion: 0.33
+Nodes (3): DiscordStreamNotifyBot.Migrations, ModelBuilder, AddMaxSpiderCountSettingField
 
 ## Knowledge Gaps
 - **267 isolated node(s):** `DiscordStreamNotifyBot.Coordinator`, `net8.0`, `prometheus-net.AspNetCore (8.2.1)`, `Microsoft.NET.Sdk`, `BotPlayingStatus` (+262 more)

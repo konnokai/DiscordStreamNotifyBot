@@ -12681,7 +12681,7 @@
       "label": ".HandleStreamEndedAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L798",
+      "source_location": "L800",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12697,7 +12697,7 @@
       "label": ".ReconcileOfflineStateCoreAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L898",
+      "source_location": "L909",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12713,7 +12713,7 @@
       "label": ".LoadUserStateAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L930",
+      "source_location": "L941",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12729,7 +12729,7 @@
       "label": ".RefreshMetricsAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L939",
+      "source_location": "L950",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12745,7 +12745,7 @@
       "label": ".SetPending()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L983",
+      "source_location": "L994",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12771,7 +12771,7 @@
       "label": ".ClearPending()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L994",
+      "source_location": "L1005",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12787,7 +12787,7 @@
       "label": ".RefreshPendingMetrics()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1001",
+      "source_location": "L1012",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12803,7 +12803,7 @@
       "label": ".CancelOfflineReminder()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1008",
+      "source_location": "L1019",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12819,7 +12819,7 @@
       "label": ".GetUserLock()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1018",
+      "source_location": "L1029",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12835,7 +12835,7 @@
       "label": ".GetStreamStateAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1020",
+      "source_location": "L1031",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12851,7 +12851,7 @@
       "label": ".SetStreamStateAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1034",
+      "source_location": "L1045",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12867,7 +12867,7 @@
       "label": ".IsStreamNotificationPublishedAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1047",
+      "source_location": "L1058",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12883,7 +12883,7 @@
       "label": ".MarkStreamNotificationPublishedAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1060",
+      "source_location": "L1071",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12899,7 +12899,7 @@
       "label": ".CreateTwitchStream()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1074",
+      "source_location": "L1085",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12915,7 +12915,7 @@
       "label": ".IsValidAuthorization()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1086",
+      "source_location": "L1097",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12931,7 +12931,7 @@
       "label": ".HasClientIdMismatch()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1089",
+      "source_location": "L1100",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12947,7 +12947,7 @@
       "label": ".GetAuthorization()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1092",
+      "source_location": "L1103",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12973,7 +12973,7 @@
       "label": ".GetMetricMode()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1096",
+      "source_location": "L1107",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -12999,7 +12999,7 @@
       "label": ".WasLiveWhenAuthorizationRevoked()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1103",
+      "source_location": "L1114",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -13015,7 +13015,7 @@
       "label": ".GetBroadcasterUserId()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1119",
+      "source_location": "L1130",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -13041,7 +13041,7 @@
       "label": ".TryGetMetricType()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1127",
+      "source_location": "L1138",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -13067,7 +13067,7 @@
       "label": ".ParseEventSubStatus()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1146",
+      "source_location": "L1157",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -13093,7 +13093,7 @@
       "label": ".ParseAuthorizationChangeResult()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1163",
+      "source_location": "L1174",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -13119,7 +13119,7 @@
       "label": ".PublishChannelUpdateAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1176",
+      "source_location": "L1187",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -13135,7 +13135,7 @@
       "label": ".RecordTwitchAsync()",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1195",
+      "source_location": "L1206",
       "metadata": {
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
         "scope_chain": [
@@ -13151,7 +13151,7 @@
       "label": "TwitchAuthorizationChangedPayload",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1210",
+      "source_location": "L1221",
       "metadata": {
         "is_nested_type": true,
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
@@ -13168,7 +13168,7 @@
       "label": "TwitchReconcileRequestedPayload",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1216",
+      "source_location": "L1227",
       "metadata": {
         "is_nested_type": true,
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
@@ -13185,7 +13185,7 @@
       "label": "TwitchStreamEventPayload",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1222",
+      "source_location": "L1233",
       "metadata": {
         "is_nested_type": true,
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
@@ -13202,7 +13202,7 @@
       "label": "TwitchUserState",
       "file_type": "code",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1230",
+      "source_location": "L1241",
       "metadata": {
         "is_nested_type": true,
         "namespace": "DiscordStreamNotifyBot.Scraper.Detection.Twitch",
@@ -18151,7 +18151,7 @@
       },
       "_origin": "ast",
       "id": "csharp_namespace:8e6f28ef7053e13d",
-      "community": 87,
+      "community": 147,
       "norm_label": "discordstreamnotifybot.migrations"
     },
     {
@@ -18229,7 +18229,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "migration",
-      "community": 98,
+      "community": 89,
       "norm_label": "migration"
     },
     {
@@ -18453,7 +18453,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_migrations_20250620094111_addmaxspidercountsettingfield",
-      "community": 89,
+      "community": 147,
       "norm_label": "20250620094111_addmaxspidercountsettingfield.cs"
     },
     {
@@ -18693,7 +18693,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_discordstreamnotifybot_shared_migrations_20260709091318_addmanualmembercheckvideoflag",
-      "community": 87,
+      "community": 98,
       "norm_label": "20260709091318_addmanualmembercheckvideoflag.cs"
     },
     {
@@ -24166,7 +24166,7 @@
       "contributor": null,
       "community": 104,
       "norm_label": ".claude/claude.md (graphify trigger)",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude"
     },
     {
       "label": "Knowledge graph (graph.json)",
@@ -51422,7 +51422,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1210",
+      "source_location": "L1221",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchauthorizationchangedpayload",
@@ -51442,7 +51442,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1216",
+      "source_location": "L1227",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchreconcilerequestedpayload",
@@ -51452,7 +51452,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1222",
+      "source_location": "L1233",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchstreameventpayload",
@@ -51462,7 +51462,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1230",
+      "source_location": "L1241",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchuserstate",
@@ -51565,7 +51565,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1008",
+      "source_location": "L1019",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_cancelofflinereminder",
@@ -51575,7 +51575,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L994",
+      "source_location": "L1005",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_clearpending",
@@ -51585,7 +51585,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1074",
+      "source_location": "L1085",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_createtwitchstream",
@@ -51615,7 +51615,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1092",
+      "source_location": "L1103",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getauthorization",
@@ -51625,7 +51625,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1119",
+      "source_location": "L1130",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getbroadcasteruserid",
@@ -51635,7 +51635,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1096",
+      "source_location": "L1107",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getmetricmode",
@@ -51645,7 +51645,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1020",
+      "source_location": "L1031",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getstreamstateasync",
@@ -51655,7 +51655,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1018",
+      "source_location": "L1029",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getuserlock",
@@ -51695,7 +51695,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L798",
+      "source_location": "L800",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
@@ -51735,7 +51735,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1089",
+      "source_location": "L1100",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_hasclientidmismatch",
@@ -51745,7 +51745,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1047",
+      "source_location": "L1058",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_isstreamnotificationpublishedasync",
@@ -51755,7 +51755,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1086",
+      "source_location": "L1097",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_isvalidauthorization",
@@ -51765,7 +51765,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L930",
+      "source_location": "L941",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_loaduserstateasync",
@@ -51785,7 +51785,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1060",
+      "source_location": "L1071",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_markstreamnotificationpublishedasync",
@@ -51795,7 +51795,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1163",
+      "source_location": "L1174",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_parseauthorizationchangeresult",
@@ -51805,7 +51805,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1146",
+      "source_location": "L1157",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_parseeventsubstatus",
@@ -51825,7 +51825,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1176",
+      "source_location": "L1187",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_publishchannelupdateasync",
@@ -51845,7 +51845,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L898",
+      "source_location": "L909",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
@@ -51875,7 +51875,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1195",
+      "source_location": "L1206",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_recordtwitchasync",
@@ -51885,7 +51885,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L939",
+      "source_location": "L950",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
@@ -51895,7 +51895,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1001",
+      "source_location": "L1012",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshpendingmetrics",
@@ -51945,7 +51945,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L983",
+      "source_location": "L994",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_setpending",
@@ -51955,7 +51955,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1034",
+      "source_location": "L1045",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_setstreamstateasync",
@@ -51975,7 +51975,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1127",
+      "source_location": "L1138",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_trygetmetrictype",
@@ -51985,7 +51985,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1103",
+      "source_location": "L1114",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_waslivewhenauthorizationrevoked",
@@ -52051,7 +52051,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1018",
+      "source_location": "L1029",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52237,7 +52237,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1060",
+      "source_location": "L1071",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -52293,7 +52293,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1020",
+      "source_location": "L1031",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52349,7 +52349,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L798",
+      "source_location": "L800",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52377,7 +52377,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1047",
+      "source_location": "L1058",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52391,7 +52391,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L930",
+      "source_location": "L941",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52419,7 +52419,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1060",
+      "source_location": "L1071",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52447,7 +52447,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1176",
+      "source_location": "L1187",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52475,7 +52475,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L898",
+      "source_location": "L909",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52517,7 +52517,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1195",
+      "source_location": "L1206",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52531,7 +52531,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L939",
+      "source_location": "L950",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52587,7 +52587,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1034",
+      "source_location": "L1045",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -52910,7 +52910,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L835",
+      "source_location": "L838",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamstartedasync",
@@ -53066,7 +53066,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1074",
+      "source_location": "L1085",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -53202,7 +53202,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L798",
+      "source_location": "L800",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -53216,7 +53216,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1103",
+      "source_location": "L1114",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -53497,7 +53497,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L930",
+      "source_location": "L941",
       "weight": 1.0,
       "context": "generic_arg",
       "metadata": {
@@ -53511,7 +53511,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L898",
+      "source_location": "L909",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -53584,7 +53584,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L909",
+      "source_location": "L920",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_ensuresubscriptionsasync",
@@ -53642,7 +53642,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L917",
+      "source_location": "L928",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_deletesubscriptionsasync",
@@ -53711,7 +53711,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L924",
+      "source_location": "L935",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_applyrevokedauthorizationguildpolicyasync",
@@ -53849,7 +53849,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L777",
+      "source_location": "L778",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_scheduleofflinecleanup",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
@@ -53860,7 +53860,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L817",
+      "source_location": "L820",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getstreamstateasync",
@@ -53871,7 +53871,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L803",
+      "source_location": "L806",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getuserlock",
@@ -53882,7 +53882,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L818",
+      "source_location": "L821",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_loaduserstateasync",
@@ -53893,7 +53893,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L820",
+      "source_location": "L823",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
@@ -53904,7 +53904,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L810",
+      "source_location": "L813",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_setpending",
@@ -53916,7 +53916,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L845",
+      "source_location": "L856",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_shared_log_log_warn"
@@ -53927,7 +53927,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L874",
+      "source_location": "L885",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_shared_notificationbus_discordstreamnotifybot_shared_notificationbus_publishasync"
@@ -53938,7 +53938,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L850",
+      "source_location": "L861",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_shared_sharedservice_twitch_twitchapiservice_discordstreamnotifybot_sharedservice_twitch_twitchapiservice_getclipsasync"
@@ -53949,7 +53949,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L842",
+      "source_location": "L853",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_shared_sharedservice_twitch_twitchapiservice_discordstreamnotifybot_sharedservice_twitch_twitchapiservice_getlatestvodasync"
@@ -53960,7 +53960,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L807",
+      "source_location": "L810",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_shared_sharedservice_twitch_twitchapiservice_discordstreamnotifybot_sharedservice_twitch_twitchapiservice_getnowstreamsresultasync"
@@ -53971,7 +53971,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L851",
+      "source_location": "L862",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_handlestreamendedasync",
       "target": "src_discordstreamnotifybot_shared_sharedservice_twitch_twitchapiservice_discordstreamnotifybot_sharedservice_twitch_twitchapiservice_parsetotimespan"
@@ -53981,7 +53981,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L913",
+      "source_location": "L924",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_clearpending",
@@ -53992,7 +53992,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L901",
+      "source_location": "L912",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_hasclientidmismatch",
@@ -54003,7 +54003,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L908",
+      "source_location": "L919",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_isvalidauthorization",
@@ -54014,7 +54014,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L903",
+      "source_location": "L914",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_reconcileofflinestatecoreasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_setpending",
@@ -54026,7 +54026,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L932",
+      "source_location": "L943",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_loaduserstateasync",
       "target": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice_getdbcontext"
@@ -54036,7 +54036,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L951",
+      "source_location": "L962",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getauthorization",
@@ -54047,7 +54047,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L970",
+      "source_location": "L981",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getbroadcasteruserid",
@@ -54058,7 +54058,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L951",
+      "source_location": "L962",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getmetricmode",
@@ -54069,7 +54069,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L974",
+      "source_location": "L985",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_parseeventsubstatus",
@@ -54080,7 +54080,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L967",
+      "source_location": "L978",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_trygetmetrictype",
@@ -54092,7 +54092,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L961",
+      "source_location": "L972",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_scrapermetrics_discordstreamnotifybot_scraper_scrapermetrics_seteventsubsubscriptioncount"
@@ -54103,7 +54103,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L951",
+      "source_location": "L962",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_scrapermetrics_discordstreamnotifybot_scraper_scrapermetrics_setspidercount"
@@ -54114,7 +54114,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L956",
+      "source_location": "L967",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_scraper_scrapermetrics_discordstreamnotifybot_scraper_scrapermetrics_updateeventsubcosts"
@@ -54125,7 +54125,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L943",
+      "source_location": "L954",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_shared_database_maindbservice_discordstreamnotifybot_database_maindbservice_getdbcontext"
@@ -54136,7 +54136,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L953",
+      "source_location": "L964",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshmetricsasync",
       "target": "src_discordstreamnotifybot_shared_sharedservice_twitch_twitchapiservice_discordstreamnotifybot_sharedservice_twitch_twitchapiservice_geteventsubsubscriptionsresultasync"
@@ -54146,7 +54146,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L991",
+      "source_location": "L1002",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_setpending",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshpendingmetrics",
@@ -54156,7 +54156,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L983",
+      "source_location": "L994",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54171,7 +54171,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L998",
+      "source_location": "L1009",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_clearpending",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshpendingmetrics",
@@ -54183,7 +54183,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1005",
+      "source_location": "L1016",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshpendingmetrics",
       "target": "src_discordstreamnotifybot_scraper_scrapermetrics_discordstreamnotifybot_scraper_scrapermetrics_seteventsubcleanupdeferredcount"
@@ -54194,7 +54194,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1003",
+      "source_location": "L1014",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_refreshpendingmetrics",
       "target": "src_discordstreamnotifybot_scraper_scrapermetrics_discordstreamnotifybot_scraper_scrapermetrics_setspidercleanuppendingcount"
@@ -54203,7 +54203,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1020",
+      "source_location": "L1031",
       "weight": 1.0,
       "context": "generic_arg",
       "metadata": {
@@ -54217,7 +54217,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1034",
+      "source_location": "L1045",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54231,7 +54231,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1074",
+      "source_location": "L1085",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -54246,7 +54246,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1098",
+      "source_location": "L1109",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_getmetricmode",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_isvalidauthorization",
@@ -54257,7 +54257,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1087",
+      "source_location": "L1098",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_isvalidauthorization",
       "target": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_hasclientidmismatch",
@@ -54267,7 +54267,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1086",
+      "source_location": "L1097",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54281,7 +54281,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1089",
+      "source_location": "L1100",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54295,7 +54295,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1092",
+      "source_location": "L1103",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54309,7 +54309,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1092",
+      "source_location": "L1103",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -54323,7 +54323,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1096",
+      "source_location": "L1107",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54337,7 +54337,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1096",
+      "source_location": "L1107",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54351,7 +54351,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1096",
+      "source_location": "L1107",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -54365,7 +54365,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1103",
+      "source_location": "L1114",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54379,7 +54379,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1119",
+      "source_location": "L1130",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54393,7 +54393,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1127",
+      "source_location": "L1138",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54407,7 +54407,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1146",
+      "source_location": "L1157",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -54421,7 +54421,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1163",
+      "source_location": "L1174",
       "weight": 1.0,
       "context": "return_type",
       "metadata": {
@@ -54437,7 +54437,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1180",
+      "source_location": "L1191",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_publishchannelupdateasync",
       "target": "src_discordstreamnotifybot_shared_notificationbus_discordstreamnotifybot_shared_notificationbus_publishasync"
@@ -54446,7 +54446,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1195",
+      "source_location": "L1206",
       "weight": 1.0,
       "context": "parameter_type",
       "metadata": {
@@ -54462,7 +54462,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1197",
+      "source_location": "L1208",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_recordtwitchasync",
       "target": "src_discordstreamnotifybot_shared_log_log_info"
@@ -54473,7 +54473,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1206",
+      "source_location": "L1217",
       "weight": 1.0,
       "source": "src_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_discordstreamnotifybot_scraper_detection_twitch_twitchdetectionservice_recordtwitchasync",
       "target": "src_discordstreamnotifybot_shared_log_log_warn"
@@ -54482,7 +54482,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1241",
+      "source_location": "L1252",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -54496,7 +54496,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs",
-      "source_location": "L1240",
+      "source_location": "L1251",
       "weight": 1.0,
       "context": "field",
       "metadata": {
@@ -70406,5 +70406,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "d86294e4c8db83421e1c979f8398833d5480f473"
+  "built_at_commit": "ea74c48f3b3599aca20231e7f39fb21fc66c1e2a"
 }

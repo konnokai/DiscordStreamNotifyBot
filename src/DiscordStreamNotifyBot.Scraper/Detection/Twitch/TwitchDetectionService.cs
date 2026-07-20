@@ -167,7 +167,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
                 Log.Info($"Twitch 直播離線: {payload.BroadcasterUserLogin} ({payload.BroadcasterUserId})，等待三分鐘後確認");
                 ScheduleOfflineCleanup(payload.BroadcasterUserId, payload.BroadcasterUserLogin,
-                    payload.BroadcasterUserName, replaceExisting: true);
+                    payload.BroadcasterUserName, replaceExisting: true, publishEndNotification: true);
             }
             catch (Exception ex)
             {
@@ -743,9 +743,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         }
 
         /// <summary>
-        /// 排程關台去抖動。EventSub offline 可取代既有工作；輪詢只在尚未排程時建立工作。
+        /// 排程關台去抖動。EventSub offline 可取代既有工作並發布通知；輪詢只在尚未排程時建立清理工作。
         /// </summary>
-        private void ScheduleOfflineCleanup(string userId, string userLogin, string userName, bool replaceExisting = false)
+        private void ScheduleOfflineCleanup(string userId, string userLogin, string userName,
+            bool replaceExisting = false, bool publishEndNotification = false)
         {
             if (string.IsNullOrWhiteSpace(userId))
                 return;
@@ -774,7 +775,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 try
                 {
                     await Task.Delay(OfflineDebounce, cancellation.Token);
-                    await HandleStreamEndedAsync(userId, userLogin, userName, DateTime.UtcNow - OfflineDebounce);
+                    await HandleStreamEndedAsync(userId, userLogin, userName, DateTime.UtcNow - OfflineDebounce,
+                        publishEndNotification);
                 }
                 catch (OperationCanceledException)
                 {
@@ -793,9 +795,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         }
 
         /// <summary>
-        /// 去抖動後再次向 Helix 確認；若已恢復直播則回到開台流程，否則校正訂閱並發布關台通知。
+        /// 去抖動後再次向 Helix 確認；若已恢復直播則回到開台流程，否則校正訂閱，並依觸發來源決定是否發布關台通知。
         /// </summary>
-        private async Task HandleStreamEndedAsync(string userId, string userLogin, string userName, DateTime endAtUtc)
+        private async Task HandleStreamEndedAsync(string userId, string userLogin, string userName, DateTime endAtUtc,
+            bool publishEndNotification)
         {
             HelixStream resumedStream = null;
             TwitchStream twitchStream = null;
@@ -833,6 +836,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             if (resumedStream != null)
             {
                 await HandleStreamStartedAsync(resumedStream);
+                return;
+            }
+
+            if (!publishEndNotification)
+            {
+                await Bot.RedisDb.KeyDeleteAsync(RedisChannels.Twitch.StreamData(userId));
+                if (!string.IsNullOrEmpty(twitchStream?.StreamId))
+                    _handledStreamIds.TryRemove(twitchStream.StreamId, out _);
                 return;
             }
             if (!shouldPublishEnd)
