@@ -107,7 +107,7 @@ namespace DiscordStreamNotifyBot
             {
                 ShardId = _shardId,
                 TotalShards = _totalShardCount,
-                LogLevel = LogSeverity.Verbose,
+                LogLevel = LogSeverity.Info,
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 0,
                 // 因為沒有註冊事件，Discord .NET 建議可移除這兩個沒用到的特權
