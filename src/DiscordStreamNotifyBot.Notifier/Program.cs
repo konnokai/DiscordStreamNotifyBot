@@ -45,13 +45,15 @@ namespace DiscordStreamNotifyBot
             }
 
             Log.RolePrefix = $"notifier:{shardId}";
-            Log.Info(Version + " 初始化中");
 
             // 啟動連線檢查（計畫 §5.3）：進入主邏輯前確認 MySQL / Redis 可連線，失敗印訊息後 Exit(1) 交給 Compose restart
             var preflightConfig = new BotConfig();
+            preflightConfig.InitBotConfig();
+            Log.ConfigureLoki(preflightConfig.LokiUrl);
+            Log.Info(Version + " 初始化中");
+
             try
             {
-                preflightConfig.InitBotConfig();
                 await StartupPreflight.EnsureAsync(Role, preflightConfig, TimeSpan.FromSeconds(60));
             }
             catch (Exception ex)
@@ -62,45 +64,52 @@ namespace DiscordStreamNotifyBot
 
             RegisterUnhandledExceptionHandler(preflightConfig, shardId, totalShards);
 
-            // RedisTokenKey 叢集佈建（僅 shard 0 有權建立，以 Redis 為單一真實來源同步至各 shard 與後端）。
-            // 必須在建立 Bot（其 YoutubeMemberService/RedisDataStore 會捕捉 Utility.RedisKey）之前完成。
             try
             {
-                await RedisTokenKeyProvisioner.EnsureAsync(Role, shardId, preflightConfig, TimeSpan.FromSeconds(60));
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "RedisTokenKey 佈建失敗");
-                Environment.Exit(1);
-            }
-
-            // 官方伺服器白名單改存 Redis（階段 5：跨 shard 共享）；首次啟動由舊 OfficialList.json 播種
-            try
-            {
-                var redisDb = RedisConnection.Instance.ConnectionMultiplexer.GetDatabase();
-                if (!await redisDb.KeyExistsAsync(RedisChannels.SharedState.OfficialGuildList) &&
-                    File.Exists(Utility.GetDataFilePath("OfficialList.json")))
+                // RedisTokenKey 叢集佈建（僅 shard 0 有權建立，以 Redis 為單一真實來源同步至各 shard 與後端）。
+                // 必須在建立 Bot（其 YoutubeMemberService/RedisDataStore 會捕捉 Utility.RedisKey）之前完成。
+                try
                 {
-                    Utility.OfficialGuildList = JsonConvert.DeserializeObject<HashSet<ulong>>(File.ReadAllText(Utility.GetDataFilePath("OfficialList.json")));
-                    await Utility.SaveOfficialGuildListToRedisAsync();
-                    Log.Info($"已將 OfficialList.json（{Utility.OfficialGuildList.Count} 筆）播種至 Redis");
+                    await RedisTokenKeyProvisioner.EnsureAsync(Role, shardId, preflightConfig, TimeSpan.FromSeconds(60));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "RedisTokenKey 佈建失敗");
+                    Environment.Exit(1);
                 }
 
-                await Utility.LoadOfficialGuildListFromRedisAsync();
-                Log.Info($"官方伺服器白名單已自 Redis 載入（{Utility.OfficialGuildList.Count} 筆）");
+                // 官方伺服器白名單改存 Redis（階段 5：跨 shard 共享）；首次啟動由舊 OfficialList.json 播種
+                try
+                {
+                    var redisDb = RedisConnection.Instance.ConnectionMultiplexer.GetDatabase();
+                    if (!await redisDb.KeyExistsAsync(RedisChannels.SharedState.OfficialGuildList) &&
+                        File.Exists(Utility.GetDataFilePath("OfficialList.json")))
+                    {
+                        Utility.OfficialGuildList = JsonConvert.DeserializeObject<HashSet<ulong>>(File.ReadAllText(Utility.GetDataFilePath("OfficialList.json")));
+                        await Utility.SaveOfficialGuildListToRedisAsync();
+                        Log.Info($"已將 OfficialList.json（{Utility.OfficialGuildList.Count} 筆）播種至 Redis");
+                    }
+
+                    await Utility.LoadOfficialGuildListFromRedisAsync();
+                    Log.Info($"官方伺服器白名單已自 Redis 載入（{Utility.OfficialGuildList.Count} 筆）");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "載入官方伺服器白名單失敗");
+                }
+
+                // 寫入 notifier 心跳（計畫 §5.2）：coordinator 依 cluster:heartbeat:notifier:* 的數量判斷有幾個 shard 有人認領。
+                // scraper / coordinator 已各自寫心跳，唯獨 notifier 先前漏寫，導致 coordinator 永遠顯示 notifier 存活=0。
+                // id 以 shard 為鍵（非 machine:pid）：同一 shard 被多個程序重複認領時會共用同一鍵，數量才等於「實際被涵蓋的 shard 數」。
+                _ = Task.Run(() => RunHeartbeatLoopAsync(preflightConfig, shardId, GracefulShutdown.Token));
+
+                var bot = new Bot(shardId, totalShards);
+                bot.StartAndBlockAsync().GetAwaiter().GetResult();
             }
-            catch (Exception ex)
+            finally
             {
-                Log.Error(ex.Demystify(), "載入官方伺服器白名單失敗");
+                await Log.ShutdownAsync(TimeSpan.FromSeconds(3));
             }
-
-            // 寫入 notifier 心跳（計畫 §5.2）：coordinator 依 cluster:heartbeat:notifier:* 的數量判斷有幾個 shard 有人認領。
-            // scraper / coordinator 已各自寫心跳，唯獨 notifier 先前漏寫，導致 coordinator 永遠顯示 notifier 存活=0。
-            // id 以 shard 為鍵（非 machine:pid）：同一 shard 被多個程序重複認領時會共用同一鍵，數量才等於「實際被涵蓋的 shard 數」。
-            _ = Task.Run(() => RunHeartbeatLoopAsync(preflightConfig, shardId, GracefulShutdown.Token));
-
-            var bot = new Bot(shardId, totalShards);
-            bot.StartAndBlockAsync().GetAwaiter().GetResult();
         }
 
         private static void RegisterUnhandledExceptionHandler(BotConfig config, int shardId, int totalShards)
@@ -140,6 +149,8 @@ namespace DiscordStreamNotifyBot
                 }
                 finally
                 {
+                    try { Log.ShutdownAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult(); }
+                    catch { }
                     Environment.Exit(1);
                 }
             };

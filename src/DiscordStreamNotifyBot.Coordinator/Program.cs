@@ -14,43 +14,51 @@ namespace DiscordStreamNotifyBot.Coordinator
 
             var config = new BotConfig();
             config.InitBotConfig(Role);
+            Log.ConfigureLoki(config.LokiUrl);
 
             try
             {
-                await StartupPreflight.EnsureAsync(Role, config, TimeSpan.FromSeconds(60));
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "StartupPreflight 失敗");
-                return 1;
-            }
+                try
+                {
+                    await StartupPreflight.EnsureAsync(Role, config, TimeSpan.FromSeconds(60));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "StartupPreflight 失敗");
+                    return 1;
+                }
 
-            var metrics = new CoordinatorMetrics();
-            metrics.Start(config.TotalShards);
+                var metrics = new CoordinatorMetrics();
+                metrics.Start(config.TotalShards);
 
-            using var metricServer = new Prometheus.KestrelMetricServer(port: MetricsPort);
-            try
-            {
-                metricServer.Start();
-                Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
+                using var metricServer = new Prometheus.KestrelMetricServer(port: MetricsPort);
+                try
+                {
+                    metricServer.Start();
+                    Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
 
-                var service = new CoordinatorService(config, metrics);
-                await service.RunAsync(GracefulShutdown.Token);
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "Coordinator 執行失敗");
-                return 1;
+                    var service = new CoordinatorService(config, metrics);
+                    await service.RunAsync(GracefulShutdown.Token);
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "Coordinator 執行失敗");
+                    return 1;
+                }
+                finally
+                {
+                    metrics.Stop();
+                    await metricServer.StopAsync();
+                }
+
+                Log.Info($"{Role} 已關閉");
+                return 0;
             }
             finally
             {
-                metrics.Stop();
-                await metricServer.StopAsync();
+                await Log.ShutdownAsync(TimeSpan.FromSeconds(3));
             }
-
-            Log.Info($"{Role} 已關閉");
-            return 0;
         }
     }
 }

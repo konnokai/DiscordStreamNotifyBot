@@ -145,8 +145,6 @@
   "143": "20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs",
   "144": "13. Prometheus",
   "145": "4. 安全刪除狀態機",
-  "146": "YoutubeChannelSpider",
   "147": "20250620094111_AddMaxSpiderCountSettingField.Designer.cs",
-  "148": "20260709091318_AddManualMemberCheckVideoFlag.Designer.cs",
-  "149": ".GetStreamVideoByVideoId"
+  "148": "20260709091318_AddManualMemberCheckVideoFlag.Designer.cs"
 }

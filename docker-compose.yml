@@ -18,6 +18,13 @@ x-host: &host-gateway
   extra_hosts:
     - "host.docker.internal:host-gateway"
 
+# 保留 Docker console log 作為 Loki 故障時的本機備援，並限制單一容器最多約 30 MB。
+x-logging: &app-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 # 各角色共用設定錨點：單一 image + 連線設定 + bot_config 掛載
 x-app: &app-common
   image: discord-stream-notify-bot:latest
@@ -27,6 +34,7 @@ x-app: &app-common
     context: .
     dockerfile: Dockerfile
   restart: unless-stopped
+  logging: *app-logging
   env_file: .env
   volumes:
     # InitBotConfig 需要 bot_config.json 存在；RedisTokenKey 等非 env 設定由此提供（rw 以便首次自動補金鑰）

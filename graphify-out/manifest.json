@@ -20,8 +20,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Program.cs": {
-    "mtime": 1784479668.6556196,
-    "ast_hash": "c6169d1c1088e83f772a0d3e71419cf2",
+    "mtime": 1784557022.339996,
+    "ast_hash": "9f557347cc5a3f8b9505d554c2d2cc8b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Properties/launchSettings.json": {
@@ -30,8 +30,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Bot.cs": {
-    "mtime": 1784479668.6694415,
-    "ast_hash": "6b56bc6aa6ffc2a3424e411bf3530b0d",
+    "mtime": 1784555506.150887,
+    "ast_hash": "c79cd3fc307098312dd7a1aee7e64ccb",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs": {
@@ -265,8 +265,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Program.cs": {
-    "mtime": 1784479668.9632044,
-    "ast_hash": "c78770878d702dfbda13cb54df305994",
+    "mtime": 1784557022.3791306,
+    "ast_hash": "aab9a5a32195fe4d1664fefe099ea1e0",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Properties/launchSettings.json": {
@@ -380,8 +380,8 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Program.cs": {
-    "mtime": 1784479669.108101,
-    "ast_hash": "a1e7718506354c565b1e1d3b91876cb2",
+    "mtime": 1784557022.357698,
+    "ast_hash": "2243c4c3a6a72a76488d54b0c91a1add",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Properties/launchSettings.json": {
@@ -405,8 +405,8 @@
     "semantic_hash": "2a9a851998c99752921001c34e779a2c"
   },
   "src/DiscordStreamNotifyBot.Shared/BotConfig.cs": {
-    "mtime": 1784479669.144466,
-    "ast_hash": "3ce74293d4d69d854dec7d5760428feb",
+    "mtime": 1784557022.27093,
+    "ast_hash": "94952456d1247541e4375ca34eab7cef",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/BotRole.cs": {
@@ -595,8 +595,8 @@
     "semantic_hash": "20cf473f93206f7b79301c636729b5d4"
   },
   "src/DiscordStreamNotifyBot.Shared/Log.cs": {
-    "mtime": 1784479669.353588,
-    "ast_hash": "03e9af007dc7e2b368925fd6d38b0ae9",
+    "mtime": 1784557403.5330687,
+    "ast_hash": "8272fd1c40f062a411ff412eb3bb81fb",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Messages/Notifications.cs": {
@@ -805,8 +805,8 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1784479668.4795463,
-    "ast_hash": "4bf2a8630f3979abbd8b894fbfc7c4f6",
+    "mtime": 1784557078.8669171,
+    "ast_hash": "6b1541af3508c915bdb09e097e939efd",
     "semantic_hash": ""
   },
   "docs/HORIZONTAL_SCALING_PLAN.md": {
@@ -849,11 +849,6 @@
     "ast_hash": "f0b860f89c21a91502df627f7d82eefa",
     "semantic_hash": ""
   },
-  "migrate_AddManualMemberCheckVideoFlag.sql": {
-    "mtime": 1784479668.6317475,
-    "ast_hash": "fcff89c4e7e89417614dcc00ca654a1e",
-    "semantic_hash": ""
-  },
   "docs/MEMBER_TOKEN_STORE_MYSQL_PLAN.md": {
     "mtime": 1784479668.5062594,
     "ast_hash": "7c4cd6ba41e72b43f32daa9c4c846047",
@@ -885,8 +880,8 @@
     "semantic_hash": ""
   },
   "docs/LOGGING.md": {
-    "mtime": 1784479668.5011024,
-    "ast_hash": "9556b3d1f76ac99bb79f5194944e33e1",
+    "mtime": 1784557818.1955462,
+    "ast_hash": "e18c02629431677a7dada1e4ff431573",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchGuildEligibilityEvaluator.cs": {
@@ -930,13 +925,23 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1784546795.9675376,
-    "ast_hash": "388571c90ab3122a30abffd50393cf5e",
+    "mtime": 1784557078.90761,
+    "ast_hash": "337457ec1b72f82e7b32c81f194f3a1b",
     "semantic_hash": ""
   },
-  "migrate_AddTwitchBroadcasterAuthorization.sql": {
+  "migrate_sql/migrate_AddManualMemberCheckVideoFlag.sql": {
+    "mtime": 1784479668.6317475,
+    "ast_hash": "fcff89c4e7e89417614dcc00ca654a1e",
+    "semantic_hash": ""
+  },
+  "migrate_sql/migrate_AddTwitchBroadcasterAuthorization.sql": {
     "mtime": 1784544862.2686558,
     "ast_hash": "a61dffc00231ed1203c5ad535e97450f",
+    "semantic_hash": ""
+  },
+  "src/DiscordStreamNotifyBot.Shared/LokiLogSink.cs": {
+    "mtime": 1784557631.8061578,
+    "ast_hash": "c3260c64f60d9dadf6ce110f0ab7f7a6",
     "semantic_hash": ""
   }
 }

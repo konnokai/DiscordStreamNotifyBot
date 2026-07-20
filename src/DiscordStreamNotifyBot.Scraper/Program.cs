@@ -15,39 +15,47 @@ namespace DiscordStreamNotifyBot.Scraper
 
             var config = new BotConfig();
             config.InitBotConfig(Role);
+            Log.ConfigureLoki(config.LokiUrl);
 
             try
             {
-                await StartupPreflight.EnsureAsync(Role, config, TimeSpan.FromSeconds(60));
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "StartupPreflight 失敗");
-                return 1;
-            }
+                try
+                {
+                    await StartupPreflight.EnsureAsync(Role, config, TimeSpan.FromSeconds(60));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "StartupPreflight 失敗");
+                    return 1;
+                }
 
-            var metrics = new ScraperMetrics();
-            using var metricServer = new Prometheus.KestrelMetricServer(port: MetricsPort);
-            try
-            {
-                metricServer.Start();
-                Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
+                var metrics = new ScraperMetrics();
+                using var metricServer = new Prometheus.KestrelMetricServer(port: MetricsPort);
+                try
+                {
+                    metricServer.Start();
+                    Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
 
-                var service = new ScraperService(config, metrics);
-                return await service.RunAsync(GracefulShutdown.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "Scraper 執行失敗");
-                return 1;
+                    var service = new ScraperService(config, metrics);
+                    return await service.RunAsync(GracefulShutdown.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "Scraper 執行失敗");
+                    return 1;
+                }
+                finally
+                {
+                    await metricServer.StopAsync();
+                }
             }
             finally
             {
-                await metricServer.StopAsync();
+                await Log.ShutdownAsync(TimeSpan.FromSeconds(3));
             }
         }
     }

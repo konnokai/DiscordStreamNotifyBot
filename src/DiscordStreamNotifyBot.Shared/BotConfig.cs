@@ -9,6 +9,7 @@ public class BotConfig
 
     public string ApiServerDomain { get; set; } = "";
     public string UptimeKumaPushUrl { get; set; } = "";
+    public string LokiUrl { get; set; } = "";
 
     public string DiscordToken { get; set; } = "";
     public ulong[] TestSlashCommandGuildIds { get; set; } = [];
@@ -111,6 +112,7 @@ public class BotConfig
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
+            LokiUrl = config.LokiUrl;
             YouTubeEmoteId = config.YouTubeEmoteId;
             PayPalEmoteId = config.PayPalEmoteId;
             ECPayEmoteId = config.ECPayEmoteId;
@@ -143,6 +145,7 @@ public class BotConfig
         SetIfPresent("REDIS_OPTION", v => RedisOption = v);
         SetIfPresent("DISCORD_TOKEN", v => DiscordToken = v);
         SetIfPresent("GOOGLE_API_KEY", v => GoogleApiKey = v);
+        SetIfPresent("LOKI_URL", v => LokiUrl = v);
         SetIfPresentInt("TOTAL_SHARDS", v => TotalShards = v);
         SetIfPresentBool("ENABLE_GUILD_MEMBERS_INTENT", v => EnableGuildMembersIntent = v);
     }

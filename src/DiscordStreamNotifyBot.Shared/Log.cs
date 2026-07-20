@@ -16,35 +16,36 @@
         IsTrueEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ||
         IsTrueEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINERS");
 
-    private static string Tag => string.IsNullOrEmpty(RolePrefix) ? "" : $"[{RolePrefix}] ";
-
     enum LogFileType { General, Stream, Error }
     static string logPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".log";
     static string errorLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_err.log";
     static string streamLogPath = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "_stream.log";
     private static readonly object writeLockObj = new();
     private static readonly object logLockObj = new();
+    private static readonly object lokiLockObj = new();
+    private static LokiLogSink lokiSink;
+    private static int processExitHandlerRegistered;
 
-    private static void WriteLogToFile(LogFileType fileType, LogLevel level, string text)
+    private static void WriteLogToFile(LogFileType fileType, string line)
     {
         if (Debugger.IsAttached || IsRunningInContainer)
             return;
 
         lock (writeLockObj)
         {
-            text = FormatLine(level, text) + "\r\n";
+            line += "\r\n";
 
             switch (fileType)
             {
                 case LogFileType.Error:
-                    File.AppendAllText(errorLogPath, text);
+                    File.AppendAllText(errorLogPath, line);
                     break;
                 case LogFileType.Stream:
-                    File.AppendAllText(streamLogPath, text);
+                    File.AppendAllText(streamLogPath, line);
                     break;
             }
 
-            File.AppendAllText(logPath, text);
+            File.AppendAllText(logPath, line);
         }
     }
 
@@ -56,11 +57,7 @@
 
     public static void New(string text, bool newLine = true)
     {
-        lock (logLockObj)
-        {
-            FormatColorWrite(text, ConsoleColor.Green, newLine, level: LogLevel.Info);
-            WriteLogToFile(LogFileType.Stream, LogLevel.Info, text);
-        }
+        WriteEntry(text, ConsoleColor.Green, newLine, false, LogLevel.Info, LogFileType.Stream);
     }
 
     public static void Debug(string text, bool newLine = true)
@@ -68,88 +65,149 @@
         if (!Debugger.IsAttached)
             return;
 
-        lock (logLockObj)
-        {
-            FormatColorWrite(text, ConsoleColor.Cyan, newLine, level: LogLevel.Debug);
-        }
+        WriteEntry(text, ConsoleColor.Cyan, newLine, false, LogLevel.Debug);
     }
 
     public static void Info(string text, bool newLine = true)
     {
-        lock (logLockObj)
-        {
-            FormatColorWrite(text, ConsoleColor.DarkYellow, newLine, level: LogLevel.Info);
-            WriteLogToFile(LogFileType.General, LogLevel.Info, text);
-        }
+        WriteEntry(text, ConsoleColor.DarkYellow, newLine, false, LogLevel.Info, LogFileType.General);
     }
 
     public static void Warn(string text, bool newLine = true)
     {
-        lock (logLockObj)
-        {
-            FormatColorWrite(text, ConsoleColor.DarkMagenta, newLine, level: LogLevel.Warn);
-            WriteLogToFile(LogFileType.General, LogLevel.Warn, text);
-        }
+        WriteEntry(text, ConsoleColor.DarkMagenta, newLine, false, LogLevel.Warn, LogFileType.General);
     }
 
     public static void Error(string text, bool newLine = true, bool writeLog = true)
     {
-        lock (logLockObj)
-        {
-            FormatColorWrite(text, ConsoleColor.DarkRed, newLine, level: LogLevel.Error);
-            if (writeLog) WriteLogToFile(LogFileType.Error, LogLevel.Error, text);
-        }
+        WriteEntry(text, ConsoleColor.DarkRed, newLine, false, LogLevel.Error,
+            writeLog ? LogFileType.Error : null);
     }
 
     public static void Error(Exception ex, string text, bool newLine = true, bool writeLog = true)
     {
-        lock (logLockObj)
-        {
-            FormatColorWrite(text, ConsoleColor.DarkRed, newLine, true, LogLevel.Error);
-            FormatColorWrite(ex.Demystify().ToString(), ConsoleColor.DarkRed, true, true, LogLevel.Error);
-
-            if (writeLog)
-            {
-                WriteLogToFile(LogFileType.Error, LogLevel.Error, $"{text}");
-                WriteLogToFile(LogFileType.Error, LogLevel.Error, $"{ex}");
-            }
-        }
+        LogFileType? fileType = writeLog ? LogFileType.Error : null;
+        WriteEntry(text, ConsoleColor.DarkRed, newLine, true, LogLevel.Error, fileType);
+        WriteEntry(ex.Demystify().ToString(), ConsoleColor.DarkRed, true, true, LogLevel.Error, fileType);
     }
 
     public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray,
         bool newLine = true, bool isError = false, LogLevel level = LogLevel.Info)
     {
-        text = FormatLine(level, text);
+        WriteEntry(text, consoleColor, newLine, isError, level);
+    }
+
+    /// <summary>啟用 Loki 主動推送。未設定或 URL 無效時保留既有 console/file 行為。</summary>
+    public static void ConfigureLoki(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return;
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri endpoint) ||
+            (endpoint.Scheme != Uri.UriSchemeHttp && endpoint.Scheme != Uri.UriSchemeHttps))
+        {
+            WriteLokiDiagnostic($"LOKI_URL 無效，略過 Loki 主動推送：{url}");
+            return;
+        }
+
+        lock (lokiLockObj)
+        {
+            if (lokiSink != null)
+                return;
+
+            lokiSink = new LokiLogSink(endpoint, WriteLokiDiagnostic);
+            if (Interlocked.Exchange(ref processExitHandlerRegistered, 1) == 0)
+            {
+                AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+                {
+                    try { ShutdownAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult(); }
+                    catch { }
+                };
+            }
+        }
+
+        Info($"Loki 主動推送已啟用：{endpoint}");
+    }
+
+    /// <summary>等待 Loki 佇列送出；逾時後直接結束，不阻塞程序關閉。</summary>
+    public static async Task ShutdownAsync(TimeSpan timeout)
+    {
+        LokiLogSink sink;
+        lock (lokiLockObj)
+        {
+            sink = lokiSink;
+            lokiSink = null;
+        }
+
+        if (sink != null)
+            await sink.StopAsync(timeout);
+    }
+
+    private static void WriteEntry(string text, ConsoleColor consoleColor, bool newLine, bool isError,
+        LogLevel level, LogFileType? fileType = null, bool writeConsole = true)
+    {
+        string role;
+        string line;
+        lock (logLockObj)
+        {
+            role = RolePrefix;
+            line = FormatLine(level, text, role);
+
+            if (writeConsole)
+                WriteConsole(line, consoleColor, newLine, isError);
+
+            if (fileType.HasValue)
+                WriteLogToFile(fileType.Value, line);
+        }
+
+        LokiLogSink sink;
+        lock (lokiLockObj)
+            sink = lokiSink;
+        sink?.TryEnqueue(level, role, line);
+    }
+
+    private static void WriteConsole(string line, ConsoleColor consoleColor, bool newLine, bool isError)
+    {
         Console.ForegroundColor = consoleColor;
 
         if (isError)
         {
             if (newLine)
             {
-                Console.Error.WriteLine(text);
+                Console.Error.WriteLine(line);
             }
             else
             {
-                Console.Error.Write(text);
+                Console.Error.Write(line);
             }
         }
         else
         {
             if (newLine)
             {
-                Console.WriteLine(text);
+                Console.WriteLine(line);
             }
             else
             {
-                Console.Write(text);
+                Console.Write(line);
             }
         }
 
         Console.ForegroundColor = ConsoleColor.Gray;
     }
 
-    private static string FormatLine(LogLevel level, string text)
-        => $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {Tag}[{level.ToString().ToUpperInvariant()}] | {text}";
+    private static void WriteLokiDiagnostic(string text)
+    {
+        string line = FormatLine(LogLevel.Warn, text, RolePrefix);
+        Console.Error.WriteLine(line);
+        WriteLogToFile(LogFileType.General, line);
+    }
+
+    private static string FormatLine(LogLevel level, string text, string role)
+    {
+        string tag = string.IsNullOrEmpty(role) ? "" : $"[{role}] ";
+        return $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {tag}[{level.ToString().ToUpperInvariant()}] | {text}";
+    }
 
     public static Task LogMsg(LogMessage message)
     {
@@ -180,12 +238,13 @@
         }
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
-        if (!string.IsNullOrEmpty(message.Message)) FormatColorWrite(message.Message, consoleColor, level: level);
+        if (!string.IsNullOrEmpty(message.Message))
+            WriteEntry(message.Message, consoleColor, true, false, level);
 #else
         if (IsRunningInContainer)
-            FormatColorWrite(message.Message, consoleColor, level: level);
+            WriteEntry(message.Message, consoleColor, true, false, level);
         else
-            WriteLogToFile(LogFileType.General, level, message.Message);
+            WriteEntry(message.Message, consoleColor, true, false, level, LogFileType.General, false);
 #endif
 
         if (message.Exception != null &&
@@ -198,11 +257,11 @@
         {
             consoleColor = ConsoleColor.DarkRed;
 #if RELEASE
-            FormatColorWrite(message.Message, consoleColor, level: level);
+            WriteEntry(message.Message, consoleColor, true, false, level);
 #endif
-            FormatColorWrite(message.Exception.GetType().FullName, consoleColor, level: LogLevel.Error);
-            FormatColorWrite(message.Exception.Message, consoleColor, level: LogLevel.Error);
-            FormatColorWrite(message.Exception.StackTrace, consoleColor, level: LogLevel.Error);
+            WriteEntry(message.Exception.GetType().FullName, consoleColor, true, false, LogLevel.Error);
+            WriteEntry(message.Exception.Message, consoleColor, true, false, LogLevel.Error);
+            WriteEntry(message.Exception.StackTrace, consoleColor, true, false, LogLevel.Error);
         }
 
         return Task.CompletedTask;
