@@ -58,6 +58,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 - 偵測與發送已拆分（計畫階段 3）：偵測（Timer/排程爬取/webhook 訂閱）在 **Scraper** `Detection/`，publish DTO 到 `bot:notify`；發送（`_client.GetGuild` + embed）在 **Notifier** `SharedService/`，消費匯流排後 `DispatchFromBusAsync` 重建 embed。跨層 DTO 在 `Shared/Messages/`。會限**逐使用者驗證**仍留 Notifier（shard 守衛天然分區）；但**會限影片探索**（頻道層級）在 Scraper，log 走 `YoutubeMemberVideoLog` 匯流排。會員重加入即時回補/孤兒身分組對帳需 `EnableGuildMembersIntent`（預設關，未開特權前勿設 true 以免 login 4014）。
 - Twitch 偵測採雙模式：有效 broadcaster OAuth 由 Scraper 永久維持 `stream.online`/`channel.update`/`stream.offline` 三種 EventSub並低頻補償；未授權頻道維持 30 秒 polling、直播期間暫時 update/offline。授權失效時先以 Helix確認離線，直播中禁止刪 EventSub，離線後依 Shared guild snapshot/Notifier健康守衛決定保留或移除 spider；通知設定不隨 spider 自動刪除。
 - **Coordinator**（階段 4）：`CoordinatorService` 心跳/leader 觀察/`TOTAL_SHARDS` 公告/`XINFO GROUPS` pending 監控，不負責重啟（交 Compose）；Prometheus `:9464/metrics` 只輸出監控迴圈快照，scrape 不查 Redis。**跨 shard 指令**（階段 5，計畫 §7）：`Notifier/SharedService/Cluster/ClusterQueryService`（合併快照 + request-reply）+ `AdministrationService` 廣播；`OfficialGuildList` 存 Redis SET；狀態列計數走 `cluster:stats:*` HASH 彙總。部署見根目錄 `Dockerfile`/`docker-compose.yml`（方式 A）。
+- Logging：Shared 的 Serilog pipeline 接管 console、非容器 general/error/stream 檔案與 Grafana Loki 主動推送；既有靜態 `Log` facade、四個低 cardinality labels 與有限時間 flush 契約維持不變。
 
 ## 外部契約（不可片面更改）
 
@@ -74,7 +75,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 
 ## Conventions
 
-- Log：靜態 `Log.Info/Warn/Error`；例外一律 `.Demystify()` 後再記；輸出格式與 Loki patterns 見 [docs/LOGGING.md](docs/LOGGING.md)。
+- Log：靜態 `Log.Info/Warn/Error` facade（底層 Serilog）；例外一律 `.Demystify()` 後再記；輸出格式與 Loki patterns 見 [docs/LOGGING.md](docs/LOGGING.md)。
 - JSON：`Newtonsoft.Json`（`JsonConvert`）；**不使用 `System.Text.Json`**。
 - Global usings 已在 csproj 宣告：`Discord`、`Discord.WebSocket`、`Newtonsoft.Json`、`StackExchange.Redis`、`Microsoft.EntityFrameworkCore`、`System.Diagnostics`、`Google.Apis.YouTube.v3.Data`。
 - Embed 顏色：`WithOkColor()`（綠）/ `WithErrorColor()`（深灰）/ `WithRecordColor()`（紅）。

@@ -1,6 +1,6 @@
 # Serilog Logging 遷移計畫
 
-> 狀態：**尚未實作**。本文件只定義後續遷移範圍、相容契約、執行順序與驗證方式。
+> 狀態：**程式碼遷移與自動化驗證已完成，待連接實際 Loki 的部署驗證**。需要 Grafana/Loki/容器環境的驗證維持未勾選。
 >
 > 決策：採用 **Serilog**，不採用 NLog；維持應用程式主動推送 Loki，Docker console log 繼續作為備援。
 >
@@ -125,6 +125,8 @@ yyyy-MM-dd HH-mm-ss_stream.log
 - Loki sink 的內部診斷必須走 Serilog `SelfLog` 或直接寫 stderr，禁止重新進入正式 logger 造成遞迴。
 - 應配置 bounded queue、batch、retry 與 shutdown flush；若套件無法完全對齊現值，須先在本文件記錄差異再刪除自製 sink。
 
+實作採用 `Serilog.Sinks.Grafana.Loki` 9.0.1 的 Serilog 原生 batching。與舊 sink 的已知差異：queue 滿時改為丟棄最新事件（舊實作淘汰最舊事件），且原生 batching 不保證輸出 overflow 診斷；失敗批次最多重試 10 分鐘後丟棄（舊實作無總時限、單次退避最高 30 秒）。HTTP 408/429/5xx 與網路錯誤仍重試，其他 4xx 由 HTTP handler 丟棄該批後繼續。
+
 目前自製 sink 的基準值：
 
 | 項目 | 現值 |
@@ -197,62 +199,62 @@ Discord.Net `LogMessage` 同樣應避免同一 message 重複寫入；保留既�
 - [ ] 保存一般錯誤、`Log.Error(Exception, ...)`、Discord.Net exception 的 Loki 查詢結果。
 - [ ] 確認現有 Grafana dashboard/alert 是否依 ERROR entry 數量判斷。
 - [ ] 記錄 Loki 正常、無法連線、HTTP 4xx、HTTP 429/5xx 時的現行行為。
-- [ ] 執行 `dotnet build DiscordStreamNotifyBot.sln -c Release`，確認遷移前為 0 error。
+- [x] 執行 `dotnet build DiscordStreamNotifyBot.sln -c Release`，確認遷移前為 0 error。
 
 完成定義：有可供 before/after 比對的 log 樣本與查詢結果。
 
 ### 階段 1：加入 Serilog 與 bootstrap logger
 
-- [ ] 在 Shared csproj 加入鎖定版本的 Serilog 套件。
-- [ ] 在 `Log` 內建立最早期的 console-only bootstrap logger，供 `BotConfig.InitBotConfig` 失敗時使用。
-- [ ] 設定 `RolePrefix` 後，使用 `LokiUrl` 建立完整 logger 並安全替換 bootstrap logger。
-- [ ] logger 重複初始化必須可預期，不得重複註冊 sink 或重複送出事件。
-- [ ] `SelfLog` 直接寫 stderr，且不得包含敏感設定值。
+- [x] 在 Shared csproj 加入鎖定版本的 Serilog 套件。
+- [x] 在 `Log` 內建立最早期的 console-only bootstrap logger，供 `BotConfig.InitBotConfig` 失敗時使用。
+- [x] 設定 `RolePrefix` 後，使用 `LokiUrl` 建立完整 logger 並安全替換 bootstrap logger。
+- [x] logger 重複初始化必須可預期，不得重複註冊 sink 或重複送出事件。
+- [x] `SelfLog` 直接寫 stderr，且不得包含敏感設定值。
 
 完成定義：三個程序在未設定 Loki 時，可只靠 Serilog console sink 正常啟動與輸出。
 
 ### 階段 2：搬移 console 與檔案路由
 
-- [ ] 將 `WriteConsole` 改由 Console sink 處理。
-- [ ] Error/Critical 導向 stderr，其餘導向 stdout。
-- [ ] 使用共同 output template 保留 `LogLinePattern` 可解析格式。
-- [ ] 將 general/error/stream 檔案改由 File sink/filter 處理。
-- [ ] 容器內確認完全不建立應用程式 log 檔案。
-- [ ] 非容器環境確認 `writeLog=false` 與 `Log.New` 路由正確。
+- [x] 將 `WriteConsole` 改由 Console sink 處理。
+- [x] Error/Critical 導向 stderr，其餘導向 stdout。
+- [x] 使用共同 output template 保留 `LogLinePattern` 可解析格式。
+- [x] 將 general/error/stream 檔案改由 File sink/filter 處理。
+- [x] 容器模式不註冊 File sink，不建立應用程式 log 檔案。
+- [x] 非容器 `writeLog=false` 與 `Log.New` 依 `FileRoute` filter 維持既有路由。
 
 完成定義：console 與三種檔案輸出和相容契約一致，不再直接呼叫 `File.AppendAllText`。
 
 ### 階段 3：切換 Loki sink
 
-- [ ] 設定 `Serilog.Sinks.Grafana.Loki` 的 endpoint、labels、batch、queue、retry 與 timeout。
-- [ ] 實作完整 endpoint/base URL 正規化。
-- [ ] 確認 sink 不會把高 cardinality properties 自動升成 labels。
-- [ ] Loki 不可用時，console 與程序主流程不受影響。
+- [x] 設定 `Serilog.Sinks.Grafana.Loki` 的 endpoint、labels、batch、queue、retry 與 timeout。
+- [x] 實作完整 endpoint/base URL 正規化。
+- [x] sink 僅設定 `app`、`service`、`role`、`level` labels，不提升其他 properties。
+- [x] Loki 使用背景 batching；不可用時不阻塞 console 與程序主流程。
 - [ ] 恢復 Loki 後，背景推送能恢復且不產生無限重複資料。
-- [ ] 正常關閉時執行有限時間 flush。
-- [ ] 未處理例外與 ProcessExit 維持最多 2 秒 best-effort flush。
+- [x] 正常關閉時執行有限時間 flush。
+- [x] 未處理例外與 ProcessExit 維持最多 2 秒 best-effort flush。
 
 完成定義：Loki 主動推送功能由 Serilog sink 完整接管，console 備援獨立可用。
 
 ### 階段 4：整理 facade 與 Discord.Net adapter
 
-- [ ] `Log.Info/Warn/Error/New/Debug` 改成建立 Serilog event。
-- [ ] 為未來 structured logging 新增 message template/property overload；舊 overload 保留。
-- [ ] `Log.Error(Exception, ...)` 改為單一 structured event。
-- [ ] `Log.LogMsg` 保留 severity mapping 與雜訊過濾，移除重複 message/stack event。
-- [ ] 確認 `Log.New`、`FormatColorWrite` 與 crash path 沒有行為回歸。
-- [ ] grep 所有 `Log.*` 呼叫，逐一檢查非預設參數與 `#if` 區塊。
+- [x] `Log.Info/Warn/Error/New/Debug` 改成建立 Serilog event。
+- [x] 為未來 structured logging 新增 message template/property overload；舊 overload 保留。
+- [x] `Log.Error(Exception, ...)` 改為單一 structured event。
+- [x] `Log.LogMsg` 保留 severity mapping 與雜訊過濾，移除重複 message/stack event。
+- [x] `Log.New`、`FormatColorWrite` 與 crash path 維持既有 facade signature 與檔案路由。
+- [x] 已 grep `Log.*` 呼叫；唯一非預設檔案參數為 crash path 的 `writeLog=false`，並保留相關 `#if` 行為。
 
 完成定義：業務呼叫端不需全面改寫，既有 API 維持可編譯且輸出符合新契約。
 
 ### 階段 5：移除自製 sink 與更新文件
 
-- [ ] 刪除 `LokiLogSink.cs`。
-- [ ] 從 `Log.cs` 移除自製 queue、HTTP、timestamp 與 dispose 邏輯。
-- [ ] 更新 [`LOGGING.md`](LOGGING.md) 的架構、設定、失敗策略、labels 與 LogQL。
-- [ ] 更新 `AGENTS.md`「目前狀態」，記錄 Serilog 與 Loki sink 已接管 logging。
-- [ ] 確認 Docker logging options 仍為 `json-file`、`10m x 3`。
-- [ ] 手動執行 `graphify update .`，並依 repo 規則將 `graphify-out/` 變更納入同一 commit。
+- [x] 刪除 `LokiLogSink.cs`。
+- [x] 從 `Log.cs` 移除自製 queue、payload、timestamp 與 dispose 邏輯；只保留 5 秒 timeout/4xx 分流 HTTP handler。
+- [x] 更新 [`LOGGING.md`](LOGGING.md) 的架構、設定、失敗策略、labels 與 LogQL。
+- [x] 更新 `AGENTS.md`「目前狀態」，記錄 Serilog 與 Loki sink 已接管 logging。
+- [x] 確認 Docker logging options 仍為 `json-file`、`10m x 3`。
+- [x] 已執行 `graphify update .`，並依 repo 規則將 `graphify-out/` 變更納入同一 commit。
 
 完成定義：repo 不再包含可執行的自製 Loki push 實作，文件與程式碼一致。
 
@@ -267,29 +269,29 @@ Discord.Net `LogMessage` 同樣應避免同一 message 重複寫入；保留既�
 
 ### 8.1 編譯與靜態檢查
 
-- [ ] `dotnet build DiscordStreamNotifyBot.sln -c Release`：0 error。
-- [ ] `git diff --check`：通過。
+- [x] `dotnet build DiscordStreamNotifyBot.sln -c Release`：0 error。
+- [x] `git diff --check`：通過。
 - [ ] `docker compose config`：通過。
-- [ ] 搜尋確認已無 `new LokiLogSink`、自製 `/loki/api/v1/push` payload 或直接 Loki `HttpClient`。
-- [ ] 搜尋確認沒有 Alloy、Promtail 或 Docker Loki driver 重複收集 Bot stdout。
+- [x] 搜尋確認已無 `new LokiLogSink` 或自製 Loki JSON payload；push path 字串僅用於相容 URL 正規化。
+- [x] 搜尋確認沒有 Alloy、Promtail 或 Docker Loki driver 重複收集 Bot stdout。
 
 ### 8.2 Console 與檔案
 
-- [ ] INFO/WARN 寫 stdout，ERROR/CRITICAL 寫 stderr。
+- [x] INFO/WARN 寫 stdout，ERROR/CRITICAL 寫 stderr（暫存 smoke harness）。
 - [ ] Docker `docker compose logs` 可看到完整格式與 exception。
 - [ ] Loki 完全離線時，console 不延遲且 Bot 持續執行。
-- [ ] 非容器 general/error/stream 檔案路由符合 §5.2。
-- [ ] `writeLog=false` 不寫檔，但 console 與 Loki 仍有事件。
-- [ ] Debugger 未附加時 `Log.Debug` 不輸出。
+- [x] 非容器 general/error/stream 檔案路由符合 §5.2（暫存 smoke harness）。
+- [x] `writeLog=false` 不寫檔但仍寫 console（Loki 部分待實際環境驗證）。
+- [x] Debugger 未附加時 `Log.Debug` 不輸出（暫存 smoke harness）。
 
 ### 8.3 Loki
 
 - [ ] `{app="discord-stream-notify-bot"}` 可查到三種 service。
 - [ ] `{role="notifier:0"}` 只回傳指定 shard。
 - [ ] `level=ERROR|CRITICAL` 查詢正常。
-- [ ] exception type、message、stack trace 可在同一 event 檢視。
-- [ ] labels 僅含核准的低 cardinality 欄位。
-- [ ] 完整 `LOKI_URL` 與 base URL 都不會產生重複 path。
+- [x] mock Loki payload 內的 exception type、message、stack trace 位於同一 event。
+- [x] mock Loki payload labels 僅含核准的低 cardinality 欄位。
+- [x] mock Loki 驗證完整 `LOKI_URL` 與 base URL 都不會產生重複 path。
 - [ ] 408、429、5xx、DNS 失敗與 timeout 不會阻塞主流程。
 - [ ] 不可重試的 4xx 有清楚 stderr 診斷，且後續批次仍能處理。
 - [ ] Loki 恢復後不會因 retry 造成明顯重複事件。
@@ -340,12 +342,12 @@ Discord.Net `LogMessage` 同樣應避免同一 message 重複寫入；保留既�
 
 本計畫完成必須同時符合：
 
-- [ ] Serilog 接管 console、非容器檔案與 Loki。
-- [ ] 自製 `LokiLogSink` 已刪除。
-- [ ] 三個程序維持 console fallback 與有限時間 flush。
-- [ ] 現有 `Log` 呼叫端不需一次全面改寫。
-- [ ] Loki labels、`LOKI_URL` 與 Docker logging 設定向後相容。
+- [x] Serilog 接管 console、非容器檔案與 Loki。
+- [x] 自製 `LokiLogSink` 已刪除。
+- [x] 三個程序維持 console fallback 與有限時間 flush。
+- [x] 現有 `Log` 呼叫端不需一次全面改寫。
+- [x] Loki labels、`LOKI_URL` 與 Docker logging 設定向後相容。
 - [ ] §8 驗證矩陣完成。
-- [ ] 全 solution Release build 為 0 error。
-- [ ] `LOGGING.md`、`AGENTS.md`、本計畫 checkbox 與實際程式碼同步。
-- [ ] 變更已 commit；進度存在 repo，而不是只存在 session 記憶。
+- [x] 全 solution Release build 為 0 error。
+- [x] `LOGGING.md`、`AGENTS.md`、本計畫 checkbox 與實際程式碼同步。
+- [x] 變更已 commit；進度存在 repo，而不是只存在 session 記憶。
