@@ -9,10 +9,6 @@
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
-- **三層拆分重構（Scraper / Notifier / Coordinator + Shared，Redis Streams 匯流排）程式碼全數完成（階段 0-7）**，權威設計見 [docs/HORIZONTAL_SCALING_PLAN.md](docs/HORIZONTAL_SCALING_PLAN.md)。Coordinator 已提供 `:9464/metrics` 與可匯入 Grafana dashboard（[監控說明](docs/PROMETHEUS_GRAFANA.md)）；`Log` 會非同步批次主動推送既有 Loki，console/Docker `json-file`（10m x 3）保留為備援。**僅編譯綠燈驗證；§11 執行期正確性 + Docker 實建 image 待測試環境**（本機無 docker）。
-- **Twitch OAuth 零成本 EventSub 三 repo 程式碼已完成**：Backend provider-specific OAuth/token 維護/Webhook/metrics、Frontend 選用 Twitch 綁定與 Cloudflare Pages 單一 SPA（`https://stream-bot.konnokai.me/`）、Bot 永久 0-cost EventSub/fallback polling/安全清理/Scraper `:9465/metrics` 均已實作；權威計畫與尚待部署環境驗證項目見 [docs/TWITCH_OAUTH_EVENTSUB_PLAN.md](docs/TWITCH_OAUTH_EVENTSUB_PLAN.md)。
-- **`claude` 分支 = RabbitMQ 版三層拆分的完整參考實作。只用 `git show claude:<path>` 閱讀收割，永不合併、永不 checkout 到工作樹。**
-- `nadekobot/` = 參考用外部專案（已 gitignore），非本專案程式碼。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run
@@ -45,10 +41,12 @@ dotnet ef migrations add <Name> --project src/DiscordStreamNotifyBot.Shared
 dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅限本地/開發 DB
 ```
 
-- **正式 DB 永遠不用 `database update` 直連**。改產冪等 SQL、人工審核後手動於維護窗口執行：
-  `dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate.sql`
+- **正式 DB 永遠不用 `database update` 直連**。每次只針對單次 migration 產生冪等 SQL，指定上一筆 migration 為 `from`、目標 migration 為 `to`，人工審核後手動於維護窗口執行；禁止產生整個 DB 的完整 script：
+  `dotnet ef migrations script 20260709091318_AddManualMemberCheckVideoFlag 20260719142803_AddTwitchBroadcasterAuthorization --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate_sql\migrate_AddTwitchBroadcasterAuthorization.sql`
+- 生成的搬遷 SQL 一律放在 `migrate_sql/`，並以目標 migration 命名為 `migrate_<MigrationName>.sql`。
 - 正式 DB **已完成基線化**（`__EFMigrationsHistory` 存在，2026-06），且已套用至 claude 分支的 `SyncModelDrift`。**禁用 `EnsureCreated`**。
 - 重構搬遷 DataBase/ 時，migration 檔**只能照搬、不可重新生成**（ID 必須對上正式 DB 歷史，詳見計畫 §9-2）。
+
 
 ## 架構要點（現行樹）
 
