@@ -42,9 +42,10 @@ dotnet ef migrations add <Name> --project src/DiscordStreamNotifyBot.Shared
 dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅限本地/開發 DB
 ```
 
-- **正式 DB 永遠不用 `database update` 直連**。每次只針對單次 migration 產生冪等 SQL，指定上一筆 migration 為 `from`、目標 migration 為 `to`，人工審核後手動於維護窗口執行；禁止產生整個 DB 的完整 script：
-  `dotnet ef migrations script 20260709091318_AddManualMemberCheckVideoFlag 20260719142803_AddTwitchBroadcasterAuthorization --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate_sql\migrate_AddTwitchBroadcasterAuthorization.sql`
-- 生成的搬遷 SQL 一律放在 `migrate_sql/`，並以目標 migration 命名為 `migrate_<MigrationName>.sql`。
+- **正式 DB 永遠不用 `database update` 直連**。每次 migration 必須產生兩份冪等 SQL：單次增量檔指定上一筆 migration 為 `from`、目標 migration 為 `to`，人工審核後手動於維護窗口執行；另產生涵蓋全部 migrations 的完整檔，供全新環境匯入：
+  `dotnet ef migrations script 20260709091318_AddManualMemberCheckVideoFlag 20260719142803_AddTwitchBroadcasterAuthorization --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate_sql\20260719142803_AddTwitchBroadcasterAuthorization.sql`
+  `dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate_sql\all.sql`
+- 生成的搬遷 SQL 一律放在 `migrate_sql/`；單次增量檔以目標 migration 命名為 `<MigrationCreateTime>_<MigrationName>.sql`，完整檔固定命名為 `all.sql` 並於每次 migration 後更新。
 - 正式 DB **已完成基線化**（`__EFMigrationsHistory` 存在，2026-06），且已套用至 claude 分支的 `SyncModelDrift`。**禁用 `EnsureCreated`**。
 - 重構搬遷 DataBase/ 時，migration 檔**只能照搬、不可重新生成**（ID 必須對上正式 DB 歷史，詳見計畫 §9-2）。
 
