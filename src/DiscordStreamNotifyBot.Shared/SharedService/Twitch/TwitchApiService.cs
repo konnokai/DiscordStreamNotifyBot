@@ -325,7 +325,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         private bool IsExactEventSub(EventSubSubscription subscription, string type, string version,
             string broadcasterUserId)
-            => subscription.Status == "enabled" &&
+            => (subscription.Status == "enabled" || subscription.Status == "webhook_callback_verification_pending") &&
                 IsExpectedEventSubConfiguration(subscription, type, version, broadcasterUserId);
 
         private bool IsExpectedEventSubConfiguration(EventSubSubscription subscription, string type, string version,
