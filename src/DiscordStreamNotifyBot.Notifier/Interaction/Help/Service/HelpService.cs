@@ -1,93 +1,114 @@
-﻿using Discord.Interactions;
+using Discord.Interactions;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.Localization;
 
 namespace DiscordStreamNotifyBot.Interaction.Help.Service
 {
     public class HelpService : IInteractionService
     {
-        public EmbedBuilder GetCommandHelp(SlashCommandInfo com)
+        private readonly BotLocalizer _localizer;
+        private readonly CommandDisplayResolver _displayResolver;
+
+        public HelpService(BotLocalizer localizer, CommandDisplayResolver displayResolver)
         {
-            var str = string.Format($"**`/{com.Name}`**");
-            var des = com.Description;
-            if (com.Attributes.Any((x) => x is CommandSummaryAttribute))
-            {
-                var att = com.Attributes.FirstOrDefault((x) => x is CommandSummaryAttribute) as CommandSummaryAttribute;
-                des = att.Summary;
-            }
-            var em = new EmbedBuilder().WithTitle(com.Name).WithDescription(des);
-
-            if (com.Parameters.Count > 0)
-            {
-                string par = "";
-                foreach (var item in com.Parameters)
-                    par += item.Name + " " + item.Description + "\n";
-                em.AddField("參數", par.TrimEnd('\n'));
-            }
-
-            var reqs = GetCommandRequirements(com);
-            if (reqs.Any()) em.AddField("指令執行者權限要求", string.Join("\n", reqs));
-
-            var botReqs = GetBotCommandRequirements(com);
-            if (botReqs.Any()) em.AddField("Bot權限要求", string.Join("\n", botReqs));
-
-            var exp = GetCommandExampleString(com);
-            if (!string.IsNullOrEmpty(exp)) em.AddField("例子", exp);
-
-            em.WithFooter(efb => efb.WithText("模組: " + com.Module.Name))
-              .WithOkColor();
-
-            return em;
+            _localizer = localizer;
+            _displayResolver = displayResolver;
         }
 
-        public static string[] GetCommandRequirements(SlashCommandInfo cmd) =>
-            cmd.Preconditions
-                  .Where(ca => ca is RequireOwnerAttribute || ca is RequireUserPermissionAttribute)
-                  .Select(ca =>
-                  {
-                      if (ca is RequireOwnerAttribute)
-                      {
-                          return "Bot擁有者限定";
-                      }
-
-                      var cau = (RequireUserPermissionAttribute)ca;
-                      if (cau.GuildPermission != null)
-                      {
-                          return ("伺服器 " + cau.GuildPermission.ToString() + " 權限")
-                                       .Replace("Guild", "Server", StringComparison.InvariantCulture);
-                      }
-
-                      return ("頻道 " + cau.ChannelPermission + " 權限")
-                                       .Replace("Guild", "Server", StringComparison.InvariantCulture);
-                  })
-                .ToArray();
-
-        public static string[] GetBotCommandRequirements(SlashCommandInfo cmd) =>
-            cmd.Preconditions
-                  .Where(ca => ca is RequireBotPermissionAttribute)
-                  .Select(ca =>
-                  {
-                      var cau = (RequireBotPermissionAttribute)ca;
-                      if (cau.GuildPermission != null)
-                      {
-                          return ("伺服器 " + cau.GuildPermission.ToString() + " 權限")
-                                       .Replace("Guild", "Server", StringComparison.InvariantCulture);
-                      }
-
-                      return ("頻道 " + cau.ChannelPermission + " 權限")
-                                       .Replace("Guild", "Server", StringComparison.InvariantCulture);
-                  })
-                .ToArray();
-
-        public static string GetCommandExampleString(SlashCommandInfo cmd)
+        public EmbedBuilder GetCommandHelp(SlashCommandInfo command, string locale)
         {
-            var att = cmd.Attributes.FirstOrDefault((x) => x is CommandExampleAttribute);
-            if (att == null) return "";
+            string commandPath = _displayResolver.GetCommandPath(locale, command);
+            string detailKey = "Help.CommandDetail." + string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(command));
+            string description = _localizer.TryGet(detailKey, locale, out string detail)
+                ? detail
+                : _displayResolver.GetCommandDescription(locale, command);
+            var embed = new EmbedBuilder()
+                .WithOkColor()
+                .WithTitle(commandPath)
+                .WithDescription(description);
 
-            var commandExampleAttribute = att as CommandExampleAttribute;
+            if (command.Parameters.Count > 0)
+            {
+                string parameters = string.Join('\n', command.Parameters.Select(parameter =>
+                    $"`{_displayResolver.GetParameterName(locale, command, parameter)}` - {_displayResolver.GetParameterDescription(locale, command, parameter)}"));
+                embed.AddField(_localizer.Get("Help.Command.Parameters", locale), parameters);
+            }
 
-            return string.Join("\n", commandExampleAttribute.ExpArray
-                .Select((x) => $"`/{cmd.Module.SlashGroupName} {cmd.Name} {x}`")
-                .ToArray());
+            string[] userRequirements = GetCommandRequirements(command, locale);
+            if (userRequirements.Length > 0)
+                embed.AddField(_localizer.Get("Help.Command.UserPermissions", locale), string.Join('\n', userRequirements));
+
+            string[] botRequirements = GetBotCommandRequirements(command, locale);
+            if (botRequirements.Length > 0)
+                embed.AddField(_localizer.Get("Help.Command.BotPermissions", locale), string.Join('\n', botRequirements));
+
+            string examples = GetCommandExampleString(command, locale);
+            if (!string.IsNullOrEmpty(examples))
+                embed.AddField(_localizer.Get("Help.Command.Examples", locale), examples);
+
+            embed.WithFooter(_localizer.Format("Help.Command.ModuleFooter", locale,
+                _displayResolver.GetModuleName(locale, command.Module)));
+            return embed;
+        }
+
+        private string[] GetCommandRequirements(SlashCommandInfo command, string locale)
+            => command.Preconditions
+                .Where(attribute => attribute is RequireOwnerAttribute || attribute is RequireUserPermissionAttribute)
+                .SelectMany(attribute => attribute is RequireOwnerAttribute
+                    ? new[] { _localizer.Get("Permissions.BotOwnerOnly", locale) }
+                    : GetPermissionNames((RequireUserPermissionAttribute)attribute, locale, "Permissions.UserRequirement"))
+                .ToArray();
+
+        private string[] GetBotCommandRequirements(SlashCommandInfo command, string locale)
+            => command.Preconditions
+                .OfType<RequireBotPermissionAttribute>()
+                .SelectMany(attribute => GetPermissionNames(attribute, locale, "Permissions.BotRequirement"))
+                .ToArray();
+
+        private IEnumerable<string> GetPermissionNames(RequireUserPermissionAttribute attribute, string locale, string templateKey)
+        {
+            if (attribute.GuildPermission is GuildPermission guildPermissions)
+            {
+                foreach (GuildPermission permission in Enum.GetValues<GuildPermission>())
+                {
+                    ulong value = Convert.ToUInt64(permission);
+                    if (value != 0 && (value & (value - 1)) == 0 && guildPermissions.HasFlag(permission))
+                        yield return _localizer.Format(templateKey, locale, _localizer.Get($"Permissions.Name.{permission}", locale));
+                }
+            }
+            else if (attribute.ChannelPermission is ChannelPermission channelPermission)
+            {
+                yield return _localizer.Format(templateKey, locale,
+                    _localizer.Get($"Permissions.Name.{channelPermission}", locale));
+            }
+        }
+
+        private IEnumerable<string> GetPermissionNames(RequireBotPermissionAttribute attribute, string locale, string templateKey)
+        {
+            if (attribute.GuildPermission is GuildPermission guildPermissions)
+            {
+                foreach (GuildPermission permission in Enum.GetValues<GuildPermission>())
+                {
+                    ulong value = Convert.ToUInt64(permission);
+                    if (value != 0 && (value & (value - 1)) == 0 && guildPermissions.HasFlag(permission))
+                        yield return _localizer.Format(templateKey, locale, _localizer.Get($"Permissions.Name.{permission}", locale));
+                }
+            }
+            else if (attribute.ChannelPermission is ChannelPermission channelPermission)
+            {
+                yield return _localizer.Format(templateKey, locale,
+                    _localizer.Get($"Permissions.Name.{channelPermission}", locale));
+            }
+        }
+
+        private string GetCommandExampleString(SlashCommandInfo command, string locale)
+        {
+            var attribute = command.Attributes.OfType<CommandExampleAttribute>().FirstOrDefault();
+            if (attribute == null)
+                return "";
+
+            string commandPath = _displayResolver.GetCommandPath(locale, command);
+            return string.Join('\n', attribute.ExpArray.Select(example => $"`{commandPath} {example}`"));
         }
     }
 }

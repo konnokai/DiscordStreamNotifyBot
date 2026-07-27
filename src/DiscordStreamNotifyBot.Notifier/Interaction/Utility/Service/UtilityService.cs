@@ -1,16 +1,25 @@
-﻿namespace DiscordStreamNotifyBot.Interaction.Utility.Service
+﻿using DiscordStreamNotifyBot.Localization;
+
+namespace DiscordStreamNotifyBot.Interaction.Utility.Service
 {
     public class UtilityService : IInteractionService
     {
-        public UtilityService(DiscordSocketClient client)
+        private readonly BotLocalizer _localizer;
+        private readonly IServiceProvider _services;
+
+        public UtilityService(DiscordSocketClient client, BotLocalizer localizer, IServiceProvider services)
         {
+            _localizer = localizer;
+            _services = services;
             client.ModalSubmitted += async modal =>
             {
-                switch (modal.Data.CustomId)
+                string modalRoute = modal.Data.CustomId.Split(':')[0];
+                switch (modalRoute)
                 {
                     case "send-message-to-bot-owner":
                         {
                             await modal.DeferAsync(true);
+                            string locale = await modal.ResolveLocaleAsync(_services, true);
 
                             List<SocketMessageComponentData> components = modal.Data.Components.ToList();
                             string message = components.First(x => x.CustomId == "message").Value;
@@ -25,7 +34,7 @@
                                 .AddField("伺服器 Id", modal.GuildId ?? 0);
 
                             var componentBuilder = new ComponentBuilder()
-                                .WithButton("發送回覆", $"send-reply-to-user:{modal.User.Id}", ButtonStyle.Success);
+                                .WithButton("發送回覆", $"send-reply-to-user:{modal.User.Id}:{locale}", ButtonStyle.Success);
 
                             await Bot.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());
 
@@ -39,9 +48,8 @@
 
                             embedBuilder
                                 .WithTitle("")
-                                .WithDescription($"已收到訊息，請確保你填寫的聯絡資訊可讓 Bot 擁有者聯繫\n" +
-                                    $"注意: Bot 擁有者會優先透過 Bot 來回應你的訊息，請確保你已開啟與本 Bot 共通伺服器的 `私人訊息` 隱私設定")
-                                .AddField($"已附加的檔案數量", modal.Data.Attachments.Count);
+                                .WithDescription(_localizer.Get("Utility.Contact.Received", locale))
+                                .AddField(_localizer.Get("Utility.Contact.AttachmentCount", locale), modal.Data.Attachments?.Count ?? 0);
 
                             await modal.FollowupAsync(embed: embedBuilder.Build(), ephemeral: true);
                         }
@@ -49,9 +57,16 @@
                     case "send-reply-to-user":
                         {
                             await modal.DeferAsync(true);
+                            string ownerLocale = await modal.ResolveLocaleAsync(_services, true);
 
                             List<SocketMessageComponentData> components = modal.Data.Components.ToList();
-                            ulong userId = ulong.Parse(components.First(x => x.CustomId == "userId").Value);
+                            string[] routeData = modal.Data.CustomId.Split(':');
+                            ulong userId = routeData.Length > 1
+                                ? ulong.Parse(routeData[1])
+                                : ulong.Parse(components.First(x => x.CustomId == "userId").Value);
+                            string userLocale = routeData.Length > 2
+                                ? SupportedLocale.NormalizeOrDefault(routeData[2])
+                                : SupportedLocale.TraditionalChinese;
                             string message = components.First(x => x.CustomId == "message").Value;
 
                             try
@@ -59,7 +74,7 @@
                                 var user = await client.Rest.GetUserAsync(userId);
                                 await user.SendMessageAsync(embed: new EmbedBuilder()
                                         .WithOkColor()
-                                        .WithTitle("來自擁有者的回覆")
+                                        .WithTitle(_localizer.Get("Utility.Contact.OwnerReplyTitle", userLocale))
                                         .WithDescription(message)
                                         .Build());
 
@@ -67,22 +82,23 @@
                                 {
                                     foreach (var attachment in modal.Data.Attachments)
                                     {
-                                        await user.SendMessageAsync($"附加檔案: {attachment.Url}");
+                                        await user.SendMessageAsync(_localizer.Format("Utility.Contact.ReplyAttachment", userLocale, attachment.Url));
                                     }
                                 }
 
-                                await modal.SendConfirmAsync($"發送成功，回覆訊息:\n" +
-                                    $"{message}\n" +
-                                    $"({(modal.Data.Attachments != null ? modal.Data.Attachments.Count : 0)} 個附加檔案)", true);
+                                await modal.SendConfirmAsync(_localizer, ownerLocale, "Utility.Contact.ReplySent", true, true,
+                                    message, modal.Data.Attachments?.Count ?? 0);
                             }
                             catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                             {
-                                await modal.SendErrorAsync("無法發送訊息，該使用者未開放私人訊息", true, true);
+                                await modal.SendErrorAsync(_localizer, ownerLocale, "Utility.Contact.UserDmClosed", true, true);
                                 return;
                             }
                             catch (Exception ex)
                             {
-                                await modal.SendErrorAsync($"無法發送訊息: {ex.Demystify()}", true, true);
+                                Log.Error(ex.Demystify(), "Bot 擁有者回覆使用者時失敗");
+                                await modal.SendErrorAsync(_localizer, SupportedLocale.TraditionalChinese,
+                                    "Utility.Contact.OwnerReplyFailed", true, true);
                                 return;
                             }
                         }
@@ -100,12 +116,14 @@
                 if (!button.Data.CustomId.StartsWith("send-reply-to-user"))
                     return;
 
+                string ownerLocale = await button.ResolveLocaleAsync(_services, true);
                 string userId = button.Data.CustomId.Split(':')[1];
-                var modalBuilder = new ModalBuilder().WithTitle("回覆訊息給使用者")
-                   .WithCustomId("send-reply-to-user")
-                   .AddTextInput("UserId", "userId", TextInputStyle.Short, "", null, null, true, userId)
-                   .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "請輸入你要發送的訊息", null, null, true)
-                   .AddFileUpload("相關截圖或檔案", "file", maxValues: 4, isRequired: false);
+                var modalBuilder = new ModalBuilder().WithTitle(_localizer.Get("Utility.Contact.ReplyModalTitle", ownerLocale))
+                   .WithCustomId(button.Data.CustomId)
+                   .AddTextInput(_localizer.Get("Utility.Contact.ReplyUserIdLabel", ownerLocale), "userId", TextInputStyle.Short, "", null, null, true, userId)
+                   .AddTextInput(_localizer.Get("Utility.Contact.MessageLabel", ownerLocale), "message", TextInputStyle.Paragraph,
+                       _localizer.Get("Utility.Contact.ReplyMessagePlaceholder", ownerLocale), null, null, true)
+                   .AddFileUpload(_localizer.Get("Utility.Contact.ReplyAttachmentsLabel", ownerLocale), "file", maxValues: 4, isRequired: false);
 
                 await button.RespondWithModalAsync(modalBuilder.Build());
             };

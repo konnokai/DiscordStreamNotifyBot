@@ -183,29 +183,7 @@ namespace DiscordStreamNotifyBot.Shared
         }
 
         public string GetVideoId(string videoUrl)
-        {
-            if (string.IsNullOrEmpty(videoUrl))
-                throw new ArgumentNullException(videoUrl);
-
-            videoUrl = videoUrl.Trim();
-
-            if (videoUrl.Contains("www.youtube.com/watch")) //https://www.youtube.com/watch?v=7DqDRE_SW34
-                videoUrl = videoUrl.Substring(videoUrl.IndexOf("?v=") + 3, 11);
-            else if (videoUrl.Contains("https://youtu.be")) //https://youtu.be/Z-UJbyLqioM
-                videoUrl = videoUrl.Substring(17, 11);
-            else if (videoUrl.Contains("https://www.youtube.com/live/")) //https://www.youtube.com/live/MdmQgxffY6k?feature=share
-                videoUrl = videoUrl.Substring(29, 11);
-
-            if (videoUrl.Length == 11)
-                return videoUrl;
-
-            Regex regex = new Regex(@"(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])(?'VideoId'[\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:['""][^<>]*>|<\/a>))[?=&+%\w.-]*"); //https://regex101.com/r/OY96XI/1
-            Match match = regex.Match(videoUrl);
-            if (!match.Success)
-                throw new UriFormatException("錯誤，請確認是否輸入 YouTube 影片網址");
-
-            return match.Groups["VideoId"].Value;
-        }
+            => YoutubeVideoIdParser.Parse(videoUrl);
 
         public async Task<string> GetChannelTitle(string channelId)
         {

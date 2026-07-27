@@ -1,4 +1,5 @@
-﻿using Discord.Interactions;
+using Discord.Interactions;
+using DiscordStreamNotifyBot.Localization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordStreamNotifyBot.Interaction.Help
@@ -9,141 +10,197 @@ namespace DiscordStreamNotifyBot.Interaction.Help
         private readonly InteractionService _interaction;
         private readonly IServiceProvider _services;
 
-        public Help(InteractionService interaction, IServiceProvider service)
+        public Help(InteractionService interaction, IServiceProvider services)
         {
             _interaction = interaction;
-            _services = service;
+            _services = services;
         }
 
         public class HelpGetModulesAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context,
+                IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                List<AutocompleteResult> results = new();
-                var succ = new HashSet<SlashCommandInfo>((await Task.WhenAll(services.GetService<InteractionService>().SlashCommands.Select(async x =>
-                {
-                    var pre = await x.CheckPreconditionsAsync(context, services).ConfigureAwait(false);
-                    return (Cmd: x, Succ: pre.IsSuccess);
-                })).ConfigureAwait(false))
-                   .Where(x => x.Succ)
-                   .Select(x => x.Cmd));
-
                 try
                 {
-                    foreach (var item in succ.GroupBy((x) => x.Module.Name))
-                    {
-                        var module = item.First().Module;
-                        results.Add(new AutocompleteResult((string.IsNullOrWhiteSpace(module.Description) ? "" : module.Description + " ") + $"({module.Name})", module.Name));
-                    }
+                    string locale = await autocompleteInteraction.ResolveLocaleAsync(services, true);
+                    var displayResolver = services.GetRequiredService<CommandDisplayResolver>();
+                    string input = autocompleteInteraction.Data.Current.Value?.ToString();
+                    var commands = await GetAvailableCommandsAsync(context, services);
+                    var candidates = commands
+                        .Select(command => command.Module)
+                        .Where(module => CommandDisplayResolver.GetCanonicalModulePath(module).Count > 0)
+                        .Select(module => new
+                        {
+                            Name = displayResolver.GetModuleName(locale, module),
+                            Description = displayResolver.GetModuleDescription(locale, module),
+                            CanonicalPath = string.Join('.', CommandDisplayResolver.GetCanonicalModulePath(module)),
+                        })
+                        .Select(module => new AutocompleteCandidate(
+                            $"{module.Description} ({module.Name})", module.CanonicalPath,
+                            module.Name, module.Description));
+                    var results = AutocompleteSearch.Filter(candidates, input)
+                        .Select(item => new AutocompleteResult(item.Name, item.Value));
+                    return AutocompletionResult.FromSuccess(results);
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("HelpGetModulesAutocompleteHandler");
-                    Log.Error(ex.ToString());
+                    Log.Error(ex.Demystify(), "產生 Help 模組 autocomplete 時失敗");
+                    return AutocompletionResult.FromSuccess();
                 }
+            }
+        }
 
-                return AutocompletionResult.FromSuccess(results.Take(25));
+        public class HelpGetCommandsAutocompleteHandler : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context,
+                IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                try
+                {
+                    string locale = await autocompleteInteraction.ResolveLocaleAsync(services, true);
+                    var displayResolver = services.GetRequiredService<CommandDisplayResolver>();
+                    string input = autocompleteInteraction.Data.Current.Value?.ToString();
+                    var commands = await GetAvailableCommandsAsync(context, services);
+                    var candidates = commands
+                        .Select(command => new
+                        {
+                            Command = command,
+                            CanonicalPath = string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(command)),
+                            DisplayPath = displayResolver.GetCommandPath(locale, command),
+                            Description = displayResolver.GetCommandDescription(locale, command)
+                        })
+                        .Select(item => new AutocompleteCandidate(
+                            $"{item.DisplayPath} - {item.Description}", item.CanonicalPath,
+                            item.DisplayPath, item.Description));
+                    var results = AutocompleteSearch.Filter(candidates, input)
+                        .Select(item => new AutocompleteResult(item.Name, item.Value));
+                    return AutocompletionResult.FromSuccess(results);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "產生 Help 指令 autocomplete 時失敗");
+                    return AutocompletionResult.FromSuccess();
+                }
             }
         }
 
         [SlashCommand("get-all-modules", "顯示全部模組")]
         public async Task Modules()
         {
-            var succ = new HashSet<SlashCommandInfo>((await Task.WhenAll(_interaction.SlashCommands.Select(async x =>
-            {
-                var pre = await x.CheckPreconditionsAsync(Context, _services).ConfigureAwait(false);
-                return (Cmd: x, Succ: pre.IsSuccess);
-            })).ConfigureAwait(false))
-               .Where(x => x.Succ)
-               .Select(x => x.Cmd));
+            string locale = await GetLocaleAsync(false);
+            var commands = await GetAvailableCommandsAsync(Context, _services);
+            var modules = commands
+                .Select(command => command.Module)
+                .Where(module => CommandDisplayResolver.GetCanonicalModulePath(module).Count > 0)
+                .GroupBy(module => string.Join('.', CommandDisplayResolver.GetCanonicalModulePath(module)))
+                .Select(group => group.First())
+                .OrderBy(module => CommandDisplayResolver.GetModuleName(locale, module), StringComparer.Ordinal)
+                .Select(module => "- " + CommandDisplayResolver.GetModuleName(locale, module));
+            string commandsPath = CommandDisplayResolver.GetCommandPath(locale, "help", "get-all-commands");
 
-            await RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle("模組清單")
-                .WithDescription(string.Join("\n", succ.GroupBy((x) => x.Module.Name).Select((x) => "。" + x.Key)))
-                .WithFooter("輸入 `/help getallcommands 模組名稱` 以顯示模組內全部的指令，例 `/help get-all-commands help`")
+            await RespondAsync(embed: new EmbedBuilder()
+                .WithOkColor()
+                .WithTitle(BotLocalizer.Get("Help.Modules.Title", locale))
+                .WithDescription(string.Join('\n', modules))
+                .WithFooter(BotLocalizer.Format("Help.Modules.Footer", locale, commandsPath))
                 .Build());
         }
 
         [SlashCommand("get-all-commands", "顯示模組內包含的指令")]
-        public async Task Commands([Summary("模組名稱"), Autocomplete(typeof(HelpGetModulesAutocompleteHandler))] string module)
+        public async Task Commands(
+            [Summary("module", "模組名稱"), Autocomplete(typeof(HelpGetModulesAutocompleteHandler))] string module)
         {
+            string locale = await GetLocaleAsync(false);
             module = module?.Trim();
             if (string.IsNullOrWhiteSpace(module))
             {
-                await Context.Interaction.SendErrorAsync("未輸入模組名稱");
+                await SendLocalizedErrorAsync("Help.Errors.ModuleRequired");
                 return;
             }
 
-            var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant() == module.ToUpperInvariant()).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
-            if (cmds.Count() == 0) { await Context.Interaction.SendErrorAsync($"找不到 {module} 模組", ephemeral: true); return; }
-
-            var succ = new HashSet<SlashCommandInfo>((await Task.WhenAll(cmds.Select(async x =>
+            var available = await GetAvailableCommandsAsync(Context, _services);
+            var commands = available
+                .Where(command => string.Join('.', CommandDisplayResolver.GetCanonicalModulePath(command.Module))
+                    .Equals(module, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(command => CommandDisplayResolver.GetCommandPath(locale, command), StringComparer.Ordinal)
+                .Distinct(new CommandTextEqualityComparer())
+                .ToList();
+            if (commands.Count == 0)
             {
-                var pre = await x.CheckPreconditionsAsync(Context, _services).ConfigureAwait(false);
-                return (Cmd: x, Succ: pre.IsSuccess);
-            })).ConfigureAwait(false))
-                .Where(x => x.Succ)
-                .Select(x => x.Cmd));
-            cmds = cmds.Where(x => succ.Contains(x));
-
-            if (cmds.Count() == 0)
-            {
-                await Context.Interaction.SendErrorAsync(module + " 未包含你可使用的指令");
+                await SendLocalizedErrorAsync("Help.Errors.ModuleNotFound", false, true, module);
                 return;
             }
 
-            var embed = new EmbedBuilder().WithOkColor().WithTitle($"{cmds.First().Module.Name} 內包含的指令").WithFooter("輸入 `/help get-command-help 指令` 以顯示指令的詳細說明，例 `/help get-command-help add-youtube-notice`");
-            var commandList = new List<string>();
-
-            foreach (var item in cmds)
-            {
-                var str = string.Format($"**`/{cmds.First().Module.SlashGroupName} {item.Name}`**");
-                if (!commandList.Contains(str)) commandList.Add(str);
-            }
-            embed.WithDescription(string.Join('\n', commandList));
-
+            string detailPath = CommandDisplayResolver.GetCommandPath(locale, "help", "get-command-help");
+            var embed = new EmbedBuilder()
+                .WithOkColor()
+                .WithTitle(BotLocalizer.Format("Help.Commands.Title", locale,
+                    CommandDisplayResolver.GetModuleName(locale, commands[0].Module)))
+                .WithDescription(string.Join('\n', commands.Select(command => $"**`{CommandDisplayResolver.GetCommandPath(locale, command)}`**")))
+                .WithFooter(BotLocalizer.Format("Help.Commands.Footer", locale, detailPath));
             await RespondAsync(embed: embed.Build());
         }
 
         [SlashCommand("get-command-help", "顯示指令的詳細說明")]
-        public async Task H([Summary("模組名稱"), Autocomplete(typeof(HelpGetModulesAutocompleteHandler))] string module = "", [Summary("指令名稱")] string command = "")
+        public async Task CommandHelp(
+            [Summary("module", "模組名稱"), Autocomplete(typeof(HelpGetModulesAutocompleteHandler))] string module = "",
+            [Summary("command", "指令名稱"), Autocomplete(typeof(HelpGetCommandsAutocompleteHandler))] string command = "")
         {
-            command = command?.Trim();
-
-            if (string.IsNullOrWhiteSpace(module))
+            string locale = await GetLocaleAsync(false);
+            if (string.IsNullOrWhiteSpace(module) && string.IsNullOrWhiteSpace(command))
             {
-                EmbedBuilder embed = new EmbedBuilder().WithOkColor().WithFooter("輸入 `/help get-all-modules` 取得所有的模組");
-                embed.Title = "直播小幫手 建置版本" + Program.Version;
-#if DEBUG || DEBUG_DONTREGISTERCOMMAND
-                embed.Title += " (測試版)";
-#endif
-                embed.WithDescription(File.ReadAllText(DiscordStreamNotifyBot.Utility.GetDataFilePath("HelpDescription.txt")).Replace("\\n", "\n") +
-                    $"\n\n您可以透過 {Format.Url("綠界", DiscordStreamNotifyBot.Utility.ECPayUrl)} 或 {Format.Url("Paypal", DiscordStreamNotifyBot.Utility.PaypalUrl)} 來贊助直播小幫手");
+                string modulesPath = CommandDisplayResolver.GetCommandPath(locale, "help", "get-all-modules");
+                string nowStreamingPath = CommandDisplayResolver.GetCommandPath(locale, "youtube", "now-streaming");
+                string recordPath = CommandDisplayResolver.GetCommandPath(locale, "youtube", "list-record-channel");
+                string bannerPath = CommandDisplayResolver.GetCommandPath(locale, "youtube", "set-banner-change");
+                string bannerHelpPath = CommandDisplayResolver.GetCommandPath(locale, "help", "get-command-help");
+                var embed = new EmbedBuilder()
+                    .WithOkColor()
+                    .WithTitle(BotLocalizer.Format("Help.Overview.Title", locale, Program.Version))
+                    .WithDescription(BotLocalizer.Format("Help.Overview.Description", locale,
+                        nowStreamingPath, recordPath, bannerPath, bannerHelpPath,
+                        Format.Url("ECPay", DiscordStreamNotifyBot.Utility.ECPayUrl),
+                        Format.Url("PayPal", DiscordStreamNotifyBot.Utility.PaypalUrl)))
+                    .WithFooter(BotLocalizer.Format("Help.Overview.Footer", locale, modulesPath));
                 await RespondAsync(embed: embed.Build());
                 return;
             }
 
-            var cmds = _interaction.SlashCommands.Where(c => c.Module.Name.ToUpperInvariant() == module.ToUpperInvariant()).OrderBy(c => c.Name).Distinct(new CommandTextEqualityComparer());
-            if (cmds.Count() == 0)
-            {
-                await Context.Interaction.SendErrorAsync($"找不到 {module} 模組\n輸入 `/help get-all-modules` 取得所有的模組", ephemeral: true);
-                return;
-            }
+            var available = await GetAvailableCommandsAsync(Context, _services);
+            string canonicalPath = command?.Trim() ?? "";
+            if (!canonicalPath.Contains('.') && !string.IsNullOrWhiteSpace(module))
+                canonicalPath = module.Trim() + "." + canonicalPath;
 
-            SlashCommandInfo commandInfo = cmds.FirstOrDefault((x) => x.Name == command.ToLowerInvariant());
+            SlashCommandInfo commandInfo = available.FirstOrDefault(item =>
+                string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(item))
+                    .Equals(canonicalPath, StringComparison.OrdinalIgnoreCase));
             if (commandInfo == null)
             {
-                await Context.Interaction.SendErrorAsync($"找不到 {command} 指令");
+                await SendLocalizedErrorAsync("Help.Errors.CommandNotFound", false, true, command);
                 return;
             }
 
-            await RespondAsync(embed: _service.GetCommandHelp(commandInfo).Build());
+            await RespondAsync(embed: _service.GetCommandHelp(commandInfo, locale).Build());
+        }
+
+        private static async Task<IReadOnlyList<SlashCommandInfo>> GetAvailableCommandsAsync(
+            IInteractionContext context, IServiceProvider services)
+        {
+            var interactionService = services.GetRequiredService<InteractionService>();
+            var checks = await Task.WhenAll(interactionService.SlashCommands.Select(async command =>
+                (Command: command, Result: await command.CheckPreconditionsAsync(context, services).ConfigureAwait(false))));
+            return checks.Where(item => item.Result.IsSuccess).Select(item => item.Command).ToList();
         }
     }
 
     public class CommandTextEqualityComparer : IEqualityComparer<SlashCommandInfo>
     {
-        public bool Equals(SlashCommandInfo x, SlashCommandInfo y) => x.Name == y.Name;
+        public bool Equals(SlashCommandInfo x, SlashCommandInfo y)
+            => string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(x)) ==
+               string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(y));
 
-        public int GetHashCode(SlashCommandInfo obj) => obj.Name.GetHashCode(StringComparison.InvariantCulture);
+        public int GetHashCode(SlashCommandInfo obj)
+            => string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(obj)).GetHashCode(StringComparison.Ordinal);
     }
 }

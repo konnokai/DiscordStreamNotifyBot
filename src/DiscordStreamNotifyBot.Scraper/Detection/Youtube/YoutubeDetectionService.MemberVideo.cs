@@ -50,6 +50,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             await PublishMemberVideoLogAsync(item.MemberCheckChannelId,
                                 $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
                                 $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片",
+                                messageCode: "NoVideos",
+                                messageArguments: [item.MemberCheckChannelId],
                                 botOwnerMessage: $"{item.MemberCheckChannelId} 無任何可檢測的會限影片!");
                             break;
                         }
@@ -73,7 +75,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 Log.Info($"新會限影片 - ({item.MemberCheckChannelId}): {videoId}");
                                 await PublishMemberVideoLogAsync(item.MemberCheckChannelId,
-                                    $"新會限檢測影片 - ({item.MemberCheckChannelId}): {videoId}", isNeedRemove: false, isNeedSendToOwner: false);
+                                    $"新會限檢測影片 - ({item.MemberCheckChannelId}): {videoId}",
+                                    isNeedRemove: false, isNeedSendToOwner: false,
+                                    messageCode: "NewProbeVideo", messageArguments: [item.MemberCheckChannelId, videoId]);
 
                                 // 頻道層級批次更新，但跳過管理員手動 pin 的 config（IsManualVideoId 保護）
                                 foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId && !x.IsManualVideoId))
@@ -106,7 +110,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId} 無會限影片可供檢測");
                         await PublishMemberVideoLogAsync(item.MemberCheckChannelId,
                             $"{item.MemberCheckChannelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
-                            $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片");
+                            $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片",
+                            messageCode: "NoVideos", messageArguments: [item.MemberCheckChannelId]);
                         continue;
                     }
                     else Log.Warn($"CheckMemberShipOnlyVideoId: {item.GuildId} / {item.MemberCheckChannelId}\n{ex}");
@@ -121,7 +126,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                     Log.Info($"會限頻道名稱已變更 - ({item.MemberCheckChannelId}): `" + (string.IsNullOrEmpty(item.MemberCheckChannelTitle) ? "無" : item.MemberCheckChannelTitle) + $"` -> `{channel.Snippet.Title}`");
                     await PublishMemberVideoLogAsync(item.MemberCheckChannelId,
-                        $"會限頻道名稱已變更: `" + (string.IsNullOrEmpty(item.MemberCheckChannelTitle) ? "無" : item.MemberCheckChannelTitle) + $"` -> `{channel.Snippet.Title}`", isNeedRemove: false, isNeedSendToOwner: false);
+                        $"會限頻道名稱已變更: `" + (string.IsNullOrEmpty(item.MemberCheckChannelTitle) ? "無" : item.MemberCheckChannelTitle) + $"` -> `{channel.Snippet.Title}`",
+                        isNeedRemove: false, isNeedSendToOwner: false,
+                        messageCode: "ChannelTitleChanged",
+                        messageArguments: [item.MemberCheckChannelTitle ?? string.Empty, channel.Snippet.Title]);
 
                     // 頻道名稱與手動 pin 的 videoId 無關，維持全體更新
                     foreach (var item2 in db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == item.MemberCheckChannelId))
@@ -141,11 +149,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         /// <summary>把「會限影片探索需寫入 log channel」的結果 publish 至匯流排，由 Notifier 依 shard 守衛發送。</summary>
         private static Task PublishMemberVideoLogAsync(string checkChannelId, string message,
-            bool isNeedRemove = true, bool isNeedSendToOwner = true, string botOwnerMessage = null)
+            bool isNeedRemove = true, bool isNeedSendToOwner = true, string botOwnerMessage = null,
+            string messageCode = null, string[] messageArguments = null)
             => NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.YoutubeMemberVideoLog, new YoutubeMemberVideoLogNotification
             {
                 CheckChannelId = checkChannelId,
                 Message = message,
+                MessageCode = messageCode,
+                MessageArguments = messageArguments,
                 IsNeedRemove = isNeedRemove,
                 IsNeedSendToOwner = isNeedSendToOwner,
                 BotOwnerMessage = botOwnerMessage,

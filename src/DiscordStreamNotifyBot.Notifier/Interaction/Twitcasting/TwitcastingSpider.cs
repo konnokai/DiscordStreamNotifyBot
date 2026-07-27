@@ -11,7 +11,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
     [DefaultMemberPermissions(GuildPermission.Administrator)]
     public class TwitcastingSpider : TopLevelModule<SharedService.Twitcasting.TwitcastingService>
     {
-        private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
         private readonly ClusterQueryService _clusterQuery;
         public class GuildTwitCastingSpiderAutocompleteHandler : AutocompleteHandler
@@ -35,130 +34,28 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                         channelList = db.TwitcastingSpider.AsNoTracking().Where((x) => x.GuildId == autocompleteInteraction.GuildId);
                     }
 
-                    var channelList2 = new List<DataBase.Table.TwitcastingSpider>();
                     try
                     {
-                        string value = autocompleteInteraction.Data.Current.Value.ToString();
-                        if (!string.IsNullOrEmpty(value))
-                        {
-                            foreach (var item in channelList)
-                            {
-                                if (item.ChannelTitle.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.ScreenId.Contains(value, StringComparison.CurrentCultureIgnoreCase))
-                                {
-                                    channelList2.Add(item);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            channelList2 = channelList.ToList();
-                        }
+                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
+                        var candidates = channelList.Select(item =>
+                            new AutocompleteCandidate(item.ChannelTitle, item.ScreenId));
+                        var results = AutocompleteSearch.Filter(candidates, value)
+                            .Select(item => new AutocompleteResult(item.Name, item.Value));
+                        return AutocompletionResult.FromSuccess(results);
                     }
                     catch (Exception ex)
                     {
                         Log.Error($"GuildTwitCastingSpiderAutocompleteHandler - {ex}");
+                        return AutocompletionResult.FromSuccess();
                     }
-
-                    List<AutocompleteResult> results = new();
-                    foreach (var item in channelList2)
-                    {
-                        results.Add(new AutocompleteResult(item.ChannelTitle, item.ScreenId));
-                    }
-
-                    return AutocompletionResult.FromSuccess(results.Take(25));
                 });
             }
         }
 
-        public TwitcastingSpider(DiscordSocketClient client, MainDbService dbService, ClusterQueryService clusterQuery)
+        public TwitcastingSpider(MainDbService dbService, ClusterQueryService clusterQuery)
         {
-            _client = client;
             _dbService = dbService;
             _clusterQuery = clusterQuery;
-
-            _client.ButtonExecuted += async (button) =>
-            {
-                try
-                {
-                    if (button.HasResponded || !button.Data.CustomId.StartsWith("spider_tc:"))
-                        return;
-
-                    Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
-                    await button.DeferAsync(false);
-
-                    string[] buttonData = button.Data.CustomId.Split(new char[] { ':' });
-                    if (buttonData.Length != 3)
-                    {
-                        await button.SendErrorAsync("此按鈕無法使用", true, false);
-                        return;
-                    }
-
-                    using var db = _dbService.GetDbContext();
-                    var twitcastingSpider = await db.TwitcastingSpider.FirstOrDefaultAsync((x) => x.ScreenId == buttonData[2]);
-                    if (twitcastingSpider == null)
-                    {
-                        await button.SendErrorAsync("找不到此按鈕的頻道，可能已被移除", true, false);
-                        return;
-                    }
-
-                    if (buttonData[1].Contains("warning"))
-                    {
-                        twitcastingSpider.IsWarningUser = !twitcastingSpider.IsWarningUser;
-                        db.TwitcastingSpider.Update(twitcastingSpider);
-                        await db.SaveChangesAsync();
-
-                        await button.SendConfirmAsync($"已切換 `{twitcastingSpider.ChannelTitle}` 為 `" + (twitcastingSpider.IsWarningUser ? "警告" : "普通") + "` 狀態", true, true);
-                    }
-                    else if (buttonData[1].Contains("record"))
-                    {
-                        twitcastingSpider.IsRecord = !twitcastingSpider.IsRecord;
-                        db.TwitcastingSpider.Update(twitcastingSpider);
-                        await db.SaveChangesAsync();
-
-                        await button.SendConfirmAsync($"已切換 `{twitcastingSpider.ChannelTitle}` 為 `" + (twitcastingSpider.IsRecord ? "開啟" : "關閉") + "` 錄影", true, true);
-                    }
-
-                    await db.SaveChangesAsync();
-
-                    try
-                    {
-                        var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
-                        var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
-                        var embed = new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("已新增 TwitCasting 頻道爬蟲")
-                            .AddField("頻道", Format.Url(twitcastingSpider.ChannelTitle, $"https://twitcasting.tv/{twitcastingSpider.ScreenId}"), false)
-                            .AddField("伺服器", guild, false)
-                            .AddField("執行者", user, false)
-                            .AddField("頻道狀態", twitcastingSpider.IsWarningUser ? "警告" : "普通", true)
-                            .AddField("頻道錄影", twitcastingSpider.IsRecord ? "開啟" : "關閉", true).Build();
-
-                        try
-                        {
-                            await button.UpdateAsync((func) =>
-                            {
-                                func.Embed = embed;
-                            });
-                        }
-                        catch
-                        {
-                            await button.ModifyOriginalResponseAsync((func) =>
-                            {
-                                func.Embed = embed;
-                            });
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        throw;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    await button.SendErrorAsync(ex.Message, true);
-                    Log.Error(ex.ToString());
-                }
-            };
         }
 
         [RequireGuildMemberCount(500)]
@@ -168,11 +65,11 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
            "如有任何需要請向擁有者詢問")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
         [SlashCommand("add", "新增 TwitCasting 頻道檢測爬蟲")]
-        public async Task AddChannelSpider([Summary("頻道網址")] string channelUrl)
+        public async Task AddChannelSpider([Summary("channel", "頻道網址")] string channelUrl)
         {
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync("此 Bot 的 TwitCasting 功能已關閉，請向 Bot 擁有者確認").ConfigureAwait(false);
+                await SendLocalizedErrorAsync("Errors.FeatureDisabled").ConfigureAwait(false);
                 return;
             }
 
@@ -181,8 +78,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             var channelData = await _service.GetChannelNameAndTitleAsync(channelUrl);
             if (channelData == null)
             {
-                await Context.Interaction.SendErrorAsync("錯誤，TwitCasting 找不到該使用者的名稱\n" +
-                    "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
+                await SendLocalizedErrorAsync("Twitcasting.Errors.UserNotFound", true);
                 return;
             }
 
@@ -193,11 +89,12 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                     var item = await db.TwitcastingSpider.FirstOrDefaultAsync((x) => x.ScreenId == channelData.ScreenId);
                     bool isGuildExist = true;
                     string guild = "";
+                    string existingResponseLocale = await GetLocaleAsync(false);
 
                     // 跨 shard：用合併快照（B1）判定原持有伺服器是否仍在叢集，避免把別 shard 持有的伺服器誤判為已退出而搶走爬蟲
                     if (item.GuildId == 0)
                     {
-                        guild = "Bot擁有者";
+                        guild = BotLocalizer.Get("Common.BotOwner", existingResponseLocale);
                     }
                     else
                     {
@@ -228,9 +125,10 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                         }
                     }
 
-                    await Context.Interaction.SendConfirmAsync($"`{channelData.Name}` 已在爬蟲清單內\n" +
-                        $"可直接到通知頻道內使用 `/twitcasting add {channelData.ScreenId}` 開啟通知" +
-                        (isGuildExist ? $"\n(由 `{guild}` 設定)" : ""), true).ConfigureAwait(false);
+                    string addPath = CommandDisplayResolver.GetCommandPath(existingResponseLocale, "twitcasting", "add");
+                    await SendLocalizedConfirmAsync("Spider.AlreadyExists", true, false,
+                        channelData.Name, addPath, channelData.ScreenId,
+                        isGuildExist ? BotLocalizer.Format("Spider.OwnerHint", existingResponseLocale, guild) : "").ConfigureAwait(false);
                     return;
                 }
 
@@ -242,9 +140,10 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
 
                 if (!DiscordStreamNotifyBot.Utility.OfficialGuildContains(Context.Guild.Id) && db.TwitcastingSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= maxCount)
                 {
-                    await Context.Interaction.SendErrorAsync($"此伺服器已設定 {maxCount} 個 TwitCasting 爬蟲頻道，請移除後再試\n" +
-                        $"如有特殊需求請向 Bot 擁有者詢問\n" +
-                        $"(你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)", true).ConfigureAwait(false);
+                    string locale = await GetLocaleAsync(true);
+                    string contactPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "send-message-to-bot-owner");
+                    await SendLocalizedErrorAsync("Spider.LimitReached", true, true,
+                        maxCount, "TwitCasting", contactPath).ConfigureAwait(false);
                     return;
                 }
 
@@ -256,14 +155,16 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                     ChannelTitle = channelData.Name
                 };
 
-                if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("設定該爬蟲為本伺服器使用?"))
+                if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("Spider.UseForCurrentGuildPrompt"))
                     spider.GuildId = 0;
 
                 await db.TwitcastingSpider.AddAsync(spider);
                 await db.SaveChangesAsync();
 
-                await Context.Interaction.SendConfirmAsync($"已將 `{channelData.Name}` 加入到爬蟲清單內\n" +
-                    $"請到通知頻道內使用 `/twitcasting add {channelData.ScreenId}` 來開啟通知", true, true).ConfigureAwait(false);
+                string responseLocale = await GetLocaleAsync(true);
+                string notificationPath = CommandDisplayResolver.GetCommandPath(responseLocale, "twitcasting", "add");
+                await SendLocalizedConfirmAsync("Spider.Added", true, true,
+                    channelData.Name, notificationPath, channelData.ScreenId).ConfigureAwait(false);
 
                 try
                 {
@@ -287,15 +188,14 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
         [SlashCommand("remove", "移除 TwitCasting 頻道檢測爬蟲")]
-        public async Task RemoveChannelSpider([Summary("頻道網址"), Autocomplete(typeof(GuildTwitCastingSpiderAutocompleteHandler))] string channelUrl)
+        public async Task RemoveChannelSpider([Summary("channel", "頻道網址"), Autocomplete(typeof(GuildTwitCastingSpiderAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
 
             var channelData = await _service.GetChannelNameAndTitleAsync(channelUrl);
             if (channelData == null)
             {
-                await Context.Interaction.SendErrorAsync("錯誤，TwitCasting 找不到該使用者的名稱\n" +
-                    "請確認網址是否正確，若正確請向 Bot 擁有者回報", true);
+                await SendLocalizedErrorAsync("Twitcasting.Errors.UserNotFound", true);
                 return;
             }
 
@@ -303,20 +203,20 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             {
                 if (!db.TwitcastingSpider.Any((x) => x.ScreenId == channelData.ScreenId))
                 {
-                    await Context.Interaction.SendErrorAsync($"並未設定 `{channelData.Name}` 頻道檢測爬蟲...", true).ConfigureAwait(false);
+                    await SendLocalizedErrorAsync("Spider.NotConfigured", true, true, channelData.Name).ConfigureAwait(false);
                     return;
                 }
 
                 if (Context.Interaction.User.Id != Bot.ApplicatonOwner.Id && !db.TwitcastingSpider.Any((x) => x.ScreenId == channelData.ScreenId && x.GuildId == Context.Guild.Id))
                 {
-                    await Context.Interaction.SendErrorAsync($"該頻道爬蟲並非本伺服器新增，無法移除", true).ConfigureAwait(false);
+                    await SendLocalizedErrorAsync("Spider.NotOwnedByGuild", true).ConfigureAwait(false);
                     return;
                 }
 
                 db.TwitcastingSpider.Remove(db.TwitcastingSpider.First((x) => x.ScreenId == channelData.ScreenId));
                 await db.SaveChangesAsync();
             }
-            await Context.Interaction.SendConfirmAsync($"已移除 {channelData.Name}", true).ConfigureAwait(false);
+            await SendLocalizedConfirmAsync("Spider.Removed", true, false, channelData.Name).ConfigureAwait(false);
 
             try
             {
@@ -331,48 +231,58 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [SlashCommand("list", "顯示已加入爬蟲檢測的頻道")]
-        public async Task ListChannelSpider([Summary("頁數")] int page = 0)
+        public async Task ListChannelSpider([Summary("page", "頁數")] int page = 0)
         {
             if (page < 0) page = 0;
+            string locale = await GetLocaleAsync(false);
 
             using (var db = _dbService.GetDbContext())
             {
                 // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
                 var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => !x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
+                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => !x.IsWarningUser).Select((x) =>
+                    BotLocalizer.Format("Spider.ListEntry", locale,
+                        Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}"),
+                        x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
+                        (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))));
                 int warningChannelNum = db.TwitcastingSpider.AsNoTracking().Count((x) => x.IsWarningUser);
 
-                await Context.SendPaginatedConfirmAsync(page, page =>
+                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("TwitCasting 直播爬蟲清單")
+                        .WithTitle(BotLocalizer.Get("TwitcastingSpider.ListTitle", locale))
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()}個頻道 ({warningChannelNum}個非認可的爬蟲)");
+                        .WithFooter(BotLocalizer.Format("Spider.ListFooter", locale,
+                            Math.Min(list.Count(), (page + 1) * 20), list.Count(), warningChannelNum));
                 }, list.Count(), 10, false).ConfigureAwait(false);
             }
         }
 
         [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道 (本清單可能內含中之人或前世的頻道)")]
-        public async Task ListNotTrustedChannelSpider([Summary("頁數")] int page = 0)
+        public async Task ListNotTrustedChannelSpider([Summary("page", "頁數")] int page = 0)
         {
             if (page < 0) page = 0;
+            string locale = await GetLocaleAsync(false);
 
             using (var db = _dbService.GetDbContext())
             {
                 // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
                 var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => x.IsWarningUser).Select((x) => Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}") +
-                    $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
+                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => x.IsWarningUser).Select((x) =>
+                    BotLocalizer.Format("Spider.ListEntry", locale,
+                        Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}"),
+                        x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
+                        (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))));
 
-                await Context.SendPaginatedConfirmAsync(page, page =>
+                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("警告的爬蟲清單")
+                        .WithTitle(BotLocalizer.Get("Spider.WarningListTitle", locale))
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter($"{Math.Min(list.Count(), (page + 1) * 20)} / {list.Count()} 個頻道");
+                        .WithFooter(BotLocalizer.Format("Common.ChannelCountFooter", locale,
+                            Math.Min(list.Count(), (page + 1) * 20), list.Count()));
                 }, list.Count(), 10, false, true).ConfigureAwait(false);
             }
         }

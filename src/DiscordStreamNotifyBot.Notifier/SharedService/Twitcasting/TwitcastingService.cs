@@ -2,6 +2,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 
 #if !DEBUG
 using Polly;
@@ -25,8 +26,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
         private readonly NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel> _noticeCache;
+        private readonly BotLocalizer _localizer;
+        private readonly GuildLocaleService _guildLocaleService;
 
-        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
+        public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient,
+            BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
+            BotLocalizer localizer, GuildLocaleService guildLocaleService)
         {
             if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
@@ -40,6 +45,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             _emojiService = emojiService;
             _botConfig = botConfig;
             _dbService = dbService;
+            _localizer = localizer;
+            _guildLocaleService = guildLocaleService;
             _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel>(dbService, db => db.NoticeTwitcastingStreamChannels.AsNoTracking().ToList());
         }
 
@@ -79,6 +86,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             }
         }
 
+        public void InvalidateNoticeCache() => _noticeCache?.Invalidate();
+
 #nullable disable
 
         /// <summary>
@@ -108,18 +117,21 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 var noticeGuildList = _noticeCache.Get().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
-                EmbedBuilder embedBuilder = TwitcastingEmbedBuilderFactory.CreateStreamStarted(twitcastingStream, isPrivate, isRecord);
-
-                MessageComponent comp = new ComponentBuilder()
-                        .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
+                var variants = new Dictionary<string, Lazy<TwitcastingNotificationVariant>>(StringComparer.Ordinal);
+                var guildsById = noticeGuildList
+                    .Select(item => item.GuildId)
+                    .Distinct()
+                    .Select(guildId => _client.GetGuild(guildId))
+                    .Where(guild => guild != null)
+                    .GroupBy(guild => guild.Id)
+                    .ToDictionary(group => group.Key, group => group.First());
+                Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
                 foreach (var item in noticeGuildList)
                 {
                     try
                     {
-                        var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null)
+                        if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
                         {
                             // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
                             if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
@@ -131,6 +143,27 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                             _noticeCache.Invalidate();
                             continue;
                         }
+
+                        string locale = localesByGuildId[guild.Id];
+                        if (!variants.TryGetValue(locale, out var variantValue))
+                        {
+                            variantValue = new Lazy<TwitcastingNotificationVariant>(() =>
+                            {
+                                Embed embed = TwitcastingEmbedBuilderFactory.CreateStreamStarted(
+                                    twitcastingStream, isPrivate, isRecord, _localizer, locale).Build();
+                                MessageComponent component = new ComponentBuilder()
+                                    .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale),
+                                        style: ButtonStyle.Link, emote: _emojiService.ECPayEmote,
+                                        url: Utility.ECPayUrl, row: 1)
+                                    .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale),
+                                        style: ButtonStyle.Link, emote: _emojiService.PayPalEmote,
+                                        url: Utility.PaypalUrl, row: 1)
+                                    .Build();
+                                return new TwitcastingNotificationVariant(embed, component);
+                            }, LazyThreadSafetyMode.ExecutionAndPublication);
+                            variants.Add(locale, variantValue);
+                        }
+                        TwitcastingNotificationVariant variant = variantValue.Value;
 
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
@@ -145,7 +178,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: item.StartStreamMessage, embed: embedBuilder.Build(), components: comp, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: item.StartStreamMessage,
+                                    embed: variant.Embed, components: variant.Component,
+                                    options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {
@@ -191,5 +226,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             }
 #endif
         }
+
+        private sealed record TwitcastingNotificationVariant(Embed Embed, MessageComponent Component);
     }
 }

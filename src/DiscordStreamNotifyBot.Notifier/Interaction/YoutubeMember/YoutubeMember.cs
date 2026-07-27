@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
@@ -21,7 +22,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
+                await SendLocalizedErrorAsync("Member.Errors.Disabled", true, true, Bot.ApplicatonOwner);
                 return;
             }
 
@@ -32,44 +33,53 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == Context.Guild.Id);
                     if (!guildYoutubeMemberConfigs.Any())
                     {
-                        await Context.Interaction.SendErrorAsync($"請向管理員確認本伺服器是否已使用會限驗證功能", true);
+                        await SendLocalizedErrorAsync("Member.Errors.NotConfigured", true);
                         return;
                     }
 
                     if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
                     {
-                        await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘 Bot 初始化完後重新執行此指令", true);
+                        await SendLocalizedErrorAsync("Member.Errors.Initializing", true);
                         return;
                     }
 
                     if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                     {
-                        await Context.Interaction.SendErrorAsync($"請先到 {Format.Url("此網站", "https://stream-bot.konnokai.me/")} 登入 Discord 以及 Google\n登入完後再輸入一次本指令", true);
+                        string locale = await GetLocaleAsync(true);
+                        await SendLocalizedErrorAsync("Member.Errors.LoginRequired", true, true,
+                            Format.Url(BotLocalizer.Get("Common.Website", locale), "https://stream-bot.konnokai.me/"));
                         return;
                     }
 
                     if (guildYoutubeMemberConfigs.Count() == 1)
                     {
-                        if (!db.YoutubeMemberCheck.Any((x) =>
+                        string locale = SupportedLocale.Normalize(Context.Interaction.UserLocale);
+                        var memberCheck = db.YoutubeMemberCheck.FirstOrDefault((x) =>
                             x.UserId == Context.User.Id &&
                             x.GuildId == Context.Guild.Id &&
-                            x.CheckYTChannelId == guildYoutubeMemberConfigs.First().MemberCheckChannelId))
+                            x.CheckYTChannelId == guildYoutubeMemberConfigs.First().MemberCheckChannelId);
+                        if (memberCheck == null)
                         {
                             db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck()
                             {
                                 UserId = Context.User.Id,
                                 GuildId = Context.Guild.Id,
-                                CheckYTChannelId = guildYoutubeMemberConfigs.First().MemberCheckChannelId
+                                CheckYTChannelId = guildYoutubeMemberConfigs.First().MemberCheckChannelId,
+                                Locale = locale
                             });
-                            db.SaveChanges();
                         }
-                        await Context.Interaction.SendConfirmAsync("已記錄至資料庫，請稍等至多 5 分鐘讓 Bot 驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息` ，以避免收不到通知", true, true);
+                        else
+                        {
+                            memberCheck.Locale = locale;
+                        }
+                        db.SaveChanges();
+                        await SendLocalizedConfirmAsync("Member.CheckQueuedWithDmNotice", true, true, 5);
                     }
                     else
                     {
                         // Todo: 超過 25 個選項時需提供換頁的選項
                         SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
-                           .WithPlaceholder("頻道")
+                           .WithPlaceholder(BotLocalizer.Get("Member.Select.ChannelPlaceholder", await GetLocaleAsync(true)))
                            .WithMinValues(1)
                            .WithMaxValues(guildYoutubeMemberConfigs.Count())
                            .WithCustomId($"member:check:{Context.Guild.Id}:{Context.User.Id}");
@@ -77,17 +87,17 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                         foreach (var item in guildYoutubeMemberConfigs)
                             selectMenuBuilder.AddOption(item.MemberCheckChannelTitle, item.MemberCheckChannelId);
 
-                        await Context.Interaction.FollowupAsync("選擇你要驗證的頻道\n" +
-                            "(注意: 將移除你現有的會限驗證用戶組並重新驗證)", components: new ComponentBuilder()
+                        string locale = await GetLocaleAsync(true);
+                        await Context.Interaction.FollowupAsync(BotLocalizer.Get("Member.Select.Description", locale), components: new ComponentBuilder()
                        .WithSelectMenu(selectMenuBuilder)
-                       .Build());
+                       .Build(), ephemeral: true);
                     }
                 }
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), "Member Check Error");
-                await Context.Interaction.SendErrorAsync($"出現錯誤: {ex.Message}", true);
+                await SendLocalizedErrorAsync("Errors.Unknown", true);
             }
         }
 
@@ -104,7 +114,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.UserId == Context.User.Id && x.GuildId == Context.Guild.Id);
                     if (!youtubeMemberChecks.Any())
                     {
-                        await Context.Interaction.SendErrorAsync("你尚未在本伺服器上運行會限驗證", true);
+                        await SendLocalizedErrorAsync("Member.Errors.NoActiveCheck", true);
                         return;
                     }
 
@@ -121,11 +131,11 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
                     db.SaveChanges();
 
-                    await Context.Interaction.SendConfirmAsync($"已移除你在本伺服器上會限驗證", true);
+                    await SendLocalizedConfirmAsync("Member.CheckCancelled", true, true);
                 }
                 catch (Exception ex)
                 {
-                    await Context.Interaction.SendErrorAsync($"資料庫儲存失敗，請向 {Bot.ApplicatonOwner} 確認", true);
+                    await SendLocalizedErrorAsync("Member.Errors.SaveFailed", true, true, Bot.ApplicatonOwner);
                     Log.Error(ex.ToString());
                 }
             }
@@ -138,7 +148,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
+                await SendLocalizedErrorAsync("Member.Errors.Disabled", true, true, Bot.ApplicatonOwner);
                 return;
             }
 
@@ -146,8 +156,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             {
                 if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
                 {
-                    if (!await PromptUserConfirmAsync("確定解除綁定?\n" +
-                        "(注意: 解除綁定後也會一併解除會限用戶組，如要重新獲得需重新至網站綁定)"))
+                    if (!await PromptUserConfirmAsync("Member.UnlinkPrompt"))
                         return;
 
                     await Bot.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
@@ -155,22 +164,23 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     try
                     {
                         await _service.RevokeUserGoogleCertAsync(Context.User.Id.ToString());
-                        await Context.Interaction.SendConfirmAsync("已解除完成", true, true);
+                        await SendLocalizedConfirmAsync("Member.Unlinked", true, true);
                     }
                     catch (NullReferenceException nullEx)
                     {
-                        await Context.Interaction.SendErrorAsync($"已解除綁定但無法取消 Google 端授權\n" +
-                           $"請到 {Format.Url("Google 安全性", "https://myaccount.google.com/permissions")} 移除 `直播小幫手會限確認` 的應用程式存取權", true, true);
+                        string locale = await GetLocaleAsync(true);
+                        await SendLocalizedErrorAsync("Member.Errors.GoogleRevokeFailed", true, true,
+                            Format.Url(BotLocalizer.Get("Common.GoogleSecurity", locale), "https://myaccount.google.com/permissions"));
                         Log.Warn($"RevokeTokenNull: {nullEx.Message} ({Context.User.Id})");
                     }
                     catch (Exception)
                     {
-                        await Context.Interaction.SendErrorAsync($"解除綁定失敗，請向 {Bot.ApplicatonOwner} 確認問題", true, true);
+                        await SendLocalizedErrorAsync("Member.Errors.UnlinkFailed", true, true, Bot.ApplicatonOwner);
                     }
                 }
                 else
                 {
-                    await Context.Interaction.SendErrorAsync($"無資料可供解除綁定...", true, true);
+                    await SendLocalizedErrorAsync("Member.Errors.NothingToUnlink", true, true);
                 }
             }
         }
@@ -184,20 +194,19 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
                 if (!guildYoutubeMemberConfigs.Any())
                 {
-                    await Context.Interaction.SendErrorAsync($"清單為空");
+                    await SendLocalizedErrorAsync("Member.Errors.ChannelListEmpty");
                     return;
                 }
 
                 if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
                 {
-                    await Context.Interaction.SendErrorAsync($"尚有無法檢測的頻道，請等待五分鐘 Bot 初始化完後重新執行此指令");
+                    await SendLocalizedErrorAsync("Member.Errors.Initializing");
                     return;
                 }
 
-                await Context.Interaction.SendConfirmAsync("現在可供驗證的會限頻道清單\n" +
+                await SendLocalizedConfirmAsync("Member.ChannelList", false, true,
                     string.Join('\n', guildYoutubeMemberConfigs.Select((x) =>
-                        $"{Format.Url(x.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{x.MemberCheckChannelId}")}: <@&{x.MemberCheckGrantRoleId}>")),
-                    false, true);
+                        $"{Format.Url(x.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{x.MemberCheckChannelId}")}: <@&{x.MemberCheckGrantRoleId}>")));
             }
         }
 
@@ -208,38 +217,36 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
+                await SendLocalizedErrorAsync("Member.Errors.Disabled", true, true, Bot.ApplicatonOwner);
                 return;
             }
 
             try
             {
                 var channelUrl = await _service.GetYoutubeDataAsync(Context.User.Id.ToString());
-                await Context.Interaction.SendConfirmAsync($"你已綁定的頻道: {channelUrl}", true);
+                await SendLocalizedConfirmAsync("Member.LinkedChannel", true, true, channelUrl);
             }
             catch (NullReferenceException nullEx)
             {
                 switch (nullEx.Message)
                 {
                     case "userId":
-                        await Context.Interaction.SendErrorAsync("UserId 錯誤", true);
+                        await SendLocalizedErrorAsync("Errors.Unknown", true);
                         break;
                     case "token":
                     case "userCert":
                     case "channel":
-                        await Context.Interaction.SendErrorAsync("錯誤，請確認是否已到網站上綁定或此 Google 帳號是否存在 Youtube 頻道", true);
+                        await SendLocalizedErrorAsync("Member.Errors.LinkedChannelUnavailable", true);
                         break;
                     default:
-                        await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號是否存在 Youtube 頻道\n" +
-                            $"如有疑問請向 `{Bot.ApplicatonOwner}` 詢問", true);
+                        await SendLocalizedErrorAsync("Member.Errors.LinkedChannelUnavailableWithOwner", true, true, Bot.ApplicatonOwner);
                         Log.Error(nullEx.ToString());
                         break;
                 }
             }
             catch (Exception ex)
             {
-                await Context.Interaction.SendErrorAsync($"錯誤，請確認是否已到網站上綁定或此 Google 帳號是否存在 Youtube 頻道\n" +
-                    $"如有疑問請向 `{Bot.ApplicatonOwner}` 詢問", true);
+                await SendLocalizedErrorAsync("Member.Errors.LinkedChannelUnavailableWithOwner", true, true, Bot.ApplicatonOwner);
                 Log.Error(ex.ToString());
             }
         }

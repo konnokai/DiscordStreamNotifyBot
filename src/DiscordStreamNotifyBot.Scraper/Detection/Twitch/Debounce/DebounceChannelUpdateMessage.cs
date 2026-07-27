@@ -1,5 +1,6 @@
 ﻿using Dorssel.Utilities;
 using System.Collections.Concurrent;
+using DiscordStreamNotifyBot.Shared.Messages;
 
 namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
 {
@@ -10,7 +11,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
         private readonly Debouncer _debouncer;
         private readonly TwitchDetectionService _twitchService;
         private readonly string _twitchUserName, _twitchUserLogin, _twitchUserId;
-        private readonly ConcurrentQueue<string> messageQueue = new();
+        private readonly ConcurrentQueue<TwitchChannelUpdateInfo> updateQueue = new();
 
         public DebounceChannelUpdateMessage(TwitchDetectionService twitchService, string twitchUserName, string twitchUserLogin, string twitchUserId)
         {
@@ -33,10 +34,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
             {
                 Log.Info($"{_twitchUserLogin} 發送頻道更新通知 (Debouncer 觸發數量: {e.Count})");
 
-                var description = string.Join("\n\n", messageQueue);
+                var updates = updateQueue.ToList();
 
                 // publish DTO 至匯流排，由消費端（Notifier）重建 embed 發送
-                Task.Run(async () => { await _twitchService.PublishChannelUpdateAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, description); });
+                Task.Run(async () => { await _twitchService.PublishChannelUpdateAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, updates); });
             }
             catch (Exception ex)
             {
@@ -44,16 +45,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
             }
             finally
             {
-                messageQueue.Clear();
+                updateQueue.Clear();
                 _debouncer.Reset();
             }
         }
 
-        public void AddMessage(string message)
+        public void AddUpdate(TwitchChannelUpdateInfo update)
         {
-            Log.Debug($"DebounceChannelUpdateMessage ({_twitchUserLogin}): {message}");
+            Log.Debug($"DebounceChannelUpdateMessage ({_twitchUserLogin}): {JsonConvert.SerializeObject(update)}");
 
-            messageQueue.Enqueue(message);
+            updateQueue.Enqueue(update);
             _debouncer.Trigger();
         }
 

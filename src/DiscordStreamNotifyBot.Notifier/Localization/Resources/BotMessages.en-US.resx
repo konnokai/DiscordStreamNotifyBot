@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Errors.UnknownCommand" xml:space="preserve"><value>Unknown command. It may have been removed or changed.</value></data>
+  <data name="Errors.InvalidArguments" xml:space="preserve"><value>One or more arguments are invalid.</value></data>
+  <data name="Errors.Unknown" xml:space="preserve"><value>An unexpected error occurred. Please report it to the bot owner.</value></data>
+  <data name="Errors.FeatureDisabled" xml:space="preserve"><value>This feature is currently disabled. Please contact the bot owner.</value></data>
+  <data name="Errors.NotFound" xml:space="preserve"><value>The specified {0} could not be found.</value></data>
+  <data name="Permissions.MissingChannelPermissions" xml:space="preserve"><value>I am missing these permissions in {0}: {1}. Grant them and try again.</value></data>
+  <data name="Permissions.MissingGuildPermission" xml:space="preserve"><value>You need the “{0}” permission to use this command.</value></data>
+  <data name="Pagination.EphemeralUnavailable" xml:space="preserve"><value>Reaction-based pagination is unavailable in private responses. Run the command again with a page number.</value></data>
+  <data name="Pagination.Unavailable" xml:space="preserve"><value>Reaction-based pagination is unavailable. Run the command again with a page number.</value></data>
+  <data name="Pagination.Footer" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="Locale.TraditionalChinese" xml:space="preserve"><value>Traditional Chinese</value></data>
+  <data name="Locale.English" xml:space="preserve"><value>English</value></data>
+  <data name="Locale.Japanese" xml:space="preserve"><value>Japanese</value></data>
+  <data name="Locale.Unsupported" xml:space="preserve"><value>Locale “{0}” is not supported. Traditional Chinese will be used instead.</value></data>
+  <data name="Utility.LanguageChanged" xml:space="preserve"><value>The server language has been changed to {0}. Future public content and background notifications will use this language.</value></data>
+  <data name="Utility.LanguageCurrent" xml:space="preserve"><value>The current server language is {0}.</value></data>
+  <data name="Onboarding.FirstNotificationSetup" xml:space="preserve"><value>This appears to be your first notification setup.&#10;The bot owner may use notification channels for sponsored notices or bot announcements such as feature updates. Use {0} to choose where bot announcements are received; sponsored notices are sent to the channel configured by this setup.&#10;Approved official servers do not receive sponsored notices. Use {1} to request approval or contact the bot owner.</value></data>
+  <data name="Onboarding.CurrentLanguage" xml:space="preserve"><value>Current server language: {0}</value></data>
+  <data name="Onboarding.ChangeLanguageHint" xml:space="preserve"><value>Use {0} to change the server language.</value></data>
+  <data name="Youtube.StreamStatus.Live" xml:space="preserve"><value>Live</value></data>
+  <data name="Youtube.StreamStatus.Upcoming" xml:space="preserve"><value>Upcoming</value></data>
+  <data name="Youtube.StreamStatus.Ended" xml:space="preserve"><value>Stream ended</value></data>
+  <data name="Youtube.StreamStatus.NewVideo" xml:space="preserve"><value>New video</value></data>
+  <data name="Twitch.StreamStatus.Live" xml:space="preserve"><value>Live</value></data>
+  <data name="Twitch.StreamStatus.Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Twitch.StreamStatus.Category" xml:space="preserve"><value>Category: {0}</value></data>
+  <data name="Twitcasting.PrivateStream.Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Twitcasting.PrivateStream.No" xml:space="preserve"><value>No</value></data>
+  <data name="Twitcasting.Recording.Available" xml:space="preserve"><value>Recording available</value></data>
+  <data name="Member.CheckQueued" xml:space="preserve"><value>Your verification has been queued and may take up to {0} minutes.</value></data>
+  <data name="Member.CheckSucceeded" xml:space="preserve"><value>Membership verification succeeded.</value></data>
+  <data name="Member.CheckFailed" xml:space="preserve"><value>Membership verification failed.</value></data>
+  <data name="Notifications.StartedAt" xml:space="preserve"><value>Started: {0}</value></data>
+  <data name="Notifications.EndedAt" xml:space="preserve"><value>Ended: {0}</value></data>
+  <data name="Notifications.Duration" xml:space="preserve"><value>Duration: {0}</value></data>
+  <data name="Errors.OperationFailed" xml:space="preserve"><value>The operation failed. Try again later, or contact the bot owner if the problem continues.</value></data>
+  <data name="Errors.SaveFailed" xml:space="preserve"><value>Failed to save the data. Please try again later.</value></data>
+  <data name="Errors.InvalidYoutubeChannel" xml:space="preserve"><value>The YouTube channel could not be resolved. Check the URL or channel ID.</value></data>
+  <data name="Errors.InvalidYoutubeInput" xml:space="preserve"><value>The YouTube URL or ID could not be resolved. Check the input and try again.</value></data>
+  <data name="Errors.UrlRequired" xml:space="preserve"><value>A URL is required.</value></data>
+  <data name="Errors.ChannelNotFound" xml:space="preserve"><value>Channel `{0}` could not be found.</value></data>
+  <data name="Permissions.BotMissingRequired" xml:space="preserve"><value>The bot is missing permissions required for this operation. Make sure it can view the channel, send messages, and embed links.</value></data>
+  <data name="Permissions.List" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="Permissions.BotOwnerOnly" xml:space="preserve"><value>Bot owner only</value></data>
+  <data name="Permissions.UserRequirement" xml:space="preserve"><value>User requires the “{0}” permission</value></data>
+  <data name="Permissions.BotRequirement" xml:space="preserve"><value>Bot requires the “{0}” permission</value></data>
+  <data name="Permissions.Name.ViewChannel" xml:space="preserve"><value>View Channel</value></data>
+  <data name="Permissions.Name.SendMessages" xml:space="preserve"><value>Send Messages</value></data>
+  <data name="Permissions.Name.EmbedLinks" xml:space="preserve"><value>Embed Links</value></data>
+  <data name="Permissions.Name.Administrator" xml:space="preserve"><value>Administrator</value></data>
+  <data name="Permissions.Name.ManageMessages" xml:space="preserve"><value>Manage Messages</value></data>
+  <data name="Permissions.Name.ManageEvents" xml:space="preserve"><value>Manage Events</value></data>
+  <data name="Permissions.Name.ManageGuild" xml:space="preserve"><value>Manage Server</value></data>
+  <data name="Permissions.Name.MentionEveryone" xml:space="preserve"><value>Mention @everyone, @here, and all roles</value></data>
+  <data name="Permissions.Name.ManageRoles" xml:space="preserve"><value>Manage Roles</value></data>
+  <data name="Preconditions.GuildOnly" xml:space="preserve"><value>This command can only be used in a server.</value></data>
+  <data name="Preconditions.GuildUnavailable" xml:space="preserve"><value>This command is unavailable in this server.</value></data>
+  <data name="Preconditions.GuildOwnerOnly" xml:space="preserve"><value>Only the server owner can use this command.</value></data>
+  <data name="Preconditions.GuildMemberCount" xml:space="preserve"><value>This command requires at least `{0}` server members. The bot currently sees `{1}`. The count may be affected by caching; use {2} to contact the bot owner if you need help.</value></data>
+  <data name="Preconditions.Unmet" xml:space="preserve"><value>This command cannot be used right now. Check the context and required permissions, then try again.</value></data>
+  <data name="Common.Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Common.No" xml:space="preserve"><value>No</value></data>
+  <data name="Common.Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Common.Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Common.Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="Common.Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Common.None" xml:space="preserve"><value>None</value></data>
+  <data name="Common.BotOwner" xml:space="preserve"><value>Bot owner</value></data>
+  <data name="Common.LeftGuild" xml:space="preserve"><value>server the bot has left</value></data>
+  <data name="Common.Website" xml:space="preserve"><value>this website</value></data>
+  <data name="Common.GoogleSecurity" xml:space="preserve"><value>Google Account permissions</value></data>
+  <data name="Common.ChannelCountFooter" xml:space="preserve"><value>{0} / {1} channels</value></data>
+  <data name="Confirmation.TimeoutFooter" xml:space="preserve"><value>These buttons expire after 5 seconds. Choose now or run the command again.</value></data>
+  <data name="Components.NotAllowed" xml:space="preserve"><value>You cannot use this component.</value></data>
+  <data name="Components.Invalid" xml:space="preserve"><value>This component has expired or is invalid.</value></data>
+  <data name="Components.ChannelRemoved" xml:space="preserve"><value>The channel associated with this component could not be found and may have been removed.</value></data>
+  <data name="Help.Modules.Title" xml:space="preserve"><value>Module List</value></data>
+  <data name="Help.Modules.Footer" xml:space="preserve"><value>Use {0} to select a module and view its commands.</value></data>
+  <data name="Help.Commands.Title" xml:space="preserve"><value>Commands in {0}</value></data>
+  <data name="Help.Commands.Footer" xml:space="preserve"><value>Use {0} to select a command and view its details.</value></data>
+  <data name="Help.Overview.Title" xml:space="preserve"><value>Stream Assistant build {0}</value></data>
+  <data name="Help.Overview.Description" xml:space="preserve"><value>Created by konnokai.&#10;&#10;Stream Assistant provides YouTube, Twitch, and TwitCasting stream notifications, plus YouTube membership verification and automatic role assignment.&#10;&#10;Use {0} to see currently live members, {1} to view recording channels, and, on Boost Level 2 servers, {2} to update the server banner with a channel’s latest stream thumbnail. Use {3} for detailed command parameters.&#10;&#10;After inviting the bot, create a dedicated notification channel and grant View Channel, Send Messages, and Embed Links. Full setup guide: https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37&#10;&#10;You can support Stream Assistant through {4} or {5}.</value></data>
+  <data name="Help.Overview.Footer" xml:space="preserve"><value>Use {0} to view all modules.</value></data>
+  <data name="Help.Errors.ModuleRequired" xml:space="preserve"><value>Select a module.</value></data>
+  <data name="Help.Errors.ModuleNotFound" xml:space="preserve"><value>Module `{0}` could not be found, or you cannot use any of its commands.</value></data>
+  <data name="Help.Errors.CommandNotFound" xml:space="preserve"><value>Command `{0}` could not be found, or you do not have permission to use it.</value></data>
+  <data name="Help.Command.Parameters" xml:space="preserve"><value>Parameters</value></data>
+  <data name="Help.Command.UserPermissions" xml:space="preserve"><value>User Permission Requirements</value></data>
+  <data name="Help.Command.BotPermissions" xml:space="preserve"><value>Bot Permission Requirements</value></data>
+  <data name="Help.Command.Examples" xml:space="preserve"><value>Examples</value></data>
+  <data name="Help.Command.ModuleFooter" xml:space="preserve"><value>Module: {0}</value></data>
+  <data name="Help.CommandDetail.youtube.set-banner-change" xml:space="preserve"><value>Use the latest video or stream thumbnail from a channel as the server banner.&#10;Leave the channel URL empty to disable this setting.&#10;&#10;The bot needs Manage Server, and the server must be Boost Level 2.&#10;This feature depends on stream notifications, so the channel must be covered by a built-in source or the spider list.</value></data>
+  <data name="Help.CommandDetail.youtube.add" xml:space="preserve"><value>Add a channel for stream notifications.&#10;Use `holo` for all Holo members.&#10;Use `2434` for Nijisanji JP, EN, and VR members; configure a channel spider first for other members.&#10;Use `other` for selected channels outside those groups. Check the channel spider list for available channels.</value></data>
+  <data name="Help.CommandDetail.youtube.remove" xml:space="preserve"><value>Remove notification channels.&#10;Use `holo` to remove all Holo notifications.&#10;Use `2434` to remove all Nijisanji notifications.&#10;Use `other` to remove selected channels outside those groups.&#10;Use `all` to remove every YouTube stream notification.</value></data>
+  <data name="Help.CommandDetail.youtube.set-message" xml:space="preserve"><value>Set a notification message.&#10;Leave the message empty to clear custom text, or enter `-` to disable that notification type.&#10;Stream notifications must be configured first.&#10;&#10;The bot needs Mention @everyone, @here, and All Roles because servers may ping a specific role.</value></data>
+  <data name="Help.CommandDetail.twitch.set-message" xml:space="preserve"><value>Set a notification message.&#10;Leave the message empty to clear custom text, or enter `-` to disable that notification type.&#10;Stream notifications must be configured first.&#10;&#10;The bot needs Mention @everyone, @here, and All Roles because servers may ping a specific role.</value></data>
+  <data name="Help.CommandDetail.twitcasting.set-message" xml:space="preserve"><value>Set a notification message.&#10;Leave the message empty to clear custom text.&#10;Stream notifications must be configured first.&#10;&#10;The bot needs Mention @everyone, @here, and All Roles because servers may ping a specific role.</value></data>
+  <data name="Help.CommandDetail.youtube-spider.add" xml:space="preserve"><value>Add a channel spider for creators outside the built-in groups.&#10;Contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.youtube-spider.remove" xml:space="preserve"><value>Remove a channel spider for creators outside the built-in groups.&#10;Only the server that added the spider can remove it.</value></data>
+  <data name="Help.CommandDetail.twitch-spider.add" xml:space="preserve"><value>Add a Twitch channel spider.&#10;The server must have more than 200 members.&#10;Channel limits may change over time; contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>Remove a Twitch channel spider.&#10;Only the server that added the spider can remove it.</value></data>
+  <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>Add a TwitCasting channel spider.&#10;The server must have more than 500 members.&#10;Channel limits may change over time; contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>Remove a TwitCasting channel spider.&#10;Only the server that added the spider can remove it.</value></data>
+  <data name="Help.CommandDetail.member-set.add-member-check" xml:space="preserve"><value>Add a membership verification channel, currently limited to five channels.&#10;Adding the same channel again changes the role it grants.&#10;The server must have more than 250 members; contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.member-set.remove-member-check" xml:space="preserve"><value>Remove a membership verification channel.</value></data>
+  <data name="Help.CommandDetail.member-set.set-check-video" xml:space="preserve"><value>Manually choose the video used for membership verification.&#10;For channels with multiple membership tiers, choose a members-only video available to the lowest tier so valid lower-tier members are not rejected.&#10;Automatic discovery will not replace it. If the video becomes invalid, the notification channel will ask you to configure another one.</value></data>
+  <data name="Help.CommandDetail.member-set.clear-check-video" xml:space="preserve"><value>Return to automatic membership verification video selection and clear the manual choice.</value></data>
+  <data name="Utility.Ping" xml:space="preserve"><value>:ping_pong: Latency: {0} ms</value></data>
+  <data name="Utility.Invite" xml:space="preserve"><value>Invite link: &lt;{0}&gt;</value></data>
+  <data name="Utility.Status.Title" xml:space="preserve"><value>Stream Assistant</value></data>
+  <data name="Utility.Status.TestBuild" xml:space="preserve"><value> (test build)</value></data>
+  <data name="Utility.Status.Build" xml:space="preserve"><value>Build {0}</value></data>
+  <data name="Utility.Status.Author" xml:space="preserve"><value>Author</value></data>
+  <data name="Utility.Status.Owner" xml:space="preserve"><value>Owner</value></data>
+  <data name="Utility.Status.State" xml:space="preserve"><value>Status</value></data>
+  <data name="Utility.Status.StateValue" xml:space="preserve"><value>Servers: {0}&#10;Members served: {1}</value></data>
+  <data name="Utility.Status.StreamCount" xml:space="preserve"><value>Streams seen</value></data>
+  <data name="Utility.Status.Uptime" xml:space="preserve"><value>Uptime</value></data>
+  <data name="Utility.Status.UptimeValue" xml:space="preserve"><value>{0} days {1}</value></data>
+  <data name="Utility.Contact.Title" xml:space="preserve"><value>Contact the Bot Owner</value></data>
+  <data name="Utility.Contact.MessageLabel" xml:space="preserve"><value>Message</value></data>
+  <data name="Utility.Contact.MessagePlaceholder" xml:space="preserve"><value>Enter the message you want to send</value></data>
+  <data name="Utility.Contact.AttachmentsLabel" xml:space="preserve"><value>Related screenshots</value></data>
+  <data name="Utility.Contact.AttachmentsDescription" xml:space="preserve"><value>Optionally upload screenshots related to your message.</value></data>
+  <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>Contact details</value></data>
+  <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>Enter a way to contact you, such as X, Discord, or Facebook.</value></data>
+  <data name="Utility.Contact.Received" xml:space="preserve"><value>Your message has been received. Make sure your contact details are valid. The bot owner usually replies through the bot, so enable direct messages from members of mutual servers.</value></data>
+  <data name="Utility.Contact.AttachmentCount" xml:space="preserve"><value>Attached files</value></data>
+  <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>The reply could not be sent. Check the logs for details.</value></data>
+  <data name="Utility.Contact.OwnerReplyTitle" xml:space="preserve"><value>Reply from the bot owner</value></data>
+  <data name="Utility.Contact.ReplyAttachment" xml:space="preserve"><value>Attachment: {0}</value></data>
+  <data name="Utility.Contact.ReplyModalTitle" xml:space="preserve"><value>Reply to user</value></data>
+  <data name="Utility.Contact.ReplyUserIdLabel" xml:space="preserve"><value>User ID</value></data>
+  <data name="Utility.Contact.ReplyMessagePlaceholder" xml:space="preserve"><value>Enter the message you want to send</value></data>
+  <data name="Utility.Contact.ReplyAttachmentsLabel" xml:space="preserve"><value>Related screenshots or files</value></data>
+  <data name="Utility.Contact.ReplySent" xml:space="preserve"><value>Reply sent successfully:&#10;{0}&#10;({1} attachments)</value></data>
+  <data name="Utility.Contact.UserDmClosed" xml:space="preserve"><value>Unable to send the message because this user does not accept direct messages.</value></data>
+  <data name="Utility.GlobalNoticeChannelChanged" xml:space="preserve"><value>The global notice channel has been set to {0}.</value></data>
+  <data name="Utility.GlobalNoticeChannelFailed" xml:space="preserve"><value>Failed to set the global notice channel. Try again later or contact the bot owner.</value></data>
+  <data name="Notifications.OverwritePrompt" xml:space="preserve"><value>`{0}` is already in the notification list. Overwrite its settings?</value></data>
+  <data name="Notifications.ChannelChanged" xml:space="preserve"><value>The notification channel for `{0}` has been changed to {1}.</value></data>
+  <data name="Notifications.Removed" xml:space="preserve"><value>Removed `{0}`.</value></data>
+  <data name="Notifications.AllRemoved" xml:space="preserve"><value>All notification settings have been removed.</value></data>
+  <data name="Notifications.NotConfigured" xml:space="preserve"><value>Stream notifications are not configured for `{0}`.</value></data>
+  <data name="Notifications.SpiderWarning" xml:space="preserve"><value>&#10;&#10;Note: This channel is not in the spider list. If notifications do not arrive, use {0} to add it.</value></data>
+  <data name="Notifications.MessageSet" xml:space="preserve"><value>The “{1}” notification message for `{0}` is now:&#10;{2}</value></data>
+  <data name="Notifications.MessageCleared" xml:space="preserve"><value>The “{1}” notification message for `{0}` has been cleared.</value></data>
+  <data name="Notifications.MessageSetSimple" xml:space="preserve"><value>The stream notification message for `{0}` is now:&#10;{1}</value></data>
+  <data name="Notifications.MessageClearedSimple" xml:space="preserve"><value>The stream notification message for `{0}` has been cleared.</value></data>
+  <data name="Notifications.TypeDisabled" xml:space="preserve"><value>“{1}” notifications for `{0}` have been disabled.</value></data>
+  <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>(this notification type is disabled)</value></data>
+  <data name="Notifications.MessageListDescription" xml:space="preserve"><value>A blank value means no message is configured. Role text shown in embeds does not trigger mentions.</value></data>
+  <data name="Youtube.RecordList.Title" xml:space="preserve"><value>Stream Recording Channels</value></data>
+  <data name="Youtube.RecordList.Empty" xml:space="preserve"><value>There are no channels in the stream recording list.</value></data>
+  <data name="Youtube.NowStreaming.Title" xml:space="preserve"><value>Currently Live</value></data>
+  <data name="Youtube.NowStreaming.Failed" xml:space="preserve"><value>The current live stream list could not be retrieved.</value></data>
+  <data name="Youtube.Upcoming.Title" xml:space="preserve"><value>Upcoming Streams</value></data>
+  <data name="Youtube.Upcoming.Entry" xml:space="preserve"><value>{0}&#10;{1}&#10;Stream time: {2}&#10;In recording list: {3}</value></data>
+  <data name="Youtube.MemberPlaylist" xml:space="preserve"><value>Members-only playlist: &lt;{0}&gt;</value></data>
+  <data name="Youtube.Events.Enabled" xml:space="preserve"><value>A Discord event will be created when `{0}` schedules a new stream.</value></data>
+  <data name="Youtube.Events.Disabled" xml:space="preserve"><value>Automatic event creation for `{0}` has been disabled.</value></data>
+  <data name="Youtube.Events.DisableNewStreamPrompt" xml:space="preserve"><value>Disable new waiting-room channel notifications and show them only as Discord events? Other notifications, including stream starts, will still use the configured channel.</value></data>
+  <data name="Youtube.Events.EnableReplacementPrompt" xml:space="preserve"><value>Automatic Discord events can replace new waiting-room notifications. Enable this feature?</value></data>
+  <data name="Youtube.NoticeType.NewStream" xml:space="preserve"><value>new waiting room</value></data>
+  <data name="Youtube.NoticeType.NewVideo" xml:space="preserve"><value>new upload</value></data>
+  <data name="Youtube.NoticeType.Start" xml:space="preserve"><value>stream/premiere started</value></data>
+  <data name="Youtube.NoticeType.End" xml:space="preserve"><value>stream/premiere ended</value></data>
+  <data name="Youtube.NoticeType.ChangeTime" xml:space="preserve"><value>stream time changed</value></data>
+  <data name="Youtube.NoticeType.Delete" xml:space="preserve"><value>stream deleted or made private</value></data>
+  <data name="Youtube.Banner.Removed" xml:space="preserve"><value>The server banner setting has been removed.</value></data>
+  <data name="Youtube.Banner.NotConfigured" xml:space="preserve"><value>This server is not using automatic banner updates.</value></data>
+  <data name="Youtube.Banner.RequiresTier2" xml:space="preserve"><value>This feature requires Server Boost Level 2.</value></data>
+  <data name="Youtube.Banner.Changed" xml:space="preserve"><value>The server banner will use stream thumbnails from `{0}`.</value></data>
+  <data name="Youtube.Notifications.TypeDisabled" xml:space="preserve"><value>“{1}” notifications for `{0}` have been disabled.</value></data>
+  <data name="Youtube.Notifications.StreamChannelChanged" xml:space="preserve"><value>The stream notification channel for `{0}` has been changed to {1}.</value></data>
+  <data name="Youtube.Notifications.Added" xml:space="preserve"><value>`{0}` has been added to the YouTube stream notification list.</value></data>
+  <data name="Youtube.Notifications.VideoChannelHint" xml:space="preserve"><value>&#10;Use {0} to change the upload notification channel.</value></data>
+  <data name="Youtube.Notifications.AddedWithHint" xml:space="preserve"><value>`{0}` has been added to the YouTube stream notification list.{1}</value></data>
+  <data name="Youtube.Notifications.NoneConfigured" xml:space="preserve"><value>This server has no YouTube notifications configured.</value></data>
+  <data name="Youtube.Notifications.RemoveAllPrompt" xml:space="preserve"><value>Remove all YouTube notifications?</value></data>
+  <data name="Youtube.Notifications.VideoChannelChanged" xml:space="preserve"><value>The upload notification channel for `{0}` has been changed to {1}.</value></data>
+  <data name="Youtube.Notifications.ConfigureFirst" xml:space="preserve"><value>No notification settings were found for `{0}`. Use {1} to add stream notifications first. Do not switch Discord channels while using autocomplete.</value></data>
+  <data name="Youtube.Notifications.Empty" xml:space="preserve"><value>The YouTube notification list is empty.</value></data>
+  <data name="Youtube.Notifications.ListEntry" xml:space="preserve"><value>{0} | Stream: {1} | Uploads: {2}</value></data>
+  <data name="Youtube.Notifications.ListTitle" xml:space="preserve"><value>YouTube Notifications</value></data>
+  <data name="Youtube.Notifications.NoEndWarning" xml:space="preserve"><value>&#10;&#10;Note: This channel currently will not receive stream-ended notifications.</value></data>
+  <data name="Youtube.Notifications.VideoOnlyWarning" xml:space="preserve"><value>&#10;&#10;Note: This channel currently receives upload notifications only.</value></data>
+  <data name="Youtube.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>No YouTube notifications are configured. Use {0} to add one first.</value></data>
+  <data name="Youtube.ChannelNameMissing" xml:space="preserve"><value>__channel name unavailable__</value></data>
+  <data name="Youtube.Messages.ListValue" xml:space="preserve"><value>Create events automatically: {0}&#10;New waiting room: {1}&#10;New upload: {2}&#10;Stream started: {3}&#10;Stream ended: {4}&#10;Time changed: {5}&#10;Stream deleted: {6}</value></data>
+  <data name="Youtube.Messages.ListTitle" xml:space="preserve"><value>YouTube Notification Messages</value></data>
+  <data name="YoutubeSpider.ManagedChannelRejected" xml:space="preserve"><value>This channel is already managed by a built-in source and does not need a spider.</value></data>
+  <data name="YoutubeSpider.TrustedChanged" xml:space="preserve"><value>The approved-channel state for `{0}` is now “{1}”.</value></data>
+  <data name="YoutubeSpider.AlreadyRecorded" xml:space="preserve"><value>This channel is already in the recording list.</value></data>
+  <data name="YoutubeSpider.RecordAdded" xml:space="preserve"><value>Added to the recording list.</value></data>
+  <data name="YoutubeSpider.NotRecorded" xml:space="preserve"><value>This channel is not in the recording list.</value></data>
+  <data name="YoutubeSpider.RecordRemoved" xml:space="preserve"><value>Removed from the recording list.</value></data>
+  <data name="YoutubeSpider.ListTitle" xml:space="preserve"><value>YouTube Spider List</value></data>
+  <data name="YoutubeSpider.UntrustedListTitle" xml:space="preserve"><value>Unapproved YouTube Spiders</value></data>
+  <data name="Spider.LimitReached" xml:space="preserve"><value>This server already has {0} {1} spiders. Remove one and try again. For special requests, use {2} to contact the bot owner.</value></data>
+  <data name="Spider.LimitReachedShort" xml:space="preserve"><value>This server has reached its limit of {0} {1} spiders.</value></data>
+  <data name="Spider.AlreadyExists" xml:space="preserve"><value>`{0}` is already in the spider list. Use `{1} {2}` in the notification channel to enable notifications.{3}</value></data>
+  <data name="Spider.OwnerHint" xml:space="preserve"><value>&#10;Configured by: `{0}`</value></data>
+  <data name="Spider.UseForCurrentGuildPrompt" xml:space="preserve"><value>Assign this spider to the current server?</value></data>
+  <data name="Spider.Added" xml:space="preserve"><value>`{0}` has been added to the spider list. Use `{1} {2}` in the notification channel to enable notifications.</value></data>
+  <data name="Spider.NotConfigured" xml:space="preserve"><value>No channel spider is configured for `{0}`.</value></data>
+  <data name="Spider.NotOwnedByGuild" xml:space="preserve"><value>This channel spider was not added by this server and cannot be removed here.</value></data>
+  <data name="Spider.Removed" xml:space="preserve"><value>The channel spider for `{0}` has been removed.</value></data>
+  <data name="Spider.StatusChanged" xml:space="preserve"><value>The channel state for `{0}` is now “{1}”.</value></data>
+  <data name="Spider.RecordingChanged" xml:space="preserve"><value>The recording state for `{0}` is now “{1}”.</value></data>
+  <data name="Spider.ListEntry" xml:space="preserve"><value>{0}, added by `{1}`</value></data>
+  <data name="Spider.ListFooter" xml:space="preserve"><value>{0} / {1} channels ({2} warning or unapproved spiders)</value></data>
+  <data name="Spider.WarningListTitle" xml:space="preserve"><value>Warning-State Spiders</value></data>
+  <data name="Twitch.Errors.UserNotFound" xml:space="preserve"><value>The Twitch user could not be retrieved. Check the channel URL or name.</value></data>
+  <data name="Twitch.Errors.InvalidAutocompleteValue" xml:space="preserve"><value>The Twitch channel ID could not be resolved. Select an autocomplete result again without switching Discord channels.</value></data>
+  <data name="Twitch.Notifications.Added" xml:space="preserve"><value>`{0}` has been added to the Twitch notification list.{1}</value></data>
+  <data name="Twitch.Notifications.Empty" xml:space="preserve"><value>The Twitch stream notification list is empty.</value></data>
+  <data name="Twitch.Notifications.ListTitle" xml:space="preserve"><value>Twitch Stream Notifications</value></data>
+  <data name="Twitch.Notifications.ConfigureFirst" xml:space="preserve"><value>Twitch notifications are not configured for `{0}`. Use {1} to add them before setting a message.</value></data>
+  <data name="Twitch.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>No Twitch stream notifications are configured. Use {0} to add one first.</value></data>
+  <data name="Twitch.NoticeType.Start" xml:space="preserve"><value>stream started</value></data>
+  <data name="Twitch.NoticeType.End" xml:space="preserve"><value>stream ended</value></data>
+  <data name="Twitch.NoticeType.Change" xml:space="preserve"><value>stream details changed</value></data>
+  <data name="Twitch.Messages.ListValue" xml:space="preserve"><value>Stream started: {0}&#10;Stream ended: {1}&#10;Details changed: {2}</value></data>
+  <data name="Twitch.Messages.ListTitle" xml:space="preserve"><value>Twitch Notification Messages</value></data>
+  <data name="TwitchSpider.MemberRequirement" xml:space="preserve"><value>This command requires at least `{0}` server members; the bot currently sees `{1}`. A user who linked Twitch may add their own authorized channel without this limit. The count may be cached; use {2} if you need help.</value></data>
+  <data name="TwitchSpider.ListTitle" xml:space="preserve"><value>Twitch Stream Spiders</value></data>
+  <data name="Twitcasting.Errors.UserNotFound" xml:space="preserve"><value>The TwitCasting user could not be found. Check that the input is a valid TwitCasting channel URL or name.</value></data>
+  <data name="Twitcasting.Notifications.Added" xml:space="preserve"><value>`{0}` has been added to the TwitCasting notification list.{1}</value></data>
+  <data name="Twitcasting.Notifications.NoneConfigured" xml:space="preserve"><value>This server has no TwitCasting stream notifications configured.</value></data>
+  <data name="Twitcasting.Notifications.Empty" xml:space="preserve"><value>The TwitCasting stream notification list is empty.</value></data>
+  <data name="Twitcasting.Notifications.ListTitle" xml:space="preserve"><value>TwitCasting Stream Notifications</value></data>
+  <data name="Twitcasting.Notifications.ConfigureFirst" xml:space="preserve"><value>TwitCasting notifications are not configured for `{0}`. Use {1} to add them before setting a message.</value></data>
+  <data name="Twitcasting.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>No TwitCasting stream notifications are configured. Use {0} to add one first.</value></data>
+  <data name="Twitcasting.Messages.ListTitle" xml:space="preserve"><value>TwitCasting Notification Messages</value></data>
+  <data name="TwitcastingSpider.ListTitle" xml:space="preserve"><value>TwitCasting Stream Spiders</value></data>
+  <data name="Member.Errors.Disabled" xml:space="preserve"><value>Membership verification is not enabled on this bot. Contact {0}.</value></data>
+  <data name="Member.Errors.NotConfigured" xml:space="preserve"><value>This server has not configured membership verification. Ask a server administrator.</value></data>
+  <data name="Member.Errors.Initializing" xml:space="preserve"><value>Some channels are still initializing. Try again in about five minutes.</value></data>
+  <data name="Member.Errors.LoginRequired" xml:space="preserve"><value>Sign in to Discord and Google at {0}, then run this command again.</value></data>
+  <data name="Member.CheckQueuedWithDmNotice" xml:space="preserve"><value>Your verification has been queued and may take up to {0} minutes. Enable direct messages from server members for this server so you can receive the result.</value></data>
+  <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>Select channels</value></data>
+  <data name="Member.Select.Description" xml:space="preserve"><value>Select the channels to verify. Existing membership verification roles will be removed before verification runs again.</value></data>
+  <data name="Member.Select.SelectedCount" xml:space="preserve"><value>{0} channels selected</value></data>
+  <data name="Member.Select.Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>You have not started membership verification in this server.</value></data>
+  <data name="Member.CheckCancelled" xml:space="preserve"><value>Your membership verification in this server and its related roles have been removed.</value></data>
+  <data name="Member.Errors.SaveFailed" xml:space="preserve"><value>Failed to save the data. Contact {0}.</value></data>
+  <data name="Member.UnlinkPrompt" xml:space="preserve"><value>Unlink Discord from Google? This also removes membership verification roles. You must link your account on the website again to restore them.</value></data>
+  <data name="Member.Unlinked" xml:space="preserve"><value>Discord and Google have been unlinked.</value></data>
+  <data name="Member.Errors.GoogleRevokeFailed" xml:space="preserve"><value>The bot-side link was removed, but Google authorization could not be revoked. Open {0} and remove access for “直播小幫手會限確認”.</value></data>
+  <data name="Member.Errors.UnlinkFailed" xml:space="preserve"><value>Failed to unlink the account. Contact {0}.</value></data>
+  <data name="Member.Errors.NothingToUnlink" xml:space="preserve"><value>There is no linked account data to remove.</value></data>
+  <data name="Member.Errors.ChannelListEmpty" xml:space="preserve"><value>No membership channels are currently available for verification.</value></data>
+  <data name="Member.ChannelList" xml:space="preserve"><value>Channels currently available for membership verification:&#10;{0}</value></data>
+  <data name="Member.LinkedChannel" xml:space="preserve"><value>Linked YouTube channel: {0}</value></data>
+  <data name="Member.Errors.LinkedChannelUnavailable" xml:space="preserve"><value>The linked YouTube channel could not be retrieved. Make sure website linking is complete and the Google account has a YouTube channel.</value></data>
+  <data name="Member.Errors.LinkedChannelUnavailableWithOwner" xml:space="preserve"><value>The linked YouTube channel could not be retrieved. Make sure website linking is complete and the Google account has a YouTube channel. Contact {0} if you still need help.</value></data>
+  <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` is now the membership verification log channel.</value></data>
+  <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>The bot needs the Manage Roles permission. Grant it and try again.</value></data>
+  <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>The everyone role cannot be used as the membership verification role.</value></data>
+  <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>Role `{0}` is above the bot’s highest role. Move the bot role above it and try again.</value></data>
+  <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>This server already uses {0} membership verification channels. Remove an unused channel first.</value></data>
+  <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord select menus support at most {0} options. Remove unused membership verification channels first.</value></data>
+  <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>This server has no membership verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then use {0}. A log channel is required.</value></data>
+  <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>The configured membership verification log channel was deleted. Create a new channel, grant the required permissions, and use {0} again.</value></data>
+  <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>`{0}` is now a membership verification channel. Verified members receive the `{1}` role. {2}</value></data>
+  <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>Verification can start immediately.</value></data>
+  <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>Wait about five minutes before starting verification.</value></data>
+  <data name="MemberSetting.Errors.ChannelNotConfigured" xml:space="preserve"><value>Membership verification is not configured for this channel.</value></data>
+  <data name="MemberSetting.ChannelRemoved" xml:space="preserve"><value>Membership verification for `{0}` has been removed.</value></data>
+  <data name="MemberSetting.Errors.InvalidVideoId" xml:space="preserve"><value>The video ID could not be parsed. Provide a valid YouTube video URL or 11-character video ID.</value></data>
+  <data name="MemberSetting.Errors.ConfigureFirst" xml:space="preserve"><value>Membership verification is not configured for this channel. Add it first with {0}.</value></data>
+  <data name="MemberSetting.Errors.VideoNotMembersOnly" xml:space="preserve"><value>This is not a members-only video. Using it as the probe would let everyone pass verification. Select a members-only video.</value></data>
+  <data name="MemberSetting.Errors.CommentsDisabled" xml:space="preserve"><value>Comments are disabled on this video, so it cannot be used as a membership probe. Select another members-only video.</value></data>
+  <data name="MemberSetting.CheckVideoChanged" xml:space="preserve"><value>The membership probe for `{0}` is now manually set to `{1}`. Automatic discovery will not replace it; you will be notified if it becomes invalid.</value></data>
+  <data name="MemberSetting.CheckVideoCleared" xml:space="preserve"><value>`{0}` will return to automatic membership probe selection in about {1} minutes.</value></data>
+  <data name="MemberSetting.Errors.NoVerifiedMembers" xml:space="preserve"><value>No members have been verified yet.</value></data>
+  <data name="MemberSetting.VerifiedListTitle" xml:space="preserve"><value>Verified Membership Members</value></data>
+  <data name="Member.Status.Channel" xml:space="preserve"><value>Channel checked</value></data>
+  <data name="Member.Status.State" xml:space="preserve"><value>Status</value></data>
+  <data name="Member.Status.DmUnavailable" xml:space="preserve"><value>Could not send a message to &lt;@{0}&gt;. Ask the user to allow direct messages from server members.</value></data>
+  <data name="Member.Status.RoleMissing" xml:space="preserve"><value>The membership verification role for {0} no longer exists. Configure it again.</value></data>
+  <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>The bot needs the Manage Roles permission to process membership verification roles. Grant the permission and try again.</value></data>
+  <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>The everyone role cannot be used as a membership verification role. Configure another role.</value></data>
+  <data name="Member.Status.NotLoggedIn" xml:space="preserve"><value>Not signed in</value></data>
+  <data name="Member.Status.RefreshFailed" xml:space="preserve"><value>Could not refresh authorization</value></data>
+  <data name="Member.Status.CredentialExpired" xml:space="preserve"><value>Google authorization expired</value></data>
+  <data name="Member.Status.ManualVideoCommentsDisabled" xml:space="preserve"><value>The manually selected members-only video `{0}` is no longer valid because comments are disabled. Use {1} to select a lower-tier members-only video.</value></data>
+  <data name="Member.Status.ManualVideoDeleted" xml:space="preserve"><value>The manually selected members-only video `{0}` was deleted. Use {1} to select a lower-tier members-only video.</value></data>
+  <data name="Member.Status.RemoveRolePermissionMissing" xml:space="preserve"><value>The bot cannot remove the role because it lacks Manage Roles. An administrator must remove it manually and grant the bot the required permission.</value></data>
+  <data name="Member.Status.MembershipExpired" xml:space="preserve"><value>Membership expired</value></data>
+  <data name="Member.Status.NotMember" xml:space="preserve"><value>Membership could not be confirmed</value></data>
+  <data name="Member.Status.TimeCalculationError" xml:space="preserve"><value>Invalid Google authorization time data</value></data>
+  <data name="Member.Status.GoogleInternalError" xml:space="preserve"><value>Google service error; verification will retry on the next run</value></data>
+  <data name="Member.Status.GoogleBadRequest" xml:space="preserve"><value>Invalid Google request; verification will retry on the next run</value></data>
+  <data name="Member.Status.QuotaExceeded" xml:space="preserve"><value>API quota exhausted; verification will retry tomorrow</value></data>
+  <data name="Member.Status.UnknownError" xml:space="preserve"><value>Unknown verification error</value></data>
+  <data name="Member.Status.VerifiedRolePermissionFailed" xml:space="preserve"><value>Verified, but the role could not be granted because of missing permissions</value></data>
+  <data name="Member.Status.UnknownUser" xml:space="preserve"><value>User not found</value></data>
+  <data name="Member.Status.VerifiedRoleUnknownError" xml:space="preserve"><value>Verified, but an unknown error occurred while granting the role</value></data>
+  <data name="Member.Status.Verified" xml:space="preserve"><value>Verified</value></data>
+  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>Existing membership check complete</value></data>
+  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>New membership check complete</value></data>
+  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>Channel checked: {0}&#10;Checked {1} members; {2} were verified successfully.</value></data>
+  <data name="Member.Background.LoginRequired" xml:space="preserve"><value>You are not signed in. Sign in at {0}, return to the server, and run {1}.</value></data>
+  <data name="Member.Background.RefreshFailed" xml:space="preserve"><value>Your Google authorization could not be refreshed. Open {0}, remove access for the Stream Notify Bot membership checker, sign in again at {1}, then return to the server and run {2}.</value></data>
+  <data name="Member.Background.CredentialExpired" xml:space="preserve"><value>Your Google authorization has expired. Open {0}, remove access for the Stream Notify Bot membership checker, sign in again at {1}, then return to the server and run {2}.</value></data>
+  <data name="Member.Background.MembershipExpired" xml:space="preserve"><value>Your membership for `{1}` in `{0}` has expired. Run {2} to cancel verification, or run {3} again after renewing your membership.</value></data>
+  <data name="Member.Background.NotMember" xml:space="preserve"><value>Your membership for `{1}` in `{0}` could not be confirmed. Use {2} to check the linked channel and confirm that you have purchased membership. Run {3} to cancel verification. If everything is correct, contact {4}.</value></data>
+  <data name="Member.Background.RetryLogin" xml:space="preserve"><value>There is a problem with your Google authorization data. Open {0}, remove access for the Stream Notify Bot membership checker, sign in again at {1}, then return to the server and run {2}.</value></data>
+  <data name="Member.Background.UnknownError" xml:space="preserve"><value>Your account cannot be verified right now, possibly because Google is temporarily unavailable. Try again later or contact {0}.</value></data>
+  <data name="Member.Background.VerifiedRoleFailed" xml:space="preserve"><value>Your membership for `{1}` in `{0}` was verified, but the bot could not grant the role. Ask a server administrator for help.</value></data>
+  <data name="Member.Background.Verified" xml:space="preserve"><value>Your membership for `{1}` in `{0}` was verified. You can now view members-only channels in that server.</value></data>
+  <data name="Notifications.Field.Status" xml:space="preserve"><value>Stream status</value></data>
+  <data name="Notifications.Field.ScheduledStart" xml:space="preserve"><value>Scheduled start</value></data>
+  <data name="Notifications.Field.ChangedStart" xml:space="preserve"><value>New scheduled start</value></data>
+  <data name="Notifications.Field.StartedAt" xml:space="preserve"><value>Started at</value></data>
+  <data name="Notifications.Field.EndedAt" xml:space="preserve"><value>Ended at</value></data>
+  <data name="Notifications.Field.Duration" xml:space="preserve"><value>Stream duration</value></data>
+  <data name="Notifications.Field.UploadedAt" xml:space="preserve"><value>Uploaded at</value></data>
+  <data name="Notifications.Field.ScheduledOrUploadedAt" xml:space="preserve"><value>Scheduled start / upload time</value></data>
+  <data name="Notifications.Field.OriginalScheduledStart" xml:space="preserve"><value>Original scheduled start</value></data>
+  <data name="Notifications.Field.Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Notifications.Field.Subtitle" xml:space="preserve"><value>Subtitle</value></data>
+  <data name="Notifications.Duration.Days" xml:space="preserve"><value>{0}d {1}h {2}m {3}s</value></data>
+  <data name="Notifications.Duration.Hours" xml:space="preserve"><value>{0}h {1}m {2}s</value></data>
+  <data name="Notifications.Button.RandomVideo" xml:space="preserve"><value>Take me to a random video or stream</value></data>
+  <data name="Notifications.Button.SupportEcpay" xml:space="preserve"><value>Support the bot (ECPay) #ad</value></data>
+  <data name="Notifications.Button.SupportPaypal" xml:space="preserve"><value>Support the bot (PayPal) #ad</value></data>
+  <data name="Youtube.NotificationStatus.DeletedStream" xml:space="preserve"><value>Stream deleted</value></data>
+  <data name="Youtube.NotificationStatus.UpcomingChanged" xml:space="preserve"><value>Not live yet (schedule changed)</value></data>
+  <data name="Youtube.NotificationStatus.EndedAsMemberOnly" xml:space="preserve"><value>Ended and changed to a members-only video</value></data>
+  <data name="Youtube.NotificationStatus.Unarchived" xml:space="preserve"><value>Ended and changed to a private archive</value></data>
+  <data name="Youtube.NotificationStatus.Deleted" xml:space="preserve"><value>Deleted</value></data>
+  <data name="Youtube.NotificationStatus.ScheduleDataLost" xml:space="preserve"><value>Stream schedule data unavailable</value></data>
+  <data name="Youtube.Events.ManageEventsMissing" xml:space="preserve"><value>The bot is missing the Manage Events permission in this server. Grant it, then run {0} again to enable automatic event creation.</value></data>
+  <data name="Twitch.Notification.UnknownTitle" xml:space="preserve"><value>(stream title unavailable)</value></data>
+  <data name="Twitch.Notification.Clips" xml:space="preserve"><value>Most-viewed clips</value></data>
+  <data name="Twitch.Notification.UpdateTitle" xml:space="preserve"><value>{0}'s stream details were updated</value></data>
+  <data name="Twitch.Notification.ClipEntry" xml:space="preserve"><value>{0}. [{1}]({2}) by `{3}` (`{4}` views)</value></data>
+  <data name="Twitch.Notification.TitleChanged" xml:space="preserve"><value>Title changed: `{0}` → `{1}`</value></data>
+  <data name="Twitch.Notification.CategoryChanged" xml:space="preserve"><value>Category changed: `{0}` → `{1}`</value></data>
+  <data name="Twitcasting.Notification.Private" xml:space="preserve"><value>Password-protected private stream</value></data>
+  <data name="Twitcasting.Notification.Recording" xml:space="preserve"><value>Recording status</value></data>
+  <data name="Twitcasting.Recording.Unavailable" xml:space="preserve"><value>No recording available</value></data>
+  <data name="Member.VideoLog.NoVideos" xml:space="preserve"><value>{0} currently has no members-only video with comments enabled that can be used for verification. Wait for the channel owner to publish an eligible video, then try membership verification again. Use {1} to inspect the playlist.</value></data>
+  <data name="Member.VideoLog.NewProbeVideo" xml:space="preserve"><value>A new verification video was selected for membership channel `{0}`: `{1}`.</value></data>
+  <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>The membership channel name changed: `{0}` → `{1}`.</value></data>
+  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>Also, `{0}` has no membership verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then configure it with {1}.</value></data>
+  <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>Also, the bot is missing View Channel, Send Messages, or Embed Links in `{1}` on `{0}`.</value></data>
+</root>

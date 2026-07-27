@@ -2,13 +2,14 @@
 
 **「直播小幫手」(Discord Stream Notify Bot)** — 通知 Discord 伺服器 Vtuber 直播的機器人（YouTube / Twitch / TwitCasting）。Discord.Net、.NET 8.0、MySQL (EF Core + Pomelo)、Redis (StackExchange.Redis)。
 
-> **語言規範**：程式碼註解、Log 訊息、使用者介面字串、commit 訊息一律**繁體中文**。
+> **語言規範**：程式碼註解、Log 訊息與 commit 訊息使用**繁體中文**；一般使用者介面透過資源支援 `zh-TW`、`en-US`、`ja`，owner/admin 與營運訊息維持繁體中文。
 
 ---
 
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
+- 本地化第一階段的程式實作已完成，待手動 Discord 驗證：Slash group／command／parameter／choice 名稱固定使用英文 canonical，description 支援 `zh-TW`／`en-US`／`ja`；一般互動、Help、三平台背景通知與會限訊息維持三語，通知事件對本 shard guild 批次讀取 locale，通知 DTO 不攜帶 locale。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run

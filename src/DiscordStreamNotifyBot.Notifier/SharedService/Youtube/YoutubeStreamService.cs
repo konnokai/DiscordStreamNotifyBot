@@ -2,6 +2,7 @@ using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared.Messages;
 using HtmlAgilityPack;
 using Polly;
@@ -23,17 +24,17 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
     {
         public enum NoticeType
         {
-            [ChoiceDisplay("新待機室")]
+            [ChoiceDisplay("New waiting room")]
             NewStream,
-            [ChoiceDisplay("新上傳影片")]
+            [ChoiceDisplay("New upload")]
             NewVideo,
-            [ChoiceDisplay("開始直播\\首播")]
+            [ChoiceDisplay("Stream or premiere started")]
             Start,
-            [ChoiceDisplay("結束直播\\首播")]
+            [ChoiceDisplay("Stream or premiere ended")]
             End,
-            [ChoiceDisplay("變更直播時間")]
+            [ChoiceDisplay("Schedule changed")]
             ChangeTime,
-            [ChoiceDisplay("已刪除或私人化直播")]
+            [ChoiceDisplay("Deleted or made private")]
             Delete
         }
 
@@ -54,25 +55,30 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
         private readonly DiscordSocketClient _client;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly MessageComponent _messageComponent;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
         private readonly Shared.YoutubeApiService _apiService;
         private readonly NoticeCache<NoticeYoutubeStreamChannel> _noticeCache;
+        private readonly BotLocalizer _localizer;
+        private readonly GuildLocaleService _guildLocaleService;
+        private readonly CommandDisplayResolver _commandDisplayResolver;
+        private readonly EmojiService _emojiService;
 
-        public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory, BotConfig botConfig, EmojiService emojiService, MainDbService dbService, Shared.YoutubeApiService apiService)
+        public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory,
+            BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
+            Shared.YoutubeApiService apiService, BotLocalizer localizer,
+            GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
             _botConfig = botConfig;
             _apiService = apiService;
+            _localizer = localizer;
+            _guildLocaleService = guildLocaleService;
+            _commandDisplayResolver = commandDisplayResolver;
+            _emojiService = emojiService;
             _noticeCache = new NoticeCache<NoticeYoutubeStreamChannel>(dbService, db => db.NoticeYoutubeStreamChannel.AsNoTracking().ToList());
-
-            _messageComponent = new ComponentBuilder()
-                        .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                        .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                        .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
         }
 
         #region 指令支援（委派 Shared YoutubeApiService）
@@ -87,9 +93,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         public Task<YTApiVideo> GetVideoAsync(string videoId) => _apiService.GetVideoAsync(videoId);
 
         public Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true) => _apiService.PostSubscribeRequestAsync(channelId, subscribe);
+
+        public void InvalidateNoticeCache() => _noticeCache.Invalidate();
         #endregion
 
-        public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host)
+        public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host, string locale)
         {
             try
             {
@@ -114,7 +122,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
 
                 EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                    .WithTitle("正在直播的清單")
+                    .WithTitle(_localizer.Get("Youtube.NowStreaming.Title", locale))
                     .WithThumbnailUrl("https://schedule.hololive.tv/dist/images/logo.png")
                     .WithCurrentTimestamp()
                     .WithDescription(string.Join("\n", videoResult.Items.Select((x) => $"{x.Snippet.ChannelTitle} - {Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}")));
@@ -142,41 +150,78 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 ChannelType = dto.ChannelType,
             };
 
-            var embed = BuildEmbedForBus(dto, streamVideo);
-            await SendStreamMessageAsync(streamVideo, embed, MapNoticeType(dto.NoticeType)).ConfigureAwait(false);
+            NoticeType? noticeType = MapNoticeType(dto.NoticeType);
+            if (!noticeType.HasValue)
+            {
+                Log.Warn($"忽略未知 YouTube 通知類型: {(int)dto.NoticeType} / {dto.VideoId}");
+                return;
+            }
+
+            await SendStreamMessageAsync(streamVideo, dto, noticeType.Value).ConfigureAwait(false);
         }
 
         /// <summary>通知匯流排消費端入口：伺服器橫幅變更事件。</summary>
         public Task DispatchBannerFromBusAsync(BannerChangeNotification dto)
             => ChangeGuildBannerAsync(dto.ChannelId, dto.VideoId);
 
-        private static Embed BuildEmbedForBus(YoutubeNotification dto, TableVideo video)
+        private YoutubeNotificationVariant BuildVariantForBus(YoutubeNotification dto, TableVideo video, string locale)
         {
+            Embed embed;
             switch (dto.NoticeType)
             {
                 case YoutubeNoticeType.NewStream:
-                    return EmbedBuilderFactory.CreateNewStream(video, dto.ScheduledStartTime).Build();
+                    embed = EmbedBuilderFactory.CreateNewStream(video, dto.ScheduledStartTime, _localizer, locale).Build();
+                    break;
                 case YoutubeNoticeType.NewVideo:
-                    return EmbedBuilderFactory.CreateNewVideo(video).Build();
+                    embed = EmbedBuilderFactory.CreateNewVideo(video, _localizer, locale).Build();
+                    break;
                 case YoutubeNoticeType.Start:
-                    return EmbedBuilderFactory.CreateStreamStarted(video).Build();
+                    embed = EmbedBuilderFactory.CreateStreamStarted(video, _localizer, locale).Build();
+                    break;
                 case YoutubeNoticeType.End:
-                    return EmbedBuilderFactory.CreateStreamEnded(
-                        video,
-                        dto.ActualStartTime ?? dto.ScheduledStartTime,
-                        dto.ActualEndTime ?? DateTime.Now).Build();
+                    embed = (dto.IsMemberOnly
+                        ? EmbedBuilderFactory.CreateStreamEndedAsMemberOnly(video,
+                            dto.ActualStartTime ?? dto.ScheduledStartTime,
+                            dto.ActualEndTime ?? DateTime.UtcNow, _localizer, locale)
+                        : EmbedBuilderFactory.CreateStreamEnded(video,
+                            dto.ActualStartTime ?? dto.ScheduledStartTime,
+                            dto.ActualEndTime ?? DateTime.UtcNow, _localizer, locale)).Build();
+                    break;
                 case YoutubeNoticeType.ChangeTime:
-                    return EmbedBuilderFactory.CreateStreamTimeChangedReminder(
-                        video,
-                        dto.PreviousScheduledStartTime ?? dto.ScheduledStartTime).Build();
+                    embed = EmbedBuilderFactory.CreateStreamTimeChangedReminder(video,
+                        dto.PreviousScheduledStartTime ?? dto.ScheduledStartTime, _localizer, locale).Build();
+                    break;
                 case YoutubeNoticeType.Delete:
-                    return EmbedBuilderFactory.CreateStreamDeleted(video).Build();
+                    embed = (dto.IsUnarchived
+                        ? EmbedBuilderFactory.CreateStreamUnarchived(video, _localizer, locale)
+                        : EmbedBuilderFactory.CreateStreamDeleted(video, _localizer, locale)).Build();
+                    break;
                 default:
-                    return EmbedBuilderFactory.CreateStreamStarted(video).Build();
+                    throw new ArgumentOutOfRangeException(nameof(dto.NoticeType));
             }
+
+            MessageComponent component = dto.NoticeType == YoutubeNoticeType.Start
+                ? BuildMessageComponent(locale)
+                : null;
+            string togglePath = _commandDisplayResolver.GetCommandPath(locale, "youtube", "toggle-create-event");
+            Embed manageEventsWarning = new EmbedBuilder()
+                .WithErrorColor()
+                .WithDescription(_localizer.Format("Youtube.Events.ManageEventsMissing", locale, togglePath))
+                .Build();
+            return new YoutubeNotificationVariant(embed, component, manageEventsWarning);
         }
 
-        private static NoticeType MapNoticeType(YoutubeNoticeType busNoticeType)
+        private MessageComponent BuildMessageComponent(string locale)
+            => new ComponentBuilder()
+                .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
+                    emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
+                .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
+                    emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
+                .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
+                    emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1)
+                .Build();
+
+        private static NoticeType? MapNoticeType(YoutubeNoticeType busNoticeType)
             => busNoticeType switch
             {
                 YoutubeNoticeType.NewStream => NoticeType.NewStream,
@@ -185,10 +230,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 YoutubeNoticeType.End => NoticeType.End,
                 YoutubeNoticeType.ChangeTime => NoticeType.ChangeTime,
                 YoutubeNoticeType.Delete => NoticeType.Delete,
-                _ => NoticeType.Start,
+                _ => null,
             };
 
-        private async Task SendStreamMessageAsync(TableVideo streamVideo, Embed embed, NoticeType noticeType)
+        private async Task SendStreamMessageAsync(TableVideo streamVideo, YoutubeNotification dto, NoticeType noticeType)
         {
             if (!Bot.IsConnect)
                 return;
@@ -244,40 +289,24 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 return;
 #endif
 
-                Image? coverImage = null;
-                if (noticeType == NoticeType.NewStream && noticeYoutubeStreamChannels.Any((x) => x.IsCreateEventForNewStream))
-                {
-                    Log.Info($"YouTube 通知 ({streamVideo.VideoId}) | 嘗試下載封面: {embed.Image.Value.Url}");
-                    try
-                    {
-                        var stream = await Policy.Handle<TimeoutException>()
-                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                            .WaitAndRetryAsync(3, (retryAttempt) =>
-                            {
-                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                return timeSpan;
-                            })
-                            .ExecuteAsync(async () =>
-                            {
-                                // Use shared HttpClient
-                                return await SharedHttpClient.GetStreamAsync(embed.Image.Value.Url);
-                            });
-
-                        coverImage = new Image(stream);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | 封面下載失敗，可能是找不到圖檔");
-                    }
-                }
+                var variants = new Dictionary<string, Lazy<YoutubeNotificationVariant>>(StringComparer.Ordinal);
+                var coverBytes = new Lazy<Task<byte[]>>(
+                    () => DownloadYoutubeCoverAsync(streamVideo.VideoId),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+                var guildsById = noticeYoutubeStreamChannels
+                    .Select(item => item.GuildId)
+                    .Distinct()
+                    .Select(guildId => _client.GetGuild(guildId))
+                    .Where(guild => guild != null)
+                    .GroupBy(guild => guild.Id)
+                    .ToDictionary(group => group.Key, group => group.First());
+                Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
                 foreach (var item in noticeYoutubeStreamChannels)
                 {
                     try
                     {
-                        var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null)
+                        if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
                         {
                             // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
                             if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
@@ -289,6 +318,16 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             _noticeCache.Invalidate();
                             continue;
                         }
+
+                        string locale = localesByGuildId[guild.Id];
+                        if (!variants.TryGetValue(locale, out var variantValue))
+                        {
+                            variantValue = new Lazy<YoutubeNotificationVariant>(
+                                () => BuildVariantForBus(dto, streamVideo, locale),
+                                LazyThreadSafetyMode.ExecutionAndPublication);
+                            variants.Add(locale, variantValue);
+                        }
+                        YoutubeNotificationVariant variant = variantValue.Value;
 
                         // 只有新影片會發到影片通知頻道，首播類的影片歸類在直播類型
                         // 原則上 DiscordNoticeVideoChannelId 預設會跟 DiscordNoticeStreamChannelId 一樣，不該為空
@@ -320,8 +359,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                             })
                                             .ExecuteAsync(async () =>
                                             {
-                                                await channel.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription("我在伺服器沒有 `管理活動` 的權限\n" +
-                                                    "請給予權限後再次執行 `/youtube toggle-create-event` 來開啟自動建立活動的功能").Build());
+                                                await channel.SendMessageAsync(embed: variant.ManageEventsWarning);
                                             });
                                     }
                                     catch (Exception) { }
@@ -352,13 +390,25 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                             })
                                             .ExecuteAsync(async () =>
                                             {
-                                                await guild.CreateEventAsync(streamVideo.VideoTitle,
-                                                    startTime,
-                                                    GuildScheduledEventType.External,
-                                                    description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
-                                                    endTime: startTime.AddHours(1),
-                                                    location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
-                                                    coverImage: coverImage);
+                                                byte[] bytes = await coverBytes.Value;
+                                                if (bytes == null)
+                                                {
+                                                    await guild.CreateEventAsync(streamVideo.VideoTitle,
+                                                        startTime, GuildScheduledEventType.External,
+                                                        description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
+                                                        endTime: startTime.AddHours(1),
+                                                        location: $"https://youtube.com/watch?v={streamVideo.VideoId}");
+                                                }
+                                                else
+                                                {
+                                                    using var coverStream = new MemoryStream(bytes, writable: false);
+                                                    await guild.CreateEventAsync(streamVideo.VideoTitle,
+                                                        startTime, GuildScheduledEventType.External,
+                                                        description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
+                                                        endTime: startTime.AddHours(1),
+                                                        location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
+                                                        coverImage: new Image(coverStream));
+                                                }
                                             });
                                     }
                                     else if (noticeType == NoticeType.ChangeTime)
@@ -434,7 +484,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, components: noticeType == NoticeType.Start ? _messageComponent : null, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: sendMessage, embed: variant.Embed,
+                                    components: variant.Component,
+                                    options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {
@@ -479,6 +531,29 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 }
             }
         }
+
+        private static async Task<byte[]> DownloadYoutubeCoverAsync(string videoId)
+        {
+            string url = $"https://i.ytimg.com/vi/{videoId}/maxresdefault.jpg";
+            Log.Info($"YouTube 通知 ({videoId}) | 嘗試下載封面: {url}");
+            try
+            {
+                return await Policy.Handle<TimeoutException>()
+                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                    .WaitAndRetryAsync(3, retryAttempt =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YouTube 通知 ({videoId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(() => SharedHttpClient.GetByteArrayAsync(url));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"YouTube 通知 ({videoId}) | 封面下載失敗，可能是找不到圖檔");
+                return null;
+            }
+        }
         #endregion
 
         #region 伺服器橫幅變更（消費端套用，需 GetGuild）
@@ -497,6 +572,21 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
 
             if (list.Count == 0) return;
+
+            var bannerBytes = new Lazy<Task<BannerDownloadResult>>(async () =>
+            {
+                try
+                {
+                    byte[] bytes = await _httpClientFactory.CreateClient("")
+                        .GetByteArrayAsync($"https://i.ytimg.com/vi/{videoId}/maxresdefault.jpg");
+                    return new BannerDownloadResult(true, bytes.Length < 2048 ? null : bytes);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), $"DownloadGuildBanner: {channelId} / {videoId}");
+                    return new BannerDownloadResult(false, null);
+                }
+            }, LazyThreadSafetyMode.ExecutionAndPublication);
 
             foreach (var item in list)
             {
@@ -522,27 +612,16 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                     if (videoId != item.LastChangeStreamId)
                     {
-                        MemoryStream memStream;
-                        try
-                        {
-                            memStream = new MemoryStream(await _httpClientFactory.CreateClient("").GetByteArrayAsync($"https://i.ytimg.com/vi/{videoId}/maxresdefault.jpg"));
-                            if (memStream.Length < 2048) memStream = null;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error($"DownloadGuildBanner - {item.GuildId}\n" +
-                                $"{channelId} / {videoId}\n" +
-                                $"{ex.Message}\n" +
-                                $"{ex.StackTrace}");
+                        BannerDownloadResult download = await bannerBytes.Value;
+                        if (!download.IsSuccess)
                             continue;
-                        }
 
                         try
                         {
-                            if (memStream != null)
+                            if (download.Bytes != null)
                             {
-                                Image image = new Image(memStream);
-                                await guild.ModifyAsync((func) => func.Banner = image);
+                                using var memStream = new MemoryStream(download.Bytes, writable: false);
+                                await guild.ModifyAsync(func => func.Banner = new Image(memStream));
                             }
 
                             item.LastChangeStreamId = videoId;
@@ -553,7 +632,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 await db.SaveChangesAsync();
                             }
 
-                            Log.Info("ChangeGuildBanner" + (memStream == null ? "(Without Change)" : "") + $": {item.GuildId} / {videoId}");
+                            Log.Info("ChangeGuildBanner" + (download.Bytes == null ? "(Without Change)" : "") + $": {item.GuildId} / {videoId}");
                         }
                         catch (Exception ex)
                         {
@@ -570,5 +649,12 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
         }
         #endregion
+
+        private sealed record YoutubeNotificationVariant(
+            Embed Embed,
+            MessageComponent Component,
+            Embed ManageEventsWarning);
+
+        private sealed record BannerDownloadResult(bool IsSuccess, byte[] Bytes);
     }
 }

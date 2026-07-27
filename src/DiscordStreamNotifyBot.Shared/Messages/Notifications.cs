@@ -48,6 +48,7 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public DateTime? ActualStartTime { get; set; }
         public DateTime? ActualEndTime { get; set; }
         public bool IsMemberOnly { get; set; }
+        public bool IsUnarchived { get; set; }
         public DataBase.Table.Video.YTChannelType ChannelType { get; set; }
     }
 
@@ -97,11 +98,34 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         /// <summary>是否已發送錄影請求（StartStream 用；錄影副作用在偵測端完成）。</summary>
         public bool IsRecord { get; set; }
 
-        /// <summary>最多觀看 Clip 清單（EndStream 用，偵測端已組好的 Markdown；可為空）。</summary>
+        /// <summary>語言中立的最多觀看 Clip 清單（EndStream 用）。</summary>
+        public List<TwitchClipInfo> Clips { get; set; }
+
+        /// <summary>最多觀看 Clip 清單的舊版繁中字串，供舊 payload / 舊 Notifier fallback。</summary>
         public string ClipsValue { get; set; }
 
-        /// <summary>直播資料更新彙整訊息（ChangeStreamData 用，去抖動後合併）。</summary>
+        /// <summary>語言中立的直播資料更新清單（ChangeStreamData 用，去抖動後合併）。</summary>
+        public List<TwitchChannelUpdateInfo> Updates { get; set; }
+
+        /// <summary>直播資料更新的舊版繁中字串，供舊 payload / 舊 Notifier fallback。</summary>
         public string Description { get; set; }
+    }
+
+    public class TwitchClipInfo
+    {
+        public string Title { get; set; }
+        public string Url { get; set; }
+        public string CreatorName { get; set; }
+        public int ViewCount { get; set; }
+    }
+
+    public class TwitchChannelUpdateInfo
+    {
+        public long ElapsedSeconds { get; set; }
+        public string OldTitle { get; set; }
+        public string NewTitle { get; set; }
+        public string OldCategory { get; set; }
+        public string NewCategory { get; set; }
     }
 
     /// <summary>跨層 TwitCasting 開台通知事件（欄位對應 DataBase.Table.TwitcastingStream）。</summary>
@@ -137,6 +161,12 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         /// <summary>要送到 guild log channel / guild owner 的訊息。</summary>
         public string Message { get; set; }
+
+        /// <summary>可由 Notifier 依 guild locale 排版的穩定訊息代碼；舊 payload 可為空。</summary>
+        public string MessageCode { get; set; }
+
+        /// <summary>訊息代碼的語言中立參數；不包含 locale。</summary>
+        public string[] MessageArguments { get; set; }
 
         /// <summary>送出後是否移除該會限頻道設定（沿用 SendMsgToLogChannelAsync 語意，各 shard 依守衛刪自己的）。</summary>
         public bool IsNeedRemove { get; set; } = true;

@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Errors.UnknownCommand" xml:space="preserve"><value>不明なコマンドです。削除または変更された可能性があります。</value></data>
+  <data name="Errors.InvalidArguments" xml:space="preserve"><value>入力された引数が正しくありません。</value></data>
+  <data name="Errors.Unknown" xml:space="preserve"><value>予期しないエラーが発生しました。Bot の所有者へ報告してください。</value></data>
+  <data name="Errors.FeatureDisabled" xml:space="preserve"><value>この機能は現在無効です。Bot の所有者へ確認してください。</value></data>
+  <data name="Errors.NotFound" xml:space="preserve"><value>指定された{0}が見つかりません。</value></data>
+  <data name="Permissions.MissingChannelPermissions" xml:space="preserve"><value>{0} で次の権限が不足しています：{1}。権限を付与してから再実行してください。</value></data>
+  <data name="Permissions.MissingGuildPermission" xml:space="preserve"><value>このコマンドを使用するには「{0}」権限が必要です。</value></data>
+  <data name="Pagination.EphemeralUnavailable" xml:space="preserve"><value>非公開の応答ではリアクションによるページ切り替えを利用できません。ページ番号を指定して再実行してください。</value></data>
+  <data name="Pagination.Unavailable" xml:space="preserve"><value>リアクションによるページ切り替えを利用できません。ページ番号を指定して再実行してください。</value></data>
+  <data name="Pagination.Footer" xml:space="preserve"><value>{0} / {1}</value></data>
+  <data name="Locale.TraditionalChinese" xml:space="preserve"><value>繁体字中国語</value></data>
+  <data name="Locale.English" xml:space="preserve"><value>英語</value></data>
+  <data name="Locale.Japanese" xml:space="preserve"><value>日本語</value></data>
+  <data name="Locale.Unsupported" xml:space="preserve"><value>ロケール「{0}」はサポートされていないため、繁体字中国語を使用します。</value></data>
+  <data name="Utility.LanguageChanged" xml:space="preserve"><value>サーバーの言語を {0} に変更しました。今後の公開コンテンツとバックグラウンド通知にはこの言語が使用されます。</value></data>
+  <data name="Utility.LanguageCurrent" xml:space="preserve"><value>現在のサーバー言語は {0} です。</value></data>
+  <data name="Onboarding.FirstNotificationSetup" xml:space="preserve"><value>初めて通知を設定しているようです。&#10;Bot の所有者が通知チャンネルでスポンサー告知や機能更新などのお知らせを送信する場合があります。{0} で Bot からのお知らせを受信するチャンネルを設定できます。スポンサー告知は今回設定した通知チャンネルへ送信されます。&#10;承認済みの公式サーバーにはスポンサー告知は送信されません。承認の申請や Bot の所有者への連絡には {1} を使用してください。</value></data>
+  <data name="Onboarding.CurrentLanguage" xml:space="preserve"><value>現在のサーバー言語：{0}</value></data>
+  <data name="Onboarding.ChangeLanguageHint" xml:space="preserve"><value>{0} でサーバー言語を変更できます。</value></data>
+  <data name="Youtube.StreamStatus.Live" xml:space="preserve"><value>配信中</value></data>
+  <data name="Youtube.StreamStatus.Upcoming" xml:space="preserve"><value>配信予定</value></data>
+  <data name="Youtube.StreamStatus.Ended" xml:space="preserve"><value>配信終了</value></data>
+  <data name="Youtube.StreamStatus.NewVideo" xml:space="preserve"><value>新着動画</value></data>
+  <data name="Twitch.StreamStatus.Live" xml:space="preserve"><value>配信中</value></data>
+  <data name="Twitch.StreamStatus.Offline" xml:space="preserve"><value>オフライン</value></data>
+  <data name="Twitch.StreamStatus.Category" xml:space="preserve"><value>カテゴリー：{0}</value></data>
+  <data name="Twitcasting.PrivateStream.Yes" xml:space="preserve"><value>はい</value></data>
+  <data name="Twitcasting.PrivateStream.No" xml:space="preserve"><value>いいえ</value></data>
+  <data name="Twitcasting.Recording.Available" xml:space="preserve"><value>録画を視聴できます</value></data>
+  <data name="Member.CheckQueued" xml:space="preserve"><value>認証待ちに追加しました。完了まで最大 {0} 分かかる場合があります。</value></data>
+  <data name="Member.CheckSucceeded" xml:space="preserve"><value>メンバーシップ認証に成功しました。</value></data>
+  <data name="Member.CheckFailed" xml:space="preserve"><value>メンバーシップ認証に失敗しました。</value></data>
+  <data name="Notifications.StartedAt" xml:space="preserve"><value>開始時刻：{0}</value></data>
+  <data name="Notifications.EndedAt" xml:space="preserve"><value>終了時刻：{0}</value></data>
+  <data name="Notifications.Duration" xml:space="preserve"><value>配信時間：{0}</value></data>
+  <data name="Errors.OperationFailed" xml:space="preserve"><value>操作に失敗しました。しばらくしてから再試行し、問題が続く場合は Bot の所有者へ連絡してください。</value></data>
+  <data name="Errors.SaveFailed" xml:space="preserve"><value>データを保存できませんでした。しばらくしてから再試行してください。</value></data>
+  <data name="Errors.InvalidYoutubeChannel" xml:space="preserve"><value>YouTube チャンネルを解析できませんでした。URL またはチャンネル ID を確認してください。</value></data>
+  <data name="Errors.InvalidYoutubeInput" xml:space="preserve"><value>YouTube の URL または ID を解析できませんでした。入力を確認してください。</value></data>
+  <data name="Errors.UrlRequired" xml:space="preserve"><value>URL を入力してください。</value></data>
+  <data name="Errors.ChannelNotFound" xml:space="preserve"><value>チャンネル `{0}` が見つかりません。</value></data>
+  <data name="Permissions.BotMissingRequired" xml:space="preserve"><value>Bot にこの操作に必要な権限がありません。チャンネルの表示、メッセージの送信、リンクの埋め込みなどの権限を確認してください。</value></data>
+  <data name="Permissions.List" xml:space="preserve"><value>{0}、{1}</value></data>
+  <data name="Permissions.BotOwnerOnly" xml:space="preserve"><value>Bot の所有者のみ</value></data>
+  <data name="Permissions.UserRequirement" xml:space="preserve"><value>ユーザーに「{0}」権限が必要</value></data>
+  <data name="Permissions.BotRequirement" xml:space="preserve"><value>Bot に「{0}」権限が必要</value></data>
+  <data name="Permissions.Name.ViewChannel" xml:space="preserve"><value>チャンネルを見る</value></data>
+  <data name="Permissions.Name.SendMessages" xml:space="preserve"><value>メッセージを送信</value></data>
+  <data name="Permissions.Name.EmbedLinks" xml:space="preserve"><value>リンクを埋め込む</value></data>
+  <data name="Permissions.Name.Administrator" xml:space="preserve"><value>管理者</value></data>
+  <data name="Permissions.Name.ManageMessages" xml:space="preserve"><value>メッセージの管理</value></data>
+  <data name="Permissions.Name.ManageEvents" xml:space="preserve"><value>イベントの管理</value></data>
+  <data name="Permissions.Name.ManageGuild" xml:space="preserve"><value>サーバーの管理</value></data>
+  <data name="Permissions.Name.MentionEveryone" xml:space="preserve"><value>@everyone、@here、すべてのロールへのメンション</value></data>
+  <data name="Permissions.Name.ManageRoles" xml:space="preserve"><value>ロールの管理</value></data>
+  <data name="Preconditions.GuildOnly" xml:space="preserve"><value>このコマンドはサーバー内でのみ使用できます。</value></data>
+  <data name="Preconditions.GuildUnavailable" xml:space="preserve"><value>このサーバーではこのコマンドを使用できません。</value></data>
+  <data name="Preconditions.GuildOwnerOnly" xml:space="preserve"><value>このコマンドはサーバーの所有者のみ使用できます。</value></data>
+  <data name="Preconditions.GuildMemberCount" xml:space="preserve"><value>このコマンドにはサーバーメンバーが `{0}` 人以上必要です。Bot が現在取得している人数は `{1}` 人です。キャッシュの影響を受ける場合があります。サポートが必要な場合は {2} を使用してください。</value></data>
+  <data name="Preconditions.Unmet" xml:space="preserve"><value>現在このコマンドを使用できません。実行場所と必要な権限を確認してから再試行してください。</value></data>
+  <data name="Common.Yes" xml:space="preserve"><value>はい</value></data>
+  <data name="Common.No" xml:space="preserve"><value>いいえ</value></data>
+  <data name="Common.Enabled" xml:space="preserve"><value>有効</value></data>
+  <data name="Common.Disabled" xml:space="preserve"><value>無効</value></data>
+  <data name="Common.Warning" xml:space="preserve"><value>警告</value></data>
+  <data name="Common.Normal" xml:space="preserve"><value>通常</value></data>
+  <data name="Common.None" xml:space="preserve"><value>なし</value></data>
+  <data name="Common.BotOwner" xml:space="preserve"><value>Bot の所有者</value></data>
+  <data name="Common.LeftGuild" xml:space="preserve"><value>退出済みのサーバー</value></data>
+  <data name="Common.Website" xml:space="preserve"><value>このウェブサイト</value></data>
+  <data name="Common.GoogleSecurity" xml:space="preserve"><value>Google アカウントの権限</value></data>
+  <data name="Common.ChannelCountFooter" xml:space="preserve"><value>{0} / {1} チャンネル</value></data>
+  <data name="Confirmation.TimeoutFooter" xml:space="preserve"><value>ボタンは 5 秒後に無効になります。すぐに選択するか、コマンドを再実行してください。</value></data>
+  <data name="Components.NotAllowed" xml:space="preserve"><value>このコンポーネントを使用することはできません。</value></data>
+  <data name="Components.Invalid" xml:space="preserve"><value>このコンポーネントは期限切れ、または無効です。</value></data>
+  <data name="Components.ChannelRemoved" xml:space="preserve"><value>このコンポーネントに対応するチャンネルが見つかりません。削除された可能性があります。</value></data>
+  <data name="Help.Modules.Title" xml:space="preserve"><value>モジュール一覧</value></data>
+  <data name="Help.Modules.Footer" xml:space="preserve"><value>{0} でモジュールを選択し、コマンド一覧を表示できます。</value></data>
+  <data name="Help.Commands.Title" xml:space="preserve"><value>{0} のコマンド</value></data>
+  <data name="Help.Commands.Footer" xml:space="preserve"><value>{0} でコマンドを選択し、詳細を表示できます。</value></data>
+  <data name="Help.Overview.Title" xml:space="preserve"><value>直播小幫手 ビルド {0}</value></data>
+  <data name="Help.Overview.Description" xml:space="preserve"><value>konnokai が開発しています。&#10;&#10;直播小幫手は YouTube、Twitch、TwitCasting の配信通知、YouTube メンバーシップ認証、ロールの自動付与に対応しています。&#10;&#10;現在配信中のメンバーは {0}、録画対象チャンネルは {1} で確認できます。Boost レベル 2 のサーバーでは {2} で最新配信のサムネイルをサーバーバナーに設定できます。詳しい引数は {3} で確認してください。&#10;&#10;Bot を招待した後は通知専用チャンネルを作成し、チャンネルの表示、メッセージの送信、リンクの埋め込みを許可してください。設定ガイド：https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37&#10;&#10;{4} または {5} から直播小幫手を支援できます。</value></data>
+  <data name="Help.Overview.Footer" xml:space="preserve"><value>{0} ですべてのモジュールを表示できます。</value></data>
+  <data name="Help.Errors.ModuleRequired" xml:space="preserve"><value>モジュールを選択してください。</value></data>
+  <data name="Help.Errors.ModuleNotFound" xml:space="preserve"><value>モジュール `{0}` が見つからないか、その中に使用可能なコマンドがありません。</value></data>
+  <data name="Help.Errors.CommandNotFound" xml:space="preserve"><value>コマンド `{0}` が見つからないか、使用する権限がありません。</value></data>
+  <data name="Help.Command.Parameters" xml:space="preserve"><value>引数</value></data>
+  <data name="Help.Command.UserPermissions" xml:space="preserve"><value>実行者に必要な権限</value></data>
+  <data name="Help.Command.BotPermissions" xml:space="preserve"><value>Bot に必要な権限</value></data>
+  <data name="Help.Command.Examples" xml:space="preserve"><value>使用例</value></data>
+  <data name="Help.Command.ModuleFooter" xml:space="preserve"><value>モジュール：{0}</value></data>
+  <data name="Help.CommandDetail.youtube.set-banner-change" xml:space="preserve"><value>指定したチャンネルの最新動画または配信サムネイルをサーバーバナーに使用します。&#10;チャンネル URL を空欄にすると、この設定を無効化します。&#10;&#10;Bot に「サーバー管理」権限が必要で、サーバーは Boost レベル 2 以上である必要があります。&#10;配信通知に依存するため、対象チャンネルを組み込み取得元または巡回一覧に追加してください。</value></data>
+  <data name="Help.CommandDetail.youtube.add" xml:space="preserve"><value>配信通知を受け取るチャンネルを追加します。&#10;`holo` は Holo 全メンバー、`2434` はにじさんじ JP・EN・VR メンバーを対象にします。その他のメンバーは先にチャンネル巡回を設定してください。&#10;`other` はそれ以外の一部チャンネルを対象にします。利用可能なチャンネルは巡回一覧で確認できます。</value></data>
+  <data name="Help.CommandDetail.youtube.remove" xml:space="preserve"><value>通知チャンネルを削除します。&#10;`holo` は Holo 全体、`2434` はにじさんじ全体、`other` はその他の一部チャンネルの通知を削除します。&#10;`all` は YouTube の配信通知をすべて削除します。</value></data>
+  <data name="Help.CommandDetail.youtube.set-message" xml:space="preserve"><value>通知メッセージを設定します。&#10;空欄にするとカスタム文を消去し、`-` を入力するとその通知種類を無効化します。&#10;先に配信通知を追加する必要があります。&#10;&#10;特定ロールへの通知に対応するため、Bot に全ロールへのメンション権限が必要です。</value></data>
+  <data name="Help.CommandDetail.twitch.set-message" xml:space="preserve"><value>通知メッセージを設定します。&#10;空欄にするとカスタム文を消去し、`-` を入力するとその通知種類を無効化します。&#10;先に配信通知を追加する必要があります。&#10;&#10;特定ロールへの通知に対応するため、Bot に全ロールへのメンション権限が必要です。</value></data>
+  <data name="Help.CommandDetail.twitcasting.set-message" xml:space="preserve"><value>通知メッセージを設定します。&#10;空欄にするとカスタム文を消去します。&#10;先に配信通知を追加する必要があります。&#10;&#10;特定ロールへの通知に対応するため、Bot に全ロールへのメンション権限が必要です。</value></data>
+  <data name="Help.CommandDetail.youtube-spider.add" xml:space="preserve"><value>組み込みグループ以外のチャンネル巡回を追加します。&#10;必要な場合は Bot の所有者へ問い合わせてください。</value></data>
+  <data name="Help.CommandDetail.youtube-spider.remove" xml:space="preserve"><value>組み込みグループ以外のチャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
+  <data name="Help.CommandDetail.twitch-spider.add" xml:space="preserve"><value>Twitch チャンネル巡回を追加します。&#10;サーバーのメンバー数が 200 人を超えている必要があります。&#10;追加可能数は今後変更される場合があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
+  <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>Twitch チャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
+  <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>TwitCasting チャンネル巡回を追加します。&#10;サーバーのメンバー数が 500 人を超えている必要があります。&#10;追加可能数は今後変更される場合があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
+  <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>TwitCasting チャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
+  <data name="Help.CommandDetail.member-set.add-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを追加します。現在の上限は 5 チャンネルです。&#10;同じチャンネルを再追加すると付与ロールを変更できます。&#10;サーバーのメンバー数が 250 人を超えている必要があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
+  <data name="Help.CommandDetail.member-set.remove-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します。</value></data>
+  <data name="Help.CommandDetail.member-set.set-check-video" xml:space="preserve"><value>メンバーシップ認証に使用する確認動画を手動指定します。&#10;複数の会員ランクがある場合は、低ランクの正規会員が失敗扱いにならないよう、最下位ランクで視聴できるメンバー限定動画を指定してください。&#10;自動探索は指定動画を上書きしません。動画が無効になると通知チャンネルに再設定の案内が送信されます。</value></data>
+  <data name="Help.CommandDetail.member-set.clear-check-video" xml:space="preserve"><value>メンバーシップ認証動画を自動選択に戻し、手動指定を解除します。</value></data>
+  <data name="Utility.Ping" xml:space="preserve"><value>:ping_pong: レイテンシ：{0} ms</value></data>
+  <data name="Utility.Invite" xml:space="preserve"><value>招待リンク：&lt;{0}&gt;</value></data>
+  <data name="Utility.Status.Title" xml:space="preserve"><value>直播小幫手</value></data>
+  <data name="Utility.Status.TestBuild" xml:space="preserve"><value>（テスト版）</value></data>
+  <data name="Utility.Status.Build" xml:space="preserve"><value>ビルド {0}</value></data>
+  <data name="Utility.Status.Author" xml:space="preserve"><value>作者</value></data>
+  <data name="Utility.Status.Owner" xml:space="preserve"><value>所有者</value></data>
+  <data name="Utility.Status.State" xml:space="preserve"><value>ステータス</value></data>
+  <data name="Utility.Status.StateValue" xml:space="preserve"><value>サーバー：{0}&#10;サービス対象メンバー：{1}</value></data>
+  <data name="Utility.Status.StreamCount" xml:space="preserve"><value>検出した配信数</value></data>
+  <data name="Utility.Status.Uptime" xml:space="preserve"><value>稼働時間</value></data>
+  <data name="Utility.Status.UptimeValue" xml:space="preserve"><value>{0} 日 {1}</value></data>
+  <data name="Utility.Contact.Title" xml:space="preserve"><value>Bot の所有者へ連絡</value></data>
+  <data name="Utility.Contact.MessageLabel" xml:space="preserve"><value>メッセージ</value></data>
+  <data name="Utility.Contact.MessagePlaceholder" xml:space="preserve"><value>送信する内容を入力してください</value></data>
+  <data name="Utility.Contact.AttachmentsLabel" xml:space="preserve"><value>関連する画像</value></data>
+  <data name="Utility.Contact.AttachmentsDescription" xml:space="preserve"><value>必要に応じて関連するスクリーンショットを添付できます。</value></data>
+  <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>連絡先</value></data>
+  <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>X、Discord、Facebook など、連絡可能な方法を入力してください。</value></data>
+  <data name="Utility.Contact.Received" xml:space="preserve"><value>メッセージを受け取りました。連絡先が正しいことを確認してください。Bot の所有者は通常 Bot 経由で返信するため、共通サーバーのメンバーからのダイレクトメッセージを許可してください。</value></data>
+  <data name="Utility.Contact.AttachmentCount" xml:space="preserve"><value>添付ファイル数</value></data>
+  <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>返信を送信できませんでした。詳細はログを確認してください。</value></data>
+  <data name="Utility.Contact.OwnerReplyTitle" xml:space="preserve"><value>Bot オーナーからの返信</value></data>
+  <data name="Utility.Contact.ReplyAttachment" xml:space="preserve"><value>添付ファイル：{0}</value></data>
+  <data name="Utility.Contact.ReplyModalTitle" xml:space="preserve"><value>ユーザーに返信</value></data>
+  <data name="Utility.Contact.ReplyUserIdLabel" xml:space="preserve"><value>ユーザー ID</value></data>
+  <data name="Utility.Contact.ReplyMessagePlaceholder" xml:space="preserve"><value>送信するメッセージを入力してください</value></data>
+  <data name="Utility.Contact.ReplyAttachmentsLabel" xml:space="preserve"><value>関連する画像またはファイル</value></data>
+  <data name="Utility.Contact.ReplySent" xml:space="preserve"><value>返信を送信しました：&#10;{0}&#10;（添付ファイル {1} 件）</value></data>
+  <data name="Utility.Contact.UserDmClosed" xml:space="preserve"><value>このユーザーがダイレクトメッセージを許可していないため、送信できませんでした。</value></data>
+  <data name="Utility.GlobalNoticeChannelChanged" xml:space="preserve"><value>全体告知チャンネルを {0} に設定しました。</value></data>
+  <data name="Utility.GlobalNoticeChannelFailed" xml:space="preserve"><value>全体告知チャンネルを設定できませんでした。後でもう一度試すか、Bot の所有者へ連絡してください。</value></data>
+  <data name="Notifications.OverwritePrompt" xml:space="preserve"><value>`{0}` はすでに通知一覧にあります。設定を上書きしますか？</value></data>
+  <data name="Notifications.ChannelChanged" xml:space="preserve"><value>`{0}` の通知チャンネルを {1} に変更しました。</value></data>
+  <data name="Notifications.Removed" xml:space="preserve"><value>`{0}` を削除しました。</value></data>
+  <data name="Notifications.AllRemoved" xml:space="preserve"><value>すべての通知設定を削除しました。</value></data>
+  <data name="Notifications.NotConfigured" xml:space="preserve"><value>`{0}` の配信通知は設定されていません。</value></data>
+  <data name="Notifications.SpiderWarning" xml:space="preserve"><value>&#10;&#10;注意：このチャンネルは巡回一覧にありません。通知が届かない場合は {0} で追加してください。</value></data>
+  <data name="Notifications.MessageSet" xml:space="preserve"><value>`{0}` の「{1}」通知メッセージを次の内容に設定しました：&#10;{2}</value></data>
+  <data name="Notifications.MessageCleared" xml:space="preserve"><value>`{0}` の「{1}」通知メッセージを消去しました。</value></data>
+  <data name="Notifications.MessageSetSimple" xml:space="preserve"><value>`{0}` の配信通知メッセージを次の内容に設定しました：&#10;{1}</value></data>
+  <data name="Notifications.MessageClearedSimple" xml:space="preserve"><value>`{0}` の配信通知メッセージを消去しました。</value></data>
+  <data name="Notifications.TypeDisabled" xml:space="preserve"><value>`{0}` の「{1}」通知を無効にしました。</value></data>
+  <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>（この種類の通知は無効です）</value></data>
+  <data name="Notifications.MessageListDescription" xml:space="preserve"><value>空欄はメッセージ未設定を表します。Embed に表示されたロール文字列から通知が送られることはありません。</value></data>
+  <data name="Youtube.RecordList.Title" xml:space="preserve"><value>配信録画チャンネル一覧</value></data>
+  <data name="Youtube.RecordList.Empty" xml:space="preserve"><value>配信録画一覧にチャンネルがありません。</value></data>
+  <data name="Youtube.NowStreaming.Title" xml:space="preserve"><value>現在配信中</value></data>
+  <data name="Youtube.NowStreaming.Failed" xml:space="preserve"><value>現在の配信一覧を取得できませんでした。</value></data>
+  <data name="Youtube.Upcoming.Title" xml:space="preserve"><value>今後の配信予定</value></data>
+  <data name="Youtube.Upcoming.Entry" xml:space="preserve"><value>{0}&#10;{1}&#10;配信時刻：{2}&#10;録画一覧：{3}</value></data>
+  <data name="Youtube.MemberPlaylist" xml:space="preserve"><value>メンバー限定再生リスト：&lt;{0}&gt;</value></data>
+  <data name="Youtube.Events.Enabled" xml:space="preserve"><value>`{0}` に新しい配信予定が追加されると Discord イベントを作成します。</value></data>
+  <data name="Youtube.Events.Disabled" xml:space="preserve"><value>`{0}` のイベント自動作成を無効にしました。</value></data>
+  <data name="Youtube.Events.DisableNewStreamPrompt" xml:space="preserve"><value>新しい待機所のチャンネル通知を無効にし、Discord イベントだけに表示しますか？配信開始などの他の通知は引き続き設定済みチャンネルへ送信されます。</value></data>
+  <data name="Youtube.Events.EnableReplacementPrompt" xml:space="preserve"><value>新しい待機所の通知を Discord イベントの自動作成に置き換えられます。有効にしますか？</value></data>
+  <data name="Youtube.NoticeType.NewStream" xml:space="preserve"><value>新しい待機所</value></data>
+  <data name="Youtube.NoticeType.NewVideo" xml:space="preserve"><value>新着動画</value></data>
+  <data name="Youtube.NoticeType.Start" xml:space="preserve"><value>配信／プレミア公開開始</value></data>
+  <data name="Youtube.NoticeType.End" xml:space="preserve"><value>配信／プレミア公開終了</value></data>
+  <data name="Youtube.NoticeType.ChangeTime" xml:space="preserve"><value>配信時刻変更</value></data>
+  <data name="Youtube.NoticeType.Delete" xml:space="preserve"><value>配信削除または非公開化</value></data>
+  <data name="Youtube.Banner.Removed" xml:space="preserve"><value>サーバーバナー設定を削除しました。</value></data>
+  <data name="Youtube.Banner.NotConfigured" xml:space="preserve"><value>このサーバーではバナー自動更新を使用していません。</value></data>
+  <data name="Youtube.Banner.RequiresTier2" xml:space="preserve"><value>この機能にはサーバーブーストレベル 2 が必要です。</value></data>
+  <data name="Youtube.Banner.Changed" xml:space="preserve"><value>`{0}` の配信サムネイルをサーバーバナーに使用します。</value></data>
+  <data name="Youtube.Notifications.TypeDisabled" xml:space="preserve"><value>`{0}` の「{1}」通知を無効にしました。</value></data>
+  <data name="Youtube.Notifications.StreamChannelChanged" xml:space="preserve"><value>`{0}` の配信通知チャンネルを {1} に変更しました。</value></data>
+  <data name="Youtube.Notifications.Added" xml:space="preserve"><value>`{0}` を YouTube 配信通知一覧に追加しました。</value></data>
+  <data name="Youtube.Notifications.VideoChannelHint" xml:space="preserve"><value>&#10;動画投稿通知チャンネルの変更には {0} を使用してください。</value></data>
+  <data name="Youtube.Notifications.AddedWithHint" xml:space="preserve"><value>`{0}` を YouTube 配信通知一覧に追加しました。{1}</value></data>
+  <data name="Youtube.Notifications.NoneConfigured" xml:space="preserve"><value>このサーバーには YouTube 通知が設定されていません。</value></data>
+  <data name="Youtube.Notifications.RemoveAllPrompt" xml:space="preserve"><value>すべての YouTube 通知を削除しますか？</value></data>
+  <data name="Youtube.Notifications.VideoChannelChanged" xml:space="preserve"><value>`{0}` の動画投稿通知チャンネルを {1} に変更しました。</value></data>
+  <data name="Youtube.Notifications.ConfigureFirst" xml:space="preserve"><value>`{0}` の通知設定が見つかりません。先に {1} で配信通知を追加してください。オートコンプリート使用中は Discord チャンネルを切り替えないでください。</value></data>
+  <data name="Youtube.Notifications.Empty" xml:space="preserve"><value>YouTube 通知一覧は空です。</value></data>
+  <data name="Youtube.Notifications.ListEntry" xml:space="preserve"><value>{0}｜配信：{1}｜動画：{2}</value></data>
+  <data name="Youtube.Notifications.ListTitle" xml:space="preserve"><value>YouTube 通知一覧</value></data>
+  <data name="Youtube.Notifications.NoEndWarning" xml:space="preserve"><value>&#10;&#10;注意：このチャンネルでは現在、配信終了通知を受信できません。</value></data>
+  <data name="Youtube.Notifications.VideoOnlyWarning" xml:space="preserve"><value>&#10;&#10;注意：このチャンネルでは現在、動画投稿通知のみ受信できます。</value></data>
+  <data name="Youtube.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>YouTube 通知が設定されていません。先に {0} で追加してください。</value></data>
+  <data name="Youtube.ChannelNameMissing" xml:space="preserve"><value>__チャンネル名を取得できません__</value></data>
+  <data name="Youtube.Messages.ListValue" xml:space="preserve"><value>イベント自動作成：{0}&#10;新しい待機所：{1}&#10;新着動画：{2}&#10;配信開始：{3}&#10;配信終了：{4}&#10;時刻変更：{5}&#10;配信削除：{6}</value></data>
+  <data name="Youtube.Messages.ListTitle" xml:space="preserve"><value>YouTube 通知メッセージ一覧</value></data>
+  <data name="YoutubeSpider.ManagedChannelRejected" xml:space="preserve"><value>このチャンネルは組み込みの取得元で管理されているため、巡回設定は不要です。</value></data>
+  <data name="YoutubeSpider.TrustedChanged" xml:space="preserve"><value>`{0}` の承認チャンネル状態を「{1}」にしました。</value></data>
+  <data name="YoutubeSpider.AlreadyRecorded" xml:space="preserve"><value>このチャンネルはすでに録画一覧にあります。</value></data>
+  <data name="YoutubeSpider.RecordAdded" xml:space="preserve"><value>録画一覧に追加しました。</value></data>
+  <data name="YoutubeSpider.NotRecorded" xml:space="preserve"><value>このチャンネルは録画一覧にありません。</value></data>
+  <data name="YoutubeSpider.RecordRemoved" xml:space="preserve"><value>録画一覧から削除しました。</value></data>
+  <data name="YoutubeSpider.ListTitle" xml:space="preserve"><value>YouTube 巡回一覧</value></data>
+  <data name="YoutubeSpider.UntrustedListTitle" xml:space="preserve"><value>未承認の YouTube 巡回一覧</value></data>
+  <data name="Spider.LimitReached" xml:space="preserve"><value>このサーバーにはすでに {0} 件の {1} 巡回設定があります。削除してから再試行してください。特別な要望は {2} で Bot の所有者へ連絡してください。</value></data>
+  <data name="Spider.LimitReachedShort" xml:space="preserve"><value>このサーバーは {1} 巡回設定の上限 {0} 件に達しています。</value></data>
+  <data name="Spider.AlreadyExists" xml:space="preserve"><value>`{0}` はすでに巡回一覧にあります。通知チャンネルで `{1} {2}` を使用すると通知を有効にできます。{3}</value></data>
+  <data name="Spider.OwnerHint" xml:space="preserve"><value>&#10;設定元：`{0}`</value></data>
+  <data name="Spider.UseForCurrentGuildPrompt" xml:space="preserve"><value>この巡回設定を現在のサーバーに割り当てますか？</value></data>
+  <data name="Spider.Added" xml:space="preserve"><value>`{0}` を巡回一覧に追加しました。通知チャンネルで `{1} {2}` を使用して通知を有効にしてください。</value></data>
+  <data name="Spider.NotConfigured" xml:space="preserve"><value>`{0}` のチャンネル巡回は設定されていません。</value></data>
+  <data name="Spider.NotOwnedByGuild" xml:space="preserve"><value>この巡回設定はこのサーバーが追加したものではないため、削除できません。</value></data>
+  <data name="Spider.Removed" xml:space="preserve"><value>`{0}` のチャンネル巡回を削除しました。</value></data>
+  <data name="Spider.StatusChanged" xml:space="preserve"><value>`{0}` のチャンネル状態を「{1}」に変更しました。</value></data>
+  <data name="Spider.RecordingChanged" xml:space="preserve"><value>`{0}` の録画状態を「{1}」に変更しました。</value></data>
+  <data name="Spider.ListEntry" xml:space="preserve"><value>{0}、`{1}` が追加</value></data>
+  <data name="Spider.ListFooter" xml:space="preserve"><value>{0} / {1} チャンネル（警告または未承認：{2}）</value></data>
+  <data name="Spider.WarningListTitle" xml:space="preserve"><value>警告状態の巡回一覧</value></data>
+  <data name="Twitch.Errors.UserNotFound" xml:space="preserve"><value>Twitch ユーザーを取得できませんでした。チャンネル URL または名前を確認してください。</value></data>
+  <data name="Twitch.Errors.InvalidAutocompleteValue" xml:space="preserve"><value>Twitch チャンネル ID を解析できませんでした。Discord チャンネルを切り替えずにオートコンプリート項目を選び直してください。</value></data>
+  <data name="Twitch.Notifications.Added" xml:space="preserve"><value>`{0}` を Twitch 通知一覧に追加しました。{1}</value></data>
+  <data name="Twitch.Notifications.Empty" xml:space="preserve"><value>Twitch 配信通知一覧は空です。</value></data>
+  <data name="Twitch.Notifications.ListTitle" xml:space="preserve"><value>Twitch 配信通知一覧</value></data>
+  <data name="Twitch.Notifications.ConfigureFirst" xml:space="preserve"><value>`{0}` の Twitch 配信通知は設定されていません。先に {1} で追加してから通知メッセージを設定してください。</value></data>
+  <data name="Twitch.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>Twitch 配信通知が設定されていません。先に {0} で追加してください。</value></data>
+  <data name="Twitch.NoticeType.Start" xml:space="preserve"><value>配信開始</value></data>
+  <data name="Twitch.NoticeType.End" xml:space="preserve"><value>配信終了</value></data>
+  <data name="Twitch.NoticeType.Change" xml:space="preserve"><value>配信情報変更</value></data>
+  <data name="Twitch.Messages.ListValue" xml:space="preserve"><value>配信開始：{0}&#10;配信終了：{1}&#10;配信情報変更：{2}</value></data>
+  <data name="Twitch.Messages.ListTitle" xml:space="preserve"><value>Twitch 通知メッセージ一覧</value></data>
+  <data name="TwitchSpider.MemberRequirement" xml:space="preserve"><value>このコマンドにはサーバーメンバーが `{0}` 人以上必要です。Bot が現在取得している人数は `{1}` 人です。Twitch 連携済みの本人が自分の承認済みチャンネルを追加する場合、この制限は適用されません。人数はキャッシュの影響を受ける場合があります。サポートが必要な場合は {2} を使用してください。</value></data>
+  <data name="TwitchSpider.ListTitle" xml:space="preserve"><value>Twitch 配信巡回一覧</value></data>
+  <data name="Twitcasting.Errors.UserNotFound" xml:space="preserve"><value>TwitCasting ユーザーが見つかりません。正しい TwitCasting チャンネル URL または名前か確認してください。</value></data>
+  <data name="Twitcasting.Notifications.Added" xml:space="preserve"><value>`{0}` を TwitCasting 通知一覧に追加しました。{1}</value></data>
+  <data name="Twitcasting.Notifications.NoneConfigured" xml:space="preserve"><value>このサーバーには TwitCasting 配信通知が設定されていません。</value></data>
+  <data name="Twitcasting.Notifications.Empty" xml:space="preserve"><value>TwitCasting 配信通知一覧は空です。</value></data>
+  <data name="Twitcasting.Notifications.ListTitle" xml:space="preserve"><value>TwitCasting 配信通知一覧</value></data>
+  <data name="Twitcasting.Notifications.ConfigureFirst" xml:space="preserve"><value>`{0}` の TwitCasting 配信通知は設定されていません。先に {1} で追加してから通知メッセージを設定してください。</value></data>
+  <data name="Twitcasting.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>TwitCasting 配信通知が設定されていません。先に {0} で追加してください。</value></data>
+  <data name="Twitcasting.Messages.ListTitle" xml:space="preserve"><value>TwitCasting 通知メッセージ一覧</value></data>
+  <data name="TwitcastingSpider.ListTitle" xml:space="preserve"><value>TwitCasting 配信巡回一覧</value></data>
+  <data name="Member.Errors.Disabled" xml:space="preserve"><value>この Bot ではメンバーシップ認証が有効になっていません。{0} へ確認してください。</value></data>
+  <data name="Member.Errors.NotConfigured" xml:space="preserve"><value>このサーバーではメンバーシップ認証が設定されていません。サーバー管理者へ確認してください。</value></data>
+  <data name="Member.Errors.Initializing" xml:space="preserve"><value>初期化が完了していないチャンネルがあります。約 5 分後に再試行してください。</value></data>
+  <data name="Member.Errors.LoginRequired" xml:space="preserve"><value>{0} で Discord と Google にログインしてから、このコマンドをもう一度実行してください。</value></data>
+  <data name="Member.CheckQueuedWithDmNotice" xml:space="preserve"><value>認証待ちに追加しました。完了まで最大 {0} 分かかる場合があります。結果を受け取れるよう、このサーバーでサーバーメンバーからのダイレクトメッセージを許可してください。</value></data>
+  <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>チャンネルを選択</value></data>
+  <data name="Member.Select.Description" xml:space="preserve"><value>認証するチャンネルを選択してください。既存のメンバーシップ認証ロールは削除され、再認証されます。</value></data>
+  <data name="Member.Select.SelectedCount" xml:space="preserve"><value>{0} チャンネルを選択済み</value></data>
+  <data name="Member.Select.Selected" xml:space="preserve"><value>選択済み</value></data>
+  <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>このサーバーではまだメンバーシップ認証を実行していません。</value></data>
+  <data name="Member.CheckCancelled" xml:space="preserve"><value>このサーバーでのメンバーシップ認証と関連ロールを削除しました。</value></data>
+  <data name="Member.Errors.SaveFailed" xml:space="preserve"><value>データを保存できませんでした。{0} へ確認してください。</value></data>
+  <data name="Member.UnlinkPrompt" xml:space="preserve"><value>Discord と Google の連携を解除しますか？メンバーシップ認証ロールも削除されます。再取得するにはウェブサイトで再連携が必要です。</value></data>
+  <data name="Member.Unlinked" xml:space="preserve"><value>Discord と Google の連携を解除しました。</value></data>
+  <data name="Member.Errors.GoogleRevokeFailed" xml:space="preserve"><value>Bot 側の連携は解除しましたが、Google 側の認可を取り消せませんでした。{0} で「直播小幫手會限確認」のアクセス権を削除してください。</value></data>
+  <data name="Member.Errors.UnlinkFailed" xml:space="preserve"><value>連携を解除できませんでした。{0} へ確認してください。</value></data>
+  <data name="Member.Errors.NothingToUnlink" xml:space="preserve"><value>解除できる連携データがありません。</value></data>
+  <data name="Member.Errors.ChannelListEmpty" xml:space="preserve"><value>現在、認証可能なメンバー限定チャンネルはありません。</value></data>
+  <data name="Member.ChannelList" xml:space="preserve"><value>現在認証可能なメンバー限定チャンネル：&#10;{0}</value></data>
+  <data name="Member.LinkedChannel" xml:space="preserve"><value>連携中の YouTube チャンネル：{0}</value></data>
+  <data name="Member.Errors.LinkedChannelUnavailable" xml:space="preserve"><value>連携中の YouTube チャンネルを取得できませんでした。ウェブサイトでの連携が完了し、Google アカウントに YouTube チャンネルがあることを確認してください。</value></data>
+  <data name="Member.Errors.LinkedChannelUnavailableWithOwner" xml:space="preserve"><value>連携中の YouTube チャンネルを取得できませんでした。ウェブサイトでの連携と YouTube チャンネルを確認してください。解決しない場合は {0} へ連絡してください。</value></data>
+  <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` をメンバーシップ認証ログチャンネルに設定しました。</value></data>
+  <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>Bot に「ロールの管理」権限が必要です。権限を付与してから再試行してください。</value></data>
+  <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>everyone ロールをメンバーシップ認証用ロールに設定することはできません。</value></data>
+  <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>ロール `{0}` は Bot の最上位ロールより上にあります。Bot のロールを上へ移動してください。</value></data>
+  <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>このサーバーではすでに {0} 個のメンバーシップ認証チャンネルを使用しています。不要なチャンネルを削除してください。</value></data>
+  <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord の選択メニューは最大 {0} 項目です。不要なメンバーシップ認証チャンネルを削除してください。</value></data>
+  <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>このサーバーにはメンバーシップ認証ログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {0} を使用してください。ログチャンネルは必須です。</value></data>
+  <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>設定済みのメンバーシップ認証ログチャンネルが削除されました。新しいチャンネルを作成し、必要な権限を付与してから {0} を再実行してください。</value></data>
+  <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>`{0}` をメンバーシップ認証チャンネルに設定しました。認証成功時に `{1}` ロールを付与します。{2}</value></data>
+  <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>すぐに認証を開始できます。</value></data>
+  <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>約 5 分後に認証を開始してください。</value></data>
+  <data name="MemberSetting.Errors.ChannelNotConfigured" xml:space="preserve"><value>このチャンネルにはメンバーシップ認証が設定されていません。</value></data>
+  <data name="MemberSetting.ChannelRemoved" xml:space="preserve"><value>`{0}` のメンバーシップ認証設定を削除しました。</value></data>
+  <data name="MemberSetting.Errors.InvalidVideoId" xml:space="preserve"><value>動画 ID を解析できませんでした。正しい YouTube 動画 URL または 11 文字の動画 ID を入力してください。</value></data>
+  <data name="MemberSetting.Errors.ConfigureFirst" xml:space="preserve"><value>このチャンネルにはメンバーシップ認証が設定されていません。先に {0} で追加してください。</value></data>
+  <data name="MemberSetting.Errors.VideoNotMembersOnly" xml:space="preserve"><value>この動画はメンバー限定ではありません。認証用に使用すると全員が通過してしまいます。メンバー限定動画を指定してください。</value></data>
+  <data name="MemberSetting.Errors.CommentsDisabled" xml:space="preserve"><value>この動画はコメントが無効なため認証用に使用できません。別のメンバー限定動画を指定してください。</value></data>
+  <data name="MemberSetting.CheckVideoChanged" xml:space="preserve"><value>`{0}` の認証用動画を `{1}` に手動設定しました。自動探索では上書きされず、無効になった場合は再設定通知が送られます。</value></data>
+  <data name="MemberSetting.CheckVideoCleared" xml:space="preserve"><value>`{0}` を自動認証動画選択へ戻しました。約 {1} 分後に反映されます。</value></data>
+  <data name="MemberSetting.Errors.NoVerifiedMembers" xml:space="preserve"><value>認証に成功したメンバーはまだいません。</value></data>
+  <data name="MemberSetting.VerifiedListTitle" xml:space="preserve"><value>メンバーシップ認証済み一覧</value></data>
+  <data name="Member.Status.Channel" xml:space="preserve"><value>確認チャンネル</value></data>
+  <data name="Member.Status.State" xml:space="preserve"><value>状態</value></data>
+  <data name="Member.Status.DmUnavailable" xml:space="preserve"><value>&lt;@{0}&gt; にメッセージを送信できませんでした。サーバーメンバーからのダイレクトメッセージを許可するようユーザーに伝えてください。</value></data>
+  <data name="Member.Status.RoleMissing" xml:space="preserve"><value>{0} のメンバーシップ認証ロールが存在しません。再設定してください。</value></data>
+  <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>メンバーシップ認証ロールを処理するには「ロールの管理」権限が必要です。権限を付与してから再試行してください。</value></data>
+  <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>everyone ロールはメンバーシップ認証ロールに設定できません。別のロールを設定してください。</value></data>
+  <data name="Member.Status.NotLoggedIn" xml:space="preserve"><value>未ログイン</value></data>
+  <data name="Member.Status.RefreshFailed" xml:space="preserve"><value>認証情報を更新できません</value></data>
+  <data name="Member.Status.CredentialExpired" xml:space="preserve"><value>Google 認証の有効期限切れ</value></data>
+  <data name="Member.Status.ManualVideoCommentsDisabled" xml:space="preserve"><value>手動指定したメンバー限定動画 `{0}` はコメントが無効になったため使用できません。{1} で下位プラン向けのメンバー限定動画を指定してください。</value></data>
+  <data name="Member.Status.ManualVideoDeleted" xml:space="preserve"><value>手動指定したメンバー限定動画 `{0}` は削除されました。{1} で下位プラン向けのメンバー限定動画を指定してください。</value></data>
+  <data name="Member.Status.RemoveRolePermissionMissing" xml:space="preserve"><value>Bot に「ロールの管理」権限がないためロールを削除できません。管理者が手動で削除し、Bot に必要な権限を付与してください。</value></data>
+  <data name="Member.Status.MembershipExpired" xml:space="preserve"><value>メンバーシップの有効期限切れ</value></data>
+  <data name="Member.Status.NotMember" xml:space="preserve"><value>メンバーシップを確認できません</value></data>
+  <data name="Member.Status.TimeCalculationError" xml:space="preserve"><value>Google 認証の時刻データが不正です</value></data>
+  <data name="Member.Status.GoogleInternalError" xml:space="preserve"><value>Google の内部エラーです。次回の実行時に再試行します</value></data>
+  <data name="Member.Status.GoogleBadRequest" xml:space="preserve"><value>Google へのリクエストが無効です。次回の実行時に再試行します</value></data>
+  <data name="Member.Status.QuotaExceeded" xml:space="preserve"><value>API クォータを使い切りました。明日再試行します</value></data>
+  <data name="Member.Status.UnknownError" xml:space="preserve"><value>認証中に不明なエラーが発生しました</value></data>
+  <data name="Member.Status.VerifiedRolePermissionFailed" xml:space="preserve"><value>認証には成功しましたが、権限不足のためロールを付与できません</value></data>
+  <data name="Member.Status.UnknownUser" xml:space="preserve"><value>ユーザーが見つかりません</value></data>
+  <data name="Member.Status.VerifiedRoleUnknownError" xml:space="preserve"><value>認証には成功しましたが、ロール付与中に不明なエラーが発生しました</value></data>
+  <data name="Member.Status.Verified" xml:space="preserve"><value>認証済み</value></data>
+  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>既存メンバーの確認が完了しました</value></data>
+  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>新規メンバーの確認が完了しました</value></data>
+  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>確認チャンネル：{0}&#10;{1} 人を確認し、{2} 人の認証に成功しました。</value></data>
+  <data name="Member.Background.LoginRequired" xml:space="preserve"><value>ログインしていません。{0} でログインし、サーバーに戻って {1} を実行してください。</value></data>
+  <data name="Member.Background.RefreshFailed" xml:space="preserve"><value>Google 認証情報を更新できませんでした。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>
+  <data name="Member.Background.CredentialExpired" xml:space="preserve"><value>Google 認証の有効期限が切れています。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>
+  <data name="Member.Background.MembershipExpired" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップが失効しました。認証を取り消すには {2}、メンバーシップ更新後に再認証するには {3} を実行してください。</value></data>
+  <data name="Member.Background.NotMember" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップを確認できませんでした。{2} で連携チャンネルを確認し、メンバーシップを購入済みか確認してください。認証を取り消すには {3} を実行してください。問題がない場合は {4} にお問い合わせください。</value></data>
+  <data name="Member.Background.RetryLogin" xml:space="preserve"><value>Google 認証データに問題があります。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>
+  <data name="Member.Background.UnknownError" xml:space="preserve"><value>現在アカウントを認証できません。Google の一時的な障害の可能性があります。後でもう一度試すか、{0} にお問い合わせください。</value></data>
+  <data name="Member.Background.VerifiedRoleFailed" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップ認証に成功しましたが、Bot がロールを付与できませんでした。サーバー管理者に対応を依頼してください。</value></data>
+  <data name="Member.Background.Verified" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップ認証に成功しました。これでメンバー限定チャンネルを閲覧できます。</value></data>
+  <data name="Notifications.Field.Status" xml:space="preserve"><value>配信状態</value></data>
+  <data name="Notifications.Field.ScheduledStart" xml:space="preserve"><value>配信予定時刻</value></data>
+  <data name="Notifications.Field.ChangedStart" xml:space="preserve"><value>変更後の配信予定時刻</value></data>
+  <data name="Notifications.Field.StartedAt" xml:space="preserve"><value>開始時刻</value></data>
+  <data name="Notifications.Field.EndedAt" xml:space="preserve"><value>終了時刻</value></data>
+  <data name="Notifications.Field.Duration" xml:space="preserve"><value>配信時間</value></data>
+  <data name="Notifications.Field.UploadedAt" xml:space="preserve"><value>投稿時刻</value></data>
+  <data name="Notifications.Field.ScheduledOrUploadedAt" xml:space="preserve"><value>配信予定／投稿時刻</value></data>
+  <data name="Notifications.Field.OriginalScheduledStart" xml:space="preserve"><value>元の配信予定時刻</value></data>
+  <data name="Notifications.Field.Category" xml:space="preserve"><value>カテゴリー</value></data>
+  <data name="Notifications.Field.Subtitle" xml:space="preserve"><value>サブタイトル</value></data>
+  <data name="Notifications.Duration.Days" xml:space="preserve"><value>{0}日 {1}時間 {2}分 {3}秒</value></data>
+  <data name="Notifications.Duration.Hours" xml:space="preserve"><value>{0}時間 {1}分 {2}秒</value></data>
+  <data name="Notifications.Button.RandomVideo" xml:space="preserve"><value>ランダムな動画または配信を見る</value></data>
+  <data name="Notifications.Button.SupportEcpay" xml:space="preserve"><value>Bot を支援（ECPay）#ad</value></data>
+  <data name="Notifications.Button.SupportPaypal" xml:space="preserve"><value>Bot を支援（PayPal）#ad</value></data>
+  <data name="Youtube.NotificationStatus.DeletedStream" xml:space="preserve"><value>配信は削除されました</value></data>
+  <data name="Youtube.NotificationStatus.UpcomingChanged" xml:space="preserve"><value>配信前（予定時刻変更済み）</value></data>
+  <data name="Youtube.NotificationStatus.EndedAsMemberOnly" xml:space="preserve"><value>配信終了後、メンバー限定動画に変更されました</value></data>
+  <data name="Youtube.NotificationStatus.Unarchived" xml:space="preserve"><value>配信終了後、非公開アーカイブに変更されました</value></data>
+  <data name="Youtube.NotificationStatus.Deleted" xml:space="preserve"><value>削除済み</value></data>
+  <data name="Youtube.NotificationStatus.ScheduleDataLost" xml:space="preserve"><value>配信予定データを取得できません</value></data>
+  <data name="Youtube.Events.ManageEventsMissing" xml:space="preserve"><value>このサーバーで Bot に「イベントの管理」権限がありません。権限を付与してから {0} を再実行し、イベント自動作成を有効にしてください。</value></data>
+  <data name="Twitch.Notification.UnknownTitle" xml:space="preserve"><value>（配信タイトルを取得できません）</value></data>
+  <data name="Twitch.Notification.Clips" xml:space="preserve"><value>視聴回数の多いクリップ</value></data>
+  <data name="Twitch.Notification.UpdateTitle" xml:space="preserve"><value>{0} の配信情報が更新されました</value></data>
+  <data name="Twitch.Notification.ClipEntry" xml:space="preserve"><value>{0}. [{1}]({2}) 作成者 `{3}`（`{4}` 回視聴）</value></data>
+  <data name="Twitch.Notification.TitleChanged" xml:space="preserve"><value>タイトル変更：`{0}` → `{1}`</value></data>
+  <data name="Twitch.Notification.CategoryChanged" xml:space="preserve"><value>カテゴリー変更：`{0}` → `{1}`</value></data>
+  <data name="Twitcasting.Notification.Private" xml:space="preserve"><value>パスワード付き非公開配信</value></data>
+  <data name="Twitcasting.Notification.Recording" xml:space="preserve"><value>録画状態</value></data>
+  <data name="Twitcasting.Recording.Unavailable" xml:space="preserve"><value>視聴可能な録画はありません</value></data>
+  <data name="Member.VideoLog.NoVideos" xml:space="preserve"><value>{0} には現在、コメントが有効で認証に使用できるメンバー限定動画がありません。条件を満たす新しい動画が公開されてから、メンバーシップ認証を再度お試しください。再生リストは {1} で確認できます。</value></data>
+  <data name="Member.VideoLog.NewProbeVideo" xml:space="preserve"><value>メンバーシップチャンネル `{0}` の新しい認証用動画として `{1}` を選択しました。</value></data>
+  <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>メンバーシップチャンネル名が変更されました：`{0}` → `{1}`。</value></data>
+  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>また、`{0}` にはメンバーシップ認証ログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {1} で設定してください。</value></data>
+  <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>また、`{0}` の `{1}` で Bot にチャンネル表示、メッセージ送信、またはリンク埋め込み権限がありません。</value></data>
+</root>

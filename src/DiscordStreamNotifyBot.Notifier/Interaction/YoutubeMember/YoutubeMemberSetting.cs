@@ -3,7 +3,6 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
-using System.Text.RegularExpressions;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 {
@@ -34,72 +33,55 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     if (!await db.GuildYoutubeMemberConfig.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
-                    var channelIdList = db.GuildYoutubeMemberConfig
+                    var candidates = db.GuildYoutubeMemberConfig
                         .AsNoTracking()
                         .Where((x) => x.GuildId == context.Guild.Id)
-                        .Select((x) => new KeyValuePair<string, string>(x.MemberCheckChannelTitle, x.MemberCheckChannelId));
+                        .Select((x) => new AutocompleteCandidate(x.MemberCheckChannelTitle, x.MemberCheckChannelId));
 
-                    var channelIdList2 = new Dictionary<string, string>();
                     try
                     {
-                        string value = autocompleteInteraction.Data.Current.Value.ToString();
-                        if (!string.IsNullOrEmpty(value))
-                        {
-                            foreach (var item in channelIdList)
-                            {
-                                if (item.Key.Contains(value, StringComparison.CurrentCultureIgnoreCase) || item.Value.Contains(value, StringComparison.CurrentCultureIgnoreCase))
-                                {
-                                    channelIdList2.Add(item.Key, item.Value);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            foreach (var item in channelIdList)
-                            {
-                                channelIdList2.Add(item.Key, item.Value);
-                            }
-                        }
+                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
+                        var results = AutocompleteSearch.Filter(candidates, value)
+                            .Select(item => new AutocompleteResult(item.Name, item.Value));
+                        return AutocompletionResult.FromSuccess(results);
                     }
                     catch (Exception ex)
                     {
                         Log.Error($"GuildYoutubeMemberCheckChannelIdAutocompleteHandler - {ex}");
+                        return AutocompletionResult.FromSuccess();
                     }
-
-                    List<AutocompleteResult> results = new();
-                    foreach (var item in channelIdList2)
-                    {
-                        results.Add(new AutocompleteResult(item.Key, item.Value));
-                    }
-
-                    return AutocompletionResult.FromSuccess(results.Take(25));
                 });
             }
         }
 
         [SlashCommand("set-notice-member-status-channel", "設定會限驗證狀態紀錄頻道")]
-        public async Task SetNoticeMemberStatusChannel([Summary("紀錄頻道")] ITextChannel textChannel)
+        public async Task SetNoticeMemberStatusChannel([Summary("log-channel", "紀錄頻道")] ITextChannel textChannel)
         {
             await DeferAsync(true);
 
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認", true);
+                await SendLocalizedErrorAsync("Member.Errors.Disabled", true, true, Bot.ApplicatonOwner);
                 return;
             }
 
             using (var db = _dbService.GetDbContext())
             {
                 var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
+                string locale = await GetLocaleAsync(true);
                 if (!permissions.ViewChannel || !permissions.SendMessages)
                 {
-                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令", true);
+                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
+                        $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
+                            BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
+                            BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
                     return;
                 }
 
                 if (!permissions.EmbedLinks)
                 {
-                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令", true);
+                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
+                        $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
                     return;
                 }
 
@@ -116,7 +98,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 db.GuildConfig.Update(guildConfig);
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已設定 `{textChannel}` 為會限驗證狀態通知頻道", true);
+                await SendLocalizedConfirmAsync("MemberSetting.LogChannelChanged", true, false, textChannel);
             }
         }
 
@@ -127,24 +109,24 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
            "如有任何需要請向擁有者詢問")]
         [CommandExample("https://www.youtube.com/@998rrr @玖桃")]
         [SlashCommand("add-member-check", "新增會限驗證頻道")]
-        public async Task AddMemberCheckAsync([Summary("頻道連結")] string url, [Summary("用戶組Id")] IRole role)
+        public async Task AddMemberCheckAsync([Summary("channel-url", "頻道連結")] string url, [Summary("role", "用戶組Id")] IRole role)
         {
             if (!_service.IsEnable)
             {
-                await Context.Interaction.SendErrorAsync($"該 Bot 未啟用會限驗證系統，請向 {Bot.ApplicatonOwner} 確認");
+                await SendLocalizedErrorAsync("Member.Errors.Disabled", false, true, Bot.ApplicatonOwner);
                 return;
             }
 
             var currentBotUser = Context.Guild.GetUser(_client.CurrentUser.Id);
             if (!currentBotUser.GuildPermissions.ManageRoles)
             {
-                await Context.Interaction.SendErrorAsync("我沒有 `管理身分組` 的權限，請給予權限後再次執行本指令");
+                await SendLocalizedErrorAsync("MemberSetting.Errors.ManageRolesRequired");
                 return;
             }
 
             if (role == Context.Guild.EveryoneRole)
             {
-                await Context.Interaction.SendErrorAsync("不可設定 everyone 用戶組，這用戶組每個人都有了你怎麼還會想設定?");
+                await SendLocalizedErrorAsync("MemberSetting.Errors.EveryoneRole");
                 return;
             }
 
@@ -156,8 +138,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
                     if (currentBotUser.Roles.Max(x => x.Position) < role.Position)
                     {
-                        await Context.Interaction.SendErrorAsync($"{role.Name} 的順序比我現在的身分組還高\n" +
-                            $"請將我的身分組拉高後再次執行本指令", true);
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.RoleTooHigh", true, true, role.Name);
                         return;
                     }
 
@@ -174,32 +155,29 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
                     if (!DiscordStreamNotifyBot.Utility.OfficialGuildContains(Context.Guild.Id) && db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) >= maxCount)
                     {
-                        await Context.Interaction.SendErrorAsync($"此伺服器已使用 {maxCount} 個頻道做為會限驗證用\n" +
-                            $"請移除未使用到的頻道來繼續新增驗證頻道，或是向 Bot 擁有者詢問", true);
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelLimit", true, true, maxCount);
                         return;
                     }
 
                     // 因 Discord 的 SelectMenu 最多只能有 25 個選項，故暫時先做限制避免遇到選單跑不出來的問題
                     if (db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) > 25)
                     {
-                        await Context.Interaction.SendErrorAsync($"此伺服器已使用 25 個頻道做為會限驗證用\n" +
-                            $"因 Discord 限制最多僅能使用 25 個選項\n" +
-                            $"故需要移除未使用到的頻道來繼續新增驗證頻道，或是向 Bot 擁有者詢問", true);
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.SelectLimit", true, true, 25);
                         return;
                     }
 
                     if (guildConfig.LogMemberStatusChannelId == 0)
                     {
-                        await Context.Interaction.SendErrorAsync("本伺服器尚未設定會限驗證紀錄頻道\n" +
-                            "請新增頻道並設定本機器人 `讀取` & `發送` 與 `嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定紀錄頻道\n" +
-                            "紀錄頻道為強制需要，若無頻道則無法驗證會限", true);
+                        string logLocale = await GetLocaleAsync(true);
+                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "member-set", "set-notice-member-status-channel");
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelRequired", true, true, setLogPath);
                         return;
                     }
                     else if (Context.Guild.GetTextChannel(guildConfig.LogMemberStatusChannelId) == null)
                     {
-                        await Context.Interaction.SendErrorAsync("本伺服器所設定的會限驗證紀錄頻道已刪除\n" +
-                            "請新增頻道並設定本機器人 `讀取` & `發送` 與 `嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定紀錄頻道\n" +
-                            "紀錄頻道為強制需要，若無頻道則無法驗證會限", true);
+                        string logLocale = await GetLocaleAsync(true);
+                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "member-set", "set-notice-member-status-channel");
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelDeleted", true, true, setLogPath);
 
                         guildConfig.LogMemberStatusChannelId = 0;
                         db.GuildConfig.Update(guildConfig);
@@ -248,14 +226,15 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     }
                     db.SaveChanges();
 
-                    await Context.Interaction.SendConfirmAsync($"已設定使用 `{channelId}` 作為會限驗證頻道\n" +
-                        $"驗證成功的成員將會獲得 `{role.Name}` 用戶組\n" +
-                        (channelDataExist ? "可直接開始檢測會限" : "請等待五分鐘後才可開始檢測會限"), true, true);
+                    string locale = await GetLocaleAsync(true);
+                    await SendLocalizedConfirmAsync("MemberSetting.ChannelConfigured", true, true,
+                        channelId, role.Name, BotLocalizer.Get(channelDataExist
+                            ? "MemberSetting.ReadyNow" : "MemberSetting.ReadyLater", locale));
                 }
                 catch (Exception ex)
                 {
-                    await Context.Interaction.SendErrorAsync(ex.Message, true);
-                    Log.Error(ex.ToString());
+                    Log.Error(ex.Demystify(), "新增會限驗證頻道時失敗");
+                    await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true);
                 }
             }
         }
@@ -263,7 +242,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         [CommandSummary("移除會限驗證頻道")]
         [CommandExample("https://www.youtube.com/@998rrr")]
         [SlashCommand("remove-member-check", "移除會限驗證頻道")]
-        public async Task RemoveMemberCheckAsync([Summary("頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
+        public async Task RemoveMemberCheckAsync([Summary("channel-url", "頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {
             await DeferAsync(true);
 
@@ -276,12 +255,12 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
                     if (guildYoutubeMemberConfig == null)
                     {
-                        await Context.Interaction.SendErrorAsync("未設定過該頻道的會限驗證", true);
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelNotConfigured", true);
                     }
                     else
                     {
                         db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
-                        await Context.Interaction.SendConfirmAsync($"已移除 `{channelId}` 的會限驗證", true);
+                        await SendLocalizedConfirmAsync("MemberSetting.ChannelRemoved", true, false, channelId);
 
                         try
                         {
@@ -299,7 +278,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 }
                 catch (Exception ex)
                 {
-                    await Context.Interaction.SendErrorAsync("資料保存失敗，請向孤之界回報", true);
+                    await SendLocalizedErrorAsync("Errors.SaveFailed", true);
                     Log.Error(ex.ToString());
                 }
             }
@@ -311,15 +290,15 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         [CommandExample("頻道名稱 https://youtu.be/xxxxxxxxxxx")]
         [SlashCommand("set-check-video", "手動指定會限驗證探測影片")]
         public async Task SetCheckVideoAsync(
-            [Summary("頻道名稱"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url,
-            [Summary("會限影片連結或ID")] string videoUrlOrId)
+            [Summary("channel", "頻道名稱"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url,
+            [Summary("video", "會限影片連結或ID")] string videoUrlOrId)
         {
             await DeferAsync(true);
 
             string videoId = ExtractVideoId(videoUrlOrId);
             if (string.IsNullOrEmpty(videoId))
             {
-                await Context.Interaction.SendErrorAsync("無法解析影片 ID，請提供正確的 YouTube 影片連結或 11 碼影片 ID", true);
+                await SendLocalizedErrorAsync("MemberSetting.Errors.InvalidVideoId", true);
                 return;
             }
 
@@ -330,7 +309,9 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 var config = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
                 if (config == null)
                 {
-                    await Context.Interaction.SendErrorAsync("未設定過該頻道的會限驗證，請先用 `/member-set add-member-check` 新增", true);
+                    string locale = await GetLocaleAsync(true);
+                    string addPath = CommandDisplayResolver.GetCommandPath(locale, "member-set", "add-member-check");
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.ConfigureFirst", true, true, addPath);
                     return;
                 }
 
@@ -342,14 +323,14 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     await ct.ExecuteAsync();
 
                     // 可讀留言 ＝ 非會限影片
-                    await Context.Interaction.SendErrorAsync("這支影片不是會限影片（機器人可讀取其留言），若當作偵測用影片會導致所有人都通過驗證，請改指定會限影片", true);
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.VideoNotMembersOnly", true);
                     return;
                 }
                 catch (Exception ex)
                 {
                     if (ex.Message.ToLower().Contains("disabled comments"))
                     {
-                        await Context.Interaction.SendErrorAsync("這支影片已關閉留言，無法當作會限偵測影片，請改指定其他會限影片", true);
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.CommentsDisabled", true);
                         return;
                     }
                     // 403 / forbidden / not properly authorized ＝ 會限影片，符合預期，往下設定
@@ -360,13 +341,12 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 db.GuildYoutubeMemberConfig.Update(config);
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已將 `{channelId}` 的會限驗證偵測影片手動指定為 `{videoId}`\n" +
-                    "自動探索將不再覆寫此影片；若該影片失效會通知需要重設", true);
+                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoChanged", true, false, channelId, videoId);
             }
             catch (Exception ex)
             {
-                await Context.Interaction.SendErrorAsync(ex.Message, true);
-                Log.Error(ex.ToString());
+                Log.Error(ex.Demystify(), "手動指定會限驗證影片時失敗");
+                await SendLocalizedErrorAsync("Errors.InvalidYoutubeInput", true);
             }
         }
 
@@ -374,7 +354,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         [CommandExample("https://www.youtube.com/@998rrr")]
         [SlashCommand("clear-check-video", "改回自動挑選會限驗證偵測影片")]
         public async Task ClearCheckVideoAsync(
-            [Summary("頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
+            [Summary("channel-url", "頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {
             await DeferAsync(true);
 
@@ -385,7 +365,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 var config = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
                 if (config == null)
                 {
-                    await Context.Interaction.SendErrorAsync("未設定過該頻道的會限驗證", true);
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelNotConfigured", true);
                     return;
                 }
 
@@ -394,46 +374,50 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 db.GuildYoutubeMemberConfig.Update(config);
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已將 `{channelId}` 改回自動挑選會限偵測影片（約 5 分鐘後生效）", true);
+                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoCleared", true, false, channelId, 5);
             }
             catch (Exception ex)
             {
-                await Context.Interaction.SendErrorAsync(ex.Message, true);
-                Log.Error(ex.ToString());
+                Log.Error(ex.Demystify(), "恢復自動挑選會限驗證影片時失敗");
+                await SendLocalizedErrorAsync("Errors.InvalidYoutubeInput", true);
             }
         }
 
-        private static string ExtractVideoId(string input)
+        private string ExtractVideoId(string input)
         {
-            if (string.IsNullOrWhiteSpace(input))
+            try
+            {
+                return _ytservice.GetVideoId(input);
+            }
+            catch (ArgumentNullException)
+            {
                 return null;
-
-            input = input.Trim();
-            if (Regex.IsMatch(input, @"^[\w-]{11}$"))
-                return input;
-
-            var m = Regex.Match(input, @"(?:v=|youtu\.be/|/live/|/shorts/|/embed/)([\w-]{11})");
-            return m.Success ? m.Groups[1].Value : null;
+            }
+            catch (UriFormatException)
+            {
+                return null;
+            }
         }
 
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
-        public async Task ListCheckedMemberAsync([Summary("頁數")] int page = 1)
+        public async Task ListCheckedMemberAsync([Summary("page", "頁數")] int page = 1)
         {
+            string locale = await GetLocaleAsync(true);
             using (var db = _dbService.GetDbContext())
             {
                 var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.IsChecked);
                 if (!youtubeMemberChecks.Any())
                 {
-                    await Context.Interaction.SendErrorAsync("尚無成員驗證成功");
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.NoVerifiedMembers");
                     return;
                 }
                 page -= 1;
                 page = Math.Max(0, page);
 
-                await Context.SendPaginatedConfirmAsync(page, (page) =>
+                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, (page) =>
                 {
                     return new EmbedBuilder().WithOkColor()
-                    .WithTitle("已驗證成功清單")
+                    .WithTitle(BotLocalizer.Get("MemberSetting.VerifiedListTitle", locale))
                     .WithDescription(string.Join('\n',
                         youtubeMemberChecks.Skip(page * 20).Take(20)
                             .Select((x) => $"<@{x.UserId}>: {x.CheckYTChannelId}")));

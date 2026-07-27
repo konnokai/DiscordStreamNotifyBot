@@ -1,6 +1,7 @@
 ﻿using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
@@ -22,13 +23,26 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         private readonly DiscordSocketClient _client;
         private readonly BotConfig _botConfig;
         private readonly MainDbService _dbService;
+        private readonly BotLocalizer _localizer;
+        private readonly CommandDisplayResolver _commandDisplayResolver;
+        private readonly GuildLocaleService _guildLocaleService;
+        private readonly LocaleResolver _localeResolver;
+        private readonly IServiceProvider _services;
 
-        public YoutubeMemberService(YoutubeStreamService streamService, DiscordSocketClient discordSocketClient, BotConfig botConfig, MainDbService dbService)
+        public YoutubeMemberService(YoutubeStreamService streamService, DiscordSocketClient discordSocketClient,
+            BotConfig botConfig, MainDbService dbService, BotLocalizer localizer,
+            CommandDisplayResolver commandDisplayResolver, GuildLocaleService guildLocaleService,
+            LocaleResolver localeResolver, IServiceProvider services)
         {
             _streamService = streamService;
             _client = discordSocketClient;
             _botConfig = botConfig;
             _dbService = dbService;
+            _localizer = localizer;
+            _commandDisplayResolver = commandDisplayResolver;
+            _guildLocaleService = guildLocaleService;
+            _localeResolver = localeResolver;
+            _services = services;
 
             if (string.IsNullOrEmpty(_botConfig.GoogleClientId) || string.IsNullOrEmpty(_botConfig.GoogleClientSecret))
             {
@@ -79,9 +93,13 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
                 try
                 {
+                    string locale = await component.ResolveLocaleAsync(_services, true);
                     string[] customId = component.Data.CustomId.Split(new char[] { ':' });
                     if (customId.Length <= 2 || customId[0] != "member")
-                        await component.RespondAsync("選單錯誤");
+                    {
+                        await component.SendErrorAsync(_localizer, locale, "Components.Invalid", ephemeral: true);
+                        return;
+                    }
 
                     using var db = _dbService.GetDbContext();
                     if (customId[1] == "check" && customId.Length == 4)
@@ -90,21 +108,21 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
                         if (!ulong.TryParse(customId[2], out ulong guildId))
                         {
-                            await component.SendErrorAsync("GuildId 無效，請向孤之界回報此問題", true);
+                            await component.SendErrorAsync(_localizer, locale, "Errors.Unknown", true, true);
                             Log.Error(JsonConvert.SerializeObject(component));
                             return;
                         }
 
                         if (!ulong.TryParse(customId[3], out ulong userId))
                         {
-                            await component.SendErrorAsync("UserId 無效，請向孤之界回報此問題", true);
+                            await component.SendErrorAsync(_localizer, locale, "Errors.Unknown", true, true);
                             Log.Error(JsonConvert.SerializeObject(component));
                             return;
                         }
 
                         if (component.User.Id != userId)
                         {
-                            await component.SendErrorAsync("你無法使用此選單", true);
+                            await component.SendErrorAsync(_localizer, locale, "Components.NotAllowed", true, true);
                             return;
                         }
 
@@ -127,23 +145,31 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
                         foreach (var item in component.Data.Values)
                         {
-                            db.YoutubeMemberCheck.Add(new YoutubeMemberCheck() { UserId = userId, GuildId = guildId, CheckYTChannelId = item });
+                            db.YoutubeMemberCheck.Add(new YoutubeMemberCheck()
+                            {
+                                UserId = userId,
+                                GuildId = guildId,
+                                CheckYTChannelId = item,
+                                Locale = SupportedLocale.Normalize(component.UserLocale)
+                            });
                         }
                         db.SaveChanges();
 
                         try { await component.Message.DeleteAsync(); }
                         catch
                         {
-                            await DisableSelectMenuAsync(component, $"已選擇 {component.Data.Values.Count} 個頻道");
+                            await DisableSelectMenuAsync(component, locale,
+                                _localizer.Format("Member.Select.SelectedCount", locale, component.Data.Values.Count));
                         }
 
-                        await component.SendConfirmAsync("已記錄至資料庫，請稍等至多 5 分鐘讓 Bot 驗證\n請確認已開啟本伺服器的 `允許來自伺服器成員的私人訊息`，以避免收不到通知", true, true);
+                        await component.SendConfirmAsync(_localizer, locale, "Member.CheckQueuedWithDmNotice", true, true, 5);
                     }
                 }
                 catch (Exception ex)
                 {
-                    await component.SendErrorAsync("錯誤，請向孤之界回報此問題", true);
-                    Log.Error(ex.ToString());
+                    Log.Error(ex.Demystify(), "處理會限驗證選單時失敗");
+                    string locale = await component.ResolveLocaleAsync(_services, true);
+                    await component.SendErrorAsync(_localizer, locale, "Errors.Unknown", true, true);
                     return;
                 }
             };
@@ -283,10 +309,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             catch { throw; }
         }
 
-        private async Task DisableSelectMenuAsync(SocketMessageComponent component, string placeholder = "")
+        private async Task DisableSelectMenuAsync(SocketMessageComponent component, string locale, string placeholder = "")
         {
             SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
-                .WithPlaceholder(string.IsNullOrEmpty(placeholder) ? "已選擇" : placeholder)
+                .WithPlaceholder(string.IsNullOrEmpty(placeholder) ? _localizer.Get("Member.Select.Selected", locale) : placeholder)
                 .WithMinValues(1)
                 .WithMaxValues(1)
                 .AddOption("1", "2")
@@ -324,7 +350,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 try { await Bot.ApplicatonOwner.SendMessageAsync(dto.BotOwnerMessage); } catch { }
             }
 
-            await SendMsgToLogChannelAsync(dto.CheckChannelId, dto.Message, dto.IsNeedRemove, dto.IsNeedSendToOwner);
+            await SendMsgToLogChannelAsync(dto);
         }
 
         /// <summary>
@@ -411,11 +437,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
-        private async Task SendMsgToLogChannelAsync(string checkChannelId, string msg, bool isNeedRemove = true, bool isNeedSendToOwner = true)
+        private async Task SendMsgToLogChannelAsync(Shared.Messages.YoutubeMemberVideoLogNotification dto)
         {
             using var db = _dbService.GetDbContext();
 
-            foreach (var item in await db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.MemberCheckChannelId == checkChannelId).ToListAsync())
+            foreach (var item in await db.GuildYoutubeMemberConfig.AsNoTracking()
+                .Where(x => x.MemberCheckChannelId == dto.CheckChannelId).ToListAsync())
             {
                 try
                 {
@@ -434,6 +461,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         continue;
                     }
 
+                    string guildLocale = await _guildLocaleService.GetAsync(guild.Id, guild);
+                    string message = YoutubeMemberVideoLogMessageFormatter.Format(
+                        dto, guildLocale, _localizer, _commandDisplayResolver);
+                    string setLogChannelPath = _commandDisplayResolver.GetCommandPath(guildLocale,
+                        "member-set", "set-notice-member-status-channel");
+
                     var guildConfig = await db.GuildConfig.FirstOrDefaultAsync((x) => x.GuildId == item.GuildId);
                     if (guildConfig == null)
                     {
@@ -441,8 +474,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         await db.GuildConfig.AddAsync(new GuildConfig { GuildId = guild.Id });
                         db.GuildYoutubeMemberConfig.Remove(item);
 
-                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
-                        try { await guild.Owner.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(msg).Build()); }
+                        message += "\n" + _localizer.Format("Member.VideoLog.LogChannelMissing", guildLocale,
+                            guild.Name, setLogChannelPath);
+                        try { await guild.Owner.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(message).Build()); }
                         catch { }
 
                         continue;
@@ -452,7 +486,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     if (logChannel == null)
                     {
                         isExistLogChannel = false;
-                        msg += $"\n另外: `{guild.Name}` 無會限紀錄頻道，請新增頻道並給予小幫手 `讀取、發送及嵌入連結` 權限後使用 `/member-set set-notice-member-status-channel` 設定";
+                        message += "\n" + _localizer.Format("Member.VideoLog.LogChannelMissing", guildLocale,
+                            guild.Name, setLogChannelPath);
                     }
                     else
                     {
@@ -460,17 +495,18 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         if (!permission.ViewChannel || !permission.SendMessages || !permission.EmbedLinks)
                         {
                             Log.Warn($"{item.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
-                            msg += $"\n另外: `{guild.Name}` 的 `{logChannel.Name}`無權限可紀錄，請給予小幫手 `讀取、發送及嵌入連結` 權限";
+                            message += "\n" + _localizer.Format("Member.VideoLog.LogChannelPermissionMissing",
+                                guildLocale, guild.Name, logChannel.Name);
                             isExistLogChannel = false;
                         }
                     }
 
                     var embed = new EmbedBuilder()
                         .WithErrorColor()
-                        .WithDescription(msg)
+                        .WithDescription(message)
                         .Build();
 
-                    if (isNeedSendToOwner)
+                    if (dto.IsNeedSendToOwner)
                     {
                         try { await guild.Owner.SendMessageAsync(embed: embed); }
                         catch { }
@@ -482,7 +518,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         catch { }
                     }
 
-                    if (isNeedRemove) db.GuildYoutubeMemberConfig.Remove(item);
+                    if (dto.IsNeedRemove) db.GuildYoutubeMemberConfig.Remove(item);
                 }
                 catch (Exception ex)
                 {
@@ -620,14 +656,15 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, DiscordSocketClient client, ulong userId, string channelTitle, string status)
+        public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, DiscordSocketClient client,
+            ulong userId, string channelTitle, string status, BotLocalizer localizer = null, string locale = null)
         {
             try
             {
                 var embedBuilder = new EmbedBuilder()
                     .WithErrorColor()
-                    .AddField("檢查頻道", channelTitle)
-                    .AddField("狀態", status);
+                    .AddField(localizer?.Get("Member.Status.Channel", locale) ?? "檢查頻道", channelTitle)
+                    .AddField(localizer?.Get("Member.Status.State", locale) ?? "狀態", status);
 
                 var user = await client.Rest.GetUserAsync(userId);
                 if (user != null)
@@ -657,7 +694,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task SendConfirmMessageAsync(this ulong userId, DiscordSocketClient client, string text, ITextChannel tc)
+        public static async Task SendConfirmMessageAsync(this ulong userId, DiscordSocketClient client, string text,
+            ITextChannel tc, BotLocalizer localizer = null, string guildLocale = null)
         {
             var user = await client.Rest.GetUserAsync(userId) as IUser;
             if (user == null)
@@ -693,7 +731,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
-                    await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
+                    string warning = localizer?.Format("Member.Status.DmUnavailable", guildLocale, userId)
+                        ?? $"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`";
+                    await tc.SendMessageAsync(warning);
                 }
                 else
                 {
@@ -706,7 +746,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task SendErrorMessageAsync(this ulong userId, DiscordSocketClient client, string text, ITextChannel tc)
+        public static async Task SendErrorMessageAsync(this ulong userId, DiscordSocketClient client, string text,
+            ITextChannel tc, BotLocalizer localizer = null, string guildLocale = null)
         {
             var user = await client.Rest.GetUserAsync(userId) as IUser;
             if (user == null)
@@ -742,7 +783,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
-                    await tc.SendMessageAsync($"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`");
+                    string warning = localizer?.Format("Member.Status.DmUnavailable", guildLocale, userId)
+                        ?? $"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`";
+                    await tc.SendMessageAsync(warning);
                 }
                 else
                 {

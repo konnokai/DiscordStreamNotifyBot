@@ -1,4 +1,5 @@
-﻿using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
 
@@ -6,191 +7,132 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
     public static class EmbedBuilderFactory
     {
-        public static EmbedBuilder CreateStreamDeleted(TableVideo video)
-        {
-            return new EmbedBuilder()
+        public static EmbedBuilder CreateStreamDeleted(TableVideo video, BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video)
                 .WithErrorColor()
-                .WithTitle(video.VideoTitle)
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "已刪除直播")
-                .AddField("排定開台時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-        }
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.DeletedStream", locale))
+                .AddField(localizer.Get("Notifications.Field.ScheduledStart", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
 
-        public static EmbedBuilder CreateStreamStarted(TableVideo video)
-        {
-            return new EmbedBuilder()
-                .WithTitle(video.VideoTitle)
+        public static EmbedBuilder CreateStreamStarted(TableVideo video, BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
                 .WithOkColor()
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "開台中")
-                .AddField("排定開台時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.StreamStatus.Live", locale))
+                .AddField(localizer.Get("Notifications.Field.ScheduledStart", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateStreamTimeChanged(TableVideo video, DateTime newStartTime,
+            BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
+                .WithErrorColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.UpcomingChanged", locale))
+                .AddField(localizer.Get("Notifications.Field.ScheduledStart", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown())
+                .AddField(localizer.Get("Notifications.Field.ChangedStart", locale), newStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateRecordStreamStarted(YTApiVideo item, DateTime startTime, bool isMemberOnly,
+            BotLocalizer localizer, string locale)
+        {
+            var embedBuilder = CreateApiVideoEmbed(item, true)
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.StreamStatus.Live", locale))
+                .AddField(localizer.Get("Notifications.Field.StartedAt", locale), startTime.ConvertDateTimeToDiscordMarkdown());
+            return isMemberOnly ? embedBuilder.WithOkColor() : embedBuilder.WithRecordColor();
         }
 
-        public static EmbedBuilder CreateStreamTimeChanged(TableVideo video, DateTime newStartTime)
-        {
-            return new EmbedBuilder()
+        public static EmbedBuilder CreateRecordStreamEnded(YTApiVideo item, DateTime startTime, DateTime endTime,
+            BotLocalizer localizer, string locale)
+            => CreateApiVideoEmbed(item, true)
                 .WithErrorColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.StreamStatus.Ended", locale))
+                .AddField(localizer.Get("Notifications.Field.Duration", locale), FormatDuration(endTime.Subtract(startTime), localizer, locale))
+                .AddField(localizer.Get("Notifications.Field.EndedAt", locale), endTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateStreamEnded(TableVideo video, DateTime startTime, DateTime endTime,
+            BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
+                .WithErrorColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.StreamStatus.Ended", locale))
+                .AddField(localizer.Get("Notifications.Field.Duration", locale), FormatDuration(endTime.Subtract(startTime), localizer, locale))
+                .AddField(localizer.Get("Notifications.Field.EndedAt", locale), endTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateStreamEndedAsMemberOnly(TableVideo video, DateTime startTime, DateTime endTime,
+            BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
+                .WithErrorColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.EndedAsMemberOnly", locale))
+                .AddField(localizer.Get("Notifications.Field.Duration", locale), FormatDuration(endTime.Subtract(startTime), localizer, locale))
+                .AddField(localizer.Get("Notifications.Field.EndedAt", locale), endTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateStreamUnarchived(TableVideo video, BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
+                .WithOkColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.Unarchived", locale))
+                .AddField(localizer.Get("Notifications.Field.ScheduledStart", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateNewVideo(TableVideo video, BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
+                .WithOkColor()
+                .AddField(localizer.Get("Notifications.Field.UploadedAt", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreatePubSubVideoDeleted(TableVideo video, BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
+                .WithOkColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.Deleted", locale))
+                .AddField(localizer.Get("Notifications.Field.ScheduledOrUploadedAt", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateNewStream(TableVideo video, DateTime scheduledStartTime,
+            BotLocalizer localizer, string locale, bool statusFieldInline = false)
+            => CreateVideoEmbed(video, true)
+                .WithErrorColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.StreamStatus.Upcoming", locale), statusFieldInline)
+                .AddField(localizer.Get("Notifications.Field.ScheduledStart", locale), scheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateReminderStreamDeleted(TableVideo video, BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video)
+                .WithErrorColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.DeletedStream", locale))
+                .AddField(localizer.Get("Notifications.Field.ScheduledStart", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
+
+        public static EmbedBuilder CreateScheduleDataLost(TableVideo video, BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(video, true)
+                .WithOkColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.ScheduleDataLost", locale))
+                .AddField(localizer.Get("Notifications.Field.OriginalScheduledStart", locale), video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        public static EmbedBuilder CreateStreamTimeChangedReminder(TableVideo newVideo, DateTime oldScheduledStartTime,
+            BotLocalizer localizer, string locale)
+            => CreateVideoEmbed(newVideo, true)
+                .WithErrorColor()
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Youtube.NotificationStatus.UpcomingChanged", locale), true)
+                .AddField(localizer.Get("Notifications.Field.ScheduledStart", locale), oldScheduledStartTime.ConvertDateTimeToDiscordMarkdown())
+                .AddField(localizer.Get("Notifications.Field.ChangedStart", locale), newVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+
+        private static EmbedBuilder CreateVideoEmbed(TableVideo video, bool includeImage = false)
+        {
+            var embed = new EmbedBuilder()
                 .WithTitle(video.VideoTitle)
                 .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "尚未開台(已更改時間)")
-                .AddField("排定開台時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown())
-                .AddField("更改開台時間", newStartTime.ConvertDateTimeToDiscordMarkdown());
+                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}");
+            if (includeImage)
+                embed.WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg");
+            return embed;
         }
 
-        // === 錄影程序 IPC 通知用（由 Redis 訂閱觸發；item 為 YouTube API 物件、video 為 DB 物件）===
-
-        /// <summary>錄影開台通知（資料來自 YouTube API）。會員限定為綠色、否則紅色。</summary>
-        public static EmbedBuilder CreateRecordStreamStarted(YTApiVideo item, DateTime startTime, bool isMemberOnly)
+        private static EmbedBuilder CreateApiVideoEmbed(YTApiVideo item, bool includeImage = false)
         {
-            var embedBuilder = new EmbedBuilder()
+            var embed = new EmbedBuilder()
                 .WithTitle(item.Snippet.Title)
                 .WithDescription(Format.Url(item.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{item.Snippet.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
-                .AddField("直播狀態", "開台中")
-                .AddField("開台時間", startTime.ConvertDateTimeToDiscordMarkdown());
-
-            if (isMemberOnly) embedBuilder.WithOkColor();
-            else embedBuilder.WithRecordColor();
-
-            return embedBuilder;
+                .WithUrl($"https://www.youtube.com/watch?v={item.Id}");
+            if (includeImage)
+                embed.WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg");
+            return embed;
         }
 
-        /// <summary>錄影關台通知（資料來自 YouTube API）。</summary>
-        public static EmbedBuilder CreateRecordStreamEnded(YTApiVideo item, DateTime startTime, DateTime endTime)
+        private static string FormatDuration(TimeSpan duration, BotLocalizer localizer, string locale)
         {
-            return new EmbedBuilder()
-                .WithErrorColor()
-                .WithTitle(item.Snippet.Title)
-                .WithDescription(Format.Url(item.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{item.Snippet.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{item.Id}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={item.Id}")
-                .AddField("直播狀態", "已關台")
-                .AddField("直播時長", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
-                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>關台通知（資料來自 DB；通知匯流排消費端重建用的標準版本）。</summary>
-        public static EmbedBuilder CreateStreamEnded(TableVideo video, DateTime startTime, DateTime endTime)
-        {
-            return new EmbedBuilder()
-                .WithErrorColor()
-                .WithTitle(video.VideoTitle)
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "已關台")
-                .AddField("直播時長", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
-                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>關台並變更為會限影片通知（資料來自 DB）。</summary>
-        public static EmbedBuilder CreateStreamEndedAsMemberOnly(TableVideo video, DateTime startTime, DateTime endTime)
-        {
-            return new EmbedBuilder()
-                .WithErrorColor()
-                .WithTitle(video.VideoTitle)
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "已關台並變更為會限影片")
-                .AddField("直播時間", $"{endTime.Subtract(startTime):hh'時'mm'分'ss'秒'}")
-                .AddField("關台時間", endTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>關台並變更為私人存檔（unarchived）通知（資料來自 DB）。</summary>
-        public static EmbedBuilder CreateStreamUnarchived(TableVideo video)
-        {
-            return new EmbedBuilder()
-                .WithTitle(video.VideoTitle)
-                .WithOkColor()
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "已關台並變更為私人存檔")
-                .AddField("排定開台時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>新上傳影片通知（PubSub，資料來自 DB）。</summary>
-        public static EmbedBuilder CreateNewVideo(TableVideo video)
-        {
-            return new EmbedBuilder()
-                .WithOkColor()
-                .WithTitle(video.VideoTitle)
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("上傳時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>PubSub 影片刪除通知（資料來自 DB）。</summary>
-        public static EmbedBuilder CreatePubSubVideoDeleted(TableVideo video)
-        {
-            return new EmbedBuilder()
-                .WithOkColor()
-                .WithTitle(video.VideoTitle)
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("狀態", "已刪除")
-                .AddField("排定開台/上傳時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>新待機室（尚未開台）通知（排程偵測，資料來自 DB）。</summary>
-        public static EmbedBuilder CreateNewStream(TableVideo video, DateTime scheduledStartTime, bool statusFieldInline = false)
-        {
-            return new EmbedBuilder()
-                .WithErrorColor()
-                .WithTitle(video.VideoTitle)
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "尚未開台", statusFieldInline)
-                .AddField("排定開台時間", scheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>提醒檢查時發現直播已刪除（無封面，狀態欄位 inline）。</summary>
-        public static EmbedBuilder CreateReminderStreamDeleted(TableVideo video)
-        {
-            return new EmbedBuilder()
-                .WithErrorColor()
-                .WithTitle(video.VideoTitle)
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "已刪除直播")
-                .AddField("排定開台時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown(), true);
-        }
-
-        /// <summary>直播排程資料遺失（API 回傳無排程資料）通知。</summary>
-        public static EmbedBuilder CreateScheduleDataLost(TableVideo video)
-        {
-            return new EmbedBuilder()
-                .WithTitle(video.VideoTitle)
-                .WithOkColor()
-                .WithDescription(Format.Url(video.ChannelTitle, $"https://www.youtube.com/channel/{video.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{video.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={video.VideoId}")
-                .AddField("直播狀態", "直播排程資料遺失")
-                .AddField("原先預定開台時間", video.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
-        }
-
-        /// <summary>排程檢查發現開台時間變更（newVideo 為新資料、oldScheduledStartTime 為原排定時間）。</summary>
-        public static EmbedBuilder CreateStreamTimeChangedReminder(TableVideo newVideo, DateTime oldScheduledStartTime)
-        {
-            return new EmbedBuilder()
-                .WithErrorColor()
-                .WithTitle(newVideo.VideoTitle)
-                .WithDescription(Format.Url(newVideo.ChannelTitle, $"https://www.youtube.com/channel/{newVideo.ChannelId}"))
-                .WithImageUrl($"https://i.ytimg.com/vi/{newVideo.VideoId}/maxresdefault.jpg")
-                .WithUrl($"https://www.youtube.com/watch?v={newVideo.VideoId}")
-                .AddField("直播狀態", "尚未開台(已更改時間)", true)
-                .AddField("排定開台時間", oldScheduledStartTime.ConvertDateTimeToDiscordMarkdown())
-                .AddField("更改開台時間", newVideo.ScheduledStartTime.ConvertDateTimeToDiscordMarkdown());
+            if (duration < TimeSpan.Zero)
+                duration = TimeSpan.Zero;
+            return duration.Days > 0
+                ? localizer.Format("Notifications.Duration.Days", locale, duration.Days, duration.Hours, duration.Minutes, duration.Seconds)
+                : localizer.Format("Notifications.Duration.Hours", locale, (int)duration.TotalHours, duration.Minutes, duration.Seconds);
         }
     }
 }

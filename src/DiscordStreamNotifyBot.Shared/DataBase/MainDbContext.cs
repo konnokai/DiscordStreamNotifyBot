@@ -35,6 +35,18 @@ namespace DiscordStreamNotifyBot.DataBase
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<GuildConfig>()
+                .Property(x => x.Locale)
+                .HasColumnType("varchar(16)")
+                .HasMaxLength(16)
+                .IsRequired(false);
+
+            modelBuilder.Entity<YoutubeMemberCheck>()
+                .Property(x => x.Locale)
+                .HasColumnType("varchar(16)")
+                .HasMaxLength(16)
+                .IsRequired(false);
+
             modelBuilder.Entity<TwitchBroadcasterAuthorization>(entity =>
             {
                 entity.HasKey(x => x.TwitchUserId);

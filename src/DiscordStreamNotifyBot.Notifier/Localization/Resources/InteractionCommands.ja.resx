@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+
+  <data name="utility.description" xml:space="preserve"><value>便利な機能と Bot の情報</value></data>
+  <data name="utility.ping.description" xml:space="preserve"><value>Bot の応答遅延を確認します</value></data>
+  <data name="utility.invite.description" xml:space="preserve"><value>Bot の招待リンクを取得します</value></data>
+  <data name="utility.status.description" xml:space="preserve"><value>Bot の現在の状態を表示します</value></data>
+  <data name="utility.set-language.description" xml:space="preserve"><value>サーバーの公開コンテンツとバックグラウンド通知に使用する言語を設定します</value></data>
+  <data name="utility.set-language.language.description" xml:space="preserve"><value>サーバーで使用する言語</value></data>
+  <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>Bot の所有者へメッセージを送ります</value></data>
+  <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>Bot の所有者からのお知らせを受信するチャンネルを設定します</value></data>
+  <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>お知らせを受信するテキストまたはアナウンスチャンネル</value></data>
+
+  <data name="help.description" xml:space="preserve"><value>コマンドと使い方を確認します</value></data>
+  <data name="help.get-all-modules.description" xml:space="preserve"><value>利用可能なコマンドモジュールをすべて表示します</value></data>
+  <data name="help.get-all-commands.description" xml:space="preserve"><value>指定したモジュールのコマンドをすべて表示します</value></data>
+  <data name="help.get-all-commands.module.description" xml:space="preserve"><value>確認するコマンドモジュール</value></data>
+  <data name="help.get-command-help.description" xml:space="preserve"><value>指定したコマンドの詳しい説明を表示します</value></data>
+  <data name="help.get-command-help.module.description" xml:space="preserve"><value>コマンドが属するモジュール</value></data>
+  <data name="help.get-command-help.command.description" xml:space="preserve"><value>確認するコマンド</value></data>
+
+  <data name="youtube.description" xml:space="preserve"><value>YouTube の配信と動画の通知設定</value></data>
+  <data name="youtube.list-record-channel.description" xml:space="preserve"><value>現在録画対象になっているチャンネルを表示します</value></data>
+  <data name="youtube.list-record-channel.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="youtube.now-streaming.description" xml:space="preserve"><value>現在配信中のメンバーを表示します</value></data>
+  <data name="youtube.now-streaming.host.description" xml:space="preserve"><value>確認する所属グループ</value></data>
+  <data name="youtube.coming-soon-stream.description" xml:space="preserve"><value>今後予定されている配信を表示します</value></data>
+  <data name="youtube.coming-soon-stream.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="youtube.get-member-only-playlist.description" xml:space="preserve"><value>チャンネル URL をメンバー限定再生リストの URL に変換します</value></data>
+  <data name="youtube.get-member-only-playlist.channel.description" xml:space="preserve"><value>YouTube チャンネルの URL またはチャンネル ID</value></data>
+  <data name="youtube.toggle-create-event.description" xml:space="preserve"><value>新しい配信の Discord イベント作成を切り替えます</value></data>
+  <data name="youtube.toggle-create-event.channel.description" xml:space="preserve"><value>通知設定済みの YouTube チャンネル</value></data>
+  <data name="youtube.set-banner-change.description" xml:space="preserve"><value>最新配信のサムネイルでサーバーバナーを更新します</value></data>
+  <data name="youtube.set-banner-change.channel-url.description" xml:space="preserve"><value>空欄で無効化、または YouTube チャンネル URL を入力します</value></data>
+  <data name="youtube.add.description" xml:space="preserve"><value>YouTube の配信通知を追加します</value></data>
+  <data name="youtube.add.channel-or-group.description" xml:space="preserve"><value>YouTube チャンネル URL、ID、または組み込みグループ</value></data>
+  <data name="youtube.add.channel.description" xml:space="preserve"><value>配信通知を受信するテキストまたはアナウンスチャンネル</value></data>
+  <data name="youtube.remove.description" xml:space="preserve"><value>YouTube の配信通知を削除します</value></data>
+  <data name="youtube.remove.channel.description" xml:space="preserve"><value>通知を削除する YouTube チャンネル</value></data>
+  <data name="youtube.set-video-notice-channel.description" xml:space="preserve"><value>YouTube の動画投稿通知チャンネルを設定します</value></data>
+  <data name="youtube.set-video-notice-channel.youtube-channel.description" xml:space="preserve"><value>通知設定済みの YouTube チャンネル</value></data>
+  <data name="youtube.set-video-notice-channel.notification-channel.description" xml:space="preserve"><value>動画通知を受信するテキストまたはアナウンスチャンネル</value></data>
+  <data name="youtube.list.description" xml:space="preserve"><value>設定済みの YouTube 通知を表示します</value></data>
+  <data name="youtube.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="youtube.set-message.description" xml:space="preserve"><value>YouTube 通知のメッセージを設定します</value></data>
+  <data name="youtube.set-message.channel.description" xml:space="preserve"><value>通知設定済みの YouTube チャンネル</value></data>
+  <data name="youtube.set-message.notification-type.description" xml:space="preserve"><value>メッセージを設定する通知の種類</value></data>
+  <data name="youtube.set-message.message.description" xml:space="preserve"><value>通知文。空欄で消去し、- を入力するとこの種類の通知を無効にします</value></data>
+  <data name="youtube.list-message.description" xml:space="preserve"><value>設定済みの YouTube 通知メッセージを表示します</value></data>
+  <data name="youtube.list-message.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+
+  <data name="youtube-spider.description" xml:space="preserve"><value>YouTube チャンネルの監視設定</value></data>
+  <data name="youtube-spider.add.description" xml:space="preserve"><value>hololive／にじさんじ以外の YouTube チャンネルを監視対象に追加します</value></data>
+  <data name="youtube-spider.add.channel.description" xml:space="preserve"><value>監視する YouTube チャンネル</value></data>
+  <data name="youtube-spider.remove.description" xml:space="preserve"><value>hololive／にじさんじ以外の YouTube チャンネルを監視対象から削除します</value></data>
+  <data name="youtube-spider.remove.channel.description" xml:space="preserve"><value>監視を停止する YouTube チャンネル</value></data>
+  <data name="youtube-spider.list.description" xml:space="preserve"><value>承認済みの YouTube 監視チャンネルを表示します</value></data>
+  <data name="youtube-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="youtube-spider.list-not-trusted.description" xml:space="preserve"><value>未承認の YouTube 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
+  <data name="youtube-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+
+  <data name="twitch.description" xml:space="preserve"><value>Twitch の配信通知設定</value></data>
+  <data name="twitch.add.description" xml:space="preserve"><value>Twitch の配信通知を追加します</value></data>
+  <data name="twitch.add.streamer.description" xml:space="preserve"><value>Twitch チャンネル名または URL</value></data>
+  <data name="twitch.add.notification-channel.description" xml:space="preserve"><value>配信通知を受信するテキストまたはアナウンスチャンネル</value></data>
+  <data name="twitch.remove.description" xml:space="preserve"><value>Twitch の配信通知を削除します</value></data>
+  <data name="twitch.remove.channel.description" xml:space="preserve"><value>通知を削除する Twitch チャンネル</value></data>
+  <data name="twitch.list.description" xml:space="preserve"><value>設定済みの Twitch 配信通知を表示します</value></data>
+  <data name="twitch.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="twitch.set-message.description" xml:space="preserve"><value>Twitch 通知のメッセージを設定します</value></data>
+  <data name="twitch.set-message.channel.description" xml:space="preserve"><value>通知設定済みの Twitch チャンネル</value></data>
+  <data name="twitch.set-message.notification-type.description" xml:space="preserve"><value>メッセージを設定する通知の種類</value></data>
+  <data name="twitch.set-message.message.description" xml:space="preserve"><value>通知文。空欄で消去し、- を入力するとこの種類の通知を無効にします</value></data>
+  <data name="twitch.list-message.description" xml:space="preserve"><value>設定済みの Twitch 通知メッセージを表示します</value></data>
+  <data name="twitch.list-message.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+
+  <data name="twitch-spider.description" xml:space="preserve"><value>Twitch チャンネルの監視設定</value></data>
+  <data name="twitch-spider.add.description" xml:space="preserve"><value>Twitch チャンネルの監視を追加します</value></data>
+  <data name="twitch-spider.add.channel.description" xml:space="preserve"><value>監視する Twitch チャンネル</value></data>
+  <data name="twitch-spider.remove.description" xml:space="preserve"><value>Twitch チャンネルの監視を削除します</value></data>
+  <data name="twitch-spider.remove.channel.description" xml:space="preserve"><value>監視を停止する Twitch チャンネル</value></data>
+  <data name="twitch-spider.list.description" xml:space="preserve"><value>警告のない Twitch 監視チャンネルを表示します</value></data>
+  <data name="twitch-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="twitch-spider.list-not-trusted.description" xml:space="preserve"><value>警告対象の Twitch 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
+  <data name="twitch-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+
+  <data name="twitcasting.description" xml:space="preserve"><value>TwitCasting の配信通知設定</value></data>
+  <data name="twitcasting.add.description" xml:space="preserve"><value>TwitCasting の配信通知を追加します</value></data>
+  <data name="twitcasting.add.streamer.description" xml:space="preserve"><value>TwitCasting のユーザー名または URL</value></data>
+  <data name="twitcasting.add.notification-channel.description" xml:space="preserve"><value>配信通知を受信するテキストまたはアナウンスチャンネル</value></data>
+  <data name="twitcasting.remove.description" xml:space="preserve"><value>TwitCasting の配信通知を削除します</value></data>
+  <data name="twitcasting.remove.channel.description" xml:space="preserve"><value>通知を削除する TwitCasting チャンネル</value></data>
+  <data name="twitcasting.list.description" xml:space="preserve"><value>設定済みの TwitCasting 配信通知を表示します</value></data>
+  <data name="twitcasting.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="twitcasting.set-message.description" xml:space="preserve"><value>TwitCasting 通知のメッセージを設定します</value></data>
+  <data name="twitcasting.set-message.channel.description" xml:space="preserve"><value>通知設定済みの TwitCasting チャンネル</value></data>
+  <data name="twitcasting.set-message.message.description" xml:space="preserve"><value>通知文。空欄にすると設定を消去します</value></data>
+  <data name="twitcasting.list-message.description" xml:space="preserve"><value>設定済みの TwitCasting 通知メッセージを表示します</value></data>
+  <data name="twitcasting.list-message.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+
+  <data name="twitcasting-spider.description" xml:space="preserve"><value>TwitCasting チャンネルの監視設定</value></data>
+  <data name="twitcasting-spider.add.description" xml:space="preserve"><value>TwitCasting チャンネルの監視を追加します</value></data>
+  <data name="twitcasting-spider.add.channel.description" xml:space="preserve"><value>監視する TwitCasting チャンネル</value></data>
+  <data name="twitcasting-spider.remove.description" xml:space="preserve"><value>TwitCasting チャンネルの監視を削除します</value></data>
+  <data name="twitcasting-spider.remove.channel.description" xml:space="preserve"><value>監視を停止する TwitCasting チャンネル</value></data>
+  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>警告のない TwitCasting 監視チャンネルを表示します</value></data>
+  <data name="twitcasting-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>警告対象の TwitCasting 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
+  <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+
+  <data name="member.description" xml:space="preserve"><value>YouTube メンバーシップの認証</value></data>
+  <data name="member.check.description" xml:space="preserve"><value>サイト連携を確認してメンバーシップ認証を開始します</value></data>
+  <data name="member.cancel-member-check.description" xml:space="preserve"><value>このサーバーの認証を取り消してロールを削除します</value></data>
+  <data name="member.unlink.description" xml:space="preserve"><value>Discord と Google の連携を解除して認可を取り消します</value></data>
+  <data name="member.list-can-check-channel.description" xml:space="preserve"><value>現在認証できるメンバー限定チャンネルを表示します</value></data>
+  <data name="member.show-my-youtube-account.description" xml:space="preserve"><value>現在連携している YouTube アカウントを表示します</value></data>
+
+  <data name="member-set.description" xml:space="preserve"><value>YouTube メンバーシップ認証の設定</value></data>
+  <data name="member-set.set-notice-member-status-channel.description" xml:space="preserve"><value>メンバーシップ認証状態の記録チャンネルを設定します</value></data>
+  <data name="member-set.set-notice-member-status-channel.log-channel.description" xml:space="preserve"><value>認証状態の記録を受信するテキストチャンネル</value></data>
+  <data name="member-set.add-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルと付与ロールを追加します</value></data>
+  <data name="member-set.add-member-check.channel-url.description" xml:space="preserve"><value>メンバーシップを認証する YouTube チャンネル</value></data>
+  <data name="member-set.add-member-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール</value></data>
+  <data name="member-set.remove-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します</value></data>
+  <data name="member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>認証対象から削除する YouTube チャンネル</value></data>
+  <data name="member-set.set-check-video.description" xml:space="preserve"><value>認証に使うメンバー限定動画を手動で指定します</value></data>
+  <data name="member-set.set-check-video.channel.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
+  <data name="member-set.set-check-video.video.description" xml:space="preserve"><value>メンバー限定動画の URL または 11 文字の動画 ID</value></data>
+  <data name="member-set.clear-check-video.description" xml:space="preserve"><value>認証動画を自動選択へ戻します</value></data>
+  <data name="member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
+  <data name="member-set.list-checked-member.description" xml:space="preserve"><value>認証に成功したメンバーを表示します</value></data>
+  <data name="member-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+</root>

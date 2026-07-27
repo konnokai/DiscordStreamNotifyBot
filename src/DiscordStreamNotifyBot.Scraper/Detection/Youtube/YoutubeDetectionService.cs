@@ -201,7 +201,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     if (SharedExtensions.HasStreamVideoByVideoId(videoId))
                     {
                         var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
-                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
+                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete,
+                            isUnarchived: true).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)
@@ -453,7 +454,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// <summary>偵測端：由 <see cref="TableVideo"/> 建立 DTO 並 publish 至通知匯流排。</summary>
         internal async Task PublishYoutubeNotificationAsync(TableVideo streamVideo, YoutubeNoticeType noticeType,
             DateTime? actualStart = null, DateTime? actualEnd = null, bool isMemberOnly = false,
-            DateTime? previousScheduledStartTime = null)
+            DateTime? previousScheduledStartTime = null, bool isUnarchived = false)
         {
             try
             {
@@ -469,6 +470,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     ActualStartTime = actualStart,
                     ActualEndTime = actualEnd,
                     IsMemberOnly = isMemberOnly,
+                    IsUnarchived = isUnarchived,
                     ChannelType = streamVideo.ChannelType,
                 };
                 await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Youtube, dto).ConfigureAwait(false);

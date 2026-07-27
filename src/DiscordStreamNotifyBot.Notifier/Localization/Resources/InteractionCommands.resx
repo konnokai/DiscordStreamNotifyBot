@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+
+  <data name="utility.description" xml:space="preserve"><value>工具與機器人資訊</value></data>
+  <data name="utility.ping.description" xml:space="preserve"><value>檢查機器人的回應延遲</value></data>
+  <data name="utility.invite.description" xml:space="preserve"><value>取得機器人的邀請連結</value></data>
+  <data name="utility.status.description" xml:space="preserve"><value>顯示機器人目前的狀態</value></data>
+  <data name="utility.set-language.description" xml:space="preserve"><value>設定伺服器公開內容與背景通知使用的語言</value></data>
+  <data name="utility.set-language.language.description" xml:space="preserve"><value>伺服器要使用的語言</value></data>
+  <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>傳送訊息給 Bot 擁有者</value></data>
+  <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>設定接收 Bot 擁有者公告的頻道</value></data>
+  <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>用來接收公告的文字或公告頻道</value></data>
+
+  <data name="help.description" xml:space="preserve"><value>查詢指令與使用說明</value></data>
+  <data name="help.get-all-modules.description" xml:space="preserve"><value>顯示所有可用的指令模組</value></data>
+  <data name="help.get-all-commands.description" xml:space="preserve"><value>顯示指定模組內的全部指令</value></data>
+  <data name="help.get-all-commands.module.description" xml:space="preserve"><value>要查詢的指令模組</value></data>
+  <data name="help.get-command-help.description" xml:space="preserve"><value>顯示指定指令的詳細說明</value></data>
+  <data name="help.get-command-help.module.description" xml:space="preserve"><value>指令所屬的模組</value></data>
+  <data name="help.get-command-help.command.description" xml:space="preserve"><value>要查詢的指令</value></data>
+
+  <data name="youtube.description" xml:space="preserve"><value>YouTube 直播與影片通知設定</value></data>
+  <data name="youtube.list-record-channel.description" xml:space="preserve"><value>顯示目前的直播錄影頻道清單</value></data>
+  <data name="youtube.list-record-channel.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="youtube.now-streaming.description" xml:space="preserve"><value>取得目前正在直播的成員</value></data>
+  <data name="youtube.now-streaming.host.description" xml:space="preserve"><value>要查詢的團體</value></data>
+  <data name="youtube.coming-soon-stream.description" xml:space="preserve"><value>顯示即將開始的直播</value></data>
+  <data name="youtube.coming-soon-stream.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="youtube.get-member-only-playlist.description" xml:space="preserve"><value>取得該頻道的會員限定播放清單網址</value></data>
+  <data name="youtube.get-member-only-playlist.channel.description" xml:space="preserve"><value>YouTube 頻道網址或頻道 ID</value></data>
+  <data name="youtube.toggle-create-event.description" xml:space="preserve"><value>切換是否為新直播建立 Discord 活動</value></data>
+  <data name="youtube.toggle-create-event.channel.description" xml:space="preserve"><value>已設定通知的 YouTube 頻道</value></data>
+  <data name="youtube.set-banner-change.description" xml:space="preserve"><value>使用指定頻道的最新直播縮圖更新伺服器橫幅</value></data>
+  <data name="youtube.set-banner-change.channel-url.description" xml:space="preserve"><value>留空可關閉橫幅更新，或輸入 YouTube 頻道網址</value></data>
+  <data name="youtube.add.description" xml:space="preserve"><value>新增 YouTube 直播通知</value></data>
+  <data name="youtube.add.channel-or-group.description" xml:space="preserve"><value>YouTube 頻道網址、頻道 ID 或預設群組</value></data>
+  <data name="youtube.add.channel.description" xml:space="preserve"><value>接收直播通知的文字或公告頻道</value></data>
+  <data name="youtube.remove.description" xml:space="preserve"><value>移除 YouTube 直播通知</value></data>
+  <data name="youtube.remove.channel.description" xml:space="preserve"><value>要移除通知的 YouTube 頻道</value></data>
+  <data name="youtube.set-video-notice-channel.description" xml:space="preserve"><value>設定 YouTube 影片上傳通知頻道</value></data>
+  <data name="youtube.set-video-notice-channel.youtube-channel.description" xml:space="preserve"><value>已設定通知的 YouTube 頻道</value></data>
+  <data name="youtube.set-video-notice-channel.notification-channel.description" xml:space="preserve"><value>接收影片通知的文字或公告頻道</value></data>
+  <data name="youtube.list.description" xml:space="preserve"><value>顯示已設定的 YouTube 通知頻道</value></data>
+  <data name="youtube.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="youtube.set-message.description" xml:space="preserve"><value>設定 YouTube 通知訊息</value></data>
+  <data name="youtube.set-message.channel.description" xml:space="preserve"><value>已設定通知的 YouTube 頻道</value></data>
+  <data name="youtube.set-message.notification-type.description" xml:space="preserve"><value>要設定訊息的通知類型</value></data>
+  <data name="youtube.set-message.message.description" xml:space="preserve"><value>自訂通知文字；留空會清除設定，輸入 - 則停用此類通知</value></data>
+  <data name="youtube.list-message.description" xml:space="preserve"><value>列出已設定的 YouTube 通知訊息</value></data>
+  <data name="youtube.list-message.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+
+  <data name="youtube-spider.description" xml:space="preserve"><value>YouTube 頻道監測設定</value></data>
+  <data name="youtube-spider.add.description" xml:space="preserve"><value>新增 hololive／NIJISANJI 以外的 YouTube 頻道監測</value></data>
+  <data name="youtube-spider.add.channel.description" xml:space="preserve"><value>要加入監測的 YouTube 頻道</value></data>
+  <data name="youtube-spider.remove.description" xml:space="preserve"><value>移除 hololive／NIJISANJI 以外的 YouTube 頻道監測</value></data>
+  <data name="youtube-spider.remove.channel.description" xml:space="preserve"><value>要停止監測的 YouTube 頻道</value></data>
+  <data name="youtube-spider.list.description" xml:space="preserve"><value>顯示已認可的 YouTube 監測頻道</value></data>
+  <data name="youtube-spider.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="youtube-spider.list-not-trusted.description" xml:space="preserve"><value>顯示未認可的 YouTube 監測頻道；可能包含中之人或前世頻道</value></data>
+  <data name="youtube-spider.list-not-trusted.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+
+  <data name="twitch.description" xml:space="preserve"><value>Twitch 直播通知設定</value></data>
+  <data name="twitch.add.description" xml:space="preserve"><value>新增 Twitch 直播通知</value></data>
+  <data name="twitch.add.streamer.description" xml:space="preserve"><value>Twitch 頻道名稱或網址</value></data>
+  <data name="twitch.add.notification-channel.description" xml:space="preserve"><value>接收直播通知的文字或公告頻道</value></data>
+  <data name="twitch.remove.description" xml:space="preserve"><value>移除 Twitch 直播通知</value></data>
+  <data name="twitch.remove.channel.description" xml:space="preserve"><value>要移除通知的 Twitch 頻道</value></data>
+  <data name="twitch.list.description" xml:space="preserve"><value>顯示已設定的 Twitch 直播通知</value></data>
+  <data name="twitch.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="twitch.set-message.description" xml:space="preserve"><value>設定 Twitch 直播通知訊息</value></data>
+  <data name="twitch.set-message.channel.description" xml:space="preserve"><value>已設定通知的 Twitch 頻道</value></data>
+  <data name="twitch.set-message.notification-type.description" xml:space="preserve"><value>要設定訊息的通知類型</value></data>
+  <data name="twitch.set-message.message.description" xml:space="preserve"><value>自訂通知文字；留空可清除，輸入 - 可停用此類通知</value></data>
+  <data name="twitch.list-message.description" xml:space="preserve"><value>列出已設定的 Twitch 通知訊息</value></data>
+  <data name="twitch.list-message.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+
+  <data name="twitch-spider.description" xml:space="preserve"><value>Twitch 頻道監測設定</value></data>
+  <data name="twitch-spider.add.description" xml:space="preserve"><value>新增 Twitch 頻道監測</value></data>
+  <data name="twitch-spider.add.channel.description" xml:space="preserve"><value>要加入監測的 Twitch 頻道</value></data>
+  <data name="twitch-spider.remove.description" xml:space="preserve"><value>移除 Twitch 頻道監測</value></data>
+  <data name="twitch-spider.remove.channel.description" xml:space="preserve"><value>要停止監測的 Twitch 頻道</value></data>
+  <data name="twitch-spider.list.description" xml:space="preserve"><value>顯示未標記警告的 Twitch 監測頻道</value></data>
+  <data name="twitch-spider.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="twitch-spider.list-not-trusted.description" xml:space="preserve"><value>顯示已標記警告的 Twitch 監測頻道；可能包含中之人或前世頻道</value></data>
+  <data name="twitch-spider.list-not-trusted.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+
+  <data name="twitcasting.description" xml:space="preserve"><value>TwitCasting 直播通知設定</value></data>
+  <data name="twitcasting.add.description" xml:space="preserve"><value>新增 TwitCasting 直播通知</value></data>
+  <data name="twitcasting.add.streamer.description" xml:space="preserve"><value>TwitCasting 使用者名稱或網址</value></data>
+  <data name="twitcasting.add.notification-channel.description" xml:space="preserve"><value>接收直播通知的文字或公告頻道</value></data>
+  <data name="twitcasting.remove.description" xml:space="preserve"><value>移除 TwitCasting 直播通知</value></data>
+  <data name="twitcasting.remove.channel.description" xml:space="preserve"><value>要移除通知的 TwitCasting 頻道</value></data>
+  <data name="twitcasting.list.description" xml:space="preserve"><value>顯示已設定的 TwitCasting 直播通知</value></data>
+  <data name="twitcasting.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="twitcasting.set-message.description" xml:space="preserve"><value>設定 TwitCasting 直播通知訊息</value></data>
+  <data name="twitcasting.set-message.channel.description" xml:space="preserve"><value>已設定通知的 TwitCasting 頻道</value></data>
+  <data name="twitcasting.set-message.message.description" xml:space="preserve"><value>自訂通知文字；留空可清除</value></data>
+  <data name="twitcasting.list-message.description" xml:space="preserve"><value>列出已設定的 TwitCasting 通知訊息</value></data>
+  <data name="twitcasting.list-message.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+
+  <data name="twitcasting-spider.description" xml:space="preserve"><value>TwitCasting 頻道監測設定</value></data>
+  <data name="twitcasting-spider.add.description" xml:space="preserve"><value>新增 TwitCasting 頻道監測</value></data>
+  <data name="twitcasting-spider.add.channel.description" xml:space="preserve"><value>要加入監測的 TwitCasting 頻道</value></data>
+  <data name="twitcasting-spider.remove.description" xml:space="preserve"><value>移除 TwitCasting 頻道監測</value></data>
+  <data name="twitcasting-spider.remove.channel.description" xml:space="preserve"><value>要停止監測的 TwitCasting 頻道</value></data>
+  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>顯示未標記警告的 TwitCasting 監測頻道</value></data>
+  <data name="twitcasting-spider.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>顯示已標記警告的 TwitCasting 監測頻道；可能包含中之人或前世頻道</value></data>
+  <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+
+  <data name="member.description" xml:space="preserve"><value>YouTube 會員資格驗證</value></data>
+  <data name="member.check.description" xml:space="preserve"><value>確認網站綁定並開始會限驗證</value></data>
+  <data name="member.cancel-member-check.description" xml:space="preserve"><value>取消本伺服器的會限驗證並移除身分組</value></data>
+  <data name="member.unlink.description" xml:space="preserve"><value>解除 Discord 與 Google 綁定並移除授權</value></data>
+  <data name="member.list-can-check-channel.description" xml:space="preserve"><value>顯示目前可供驗證的會限頻道</value></data>
+  <data name="member.show-my-youtube-account.description" xml:space="preserve"><value>顯示目前綁定的 YouTube 帳號</value></data>
+
+  <data name="member-set.description" xml:space="preserve"><value>YouTube 會員限定驗證設定</value></data>
+  <data name="member-set.set-notice-member-status-channel.description" xml:space="preserve"><value>設定會限驗證紀錄頻道</value></data>
+  <data name="member-set.set-notice-member-status-channel.log-channel.description" xml:space="preserve"><value>接收驗證狀態紀錄的文字頻道</value></data>
+  <data name="member-set.add-member-check.description" xml:space="preserve"><value>新增會限驗證頻道，並設定驗證成功後授予的身分組</value></data>
+  <data name="member-set.add-member-check.channel-url.description" xml:space="preserve"><value>要驗證會員資格的 YouTube 頻道</value></data>
+  <data name="member-set.add-member-check.role.description" xml:space="preserve"><value>驗證成功後授予的身分組</value></data>
+  <data name="member-set.remove-member-check.description" xml:space="preserve"><value>移除會限驗證頻道</value></data>
+  <data name="member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>要移除驗證的 YouTube 頻道</value></data>
+  <data name="member-set.set-check-video.description" xml:space="preserve"><value>手動指定會限驗證使用的影片</value></data>
+  <data name="member-set.set-check-video.channel.description" xml:space="preserve"><value>已設定會限驗證的 YouTube 頻道</value></data>
+  <data name="member-set.set-check-video.video.description" xml:space="preserve"><value>會限影片網址或 11 碼影片 ID</value></data>
+  <data name="member-set.clear-check-video.description" xml:space="preserve"><value>改回自動挑選會限驗證影片</value></data>
+  <data name="member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>已設定會限驗證的 YouTube 頻道</value></data>
+  <data name="member-set.list-checked-member.description" xml:space="preserve"><value>顯示目前已成功驗證的成員</value></data>
+  <data name="member-set.list-checked-member.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+</root>

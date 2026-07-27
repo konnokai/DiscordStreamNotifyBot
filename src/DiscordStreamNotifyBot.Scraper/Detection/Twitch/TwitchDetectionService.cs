@@ -203,13 +203,19 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                         return;
                     }
 
-                    string message = $"`{DateTime.UtcNow.Subtract(twitchStream.StreamStartAt):hh':'mm':'ss}`";
+                    var update = new TwitchChannelUpdateInfo
+                    {
+                        ElapsedSeconds = Math.Max(0, (long)DateTime.UtcNow.Subtract(twitchStream.StreamStartAt).TotalSeconds),
+                    };
                     if (isChangeTitle)
-                        message += $"\n標題變更 `{twitchStream.StreamTitle}` => `{data.Title}`";
+                    {
+                        update.OldTitle = twitchStream.StreamTitle;
+                        update.NewTitle = data.Title;
+                    }
                     if (isChangeCategory)
                     {
-                        message += $"\n分類變更 `{(string.IsNullOrEmpty(twitchStream.GameName) ? "無" : twitchStream.GameName)}`" +
-                            $" => `{(string.IsNullOrEmpty(data.CategoryName) ? "無" : data.CategoryName)}`";
+                        update.OldCategory = twitchStream.GameName;
+                        update.NewCategory = data.CategoryName;
                     }
 
                     _debounceChannelUpdateMessage.AddOrUpdate(data.BroadcasterUserId,
@@ -217,12 +223,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                         {
                             var debounce = new DebounceChannelUpdateMessage(this, data.BroadcasterUserName,
                                 data.BroadcasterUserLogin, data.BroadcasterUserId);
-                            debounce.AddMessage(message);
+                            debounce.AddUpdate(update);
                             return debounce;
                         },
                         (_, debounce) =>
                         {
-                            debounce.AddMessage(message);
+                            debounce.AddUpdate(update);
                             return debounce;
                         });
 
@@ -849,6 +855,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             if (!shouldPublishEnd)
                 return;
 
+            var clipItems = new List<TwitchClipInfo>();
             string clipsValue = string.Empty;
             var video = await _apiService.GetLatestVODAsync(userId);
             if (video == null)
@@ -862,9 +869,17 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     createAt + _apiService.ParseToTimeSpan(video.Duration));
                 if (clips != null && clips.Any(x => x.VideoId == video.Id))
                 {
-                    int i = 0;
-                    clipsValue = string.Join('\n', clips.Where(x => x.VideoId == video.Id)
-                        .Select(x => $"{i++}. [{x.Title}]({x.Url}) By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)"));
+                    clipItems = clips.Where(x => x.VideoId == video.Id)
+                        .Select(x => new TwitchClipInfo
+                        {
+                            Title = x.Title,
+                            Url = x.Url,
+                            CreatorName = x.CreatorName,
+                            ViewCount = x.ViewCount,
+                        })
+                        .ToList();
+                    clipsValue = string.Join('\n', clipItems.Select((x, index) =>
+                        $"{index}. [{x.Title}]({x.Url}) By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)"));
                 }
             }
 
@@ -892,6 +907,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     StreamTitle = twitchStream?.StreamTitle,
                     StreamStartAt = twitchStream?.StreamStartAt,
                     StreamEndAt = endAtUtc,
+                    Clips = clipItems,
                     ClipsValue = clipsValue,
                 });
 
@@ -1184,16 +1200,19 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         /// <summary>
         /// 直播資料更新通知的發布入口。由 <see cref="DebounceChannelUpdateMessage"/> 彙整後送入通知匯流排。
         /// </summary>
-        internal async Task PublishChannelUpdateAsync(string userId, string userName, string userLogin, string description)
+        internal async Task PublishChannelUpdateAsync(string userId, string userName, string userLogin,
+            IReadOnlyCollection<TwitchChannelUpdateInfo> updates)
         {
             try
             {
+                string description = string.Join("\n\n", updates.Select(FormatLegacyChannelUpdate));
                 await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Twitch, new TwitchNotification
                 {
                     NoticeType = TwitchNoticeType.ChangeStreamData,
                     UserId = userId,
                     UserLogin = userLogin,
                     UserName = userName,
+                    Updates = updates.ToList(),
                     Description = description,
                 });
             }
@@ -1201,6 +1220,19 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             {
                 Log.Error(ex.Demystify(), $"發布 Twitch 頻道更新通知失敗: {userId}");
             }
+        }
+
+        private static string FormatLegacyChannelUpdate(TwitchChannelUpdateInfo update)
+        {
+            string message = $"`{TimeSpan.FromSeconds(update.ElapsedSeconds):hh':'mm':'ss}`";
+            if (update.NewTitle != null)
+                message += $"\n標題變更 `{update.OldTitle}` => `{update.NewTitle}`";
+            if (update.NewCategory != null)
+            {
+                message += $"\n分類變更 `{(string.IsNullOrEmpty(update.OldCategory) ? "無" : update.OldCategory)}`" +
+                    $" => `{(string.IsNullOrEmpty(update.NewCategory) ? "無" : update.NewCategory)}`";
+            }
+            return message;
         }
 
         private async Task<bool> RecordTwitchAsync(TwitchStream twitchStream)

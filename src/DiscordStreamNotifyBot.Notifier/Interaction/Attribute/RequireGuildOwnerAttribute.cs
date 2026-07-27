@@ -8,14 +8,17 @@ namespace DiscordStreamNotifyBot.Interaction.Attribute
         {
         }
 
-        public override string ErrorMessage { get; } = "非伺服器擁有者不可使用本指令";
+        public override string ErrorMessage { get; } = InteractionErrorCodes.GuildOwnerOnly;
 
         public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo, IServiceProvider services)
         {
             if (context.Interaction.User.Id == Bot.ApplicatonOwner.Id) return Task.FromResult(PreconditionResult.FromSuccess());
 
+            if (context.Guild == null)
+                return Task.FromResult(PreconditionResult.FromError(InteractionErrorCodes.GuildOnly));
+
             if (context.Interaction.User.Id == context.Guild.OwnerId) return Task.FromResult(PreconditionResult.FromSuccess());
-            else return Task.FromResult(PreconditionResult.FromError("非伺服器擁有者不可使用本指令"));
+            return Task.FromResult(PreconditionResult.FromError(InteractionErrorCodes.GuildOwnerOnly));
         }
     }
 }

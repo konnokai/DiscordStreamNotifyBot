@@ -1,6 +1,6 @@
 # 多語系支援計畫
 
-> 狀態：**尚未實作**。本文件定義繁體中文、英文與日文的支援範圍、語系解析規則、資料模型、執行順序與驗證方式。
+> 狀態：**第一階段程式實作完成，待手動 Discord 驗證**。本文件定義繁體中文、英文與日文的支援範圍、語系解析規則、資料模型、執行順序與驗證方式。
 >
 > 決策：第一階段涵蓋一般使用者會接觸的 Slash 指令、Help、互動回覆、通知 Embed 與 YouTube 會限驗證私人訊息；舊 `s!` 指令、owner/admin 工具與 Log 訊息維持繁體中文。
 
@@ -20,7 +20,7 @@
 ## 2. 目標
 
 1. 支援 `zh-TW`、`en-US`、`ja` 三種語系。
-2. 本地化 Slash group、command、parameter、choice 的名稱與描述。
+2. Slash group、command、parameter、choice 名稱固定使用英文 canonical，description 支援三語本地化。
 3. 本地化一般使用者會接觸的互動回覆、Help、Modal、按鈕、選單與錯誤訊息。
 4. 讓公開回覆與背景通知依 guild 設定的語系輸出。
 5. 讓 ephemeral、Modal 與只給執行者看的即時回覆依 `UserLocale` 輸出。
@@ -53,7 +53,7 @@
 | 私人即時回覆 | 優先使用 interaction `UserLocale` |
 | 首次設定 | 優先 `GuildLocale`，無可用 guild locale 時使用設定者 `UserLocale` |
 | 延遲會限 DM | `/member check` 時保存 user locale |
-| Slash command 名稱 | 名稱與描述都本地化 |
+| Slash command metadata | group、command、parameter、choice 名稱固定使用英文 canonical；description 本地化 |
 | 舊 `s!`／owner/admin | 第一階段維持繁體中文 |
 | Log | 維持繁體中文 |
 | 管理員自訂通知模板 | 保持原文 |
@@ -127,11 +127,10 @@ src/DiscordStreamNotifyBot.Notifier/Localization/Resources/InteractionCommands.e
 src/DiscordStreamNotifyBot.Notifier/Localization/Resources/InteractionCommands.ja.resx
 ```
 
-- 由 Discord.Net `ResxLocalizationManager` 提供 application-command localization。
-- 涵蓋 group、command、parameter、choice 的 name 與 description。
-- 現有 attribute 中的英文 command/group 名稱作為 canonical command path，不因 locale 改變內部識別。
-- 繁中、英文、日文的顯示名稱由 localization resource 提供。
-- 所有 localized name 必須符合 Discord 長度、字元與唯一性限制。
+- 由包裝 Discord.Net `ResxLocalizationManager` 的 description-only manager 提供 application-command localization。
+- 資源只涵蓋 group、command、parameter 的 description；不保存任何 name 或 choice key。
+- group、command、parameter、choice 名稱固定使用 attribute／enum 上的英文 canonical metadata，`name_localizations` 不提供任何 locale 值。
+- canonical group、command、parameter 名稱必須符合 Discord 長度、字元與 scope 唯一性限制；choice 名稱必須為英文 ASCII printable 且在參數內唯一。
 
 ### 6.2 執行期訊息資源
 
@@ -167,7 +166,7 @@ Member.CheckQueued
 1. 搬入 `BotMessages*.resx`。
 2. 改為 `HelpDescription.zh-TW.txt`、`HelpDescription.en-US.txt`、`HelpDescription.ja.txt`。
 
-Help 產生器不得繼續直接顯示未本地化的 `SlashCommandInfo.Name`／`Description`；必須從與 Discord 註冊相同的 command resource 取得指定 locale 的顯示內容。
+Help 產生器顯示 canonical 英文 `SlashCommandInfo.Name`，description 則從與 Discord 註冊相同的 command resource 取得指定 locale 的內容。
 
 ### 6.4 Localizer API
 
@@ -270,10 +269,10 @@ dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Sh
 - `RequireContext(ContextType.Guild)`。
 - `DefaultMemberPermissions(GuildPermission.Administrator)`。
 - `RequireUserPermission(GuildPermission.Administrator)`。
-- 提供繁體中文、English、日本語三個 choice。
+- 提供 `Traditional Chinese`、`English`、`Japanese` 三個英文 canonical choice，value 維持 `zh-TW`、`en-US`、`ja`。
 - 更新 `GuildConfig.Locale` 後使 cache 失效。
 - 成功回覆使用執行者 `UserLocale`，並顯示 guild 後續公開內容將使用的語系。
-- group、command、parameter 與 choice 名稱都必須提供三語 localization。
+- group、command、parameter 與 choice 名稱固定為英文 canonical，`name_localizations` 不提供任何 locale 值。
 
 ## 9. Slash Command Localization
 
@@ -282,17 +281,17 @@ dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Sh
 在 `Bot.cs` 建立 `InteractionService` 時設定：
 
 ```csharp
-LocalizationManager = new ResxLocalizationManager(...)
+LocalizationManager = new DescriptionOnlyLocalizationManager()
 ```
 
 支援 culture 明確限制為 `zh-TW`、`en-US`、`ja`。不得掃描或註冊不在支援清單內的 culture。
 
 ### 9.2 指令名稱
 
-- 現有英文 group/command path 保留為 canonical name，避免內部 routing、文件與既有操作失效。
-- Discord 用戶端依 locale 顯示對應的 localized name。
-- localized name 發生衝突、超長或不符合 Discord 規則時，該階段不得完成。
-- 硬編碼於回覆中的 `/utility ...`、`/help ...`、`/member-set ...` 等路徑必須改由 command display resolver 產生，避免顯示與使用者 locale 不一致。
+- group、command、parameter 與 choice 名稱固定為英文 canonical，避免內部 routing、文件與既有操作失效。
+- Discord payload 的 `name_localizations` 不提供任何 locale 值，用戶端在所有 locale 都顯示 canonical 英文名稱。
+- canonical group、command、parameter 名稱若發生 scope 衝突、超長或不符合 `^[a-z0-9_-]{1,32}$`，該階段不得完成；choice 必須為 1 到 100 個英文 ASCII printable 字元且在參數內唯一。
+- 硬編碼於回覆中的 `/utility ...`、`/help ...`、`/member-set ...` 等路徑仍由 command display resolver 產生，但無論 locale 都輸出 canonical 英文 path。
 
 ### 9.3 Command signature
 
@@ -300,10 +299,10 @@ LocalizationManager = new ResxLocalizationManager(...)
 
 修改後 signature 必須包含：
 
-- 三種 locale 的 group names/descriptions。
-- 三種 locale 的 command names/descriptions。
-- 三種 locale 的 parameter names/descriptions。
-- 三種 locale 的 choice names。
+- 固定 localization policy marker。
+- canonical group、command、parameter metadata。
+- 三種 locale 的 group、command、parameter descriptions。
+- canonical choice display name 與 value。
 
 資源列舉順序必須穩定，避免相同內容因 dictionary 順序不同而反覆註冊。Release 仍只允許 shard 0 註冊全球指令；Debug 仍依 shard 所持有的測試 guild 註冊。
 
@@ -426,74 +425,74 @@ Notifier 目前有多處把 `ex.Message`、`fex.Message` 或 `ErrorReason` 直�
 
 ### 階段 1：Localization 基礎與繁中資源化
 
-- [ ] 建立 `SupportedLocale`、`BotLocalizer`、`LocaleResolver`、`GuildLocaleService`。
-- [ ] 建立 command 與 runtime RESX 基礎檔。
-- [ ] 先將繁中內容搬入資源，不改現有輸出語言。
-- [ ] 加入缺少 key、格式參數不一致與無效 locale 的診斷。
+- [x] 建立 `SupportedLocale`、`BotLocalizer`、`LocaleResolver`、`GuildLocaleService`。
+- [x] 建立 command 與 runtime RESX 基礎檔。
+- [x] 先將繁中內容搬入資源，不改現有輸出語言。
+- [x] 加入缺少 key、格式參數不一致與無效 locale 的診斷。
 - [ ] 確認多個 interaction 並行時沒有使用全域 culture。
 
 完成定義：只使用 `zh-TW` 時，現有一般使用者行為與文字語意不變。
 
 ### 階段 2：資料庫與語系設定
 
-- [ ] 新增 `GuildConfig.Locale`。
-- [ ] 新增 `YoutubeMemberCheck.Locale`。
-- [ ] 產生 migration、更新 snapshot。
-- [ ] 新增 `/utility set-language`。
-- [ ] 實作 guild locale cache 與切換後失效。
-- [ ] `/member check` 建立與更新 row 時保存 `UserLocale`。
-- [ ] 產生並人工檢查冪等 migration SQL。
+- [x] 新增 `GuildConfig.Locale`。
+- [x] 新增 `YoutubeMemberCheck.Locale`。
+- [x] 產生 migration、更新 snapshot。
+- [x] 新增 `/utility set-language`。
+- [x] 實作 guild locale cache 與切換後失效。
+- [x] `/member check` 建立與更新 row 時保存 `UserLocale`。
+- [x] 產生並人工檢查冪等 migration SQL。
 
 完成定義：guild 可持久化切換語系，延遲會限 DM 有可用的 user locale。
 
 ### 階段 3：Slash command 註冊本地化
 
-- [ ] 設定 Discord.Net `ResxLocalizationManager`。
-- [ ] 完成三語 group、command、parameter、choice name/description。
-- [ ] 將 localization resource 納入 `CommandSignature`。
-- [ ] 檢查三語名稱長度、合法字元與衝突。
+- [x] 設定 Discord.Net `ResxLocalizationManager`。
+- [x] 完成英文 canonical group、command、parameter、choice name 與三語 description。
+- [x] 將 localization resource 納入 `CommandSignature`。
+- [x] 檢查 canonical 名稱長度、合法字元與 scope 衝突，並確認 `name_localizations` 不含 locale 值。
 - [ ] Debug 測試 guild 完成三語註冊驗證。
 
-完成定義：Discord 用戶端依 locale 顯示正確名稱與描述，翻譯變更會觸發重註冊。
+完成定義：Discord 用戶端在所有 locale 顯示 canonical 英文名稱，description 依 locale 顯示，資源或 policy 變更會觸發重註冊。
 
 ### 階段 4：共用互動、Help 與首次設定
 
-- [ ] 本地化 `InteractionHandler`、precondition 與共用回覆 API。
-- [ ] 本地化分頁、確認按鈕、Modal 與 select menu 共用文字。
-- [ ] Help 改讀 localized command metadata。
-- [ ] 重構首次設定 helper 並納入 TwitCasting。
-- [ ] 首次設定保存 locale 並提示切換方式。
-- [ ] 移除 Help 與 onboarding 中硬編碼的 command display path。
+- [x] 本地化 `InteractionHandler`、precondition 與共用回覆 API。
+- [x] 本地化分頁、確認按鈕、Modal 與 select menu 共用文字。
+- [x] Help 改讀 localized command metadata。
+- [x] 重構首次設定 helper 並納入 TwitCasting。
+- [x] 首次設定保存 locale 並提示切換方式。
+- [x] 移除 Help 與 onboarding 中硬編碼的 command display path。
 
 完成定義：Help、共用錯誤與首次設定流程可正確區分 public guild locale 與 private user locale。
 
 ### 階段 5：一般 Interaction 模組
 
-- [ ] 遷移 Utility。
-- [ ] 遷移 YouTube 與 YouTube spider。
-- [ ] 遷移 Twitch 與 Twitch spider。
-- [ ] 遷移 TwitCasting 與 TwitCasting spider。
-- [ ] 遷移 YouTube Member 與 member settings。
-- [ ] 清理第一階段範圍內直接顯示 exception message 的路徑。
+- [x] 遷移 Utility。
+- [x] 遷移 YouTube 與 YouTube spider。
+- [x] 遷移 Twitch 與 Twitch spider。
+- [x] 遷移 TwitCasting 與 TwitCasting spider。
+- [x] 遷移 YouTube Member 與 member settings。
+- [x] 清理第一階段範圍內直接顯示 exception message 的路徑。
 
-完成定義：一般使用者 Slash 指令的 metadata、回覆、component 與錯誤都有三語資源。
+完成定義：一般使用者 Slash 指令的 description、回覆、component 與錯誤都有三語資源，名稱維持英文 canonical。
 
 ### 階段 6：背景通知與會限 DM
 
-- [ ] YouTube 通知改為按 guild locale 建立／快取 Embed 與 component。
-- [ ] Twitch 通知改為按 guild locale 建立／快取 Embed 與 component。
-- [ ] TwitCasting 通知改為按 guild locale 建立／快取 Embed 與 component。
-- [ ] 會限紀錄頻道與 owner 訊息使用 guild locale。
-- [ ] 延遲會限 user DM 使用保存的 `YoutubeMemberCheck.Locale`。
-- [ ] 確認管理員自訂通知文字完全不變。
+- [x] YouTube 通知改為按 guild locale 建立／快取 Embed 與 component。
+- [x] Twitch 通知改為按 guild locale 建立／快取 Embed 與 component。
+- [x] TwitCasting 通知改為按 guild locale 建立／快取 Embed 與 component。
+- [x] 會限紀錄頻道與 owner 訊息使用 guild locale。
+- [x] 延遲會限 user DM 使用保存的 `YoutubeMemberCheck.Locale`。
+- [x] 確認管理員自訂通知文字完全不變。
 
 完成定義：同一通知事件可以在不同 guild 同時輸出不同語言，不增加每 guild DB query 或重複下載封面。
 
 ### 階段 7：文件、部署與收尾
 
-- [ ] 更新 `AGENTS.md` 語言規範與目前狀態。
-- [ ] 更新 repo 內 Help 資源與操作說明。
-- [ ] 更新本計畫 checkbox 與實際程式碼狀態。
+- [x] 更新 `AGENTS.md` 語言規範與目前狀態。
+- [x] 更新 repo 內 Help 資源與操作說明。
+- [x] 更新本計畫 checkbox 與實際程式碼狀態。
 - [ ] 執行完整驗證矩陣。
 - [ ] 手動執行 `graphify update .`，並依 repo 規則將 `graphify-out/` 納入同一 commit。
 - [ ] 以測試 guild 先驗證，再逐 shard 部署 Notifier。
@@ -504,22 +503,22 @@ Notifier 目前有多處把 `ex.Message`、`fex.Message` 或 `ErrorReason` 直�
 
 ### 13.1 編譯與靜態檢查
 
-- [ ] `dotnet build DiscordStreamNotifyBot.sln -c Release`：0 error。
-- [ ] `git diff --check`：通過。
-- [ ] migration 只新增 `guild_config.locale` 與 `youtube_member_check.locale`。
-- [ ] 三語 resource key 集合一致。
-- [ ] 所有格式化 placeholder 在三語中一致。
-- [ ] 第一階段範圍已無直接向使用者顯示未知 `ex.Message`／`ErrorReason`。
-- [ ] 搜尋確認沒有按 interaction 設定全域 `CurrentCulture`／`CurrentUICulture`。
+- [x] `dotnet build DiscordStreamNotifyBot.sln -c Release`：0 error。
+- [x] `git diff --check`：通過。
+- [x] migration 只新增 `guild_config.locale` 與 `youtube_member_check.locale`。
+- [x] 三語 resource key 集合一致。
+- [x] 所有格式化 placeholder 在三語中一致。
+- [x] 第一階段範圍已無直接向使用者顯示未知 `ex.Message`／`ErrorReason`。
+- [x] 搜尋確認沒有按 interaction 設定全域 `CurrentCulture`／`CurrentUICulture`。
 
 ### 13.2 Slash command 註冊
 
-- [ ] `zh-TW` 顯示繁中 group、command、parameter、choice。
-- [ ] `en-US` 顯示英文 group、command、parameter、choice。
-- [ ] `ja` 顯示日文 group、command、parameter、choice。
-- [ ] localized command name 沒有衝突或超過 Discord 限制。
-- [ ] 單獨修改翻譯資源會改變 command signature。
-- [ ] Release 只有 shard 0 註冊全球指令。
+- [ ] `zh-TW` 顯示英文 canonical group、command、parameter、choice 與繁中 description。
+- [ ] `en-US` 顯示英文 canonical group、command、parameter、choice 與英文 description。
+- [ ] `ja` 顯示英文 canonical group、command、parameter、choice 與日文 description。
+- [x] `name_localizations` 不含 locale 值，canonical name 沒有 scope 衝突或超過 Discord 限制。
+- [x] 單獨修改翻譯資源會改變 command signature。
+- [x] Release 只有 shard 0 註冊全球指令。
 - [ ] Debug 各 shard 只註冊自己持有的測試 guild。
 
 ### 13.3 Locale resolver
@@ -548,8 +547,8 @@ Notifier 目前有多處把 `ex.Message`、`fex.Message` 或 `ErrorReason` 直�
 - [ ] 同一 TwitCasting 事件可對三個 guild 分別發送繁中、英文、日文 Embed。
 - [ ] 按鈕文字與 Embed locale 一致。
 - [ ] 管理員自訂 message 保持原文。
-- [ ] YouTube 封面不因三種語系下載三次。
-- [ ] 不增加每 guild 一次的 locale DB query。
+- [x] YouTube 封面不因三種語系下載三次。
+- [x] 不增加每 guild 一次的 locale DB query。
 - [ ] News channel crosspost 行為不變。
 
 ### 13.6 YouTube 會限驗證
@@ -591,7 +590,7 @@ Notifier 目前有多處把 `ex.Message`、`fex.Message` 或 `ErrorReason` 直�
 
 ### 14.3 回滾
 
-應用程式可回退至 localization 前 image/commit；新增 nullable 欄位可以暫時保留，不需在緊急回滾時 drop column。Discord 全球指令若已註冊 localized metadata，回滾版本下一次偵測 command signature 後應可重新註冊原規格。
+應用程式可回退至 localization 前 image/commit；新增 nullable 欄位可以暫時保留，不需在緊急回滾時 drop column。Discord 全球指令若已註冊 description-only metadata，回滾版本下一次偵測 command signature 後應可重新註冊原規格。
 
 ## 15. 預期修改檔案
 
@@ -624,7 +623,7 @@ Notifier 目前有多處把 `ex.Message`、`fex.Message` 或 `ErrorReason` 直�
 本計畫第一階段完成必須同時符合：
 
 - [ ] `zh-TW`、`en-US`、`ja` 三種 locale 均可正常使用。
-- [ ] 一般使用者 Slash command 的名稱、描述、參數與 choice 已本地化。
+- [ ] 一般使用者 Slash command 的 group、command、parameter、choice 名稱固定為英文 canonical，description 已支援三語。
 - [ ] 一般互動、Help、Modal、按鈕、選單與錯誤已本地化。
 - [ ] Public 與 background content 使用 guild locale。
 - [ ] Ephemeral 與 private interaction content 使用 user locale。

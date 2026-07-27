@@ -1,6 +1,7 @@
 using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 using Clip = TwitchLib.Api.Helix.Models.Clips.GetClips.Clip;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
 using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
@@ -22,11 +23,11 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
     {
         public enum NoticeType
         {
-            [ChoiceDisplay("開始直播")]
+            [ChoiceDisplay("Stream started")]
             StartStream,
-            [ChoiceDisplay("結束直播")]
+            [ChoiceDisplay("Stream ended")]
             EndStream,
-            [ChoiceDisplay("更改直播資料")]
+            [ChoiceDisplay("Stream details changed")]
             ChangeStreamData
         }
 
@@ -38,22 +39,22 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
-        private readonly MessageComponent _messageComponent;
         private readonly NoticeCache<DataBase.Table.NoticeTwitchStreamChannel> _noticeCache;
+        private readonly BotLocalizer _localizer;
+        private readonly GuildLocaleService _guildLocaleService;
 
-        public TwitchService(DiscordSocketClient client, TwitchApiService apiService, BotConfig botConfig, EmojiService emojiService, MainDbService dbService)
+        public TwitchService(DiscordSocketClient client, TwitchApiService apiService, BotConfig botConfig,
+            EmojiService emojiService, MainDbService dbService, BotLocalizer localizer,
+            GuildLocaleService guildLocaleService)
         {
             _client = client;
             _apiService = apiService;
             _emojiService = emojiService;
             _dbService = dbService;
             _botConfig = botConfig;
+            _localizer = localizer;
+            _guildLocaleService = guildLocaleService;
             _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitchStreamChannel>(dbService, db => db.NoticeTwitchStreamChannels.AsNoTracking().ToList());
-
-            _messageComponent = new ComponentBuilder()
-                .WithButton("好手氣，隨機帶你到一個影片或直播", style: ButtonStyle.Link, emote: emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                .WithButton("贊助小幫手 (綠界) #ad", style: ButtonStyle.Link, emote: emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                .WithButton("贊助小幫手 (Paypal) #ad", style: ButtonStyle.Link, emote: emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1).Build();
         }
 
         #region 指令支援（委派 Shared TwitchApiService）
@@ -79,6 +80,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             => _apiService.CreateEventSubSubscriptionAsync(broadcasterUserId);
 
         public Task<bool> DeleteEventSubSubscriptionAsync(string userId) => _apiService.DeleteEventSubSubscriptionAsync(userId);
+
+        public void InvalidateNoticeCache() => _noticeCache.Invalidate();
         #endregion
 
         /// <summary>
@@ -91,11 +94,36 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             using (var db = _dbService.GetDbContext())
                 twitchSpider = db.TwitchSpider.AsNoTracking().FirstOrDefault((x) => x.UserId == dto.UserId);
 
-            Embed embed;
             NoticeType noticeType;
             switch (dto.NoticeType)
             {
                 case Shared.Messages.TwitchNoticeType.StartStream:
+                    noticeType = NoticeType.StartStream;
+                    break;
+
+                case Shared.Messages.TwitchNoticeType.EndStream:
+                    noticeType = NoticeType.EndStream;
+                    break;
+
+                case Shared.Messages.TwitchNoticeType.ChangeStreamData:
+                    noticeType = NoticeType.ChangeStreamData;
+                    break;
+
+                default:
+                    return;
+            }
+
+            long thumbnailCacheBuster = DateTime.UtcNow.ToFileTimeUtc();
+            await SendStreamMessageAsync(dto, twitchSpider, noticeType, thumbnailCacheBuster).ConfigureAwait(false);
+        }
+
+        private TwitchNotificationVariant BuildVariant(Shared.Messages.TwitchNotification dto,
+            DataBase.Table.TwitchSpider twitchSpider, NoticeType noticeType, long thumbnailCacheBuster, string locale)
+        {
+            Embed embed;
+            switch (noticeType)
+            {
+                case NoticeType.StartStream:
                     var twitchStream = new DataBase.Table.TwitchStream
                     {
                         UserId = dto.UserId,
@@ -104,45 +132,62 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         StreamTitle = dto.StreamTitle,
                         GameName = dto.GameName,
                         ThumbnailUrl = dto.ThumbnailUrl,
-                        StreamStartAt = dto.StreamStartAt ?? DateTime.Now,
+                        StreamStartAt = dto.StreamStartAt ?? DateTime.UtcNow,
                     };
-                    embed = TwitchEmbedBuilderFactory.CreateStreamStarted(twitchStream, twitchSpider?.ProfileImageUrl, dto.IsRecord).Build();
-                    noticeType = NoticeType.StartStream;
+                    embed = TwitchEmbedBuilderFactory.CreateStreamStarted(twitchStream,
+                        twitchSpider?.ProfileImageUrl, dto.IsRecord, thumbnailCacheBuster,
+                        _localizer, locale).Build();
                     break;
-
-                case Shared.Messages.TwitchNoticeType.EndStream:
-                    embed = TwitchEmbedBuilderFactory.CreateStreamEnded(
-                        dto.UserName, dto.UserLogin,
-                        dto.StreamTitle, dto.StreamStartAt, dto.StreamEndAt ?? DateTime.Now,
-                        dto.ClipsValue, twitchSpider?.ProfileImageUrl, twitchSpider?.OfflineImageUrl).Build();
-                    noticeType = NoticeType.EndStream;
+                case NoticeType.EndStream:
+                    embed = TwitchEmbedBuilderFactory.CreateStreamEnded(dto.UserName, dto.UserLogin,
+                        dto.StreamTitle, dto.StreamStartAt, dto.StreamEndAt ?? DateTime.UtcNow,
+                        dto.Clips, dto.ClipsValue, twitchSpider?.ProfileImageUrl,
+                        twitchSpider?.OfflineImageUrl, _localizer, locale).Build();
                     break;
-
-                case Shared.Messages.TwitchNoticeType.ChangeStreamData:
-                    embed = TwitchEmbedBuilderFactory.CreateChannelUpdate(dto.UserName, dto.UserLogin, dto.Description, twitchSpider?.ProfileImageUrl).Build();
-                    noticeType = NoticeType.ChangeStreamData;
+                case NoticeType.ChangeStreamData:
+                    embed = TwitchEmbedBuilderFactory.CreateChannelUpdate(dto.UserName, dto.UserLogin,
+                        dto.Updates, dto.Description, twitchSpider?.ProfileImageUrl, _localizer, locale).Build();
                     break;
-
                 default:
-                    return;
+                    throw new ArgumentOutOfRangeException(nameof(noticeType));
             }
 
-            await SendStreamMessageAsync(dto.UserId, embed, noticeType).ConfigureAwait(false);
+            MessageComponent component = noticeType == NoticeType.StartStream
+                ? new ComponentBuilder()
+                    .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
+                        emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
+                    .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
+                        emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
+                    .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
+                        emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1)
+                    .Build()
+                : null;
+            return new TwitchNotificationVariant(embed, component);
         }
 
-        internal async Task SendStreamMessageAsync(string twitchUserId, Embed embed, NoticeType noticeType)
+        internal async Task SendStreamMessageAsync(Shared.Messages.TwitchNotification dto,
+            DataBase.Table.TwitchSpider twitchSpider, NoticeType noticeType, long thumbnailCacheBuster)
         {
             if (!Bot.IsConnect)
                 return;
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            Log.New($"Twitch 通知: {twitchUserId} - {embed.Title} ({noticeType})");
+            Log.New($"Twitch 通知: {dto.UserId} - {dto.StreamTitle} ({noticeType})");
 #else
             using (var db = _dbService.GetDbContext())
             {
                 // 通知設定改讀記憶體快取（§12.3）
-                var noticeGuildList = _noticeCache.Get().Where((x) => x.NoticeTwitchUserId == twitchUserId).ToList();
-                Log.New($"發送 Twitch 通知 ({noticeGuildList.Count} / {noticeType}): ({twitchUserId}) - {embed.Title}");
+                var noticeGuildList = _noticeCache.Get().Where((x) => x.NoticeTwitchUserId == dto.UserId).ToList();
+                Log.New($"發送 Twitch 通知 ({noticeGuildList.Count} / {noticeType}): ({dto.UserId}) - {dto.StreamTitle}");
+                var variants = new Dictionary<string, Lazy<TwitchNotificationVariant>>(StringComparer.Ordinal);
+                var guildsById = noticeGuildList
+                    .Select(item => item.GuildId)
+                    .Distinct()
+                    .Select(guildId => _client.GetGuild(guildId))
+                    .Where(guild => guild != null)
+                    .GroupBy(guild => guild.Id)
+                    .ToDictionary(group => group.Key, group => group.First());
+                Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
                 foreach (var item in noticeGuildList)
                 {
@@ -164,19 +209,28 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
                         if (sendMessage == "-") continue;
 
-                        var guild = _client.GetGuild(item.GuildId);
-                        if (guild == null)
+                        if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
                         {
                             // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
                             if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
                                 continue;
 
-                            Log.Warn($"Twitch 通知 ({twitchUserId}) | 找不到伺服器 {item.GuildId}");
+                            Log.Warn($"Twitch 通知 ({dto.UserId}) | 找不到伺服器 {item.GuildId}");
                             db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
                             _noticeCache.Invalidate();
                             continue;
                         }
+
+                        string locale = localesByGuildId[guild.Id];
+                        if (!variants.TryGetValue(locale, out var variantValue))
+                        {
+                            variantValue = new Lazy<TwitchNotificationVariant>(
+                                () => BuildVariant(dto, twitchSpider, noticeType, thumbnailCacheBuster, locale),
+                                LazyThreadSafetyMode.ExecutionAndPublication);
+                            variants.Add(locale, variantValue);
+                        }
+                        TwitchNotificationVariant variant = variantValue.Value;
 
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
                         if (channel == null) continue;
@@ -186,12 +240,14 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             .WaitAndRetryAsync(3, (retryAttempt) =>
                             {
                                 var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                Log.Warn($"Twitch 通知 ({twitchUserId}) | {item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                Log.Warn($"Twitch 通知 ({dto.UserId}) | {item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
                             })
                             .ExecuteAsync(async () =>
                             {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: embed, components: noticeType == NoticeType.StartStream ? _messageComponent : null, options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                var message = await channel.SendMessageAsync(text: sendMessage, embed: variant.Embed,
+                                    components: variant.Component,
+                                    options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
 
                                 try
                                 {
@@ -206,36 +262,38 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
-                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"Twitch 通知 ({twitchUserId})"))
+                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"Twitch 通知 ({dto.UserId})"))
                             throw;
 
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
-                            Log.Warn($"Twitch 通知 ({twitchUserId}) | 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
+                            Log.Warn($"Twitch 通知 ({dto.UserId}) | 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
                             db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
                             _noticeCache.Invalidate();
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
-                            Log.Warn($"Twitch 通知 ({twitchUserId}) | Discord 50X 錯誤: {httpEx.HttpCode}");
+                            Log.Warn($"Twitch 通知 ({dto.UserId}) | Discord 50X 錯誤: {httpEx.HttpCode}");
                         }
                         else
                         {
-                            Log.Error(httpEx, $"Twitch 通知 ({twitchUserId}) | Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                            Log.Error(httpEx, $"Twitch 通知 ({dto.UserId}) | Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                         }
                     }
                     catch (TimeoutException)
                     {
-                        Log.Warn($"Twitch 通知 ({twitchUserId}) | Timeout {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Warn($"Twitch 通知 ({dto.UserId}) | Timeout {item.GuildId} / {item.DiscordChannelId}");
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex.Demystify(), $"Twitch 通知 ({twitchUserId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Error(ex.Demystify(), $"Twitch 通知 ({dto.UserId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                     }
                 }
             }
 #endif
         }
+
+        private sealed record TwitchNotificationVariant(Embed Embed, MessageComponent Component);
     }
 }

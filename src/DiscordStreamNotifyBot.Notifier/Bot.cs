@@ -5,6 +5,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
@@ -258,9 +259,14 @@ namespace DiscordStreamNotifyBot
 #endif
 
             #region 初始化指令系統
+            var commandLocalizationManager = new DescriptionOnlyLocalizationManager();
             var services = new ServiceCollection()
                 .AddHttpClient()
                 .AddSingleton(DbService)
+                .AddSingleton<BotLocalizer>()
+                .AddSingleton<CommandDisplayResolver>()
+                .AddSingleton<LocaleResolver>()
+                .AddSingleton<GuildLocaleService>()
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton<SharedService.EmojiService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
@@ -275,7 +281,8 @@ namespace DiscordStreamNotifyBot
                     UseCompiledLambda = true,
                     EnableAutocompleteHandlers = true,
                     DefaultRunMode = Discord.Interactions.RunMode.Async,
-                    ExitOnMissingModalField = true
+                    ExitOnMissingModalField = true,
+                    LocalizationManager = commandLocalizationManager
                 }))
                 .AddSingleton(new CommandService(new CommandServiceConfig()
                 {
@@ -321,23 +328,33 @@ namespace DiscordStreamNotifyBot
             {
                 InteractionService interactionService = serviceProvider.GetService<InteractionService>();
                 // 以「指令規格雜湊」判斷是否需重註冊：只要 Slash 指令的名稱/參數/型別等規格有變動，雜湊即改變（取代僅比對指令總數）
-                string localCommandSignature = serviceProvider.GetService<InteractionHandler>().CommandSignature;
+                InteractionHandler interactionHandler = serviceProvider.GetService<InteractionHandler>();
+#if DEBUG
+                string debugGuildSignature = string.Join(",", _botConfig.TestSlashCommandGuildIds.OrderBy(id => id));
+                string localCommandSignature = $"{interactionHandler.DebugCommandSignature}:{_totalShardCount}:{debugGuildSignature}";
+#else
+                string localCommandSignature = interactionHandler.CommandSignature;
+#endif
 #if DEBUG
                 // 雜湊鍵帶 shardId：多 shard 併跑時若共用同一鍵，先啟動的 shard 會把雜湊設成最新，其餘 shard 讀到相同值而整個略過註冊，
                 // 導致自己持有的測試伺服器沒有指令（正是 shard 1 沒指令的原因）。每個 shard 各自維護雜湊才能各自註冊自己持有的伺服器。
-                var commandSignature = (await RedisDb.StringGetSetAsync($"discord_stream_bot:command_signature:{_shardId}", localCommandSignature)).ToString();
+                string commandSignatureKey = $"discord_stream_bot:command_signature:{_shardId}";
+                var commandSignature = (await RedisDb.StringGetAsync(commandSignatureKey)).ToString();
                 if (commandSignature != localCommandSignature)
                 {
                     if (_botConfig.TestSlashCommandGuildIds.Length == 0)
                         Log.Warn("未設定測試 Slash 指令的伺服器，略過");
                     else
                     {
+                        bool registrationSucceeded = true;
+                        bool registeredAnyGuild = false;
                         foreach (var guildId in _botConfig.TestSlashCommandGuildIds)
                         {
                             // 只註冊本 shard 持有的伺服器；其餘交由持有它的 shard 註冊（非錯誤，不記警告避免各 shard 洗版）
                             if (client.GetGuild(guildId) == null)
                                 continue;
 
+                            registeredAnyGuild = true;
                             try
                             {
                                 var result = await interactionService.RegisterCommandsToGuildAsync(guildId);
@@ -348,21 +365,27 @@ namespace DiscordStreamNotifyBot
                             }
                             catch (Exception ex)
                             {
+                                registrationSucceeded = false;
                                 Log.Error(ex, $"註冊伺服器專用 Slash 指令失敗 ({guildId})");
                             }
                         }
+
+                        if (registrationSucceeded && registeredAnyGuild)
+                            await RedisDb.StringSetAsync(commandSignatureKey, localCommandSignature);
                     }
                 }
 #elif RELEASE
-                // 全球指令對所有伺服器生效、與 shard 無關，且註冊有速率限制、生效慢：只由 shard 0 註冊，且僅在指令數量變更時才重註冊
+                // 全球指令對所有伺服器生效、與 shard 無關，且註冊有速率限制、生效慢：只由 shard 0 在指令規格變更時重註冊
                 if (_shardId == 0)
                 {
                     try
                     {
-                        var commandSignature = (await RedisDb.StringGetSetAsync("discord_stream_bot:command_signature", localCommandSignature)).ToString();
+                        const string commandSignatureKey = "discord_stream_bot:command_signature";
+                        var commandSignature = (await RedisDb.StringGetAsync(commandSignatureKey)).ToString();
                         if (commandSignature != localCommandSignature)
                         {
                             await interactionService.RegisterCommandsGloballyAsync();
+                            await RedisDb.StringSetAsync(commandSignatureKey, localCommandSignature);
                             Log.Info("已註冊全球指令");
                         }
                     }

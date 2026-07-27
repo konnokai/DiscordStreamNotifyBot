@@ -1,6 +1,7 @@
 ﻿using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
 using System.Management;
@@ -151,59 +152,62 @@ namespace DiscordStreamNotifyBot.Interaction
 
         public static Task SendConfirmAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = false)
         {
-            if (isFollowerup)
+            if (isFollowerup || di.HasResponded)
             {
                 return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
             }
-            else
-            {
-                try
-                {
-                    return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
-                }
-                catch (Exception ex) when (ex.Message.ToLower().Contains("cannot respond twice to the same interaction"))
-                {
-                    return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
-                }
-            }
+
+            return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build(), ephemeral: ephemeral);
+        }
+
+        public static async Task<string> ResolveLocaleAsync(this IDiscordInteraction interaction,
+            IServiceProvider services, bool isPrivate)
+        {
+            var guildLocaleService = services.GetRequiredService<GuildLocaleService>();
+            var localeResolver = services.GetRequiredService<LocaleResolver>();
+            var client = services.GetRequiredService<DiscordSocketClient>();
+            string guildLocale = null;
+            if (interaction.GuildId is ulong guildId)
+                guildLocale = await guildLocaleService.GetAsync(guildId, client.GetGuild(guildId));
+
+            return isPrivate
+                ? localeResolver.ResolvePrivate(interaction.UserLocale, guildLocale, interaction.GuildLocale)
+                : localeResolver.ResolvePublic(guildLocale, interaction.GuildLocale);
         }
 
         public static Task SendConfirmAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = false)
         {
-            if (isFollowerup)
+            if (isFollowerup || di.HasResponded)
                 return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
             else
                 return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
         }
 
+        public static Task SendConfirmAsync(this IDiscordInteraction di, BotLocalizer localizer, string locale,
+            string resourceKey, bool isFollowerup = false, bool ephemeral = false, params object[] arguments)
+            => di.SendConfirmAsync(localizer.Format(resourceKey, locale, arguments), isFollowerup, ephemeral);
+
         public static Task SendErrorAsync(this IDiscordInteraction di, string des, bool isFollowerup = false, bool ephemeral = true)
         {
-            Log.Warn($"回傳錯誤給 [{di.User.Username}]: {des}");
-
-            if (isFollowerup)
+            if (isFollowerup || di.HasResponded)
             {
                 return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
             }
-            else
-            {
-                try
-                {
-                    return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
-                }
-                catch (Exception ex) when (ex.Message.ToLower().Contains("cannot respond twice to the same interaction"))
-                {
-                    return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
-                }
-            }
+
+            return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
         }
 
         public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = true)
         {
-            if (isFollowerup)
+            if (isFollowerup || di.HasResponded)
                 return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
             else
                 return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
         }
+
+        public static Task SendErrorAsync(this IDiscordInteraction di, BotLocalizer localizer, string locale,
+            string resourceKey, bool isFollowerup = false, bool ephemeral = true, params object[] arguments)
+            => di.SendErrorAsync(localizer.Format(resourceKey, locale, arguments), isFollowerup, ephemeral);
 
         public static IMessage DeleteAfter(this IUserMessage msg, int seconds)
         {
@@ -275,6 +279,91 @@ namespace DiscordStreamNotifyBot.Interaction
 
         public static Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false, bool isFollowup = false)
             => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter, ephemeral, isFollowup);
+
+        public static Task SendPaginatedConfirmAsync(this IInteractionContext ctx, BotLocalizer localizer, string locale,
+            int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage,
+            bool addPaginatedFooter = true, bool ephemeral = false, bool isFollowup = false)
+            => ctx.SendPaginatedConfirmAsync(localizer, locale, currentPage, x => Task.FromResult(pageFunc(x)),
+                totalElements, itemsPerPage, addPaginatedFooter, ephemeral, isFollowup);
+
+        public static async Task SendPaginatedConfirmAsync(this IInteractionContext ctx, BotLocalizer localizer, string locale,
+            int currentPage, Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage,
+            bool addPaginatedFooter = true, bool ephemeral = false, bool isFollowup = false)
+        {
+            var embed = await pageFunc(currentPage).ConfigureAwait(false);
+            var lastPage = Math.Max(0, (totalElements - 1) / itemsPerPage);
+
+            if (addPaginatedFooter)
+                embed.AddPaginatedFooter(localizer, locale, currentPage, lastPage);
+
+            string content = ephemeral ? localizer.Get("Pagination.EphemeralUnavailable", locale) : null;
+            if (isFollowup || ctx.Interaction.HasResponded)
+                await ctx.Interaction.FollowupAsync(content, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
+            else
+                await ctx.Interaction.RespondAsync(content, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
+
+            if (ephemeral || lastPage == 0)
+                return;
+
+            var msg = await ctx.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
+            try
+            {
+                await msg.AddReactionAsync(arrow_left).ConfigureAwait(false);
+                await msg.AddReactionAsync(arrow_right).ConfigureAwait(false);
+            }
+            catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
+            {
+                await ctx.Interaction.ModifyOriginalResponseAsync(action => action.Content = localizer.Get("Pagination.Unavailable", locale));
+                return;
+            }
+
+            await Task.Delay(2000).ConfigureAwait(false);
+            var lastPageChange = DateTime.MinValue;
+
+            async Task ChangePage(SocketReaction reaction)
+            {
+                try
+                {
+                    if (reaction.UserId != ctx.User.Id || DateTime.UtcNow - lastPageChange < TimeSpan.FromSeconds(1))
+                        return;
+
+                    if (reaction.Emote.Name == arrow_left.Name && currentPage > 0)
+                    {
+                        lastPageChange = DateTime.UtcNow;
+                        var toSend = await pageFunc(--currentPage).ConfigureAwait(false);
+                        if (addPaginatedFooter)
+                            toSend.AddPaginatedFooter(localizer, locale, currentPage, lastPage);
+                        await msg.ModifyAsync(x => x.Embed = toSend.Build()).ConfigureAwait(false);
+                    }
+                    else if (reaction.Emote.Name == arrow_right.Name && currentPage < lastPage)
+                    {
+                        lastPageChange = DateTime.UtcNow;
+                        var toSend = await pageFunc(++currentPage).ConfigureAwait(false);
+                        if (addPaginatedFooter)
+                            toSend.AddPaginatedFooter(localizer, locale, currentPage, lastPage);
+                        await msg.ModifyAsync(x => x.Embed = toSend.Build()).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn($"分頁切換已取消: {ex.GetType().Name}");
+                }
+            }
+
+            using (msg.OnReaction((DiscordSocketClient)ctx.Client, ChangePage, ChangePage))
+                await Task.Delay(30000).ConfigureAwait(false);
+
+            try
+            {
+                if (msg.Channel is ITextChannel && ctx.Guild is SocketGuild guild && guild.CurrentUser.GuildPermissions.ManageMessages)
+                    await msg.RemoveAllReactionsAsync().ConfigureAwait(false);
+                else
+                    await Task.WhenAll(msg.Reactions.Where(x => x.Value.IsMe).Select(x => msg.RemoveReactionAsync(x.Key, ctx.Client.CurrentUser)));
+            }
+            catch
+            {
+            }
+        }
 
         public static async Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage,
     Func<int, Task<EmbedBuilder>> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false, bool isFollowup = false)
@@ -378,6 +467,14 @@ namespace DiscordStreamNotifyBot.Interaction
                 return embed.WithFooter(efb => efb.WithText($"{curPage + 1} / {lastPage + 1}"));
             else
                 return embed.WithFooter(efb => efb.WithText(curPage.ToString()));
+        }
+
+        public static EmbedBuilder AddPaginatedFooter(this EmbedBuilder embed, BotLocalizer localizer, string locale, int curPage, int? lastPage)
+        {
+            string footer = lastPage != null
+                ? localizer.Format("Pagination.Footer", locale, curPage + 1, lastPage + 1)
+                : (curPage + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return embed.WithFooter(footer);
         }
 
         public static ReactionEventWrapper OnReaction(this IUserMessage msg, DiscordSocketClient client, Func<SocketReaction, Task> reactionAdded, Func<SocketReaction, Task> reactionRemoved = null)

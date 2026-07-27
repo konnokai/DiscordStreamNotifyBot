@@ -1,28 +1,63 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Localization;
 
 namespace DiscordStreamNotifyBot.Interaction
 {
     public abstract class TopLevelModule : InteractionModuleBase<SocketInteractionContext>
     {
-        public async Task<bool> PromptUserConfirmAsync(string context)
+        public BotLocalizer BotLocalizer { get; set; }
+        public CommandDisplayResolver CommandDisplayResolver { get; set; }
+        public GuildLocaleService GuildLocaleService { get; set; }
+        public LocaleResolver LocaleResolver { get; set; }
+
+        protected async Task<string> GetLocaleAsync(bool isPrivate)
+        {
+            string guildLocale = null;
+            if (Context.Guild != null)
+                guildLocale = await GuildLocaleService.GetAsync(Context.Guild.Id, Context.Guild as SocketGuild);
+
+            return isPrivate || Context.Guild == null
+                ? LocaleResolver.ResolvePrivate(Context.Interaction.UserLocale, guildLocale, Context.Interaction.GuildLocale)
+                : LocaleResolver.ResolvePublic(guildLocale, Context.Interaction.GuildLocale);
+        }
+
+        protected async Task<string> LocalizeAsync(string resourceKey, bool isPrivate = true, params object[] arguments)
+            => BotLocalizer.Format(resourceKey, await GetLocaleAsync(isPrivate), arguments);
+
+        protected async Task SendLocalizedConfirmAsync(string resourceKey, bool isFollowup = false,
+            bool ephemeral = false, params object[] arguments)
+        {
+            string locale = await GetLocaleAsync(ephemeral);
+            await Context.Interaction.SendConfirmAsync(BotLocalizer, locale, resourceKey, isFollowup, ephemeral, arguments);
+        }
+
+        protected async Task SendLocalizedErrorAsync(string resourceKey, bool isFollowup = false,
+            bool ephemeral = true, params object[] arguments)
+        {
+            string locale = await GetLocaleAsync(ephemeral);
+            await Context.Interaction.SendErrorAsync(BotLocalizer, locale, resourceKey, isFollowup, ephemeral, arguments);
+        }
+
+        public async Task<bool> PromptUserConfirmAsync(string resourceKey, params object[] arguments)
         {
             string guid = Guid.NewGuid().ToString().Replace("-", "");
+            string locale = await GetLocaleAsync(true);
 
             EmbedBuilder embed = new EmbedBuilder()
                 .WithOkColor()
-                .WithDescription(context)
-                .WithFooter("10 秒後按鈕會無效化，請快速選擇或重新觸發");
+                .WithDescription(BotLocalizer.Format(resourceKey, locale, arguments))
+                .WithFooter(BotLocalizer.Get("Confirmation.TimeoutFooter", locale));
 
             ComponentBuilder component = new ComponentBuilder()
-                .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
-                .WithButton("否", $"{guid}-no", ButtonStyle.Danger);
+                .WithButton(BotLocalizer.Get("Common.Yes", locale), $"{guid}-yes", ButtonStyle.Success)
+                .WithButton(BotLocalizer.Get("Common.No", locale), $"{guid}-no", ButtonStyle.Danger);
 
             await FollowupAsync(embed: embed.Build(), components: component.Build(), ephemeral: true).ConfigureAwait(false);
 
             try
             {
-                var input = await GetUserClickAsync(Context.User.Id, Context.Channel.Id, guid).ConfigureAwait(false);
+                var input = await GetUserClickAsync(Context.User.Id, Context.Channel.Id, guid, locale).ConfigureAwait(false);
                 return input;
             }
             finally
@@ -30,7 +65,7 @@ namespace DiscordStreamNotifyBot.Interaction
             }
         }
 
-        public async Task<bool> GetUserClickAsync(ulong userId, ulong channelId, string guid)
+        public async Task<bool> GetUserClickAsync(ulong userId, ulong channelId, string guid, string locale)
         {
             var userInputTask = new TaskCompletionSource<bool>();
 
@@ -61,15 +96,16 @@ namespace DiscordStreamNotifyBot.Interaction
                         userMsg.User.Id != userId ||
                         userMsg.Channel.Id != channelId)
                     {
-                        await component.SendErrorAsync("你無法使用本功能", true).ConfigureAwait(false);
+                        string componentLocale = LocaleResolver.ResolvePrivate(component.UserLocale, null, component.GuildLocale);
+                        await component.SendErrorAsync(BotLocalizer, componentLocale, "Components.NotAllowed", true, true).ConfigureAwait(false);
                         return Task.CompletedTask;
                     }
 
                     userInputTask.TrySetResult(component.Data.CustomId.EndsWith("yes"));
 
                     await component.UpdateAsync((x) => x.Components = new ComponentBuilder()
-                        .WithButton("是", $"{guid}-yes", ButtonStyle.Success, disabled: true)
-                        .WithButton("否", $"{guid}-no", ButtonStyle.Danger, disabled: true).Build())
+                        .WithButton(BotLocalizer.Get("Common.Yes", locale), $"{guid}-yes", ButtonStyle.Success, disabled: true)
+                        .WithButton(BotLocalizer.Get("Common.No", locale), $"{guid}-no", ButtonStyle.Danger, disabled: true).Build())
                     .ConfigureAwait(false);
                     return Task.CompletedTask;
                 });
@@ -79,17 +115,33 @@ namespace DiscordStreamNotifyBot.Interaction
 
         public async Task CheckIsFirstSetNoticeAndSendWarningMessageAsync(MainDbContext dbContext)
         {
-            bool firstCheck = !dbContext.NoticeYoutubeStreamChannel.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id);
-            bool secondCheck = !dbContext.NoticeTwitchStreamChannels.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id);
-            bool thirdCheck = !dbContext.GuildConfig.AsNoTracking().Any((x) => x.GuildId == Context.Guild.Id && x.LogMemberStatusChannelId != 0);
-            if (firstCheck && secondCheck && thirdCheck)
+            ulong guildId = Context.Guild.Id;
+            bool hasNoYoutubeNotice = !await dbContext.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
+            bool hasNoTwitchNotice = !await dbContext.NoticeTwitchStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
+            bool hasNoTwitcastingNotice = !await dbContext.NoticeTwitcastingStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
+            var initialized = await GuildLocaleService.InitializeAsync(
+                dbContext,
+                guildId,
+                Context.Interaction.GuildLocale,
+                Context.Interaction.UserLocale);
+
+            bool hasNoMemberNotice = initialized.GuildConfig.LogMemberStatusChannelId == 0;
+            if (hasNoYoutubeNotice && hasNoTwitchNotice && hasNoTwitcastingNotice && hasNoMemberNotice)
             {
-                await Context.Interaction.SendConfirmAsync("看來是第一次設定通知呢\n" +
-                       "請注意 Bot 擁有者會透過通知頻道發送工商或是小幫手相關的通知 (功能更新之類的)\n" +
-                       "你可以透過 `/utility set-global-notice-channel` 來設定由哪個頻道來接收小幫手相關的通知\n" +
-                       "而工商相關通知則會直接發送到此頻道上\n" +
-                       "(已認可的官方群組不會收到工商通知，如需添加認可或確認請向 Bot 擁有者詢問)\n" +
-                       "(你可使用 `/utility send-message-to-bot-owner` 對 Bot 擁有者發送訊息)", true, true);
+                string responseLocale = LocaleResolver.ResolvePrivate(
+                    Context.Interaction.UserLocale,
+                    initialized.Locale,
+                    Context.Interaction.GuildLocale);
+                string displayLanguage = BotLocalizer.GetLocaleDisplayName(initialized.Locale, responseLocale);
+                string setLanguagePath = CommandDisplayResolver.GetCommandPath(responseLocale, "utility", "set-language");
+                string globalNoticePath = CommandDisplayResolver.GetCommandPath(responseLocale, "utility", "set-global-notice-channel");
+                string contactPath = CommandDisplayResolver.GetCommandPath(responseLocale, "utility", "send-message-to-bot-owner");
+                string message = string.Join('\n',
+                    BotLocalizer.Format("Onboarding.FirstNotificationSetup", responseLocale, globalNoticePath, contactPath),
+                    BotLocalizer.Format("Onboarding.CurrentLanguage", responseLocale, displayLanguage),
+                    BotLocalizer.Format("Onboarding.ChangeLanguageHint", responseLocale, setLanguagePath));
+
+                await Context.Interaction.SendConfirmAsync(message, true, true);
             }
         }
     }

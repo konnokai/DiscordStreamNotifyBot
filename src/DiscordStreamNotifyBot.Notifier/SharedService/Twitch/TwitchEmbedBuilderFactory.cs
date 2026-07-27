@@ -1,93 +1,125 @@
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared.Messages;
 
 namespace DiscordStreamNotifyBot.SharedService.Twitch
 {
-    /// <summary>
-    /// Twitch 通知 embed 工廠（階段 3 前置：集中化 embed 建構，供 cross-process 消費端重建）。
-    /// <para>關台通知（含 VOD/Clip 動態欄位）因建構時需即時呼叫 API，未納入工廠、保留於 TwitchService 內。</para>
-    /// </summary>
     public static class TwitchEmbedBuilderFactory
     {
-        /// <summary>Twitch 開始直播通知。<paramref name="isRecord"/> 由呼叫端先行計算（含錄影副作用）。</summary>
-        public static EmbedBuilder CreateStreamStarted(TwitchStream twitchStream, string profileImageUrl, bool isRecord)
+        public static EmbedBuilder CreateStreamStarted(TwitchStream twitchStream, string profileImageUrl,
+            bool isRecord, long thumbnailCacheBuster, BotLocalizer localizer, string locale)
         {
-            EmbedBuilder embedBuilder = new EmbedBuilder()
+            var embedBuilder = new EmbedBuilder()
                 .WithTitle(twitchStream.StreamTitle)
-                .WithDescription(Format.Url($"{twitchStream.UserName}", $"https://twitch.tv/{twitchStream.UserLogin}"))
+                .WithDescription(Format.Url(twitchStream.UserName, $"https://twitch.tv/{twitchStream.UserLogin}"))
                 .WithUrl($"https://twitch.tv/{twitchStream.UserLogin}")
                 .WithThumbnailUrl(profileImageUrl)
-                .WithImageUrl($"{twitchStream.ThumbnailUrl}?t={DateTime.Now.ToFileTime()}") // 新增參數避免預覽圖被 Discord 快取
-                .AddField("直播狀態", "直播中");
+                .WithImageUrl($"{twitchStream.ThumbnailUrl}?t={thumbnailCacheBuster}")
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Twitch.StreamStatus.Live", locale));
 
             if (!string.IsNullOrEmpty(twitchStream.GameName))
-                embedBuilder.AddField("分類", twitchStream.GameName, true);
+                embedBuilder.AddField(localizer.Get("Notifications.Field.Category", locale), twitchStream.GameName, true);
 
-            embedBuilder.AddField("開始時間", twitchStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
-
-            if (isRecord)
-                embedBuilder.WithRecordColor();
-            else
-                embedBuilder.WithOkColor();
-
-            return embedBuilder;
+            embedBuilder.AddField(localizer.Get("Notifications.Field.StartedAt", locale),
+                twitchStream.StreamStartAt.ConvertDateTimeToDiscordMarkdown());
+            return isRecord ? embedBuilder.WithRecordColor() : embedBuilder.WithOkColor();
         }
 
-        /// <summary>
-        /// Twitch 關台通知。VOD/Clip 資料由偵測端先行取得（<paramref name="clipsValue"/> 為已組好的 Markdown）；
-        /// <paramref name="streamStartAtUtc"/> 為 null 時代表 Redis/VOD 皆無資料，略過標題與直播時長欄位。
-        /// </summary>
-        public static EmbedBuilder CreateStreamEnded(
-            string userName, string userLogin,
+        public static EmbedBuilder CreateStreamEnded(string userName, string userLogin,
             string streamTitle, DateTime? streamStartAtUtc, DateTime endAt,
-            string clipsValue, string profileImageUrl, string offlineImageUrl)
+            IReadOnlyCollection<TwitchClipInfo> clips, string clipsFallback,
+            string profileImageUrl, string offlineImageUrl, BotLocalizer localizer, string locale)
         {
             var embedBuilder = new EmbedBuilder()
                 .WithErrorColor()
-                .WithTitle("(找不到標題)")
+                .WithTitle(localizer.Get("Twitch.Notification.UnknownTitle", locale))
                 .WithUrl($"https://twitch.tv/{userLogin}")
-                .WithDescription(Format.Url($"{userName}", $"https://twitch.tv/{userLogin}"))
-                .AddField("直播狀態", "已關台");
+                .WithDescription(Format.Url(userName, $"https://twitch.tv/{userLogin}"))
+                .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Twitch.StreamStatus.Offline", locale));
 
             if (streamStartAtUtc.HasValue)
             {
-                // StreamStartAt 是 UTC+0 時間，因此 endAt 也需要先轉換成 UTC+0 之後再做計算
                 var streamTime = endAt.ToUniversalTime().Subtract(streamStartAtUtc.Value);
-
-                embedBuilder
-                    .WithTitle(streamTitle)
-                    .AddField("直播時長", streamTime.TotalDays >= 1 ? $"{streamTime:d' 天 'h' 時 'm' 分 's' 秒'}" : $"{streamTime:h' 時 'm' 分 's' 秒'}");
+                if (!string.IsNullOrEmpty(streamTitle))
+                    embedBuilder.WithTitle(streamTitle);
+                embedBuilder.AddField(localizer.Get("Notifications.Field.Duration", locale),
+                    FormatDuration(streamTime, localizer, locale));
             }
 
-            embedBuilder.AddField("關台時間", endAt.ConvertDateTimeToDiscordMarkdown());
+            embedBuilder.AddField(localizer.Get("Notifications.Field.EndedAt", locale), endAt.ConvertDateTimeToDiscordMarkdown());
 
-            // 最後才新增 Clip 資訊
+            string clipsValue = FormatClips(clips, localizer, locale);
+            if (string.IsNullOrEmpty(clipsValue))
+                clipsValue = clipsFallback;
             if (!string.IsNullOrEmpty(clipsValue))
-            {
-                embedBuilder.AddField("最多觀看的 Clip", clipsValue);
-            }
+                embedBuilder.AddField(localizer.Get("Twitch.Notification.Clips", locale), clipsValue);
 
             if (!string.IsNullOrEmpty(offlineImageUrl))
                 embedBuilder.WithImageUrl(offlineImageUrl);
             if (!string.IsNullOrEmpty(profileImageUrl))
                 embedBuilder.WithThumbnailUrl(profileImageUrl);
-
             return embedBuilder;
         }
 
-        /// <summary>Twitch 直播資料更新通知（去抖動後彙整）。</summary>
-        public static EmbedBuilder CreateChannelUpdate(string userName, string userLogin, string description, string profileImageUrl)
+        public static EmbedBuilder CreateChannelUpdate(string userName, string userLogin,
+            IReadOnlyCollection<TwitchChannelUpdateInfo> updates, string descriptionFallback,
+            string profileImageUrl, BotLocalizer localizer, string locale)
         {
+            string description = FormatUpdates(updates, localizer, locale);
+            if (string.IsNullOrEmpty(description))
+                description = descriptionFallback;
+
             var embedBuilder = new EmbedBuilder()
                 .WithOkColor()
-                .WithTitle($"{userName} 直播資料更新")
+                .WithTitle(localizer.Format("Twitch.Notification.UpdateTitle", locale, userName))
                 .WithUrl($"https://twitch.tv/{userLogin}")
                 .WithDescription(description);
-
             if (!string.IsNullOrEmpty(profileImageUrl))
                 embedBuilder.WithThumbnailUrl(profileImageUrl);
-
             return embedBuilder;
+        }
+
+        private static string FormatClips(IReadOnlyCollection<TwitchClipInfo> clips, BotLocalizer localizer, string locale)
+        {
+            if (clips == null || clips.Count == 0)
+                return null;
+            return string.Join('\n', clips.Select((clip, index) => localizer.Format(
+                "Twitch.Notification.ClipEntry", locale, index + 1, clip.Title, clip.Url, clip.CreatorName,
+                clip.ViewCount.ToString("N0", SupportedLocale.GetCulture(locale)))));
+        }
+
+        private static string FormatUpdates(IReadOnlyCollection<TwitchChannelUpdateInfo> updates,
+            BotLocalizer localizer, string locale)
+        {
+            if (updates == null || updates.Count == 0)
+                return null;
+
+            return string.Join("\n\n", updates.Select(update =>
+            {
+                var lines = new List<string>
+                {
+                    $"`{FormatDuration(TimeSpan.FromSeconds(update.ElapsedSeconds), localizer, locale)}`"
+                };
+                if (update.NewTitle != null)
+                    lines.Add(localizer.Format("Twitch.Notification.TitleChanged", locale, update.OldTitle, update.NewTitle));
+                if (update.NewCategory != null)
+                {
+                    string oldCategory = string.IsNullOrEmpty(update.OldCategory) ? localizer.Get("Common.None", locale) : update.OldCategory;
+                    string newCategory = string.IsNullOrEmpty(update.NewCategory) ? localizer.Get("Common.None", locale) : update.NewCategory;
+                    lines.Add(localizer.Format("Twitch.Notification.CategoryChanged", locale, oldCategory, newCategory));
+                }
+                return string.Join('\n', lines);
+            }));
+        }
+
+        private static string FormatDuration(TimeSpan duration, BotLocalizer localizer, string locale)
+        {
+            if (duration < TimeSpan.Zero)
+                duration = TimeSpan.Zero;
+            return duration.Days > 0
+                ? localizer.Format("Notifications.Duration.Days", locale, duration.Days, duration.Hours, duration.Minutes, duration.Seconds)
+                : localizer.Format("Notifications.Duration.Hours", locale, (int)duration.TotalHours, duration.Minutes, duration.Seconds);
         }
     }
 }

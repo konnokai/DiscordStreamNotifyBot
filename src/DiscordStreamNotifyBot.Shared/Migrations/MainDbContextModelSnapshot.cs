@@ -70,6 +70,11 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasColumnType("bigint unsigned")
                         .HasColumnName("guild_id");
 
+                    b.Property<string>("Locale")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("locale");
+
                     b.Property<ulong>("LogMemberStatusChannelId")
                         .HasColumnType("bigint unsigned")
                         .HasColumnName("log_member_status_channel_id");
@@ -850,6 +855,11 @@ namespace DiscordStreamNotifyBot.Migrations
                     b.Property<DateTime>("LastCheckTime")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("last_check_time");
+
+                    b.Property<string>("Locale")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("locale");
 
                     b.Property<ulong>("UserId")
                         .HasColumnType("bigint unsigned")

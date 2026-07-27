@@ -1,7 +1,9 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Utility.Service;
+using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.SharedService.Cluster;
+using System.Globalization;
 
 namespace DiscordStreamNotifyBot.Interaction.Utility
 {
@@ -12,19 +14,29 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         private readonly MainDbService _dbService;
         private readonly ClusterQueryService _clusterQuery;
+        private readonly GuildLocaleService _guildLocaleService;
+        private readonly BotLocalizer _botLocalizer;
 
-        public Utility(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, MainDbService dbService, ClusterQueryService clusterQuery)
+        public Utility(
+            DiscordSocketClient client,
+            HttpClients.DiscordWebhookClient discordWebhookClient,
+            MainDbService dbService,
+            ClusterQueryService clusterQuery,
+            GuildLocaleService guildLocaleService,
+            BotLocalizer botLocalizer)
         {
             _client = client;
             _discordWebhookClient = discordWebhookClient;
             _dbService = dbService;
             _clusterQuery = clusterQuery;
+            _guildLocaleService = guildLocaleService;
+            _botLocalizer = botLocalizer;
         }
 
         [SlashCommand("ping", "延遲檢測")]
         public async Task PingAsync()
         {
-            await Context.Interaction.SendConfirmAsync(":ping_pong: " + _client.Latency.ToString() + "ms");
+            await SendLocalizedConfirmAsync("Utility.Ping", false, false, _client.Latency);
         }
 
         [SlashCommand("invite", "取得邀請連結")]
@@ -36,27 +48,32 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
                 _discordWebhookClient.SendMessageToDiscord($"[{Context.Guild.Name}-{Context.Channel.Name}] {Context.User.Username}:({Context.User.Id}) 使用了邀請指令");
             }
 #endif     
-            await Context.Interaction.SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=11006299201&scope=bot+applications.commands>", ephemeral: true);
+            await SendLocalizedConfirmAsync("Utility.Invite", false, true,
+                $"https://discordapp.com/api/oauth2/authorize?client_id={_client.CurrentUser.Id}&permissions=11006299201&scope=bot+applications.commands");
         }
 
         [SlashCommand("status", "顯示機器人目前的狀態")]
         public async Task StatusAsync()
         {
+            string locale = await GetLocaleAsync(false);
             EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor();
-            embedBuilder.WithTitle("直播小幫手");
+            embedBuilder.WithTitle(BotLocalizer.Get("Utility.Status.Title", locale));
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            embedBuilder.Title += " (測試版)";
+            embedBuilder.Title += BotLocalizer.Get("Utility.Status.TestBuild", locale);
 #endif
 
-            embedBuilder.WithDescription($"建置版本 {Program.Version}");
-            embedBuilder.AddField("作者", "孤之界 (konnokai)", true);
-            embedBuilder.AddField("擁有者", $"{Bot.ApplicatonOwner}", true);
+            embedBuilder.WithDescription(BotLocalizer.Format("Utility.Status.Build", locale, Program.Version));
+            embedBuilder.AddField(BotLocalizer.Get("Utility.Status.Author", locale), "孤之界 (konnokai)", true);
+            embedBuilder.AddField(BotLocalizer.Get("Utility.Status.Owner", locale), $"{Bot.ApplicatonOwner}", true);
             // 跨 shard：以合併快照（B1）彙總全叢集的伺服器數與成員數，而非只算本 shard
             var mergedGuilds = await _clusterQuery.ReadMergedGuildsAsync();
-            embedBuilder.AddField("狀態", $"伺服器 {mergedGuilds.Count}\n服務成員數 {mergedGuilds.Sum((x) => x.MemberCount)}", false);
-            embedBuilder.AddField("看過的直播數量", DiscordStreamNotifyBot.Utility.GetDbStreamCount(), true);
-            embedBuilder.AddField("上線時間", $"{Bot.StopWatch.Elapsed:d\\天\\ hh\\:mm\\:ss}", false);
+            embedBuilder.AddField(BotLocalizer.Get("Utility.Status.State", locale),
+                BotLocalizer.Format("Utility.Status.StateValue", locale, mergedGuilds.Count, mergedGuilds.Sum(x => x.MemberCount)), false);
+            embedBuilder.AddField(BotLocalizer.Get("Utility.Status.StreamCount", locale), DiscordStreamNotifyBot.Utility.GetDbStreamCount(), true);
+            embedBuilder.AddField(BotLocalizer.Get("Utility.Status.Uptime", locale),
+                BotLocalizer.Format("Utility.Status.UptimeValue", locale, Bot.StopWatch.Elapsed.Days,
+                    Bot.StopWatch.Elapsed.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)), false);
 
             await RespondAsync(embed: embedBuilder.Build());
         }
@@ -67,11 +84,15 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
         [SlashCommand("send-message-to-bot-owner", "聯繫 Bot 擁有者")]
         public async Task SendMessageToBotOwner()
         {
-            var modalBuilder = new ModalBuilder().WithTitle("聯繫 Bot 擁有者")
+            string locale = await GetLocaleAsync(true);
+            var modalBuilder = new ModalBuilder().WithTitle(BotLocalizer.Get("Utility.Contact.Title", locale))
                 .WithCustomId("send-message-to-bot-owner")
-                .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "請輸入你要發送的訊息", 10, null, true)
-                .AddFileUpload("相關截圖", "file", maxValues: 4, isRequired: false, description: "如果有相關的截圖需要提供給 Bot 擁有者，請在這裡上傳 (非必要)")
-                .AddTextInput("聯繫方式", "contact-method", TextInputStyle.Short, "請輸入可與你聯繫的方式及相關資訊 (推特、Discord、Facebook等)", 3, null, true);
+                .AddTextInput(BotLocalizer.Get("Utility.Contact.MessageLabel", locale), "message", TextInputStyle.Paragraph,
+                    BotLocalizer.Get("Utility.Contact.MessagePlaceholder", locale), 10, null, true)
+                .AddFileUpload(BotLocalizer.Get("Utility.Contact.AttachmentsLabel", locale), "file", maxValues: 4,
+                    isRequired: false, description: BotLocalizer.Get("Utility.Contact.AttachmentsDescription", locale))
+                .AddTextInput(BotLocalizer.Get("Utility.Contact.MethodLabel", locale), "contact-method", TextInputStyle.Short,
+                    BotLocalizer.Get("Utility.Contact.MethodPlaceholder", locale), 3, null, true);
 
             await RespondWithModalAsync(modalBuilder.Build());
         }
@@ -79,36 +100,63 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
         [RequireContext(ContextType.Guild)]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [RequireUserPermission(GuildPermission.Administrator)]
+        [SlashCommand("set-language", "設定伺服器公開內容與背景通知使用的語言")]
+        public async Task SetLanguageAsync(
+            [Summary("language", "語言")]
+            [Choice("Traditional Chinese", SupportedLocale.TraditionalChinese)]
+            [Choice("English", SupportedLocale.English)]
+            [Choice("Japanese", SupportedLocale.Japanese)] string locale)
+        {
+            string selectedLocale = await _guildLocaleService.SetAsync(Context.Guild.Id, locale);
+            string responseLocale = await GetLocaleAsync(true);
+            string displayLanguage = _botLocalizer.GetLocaleDisplayName(selectedLocale, responseLocale);
+            await Context.Interaction.SendConfirmAsync(_botLocalizer, responseLocale, "Utility.LanguageChanged",
+                false, true, displayLanguage);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator)]
         [SlashCommand("set-global-notice-channel", "設定要接收 Bot 擁有者發送的訊息頻道")]
-        public async Task SetGlobalNoticeChannel([Summary("接收通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
+        public async Task SetGlobalNoticeChannel([Summary("channel", "接收通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
         {
             try
             {
+                string locale = await GetLocaleAsync(true);
                 var textChannel = channel as IGuildChannel;
                 var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
                 if (!permissions.ViewChannel || !permissions.SendMessages)
                 {
-                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `讀取&編輯頻道` 的權限，請給予權限後再次執行本指令");
+                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", false, true,
+                        $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
+                            BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
+                            BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
                     return;
                 }
 
                 if (!permissions.EmbedLinks)
                 {
-                    await Context.Interaction.SendErrorAsync($"我在 `{textChannel}` 沒有 `嵌入連結` 的權限，請給予權限後再次執行本指令");
+                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", false, true,
+                        $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
                     return;
                 }
 
                 using var db = _dbService.GetDbContext();
-                var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id) ?? new DataBase.Table.GuildConfig();
+                var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
+                if (guildConfig == null)
+                {
+                    guildConfig = new DataBase.Table.GuildConfig { GuildId = Context.Guild.Id };
+                    db.GuildConfig.Add(guildConfig);
+                }
                 guildConfig.NoticeChannelId = channel.Id;
                 db.SaveChanges();
 
-                await Context.Interaction.SendConfirmAsync($"已設定全球通知頻道為: {channel}", ephemeral: true);
+                await SendLocalizedConfirmAsync("Utility.GlobalNoticeChannelChanged", false, true, channel);
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), "Set Notice Channel Error");
-                await Context.Interaction.SendErrorAsync($"設定全球通知失敗，請向 Bot 擁有者詢問");
+                await SendLocalizedErrorAsync("Utility.GlobalNoticeChannelFailed");
             }
         }
     }
