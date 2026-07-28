@@ -27,20 +27,18 @@ namespace DiscordStreamNotifyBot
         {
             var userId = ulong.Parse(key);
             var encValue = TokenManager.CreateToken(value, _key);
+            var dateAdded = DateTime.Now;
 
             using var db = _dbService.GetDbContext();
-            var entity = await db.YoutubeMemberAccessToken.SingleOrDefaultAsync((x) => x.DiscordUserId == userId);
-            if (entity == null)
-            {
-                db.YoutubeMemberAccessToken.Add(new YoutubeMemberAccessToken { DiscordUserId = userId, EncryptedAccessToken = encValue });
-            }
-            else
-            {
-                entity.EncryptedAccessToken = encValue;
-                entity.DateAdded = DateTime.Now;
-            }
-
-            await db.SaveChangesAsync();
+            // 同一使用者可能由多個 shard 同時刷新 token，使用單一 upsert 避免 read-then-insert 競爭。
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO `youtube_member_access_token`
+                    (`discord_user_id`, `encrypted_access_token`, `date_added`)
+                VALUES ({userId}, {encValue}, {dateAdded})
+                ON DUPLICATE KEY UPDATE
+                    `encrypted_access_token` = {encValue},
+                    `date_added` = {dateAdded};
+                """);
         }
 
         public async Task<T> GetAsync<T>(string key)

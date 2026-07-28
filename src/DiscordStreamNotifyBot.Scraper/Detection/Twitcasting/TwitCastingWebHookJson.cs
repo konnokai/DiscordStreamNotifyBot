@@ -2,6 +2,9 @@
 {
     public class TwitCastingWebHookJson
     {
+        [JsonProperty("event")]
+        public string Event { get; set; }
+
         [JsonProperty("signature")]
         public string Signature { get; set; }
 

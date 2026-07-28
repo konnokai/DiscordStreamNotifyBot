@@ -182,12 +182,22 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
                     configured.Add(id);
             }
 
-            foreach (var id in Utility.OfficialGuildList)
-                configured.Add(id);
+            return FilterNoNotifyGuilds(guilds, configured, Utility.OfficialGuildList);
+        }
 
+        internal static List<GuildSnapshot> FilterNoNotifyGuilds(
+            IEnumerable<GuildSnapshot> guilds,
+            IEnumerable<ulong> configuredGuildIds,
+            IEnumerable<ulong> officialGuildIds)
+        {
+            ArgumentNullException.ThrowIfNull(guilds);
+            ArgumentNullException.ThrowIfNull(configuredGuildIds);
+            ArgumentNullException.ThrowIfNull(officialGuildIds);
+
+            var excluded = configuredGuildIds.Concat(officialGuildIds).ToHashSet();
             return guilds
-                .Where((g) => !configured.Contains(g.Id))
-                .OrderByDescending((g) => g.MemberCount)
+                .Where(guild => !excluded.Contains(guild.Id))
+                .OrderByDescending(guild => guild.MemberCount)
                 .ToList();
         }
 

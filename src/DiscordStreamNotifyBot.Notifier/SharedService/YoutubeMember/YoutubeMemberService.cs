@@ -518,7 +518,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         catch { }
                     }
 
-                    if (dto.IsNeedRemove) db.GuildYoutubeMemberConfig.Remove(item);
+                    if (dto.IsNeedRemove &&
+                        YoutubeMemberManualPinPolicy.DecideAutomaticMutation(item.IsManualVideoId) ==
+                        YoutubeMemberAutomaticMutationAction.Apply)
+                    {
+                        db.GuildYoutubeMemberConfig.Remove(item);
+                    }
                 }
                 catch (Exception ex)
                 {

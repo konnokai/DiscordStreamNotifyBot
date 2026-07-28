@@ -13,17 +13,29 @@ namespace DiscordStreamNotifyBot.SharedService
     /// </summary>
     internal sealed class NoticeCache<T>
     {
-        private readonly MainDbService _dbService;
-        private readonly Func<MainDbContext, List<T>> _load;
+        private readonly Func<List<T>> _load;
+        private readonly TimeProvider _timeProvider;
         private readonly TimeSpan _ttl;
         private readonly object _lock = new();
         private List<T> _snapshot;
-        private DateTime _loadedAt = DateTime.MinValue;
+        private DateTimeOffset _loadedAt = DateTimeOffset.MinValue;
 
         public NoticeCache(MainDbService dbService, Func<MainDbContext, List<T>> load, TimeSpan? ttl = null)
+            : this(
+                () =>
+                {
+                    using var db = dbService.GetDbContext();
+                    return load(db);
+                },
+                TimeProvider.System,
+                ttl)
         {
-            _dbService = dbService;
+        }
+
+        internal NoticeCache(Func<List<T>> load, TimeProvider timeProvider, TimeSpan? ttl = null)
+        {
             _load = load;
+            _timeProvider = timeProvider;
             _ttl = ttl ?? TimeSpan.FromSeconds(30);
         }
 
@@ -32,11 +44,10 @@ namespace DiscordStreamNotifyBot.SharedService
         {
             lock (_lock)
             {
-                if (_snapshot == null || DateTime.Now - _loadedAt > _ttl)
+                if (_snapshot == null || _timeProvider.GetUtcNow() - _loadedAt > _ttl)
                 {
-                    using var db = _dbService.GetDbContext();
-                    _snapshot = _load(db);
-                    _loadedAt = DateTime.Now;
+                    _snapshot = _load();
+                    _loadedAt = _timeProvider.GetUtcNow();
                 }
                 return _snapshot;
             }
@@ -47,7 +58,7 @@ namespace DiscordStreamNotifyBot.SharedService
         {
             lock (_lock)
             {
-                _loadedAt = DateTime.MinValue;
+                _loadedAt = DateTimeOffset.MinValue;
             }
         }
     }

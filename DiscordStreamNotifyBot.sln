@@ -20,6 +20,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordStreamNotifyBot.Noti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordStreamNotifyBot.Coordinator", "src\DiscordStreamNotifyBot.Coordinator\DiscordStreamNotifyBot.Coordinator.csproj", "{0C60A208-35DC-41AE-AA49-173E99AD25BB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordStreamNotifyBot.Tests", "tests\DiscordStreamNotifyBot.Tests\DiscordStreamNotifyBot.Tests.csproj", "{134F7A51-7206-446B-8757-308E43D19E9C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_API|Any CPU = Debug_API|Any CPU
@@ -132,6 +136,30 @@ Global
 		{0C60A208-35DC-41AE-AA49-173E99AD25BB}.Release|x64.Build.0 = Release|Any CPU
 		{0C60A208-35DC-41AE-AA49-173E99AD25BB}.Release|x86.ActiveCfg = Release|Any CPU
 		{0C60A208-35DC-41AE-AA49-173E99AD25BB}.Release|x86.Build.0 = Release|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_API|Any CPU.ActiveCfg = Debug_API|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_API|Any CPU.Build.0 = Debug_API|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_API|x64.ActiveCfg = Debug_API|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_API|x64.Build.0 = Debug_API|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_API|x86.ActiveCfg = Debug_API|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_API|x86.Build.0 = Debug_API|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_DontRegisterCommand|Any CPU.ActiveCfg = Debug_DontRegisterCommand|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_DontRegisterCommand|Any CPU.Build.0 = Debug_DontRegisterCommand|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_DontRegisterCommand|x64.ActiveCfg = Debug_DontRegisterCommand|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_DontRegisterCommand|x64.Build.0 = Debug_DontRegisterCommand|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_DontRegisterCommand|x86.ActiveCfg = Debug_DontRegisterCommand|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug_DontRegisterCommand|x86.Build.0 = Debug_DontRegisterCommand|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug|x64.Build.0 = Debug|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Debug|x86.Build.0 = Debug|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Release|x64.ActiveCfg = Release|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Release|x64.Build.0 = Release|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Release|x86.ActiveCfg = Release|Any CPU
+		{134F7A51-7206-446B-8757-308E43D19E9C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -141,6 +169,7 @@ Global
 		{2DB24D0C-C696-4EE7-96DC-2DFEDD8C8FDA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{785E9CDF-A9F8-4C10-97B2-6436097FAB6F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{0C60A208-35DC-41AE-AA49-173E99AD25BB} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{134F7A51-7206-446B-8757-308E43D19E9C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C43BB15A-2E55-458A-AA66-C0B60165014B}

@@ -9,8 +9,13 @@ namespace DiscordStreamNotifyBot
         private readonly string _key = Utility.RedisKey;
 
         public RedisDataStore(ConnectionMultiplexer connectionMultiplexer)
+            : this(connectionMultiplexer, 1)
         {
-            _database = connectionMultiplexer.GetDatabase(1);
+        }
+
+        internal RedisDataStore(ConnectionMultiplexer connectionMultiplexer, int databaseNumber)
+        {
+            _database = connectionMultiplexer.GetDatabase(databaseNumber);
         }
 
         public Task ClearAsync()

@@ -223,35 +223,15 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             if (!current.IsSuccess)
                 return CreateEnsureFailure(mode, current);
 
-            var desired = mode == TwitchEventSubEnsureMode.PermanentOAuth
-                ? new[] { (Type: "stream.online", Version: "1"), (Type: "channel.update", Version: "2"), (Type: "stream.offline", Version: "1") }
-                : new[] { (Type: "channel.update", Version: "2"), (Type: "stream.offline", Version: "1") };
-            string[] managedTypes = ["stream.online", "channel.update", "stream.offline"];
-            var relevant = current.Subscriptions.Where(x => managedTypes.Contains(x.Type) &&
-                HasBroadcasterCondition(x, broadcasterUserId)).ToArray();
-            var deleteIds = new List<string>();
-            var missing = new List<(string Type, string Version)>();
-
-            foreach (var spec in desired)
-            {
-                var candidates = relevant.Where(x => x.Type == spec.Type).ToArray();
-                var valid = candidates.Where(x => IsExactEventSub(x, spec.Type, spec.Version, broadcasterUserId)).ToArray();
-                if (valid.Length == 0)
-                    missing.Add(spec);
-
-                deleteIds.AddRange(candidates.Where(x => valid.Length == 0 || x.Id != valid[0].Id).Select(x => x.Id));
-            }
-
-            var desiredTypes = desired.Select(x => x.Type).ToHashSet(StringComparer.Ordinal);
-            deleteIds.AddRange(relevant.Where(x => !desiredTypes.Contains(x.Type)).Select(x => x.Id));
-            deleteIds = deleteIds.Distinct(StringComparer.Ordinal).ToList();
+            var plan = TwitchEventSubReconcilePolicy.Plan(mode, broadcasterUserId, EventSubCallbackUrl,
+                current.Subscriptions.Select(ToEventSubFact).ToArray());
 
             string appAccessToken;
             int deletedCount = 0;
             try
             {
                 appAccessToken = await GetAppAccessTokenAsync();
-                foreach (string subscriptionId in deleteIds)
+                foreach (string subscriptionId in plan.Delete)
                 {
                     bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
                         subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
@@ -274,7 +254,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             int createdCount = 0;
             try
             {
-                foreach (var spec in missing)
+                foreach (var spec in plan.Create)
                 {
                     await TwitchApi.Value.Helix.EventSub.CreateEventSubSubscriptionAsync(
                         spec.Type, spec.Version, new() { ["broadcaster_user_id"] = broadcasterUserId },
@@ -296,21 +276,18 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
 
             var final = await GetEventSubSubscriptionsResultAsync(broadcasterUserId);
-            bool allDesiredEnabled = final.IsSuccess && desired.All(spec => final.Subscriptions.Any(x =>
-                IsExactEventSub(x, spec.Type, spec.Version, broadcasterUserId)));
-            bool permanentCostValid = mode != TwitchEventSubEnsureMode.PermanentOAuth ||
-                desired.All(spec => final.Subscriptions.Any(x =>
-                    IsExpectedEventSubConfiguration(x, spec.Type, spec.Version, broadcasterUserId) && x.Cost == 0));
-            if (final.IsSuccess && !permanentCostValid)
+            var finalDecision = TwitchEventSubReconcilePolicy.EvaluateFinal(mode, broadcasterUserId,
+                EventSubCallbackUrl, final.Subscriptions.Select(ToEventSubFact).ToArray());
+            if (final.IsSuccess && !finalDecision.IsPermanentCostValid)
                 Log.Warn($"broadcaster {broadcasterUserId} 的永久 Twitch EventSub 成本不是預期的 0");
 
             return new TwitchEventSubEnsureResult
             {
-                IsSuccess = allDesiredEnabled && permanentCostValid,
+                IsSuccess = final.IsSuccess && finalDecision.IsSuccess,
                 Mode = mode,
                 CreatedCount = createdCount,
                 DeletedCount = deletedCount,
-                IsPermanentCostValid = permanentCostValid,
+                IsPermanentCostValid = finalDecision.IsPermanentCostValid,
                 Subscriptions = final
             };
         }
@@ -323,23 +300,21 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 Subscriptions = subscriptions
             };
 
-        private bool IsExactEventSub(EventSubSubscription subscription, string type, string version,
-            string broadcasterUserId)
-            => (subscription.Status == "enabled" || subscription.Status == "webhook_callback_verification_pending") &&
-                IsExpectedEventSubConfiguration(subscription, type, version, broadcasterUserId);
-
-        private bool IsExpectedEventSubConfiguration(EventSubSubscription subscription, string type, string version,
-            string broadcasterUserId)
-            => subscription.Type == type && subscription.Version == version &&
-                HasBroadcasterCondition(subscription, broadcasterUserId) && subscription.Condition.Count == 1 &&
-                subscription.Transport?.Method == "webhook" &&
-                string.Equals(subscription.Transport.Callback?.TrimEnd('/'), EventSubCallbackUrl,
-                    StringComparison.Ordinal);
-
-        private static bool HasBroadcasterCondition(EventSubSubscription subscription, string broadcasterUserId)
-            => subscription.Condition != null &&
-                subscription.Condition.TryGetValue("broadcaster_user_id", out string conditionUserId) &&
-                conditionUserId == broadcasterUserId;
+        private static TwitchEventSubFact ToEventSubFact(EventSubSubscription subscription)
+        {
+            string broadcasterUserId = null;
+            subscription.Condition?.TryGetValue("broadcaster_user_id", out broadcasterUserId);
+            return new TwitchEventSubFact(
+                subscription.Id,
+                subscription.Type,
+                subscription.Version,
+                broadcasterUserId,
+                subscription.Status,
+                subscription.Transport?.Method,
+                subscription.Transport?.Callback,
+                subscription.Cost,
+                subscription.Condition?.Count ?? 0);
+        }
 
         #region TwitchAPI
         public async Task<User> GetUserAsync(string twitchUserId = "", string twitchUserLogin = "")

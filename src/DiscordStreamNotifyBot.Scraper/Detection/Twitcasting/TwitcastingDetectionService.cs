@@ -21,6 +21,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         private readonly TwitcastingClient _twitcastingClient;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
+        private readonly SemaphoreSlim _startLiveLock = new(1, 1);
 
         private List<Category> categories;
 
@@ -44,46 +45,61 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                 categories = await _twitcastingClient.GetCategoriesAsync();
             }, token);
 
-            PeriodicRunner.RunAsync("TwitCasting-webhook", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15), TimerHandel, token);
+            PeriodicRunner.RunAsync("TwitCasting-webhook", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(15), ReconcileWebhooksAsync, token);
 
-            Bot.RedisSub.Subscribe(new RedisChannel("twitcasting.pubsub.startlive", RedisChannel.PatternMode.Literal), async (channel, message) =>
-            {
-                var webHookJson = JsonConvert.DeserializeObject<TwitCastingWebHookJson>(message);
-                if (webHookJson == null)
-                {
-                    Log.Error("TwitCasting WebHook JSON 反序列化失敗");
-                    return;
-                }
-
-                using var db = _dbService.GetDbContext();
-                if (await db.TwitcastingStreams.AsNoTracking().AnyAsync((x) => x.StreamId == int.Parse(webHookJson.Movie.Id)))
-                {
-                    Log.Warn($"TwitCasting 重複開台通知: {webHookJson.Movie.Id} - {webHookJson.Movie.Title}");
-                    return;
-                }
-
-                bool isRecord = db.TwitcastingSpider.SingleOrDefault((x) => x.ScreenId == webHookJson.Broadcaster.Id)?.IsRecord ?? false;
-                var twitcastingStream = new TwitcastingStream()
-                {
-                    ChannelId = webHookJson.Broadcaster.Id,
-                    ChannelTitle = webHookJson.Broadcaster.Name,
-                    StreamId = int.Parse(webHookJson.Movie.Id),
-                    StreamTitle = webHookJson.Movie.Title ?? "無標題",
-                    StreamSubTitle = webHookJson.Movie.Subtitle,
-                    Category = GetCategorieNameById(webHookJson.Movie.Category),
-                    ThumbnailUrl = webHookJson.Movie.LargeThumbnail,
-                    StreamStartAt = UnixTimeStampToDateTime(webHookJson.Movie.Created)
-                };
-
-                await db.TwitcastingStreams.AddAsync(twitcastingStream);
-                await db.SaveChangesAsync();
-
-                await PublishStartLiveAsync(twitcastingStream, webHookJson.Movie.IsProtected,
-                    !webHookJson.Movie.IsProtected && isRecord && await RecordTwitCastingAsync(twitcastingStream));
-            });
+            Bot.RedisSub.Subscribe(
+                new RedisChannel(RedisChannels.Twitcasting.PubSubStartLive, RedisChannel.PatternMode.Literal),
+                async (_, message) => await HandleStartLiveMessageAsync(message));
         }
 
-        private async Task TimerHandel()
+        private async Task HandleStartLiveMessageAsync(RedisValue message)
+        {
+            if (!TwitcastingWebhookParser.TryParseLiveStart(message, out var startEvent))
+            {
+                Log.Error("TwitCasting WebHook JSON 無效或不是 livestart 事件");
+                return;
+            }
+
+            await _startLiveLock.WaitAsync(GracefulShutdown.Token);
+            try
+            {
+                using var db = _dbService.GetDbContext();
+                bool streamAlreadyExists = await db.TwitcastingStreams.AsNoTracking()
+                    .AnyAsync(item => item.StreamId == startEvent.StreamId);
+                bool isRecordingEnabled = await db.TwitcastingSpider.AsNoTracking()
+                    .Where(item => item.ChannelId == startEvent.UserId)
+                    .Select(item => item.IsRecord)
+                    .FirstOrDefaultAsync();
+                var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
+                    startEvent,
+                    streamAlreadyExists,
+                    isRecordingEnabled,
+                    TwitcastingLiveStartPlanner.ResolveCategoryName(startEvent.CategoryId, categories)));
+
+                if (plan.Action == TwitcastingLiveStartAction.IgnoreDuplicate)
+                {
+                    Log.Warn($"TwitCasting 重複開台通知: {startEvent.StreamId} - {startEvent.StreamTitle}");
+                    return;
+                }
+
+                bool recordingDelegated = false;
+                if (plan.Action == TwitcastingLiveStartAction.PersistRequestRecordingAndNotify)
+                    recordingDelegated = await RecordTwitCastingAsync(plan.Stream);
+
+                var notification = TwitcastingLiveStartPlanner.CreateNotification(plan, recordingDelegated);
+                if (!await PublishStartLiveWithRetryAsync(notification))
+                    return;
+
+                await db.TwitcastingStreams.AddAsync(TwitcastingLiveStartPlanner.ToEntity(plan.Stream));
+                await db.SaveChangesAsync();
+            }
+            finally
+            {
+                _startLiveLock.Release();
+            }
+        }
+
+        private async Task ReconcileWebhooksAsync()
         {
 #if DEBUG
             return;
@@ -102,23 +118,21 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                     Log.Error("TwitCastingService-Timer: 無法獲取已註冊的 Webhook 列表，請檢查 TwitCasting API 設定是否正確。");
                     return;
                 }
-                var registeredChannelIds = registeredWebhooks.Select(x => x.UserId).ToHashSet();
-
-                // 需要註冊 webhook 的頻道
-                var spiderChannelIds = spiderList.Where((x) => !string.IsNullOrEmpty(x.ChannelId)).Select(x => x.ChannelId).ToHashSet();
-
-                // 註冊缺少的 webhook
-                foreach (var channelId in spiderChannelIds.Except(registeredChannelIds))
+                var plan = TwitcastingWebhookRegistrationPlanner.Plan(
+                    spiderList.Select(item => item.ChannelId),
+                    registeredWebhooks.Select(item => new TwitcastingWebhookRegistration(item.UserId, item.Event)));
+                foreach (var action in plan)
                 {
-                    await _twitcastingClient.RegisterWebHookAsync(channelId);
-                    Log.Info($"註冊 TwitCasting Webhook: {channelId}");
-                }
-
-                // 移除多餘的 webhook
-                foreach (var channelId in registeredChannelIds.Except(spiderChannelIds))
-                {
-                    await _twitcastingClient.RemoveWebHookAsync(channelId);
-                    Log.Info($"移除 TwitCasting Webhook: {channelId}");
+                    if (action.Kind == TwitcastingWebhookActionKind.RegisterLiveStart)
+                    {
+                        await _twitcastingClient.RegisterWebHookAsync(action.UserId);
+                        Log.Info($"註冊 TwitCasting Webhook: {action.UserId}");
+                    }
+                    else
+                    {
+                        await _twitcastingClient.RemoveWebHookAsync(action.UserId);
+                        Log.Info($"移除 TwitCasting Webhook: {action.UserId}");
+                    }
                 }
             }
             catch (Exception ex) { Log.Error(ex.Demystify(), "TwitCastingService-Timer"); }
@@ -127,81 +141,95 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         }
 
         /// <summary>偵測到開台：publish DTO 至通知匯流排（取代直接送 Discord）。</summary>
-        private async Task PublishStartLiveAsync(TwitcastingStream twitcastingStream, bool isPrivate, bool isRecord)
+        private async Task<bool> PublishStartLiveAsync(TwitcastingNotification notification)
         {
 #if DEBUG
-            Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
+            Log.New($"TwitCasting 開台通知: {notification.ChannelTitle} - {notification.StreamTitle} (isPrivate: {notification.IsPrivate})");
+            return true;
 #else
             try
             {
-                await NotificationBus.PublishAsync(Bot.RedisDb,
+                await NotificationBus.PublishOnceAsync(
+                    Bot.RedisDb,
+                    $"twitcasting:notification_published:{notification.StreamId}",
+                    TimeSpan.FromDays(30),
                     NotifyType.Twitcasting,
-                    new TwitcastingNotification
-                    {
-                        ChannelId = twitcastingStream.ChannelId,
-                        ChannelTitle = twitcastingStream.ChannelTitle,
-                        StreamId = twitcastingStream.StreamId,
-                        StreamTitle = twitcastingStream.StreamTitle,
-                        StreamSubTitle = twitcastingStream.StreamSubTitle,
-                        Category = twitcastingStream.Category,
-                        ThumbnailUrl = twitcastingStream.ThumbnailUrl,
-                        StreamStartAt = twitcastingStream.StreamStartAt,
-                        IsPrivate = isPrivate,
-                        IsRecord = isRecord,
-                    }).ConfigureAwait(false);
+                    notification).ConfigureAwait(false);
+                return true;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"PublishTwitcastingStartLive: {twitcastingStream.ChannelId} / {twitcastingStream.StreamId}");
+                Log.Error(ex.Demystify(), $"PublishTwitcastingStartLive: {notification.ChannelId} / {notification.StreamId}");
+                return false;
             }
 #endif
+        }
+
+        private async Task<bool> PublishStartLiveWithRetryAsync(TwitcastingNotification notification)
+        {
+            var delay = TimeSpan.FromSeconds(1);
+            while (!GracefulShutdown.Token.IsCancellationRequested)
+            {
+                if (await PublishStartLiveAsync(notification))
+                    return true;
+
+                try
+                {
+                    await Task.Delay(delay, GracefulShutdown.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return false;
+                }
+
+                delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 30));
+            }
+
+            return false;
         }
 
         /// <summary>
         /// 錄影委派：比照 Twitch，publish <see cref="RedisChannels.Twitcasting.Record"/> 給錄影工具執行，
         /// 不再於 Scraper 進程內本機 streamlink 錄影。回傳 subscriber 數判斷錄影端是否在線。
         /// </summary>
-        private async Task<bool> RecordTwitCastingAsync(TwitcastingStream twitcastingStream)
+        private async Task<bool> RecordTwitCastingAsync(TwitcastingStreamData stream)
         {
-            Log.Info($"{twitcastingStream.ChannelTitle} ({twitcastingStream.StreamId}): {twitcastingStream.StreamTitle}");
+            Log.Info($"{stream.ChannelTitle} ({stream.StreamId}): {stream.StreamTitle}");
 
             if (Bot.Redis == null)
                 return false;
 
-            if (await Bot.RedisSub.PublishAsync(new RedisChannel(RedisChannels.Twitcasting.Record, RedisChannel.PatternMode.Literal), twitcastingStream.ChannelId) != 0)
+            try
             {
-                Log.Info($"已發送 TwitCasting 錄影請求: {twitcastingStream.ChannelId}");
-                return true;
-            }
-
-            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {twitcastingStream.ChannelId}");
-            return false;
-        }
-
-        // https://stackoverflow.com/questions/249760/how-can-i-convert-a-unix-timestamp-to-datetime-and-vice-versa
-        private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
-        {
-            // Unix timestamp is seconds past epoch
-            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-            return dateTime;
-        }
-
-        private string GetCategorieNameById(string categorieId)
-        {
-            string result = categorieId;
-
-            if (categories != null && categories.Any())
-            {
-                foreach (var item in categories)
+                const string script = """
+                    local existing = redis.call('GET', KEYS[1])
+                    if existing then
+                        return tonumber(existing)
+                    end
+                    local subscribers = redis.call('PUBLISH', ARGV[1], ARGV[2])
+                    if subscribers > 0 then
+                        redis.call('SET', KEYS[1], subscribers, 'EX', ARGV[3])
+                    end
+                    return subscribers
+                    """;
+                var result = await Bot.RedisDb.ScriptEvaluateAsync(
+                    script,
+                    [$"twitcasting:recording_delegated:{stream.StreamId}"],
+                    [RedisChannels.Twitcasting.Record, stream.ChannelId, (long)TimeSpan.FromDays(30).TotalSeconds]);
+                if ((long)result != 0)
                 {
-                    var subCategory = item.SubCategories.FirstOrDefault((x) => x.Id == categorieId);
-                    if (subCategory != null)
-                        result = subCategory.Name;
+                    Log.Info($"已發送 TwitCasting 錄影請求: {stream.ChannelId}");
+                    return true;
                 }
-            }
 
-            return result;
+                Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {stream.ChannelId}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"TwitCasting 錄影請求失敗: {stream.ChannelId} / {stream.StreamId}");
+                return false;
+            }
         }
     }
 }

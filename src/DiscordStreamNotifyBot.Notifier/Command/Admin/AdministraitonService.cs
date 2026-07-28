@@ -1,5 +1,5 @@
-﻿using DiscordStreamNotifyBot.DataBase;
-using DiscordStreamNotifyBot.Shared;
+﻿using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Command.Admin
@@ -8,13 +8,11 @@ namespace DiscordStreamNotifyBot.Command.Admin
     {
         private string _reloadOfficialGuildListKey = "DiscordStreamBot:Admin:ReloadOfficialGuildList";
         private readonly DiscordSocketClient _client;
-        private readonly MainDbService _dbService;
         private readonly ClusterQueryService _clusterQuery;
 
-        public AdministrationService(DiscordSocketClient client, MainDbService service, ClusterQueryService clusterQuery)
+        public AdministrationService(DiscordSocketClient client, ClusterQueryService clusterQuery)
         {
             _client = client;
-            _dbService = service;
             _clusterQuery = clusterQuery;
 
             Bot.RedisSub.Subscribe(new RedisChannel(_reloadOfficialGuildListKey, RedisChannel.PatternMode.Literal), async (_, _) =>
@@ -156,70 +154,21 @@ namespace DiscordStreamNotifyBot.Command.Admin
         internal IReadOnlyCollection<SocketGuild> GetNoNotifyGuilds()
         {
             var guilds = new List<SocketGuild>(_client.Guilds);
-            using var db = _dbService.GetDbContext();
+            var snapshots = guilds.Select(guild => new GuildSnapshot
+            {
+                Id = guild.Id,
+                Name = guild.Name,
+                OwnerId = guild.OwnerId,
+                MemberCount = guild.MemberCount,
+            }).ToList();
+            var noNotifyGuildIds = _clusterQuery.FilterNoNotifyGuilds(snapshots)
+                .Select(guild => guild.Id)
+                .ToHashSet();
 
-            db.NoticeYoutubeStreamChannel
-                .AsEnumerable()
-                .DistinctBy((x) => x.GuildId)
-                .Select((x) => x.GuildId)
-                .ToList()
-                .ForEach((x) =>
-                {
-                    var guild = guilds.SingleOrDefault((x2) => x2.Id == x);
-                    if (guild != null)
-                        guilds.Remove(guild);
-                });
-
-            db.NoticeTwitchStreamChannels
-                .AsEnumerable()
-                .DistinctBy((x) => x.GuildId)
-                .Select((x) => x.GuildId)
-                .ToList()
-                .ForEach((x) =>
-                {
-                    var guild = guilds.SingleOrDefault((x2) => x2.Id == x);
-                    if (guild != null)
-                        guilds.Remove(guild);
-                });
-
-            db.NoticeTwitcastingStreamChannels
-                .AsEnumerable()
-                .DistinctBy((x) => x.GuildId)
-                .Select((x) => x.GuildId)
-                .ToList()
-                .ForEach((x) =>
-                {
-                    var guild = guilds.SingleOrDefault((x2) => x2.Id == x);
-                    if (guild != null)
-                        guilds.Remove(guild);
-                });
-
-            db.GuildYoutubeMemberConfig
-                .AsEnumerable()
-                .DistinctBy((x) => x.GuildId)
-                .Select((x) => x.GuildId)
-                .ToList()
-                .ForEach((x) =>
-                {
-                    var guild = guilds.SingleOrDefault((x2) => x2.Id == x);
-                    if (guild != null)
-                        guilds.Remove(guild);
-                });
-
-            Utility.OfficialGuildList
-                .ToList()
-                .ForEach((x) =>
-                {
-                    var guild = guilds.SingleOrDefault((x2) => x2.Id == x);
-                    if (guild != null)
-                        guilds.Remove(guild);
-                });
-
-            guilds = guilds
-                .OrderByDescending((x) => x.MemberCount)
+            return guilds
+                .Where(guild => noNotifyGuildIds.Contains(guild.Id))
+                .OrderByDescending(guild => guild.MemberCount)
                 .ToList();
-
-            return guilds.AsReadOnly();
         }
     }
 }

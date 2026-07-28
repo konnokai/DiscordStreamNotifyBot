@@ -34,7 +34,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly HttpClient _nijisanjiApiHttpClient;
-        private readonly ConcurrentDictionary<string, byte> _endLiveBag = new();
+        private readonly YoutubeTerminalEventRegistry _terminalEvents = new();
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
         private readonly Shared.YoutubeApiService _apiService;
@@ -99,12 +99,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 {
                     Log.Info($"{channel} - {videoId}");
 
-                    if (_endLiveBag.ContainsKey(videoId))
-                    {
-                        Log.Warn("重複通知，略過");
-                        return;
-                    }
-
                     var item = await GetVideoAsync(videoId.ToString()).ConfigureAwait(false);
                     if (item == null)
                     {
@@ -118,8 +112,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         Log.Warn("還沒關台");
                         return;
                     }
-
-                    _endLiveBag.TryAdd(videoId, 1);
 
                     var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
                     var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
@@ -156,8 +148,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             return;
                         }
 
-                        _endLiveBag.TryAdd(videoId, 1);
-
                         var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
                         var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
 
@@ -173,8 +163,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
             {
                 Log.Info($"{channel} - {videoId}");
-
-                _endLiveBag.TryAdd(videoId, 1);
 
                 try
                 {
@@ -193,8 +181,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.unarchived", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
             {
                 Log.Info($"{channel} - {videoId}");
-
-                _endLiveBag.TryAdd(videoId, 1);
 
                 try
                 {
@@ -456,23 +442,38 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             DateTime? actualStart = null, DateTime? actualEnd = null, bool isMemberOnly = false,
             DateTime? previousScheduledStartTime = null, bool isUnarchived = false)
         {
+            var terminalKind = YoutubeTerminalEventRegistry.Classify(noticeType, isMemberOnly, isUnarchived);
+            var dto = new YoutubeNotification
+            {
+                NoticeType = noticeType,
+                VideoId = streamVideo.VideoId,
+                ChannelId = streamVideo.ChannelId,
+                ChannelTitle = streamVideo.ChannelTitle,
+                VideoTitle = streamVideo.VideoTitle,
+                ScheduledStartTime = streamVideo.ScheduledStartTime,
+                PreviousScheduledStartTime = previousScheduledStartTime,
+                ActualStartTime = actualStart,
+                ActualEndTime = actualEnd,
+                IsMemberOnly = isMemberOnly,
+                IsUnarchived = isUnarchived,
+                ChannelType = streamVideo.ChannelType,
+            };
+
             try
             {
-                var dto = new YoutubeNotification
+                if (terminalKind.HasValue)
                 {
-                    NoticeType = noticeType,
-                    VideoId = streamVideo.VideoId,
-                    ChannelId = streamVideo.ChannelId,
-                    ChannelTitle = streamVideo.ChannelTitle,
-                    VideoTitle = streamVideo.VideoTitle,
-                    ScheduledStartTime = streamVideo.ScheduledStartTime,
-                    PreviousScheduledStartTime = previousScheduledStartTime,
-                    ActualStartTime = actualStart,
-                    ActualEndTime = actualEnd,
-                    IsMemberOnly = isMemberOnly,
-                    IsUnarchived = isUnarchived,
-                    ChannelType = streamVideo.ChannelType,
-                };
+                    var decision = await _terminalEvents.ExecuteOnceAsync(
+                        streamVideo.VideoId,
+                        terminalKind.Value,
+                        () => NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Youtube, dto)).ConfigureAwait(false);
+                    if (decision.Action == YoutubeTerminalEventAction.IgnoreDuplicate)
+                    {
+                        Log.Warn($"YouTube 終止事件重複通知，略過: {streamVideo.VideoId} / {terminalKind}，已處理 {decision.ClaimedKind}");
+                    }
+                    return;
+                }
+
                 await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Youtube, dto).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -706,6 +707,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         public DataBase.Table.Video StreamVideo { get; set; }
         public Timer Timer { get; set; }
         public DataBase.Table.Video.YTChannelType ChannelType { get; set; }
+        public int RetryPending;
     }
 
     public class YoutubePubSubNotification

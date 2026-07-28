@@ -1,0 +1,137 @@
+slash-contract v1
+[global]
+group /help
+group /member
+group /member-set
+group /twitcasting
+group /twitcasting-spider
+group /twitch
+group /twitch-spider
+group /utility
+group /youtube
+group /youtube-spider
+command /help get-all-commands permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 module type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /help get-all-modules permissions=- dm=true nsfw=false contexts=- integrations=-
+command /help get-command-help permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 module type=String required=false autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+  option 1 command type=String required=false autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /member-set add-member-check permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel-url type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+  option 1 role type=Role required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /member-set clear-check-video permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel-url type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /member-set list-checked-member permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /member-set remove-member-check permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel-url type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /member-set set-check-video permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+  option 1 video type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /member-set set-notice-member-status-channel permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 log-channel type=Channel required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /member cancel-member-check permissions=- dm=true nsfw=false contexts=- integrations=-
+command /member check permissions=- dm=true nsfw=false contexts=- integrations=-
+command /member list-can-check-channel permissions=- dm=true nsfw=false contexts=- integrations=-
+command /member show-my-youtube-account permissions=- dm=true nsfw=false contexts=- integrations=-
+command /member unlink permissions=- dm=true nsfw=false contexts=- integrations=-
+command /twitcasting-spider add permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitcasting-spider list permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitcasting-spider list-not-trusted permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitcasting-spider remove permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /twitcasting add permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 streamer type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+  option 1 notification-channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
+command /twitcasting list permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitcasting list-message permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitcasting remove permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /twitcasting set-message permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+  option 1 message type=String required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch-spider add permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch-spider list permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch-spider list-not-trusted permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch-spider remove permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /twitch add permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 streamer type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+  option 1 notification-channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
+command /twitch list permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch list-message permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch remove permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /twitch set-message permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+  option 1 notification-type type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+    choice 0 name="Stream started" value="0"
+    choice 1 name="Stream ended" value="1"
+    choice 2 name="Stream details changed" value="2"
+  option 2 message type=String required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /utility invite permissions=- dm=true nsfw=false contexts=- integrations=-
+command /utility ping permissions=- dm=true nsfw=false contexts=- integrations=-
+command /utility send-message-to-bot-owner permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+command /utility set-global-notice-channel permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
+command /utility set-language permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 language type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+    choice 0 name="Traditional Chinese" value="zh-TW"
+    choice 1 name="English" value="en-US"
+    choice 2 name="Japanese" value="ja"
+command /utility status permissions=- dm=true nsfw=false contexts=- integrations=-
+command /youtube-spider add permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube-spider list permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube-spider list-not-trusted permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube-spider remove permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /youtube add permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 channel-or-group type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+  option 1 channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
+command /youtube coming-soon-stream permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube get-member-only-playlist permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube list permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube list-message permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube list-record-channel permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube now-streaming permissions=- dm=true nsfw=false contexts=- integrations=-
+  option 0 host type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+    choice 0 name="Holo" value="0"
+command /youtube remove permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /youtube set-banner-change permissions=ManageGuild dm=true nsfw=false contexts=- integrations=-
+  option 0 channel-url type=String required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube set-message permissions=ManageMessages, MentionEveryone dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+  option 1 notification-type type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+    choice 0 name="New waiting room" value="0"
+    choice 1 name="New upload" value="1"
+    choice 2 name="Stream or premiere started" value="2"
+    choice 3 name="Stream or premiere ended" value="3"
+    choice 4 name="Schedule changed" value="4"
+    choice 5 name="Deleted or made private" value="5"
+  option 2 message type=String required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /youtube set-video-notice-channel permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 youtube-channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+  option 1 notification-channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
+command /youtube toggle-create-event permissions=ManageEvents dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+[guild-only]
+command /send-message permissions=Administrator dm=true nsfw=false contexts=- integrations=-

@@ -28,7 +28,7 @@ namespace DiscordStreamNotifyBot.Shared
             // Discord 由 notifier 既有登入流程驗證，不在此處理
 
             foreach (var (name, probe) in checks)
-                await RetryWithBackoffAsync(name, probe, timeout);
+                await RetryWithBackoffAsync(name, probe, timeout, TimeProvider.System);
 
             Log.Info($"啟動連線檢查通過（角色: {role}）");
         }
@@ -43,23 +43,29 @@ namespace DiscordStreamNotifyBot.Shared
 
         private static async Task ProbeRedisAsync(string redisOption)
         {
-            RedisConnection.Init(redisOption);
+            RedisConnection.ResetForRetry(redisOption);
             var db = RedisConnection.Instance.ConnectionMultiplexer.GetDatabase();
             await db.PingAsync();
         }
 
-        private static async Task RetryWithBackoffAsync(string name, Func<Task> probe, TimeSpan timeout)
+        internal static async Task RetryWithBackoffAsync(
+            string name,
+            Func<Task> probe,
+            TimeSpan timeout,
+            TimeProvider timeProvider,
+            Func<TimeSpan, Task> delayAsync = null)
         {
-            var deadline = DateTime.UtcNow + timeout;
+            var deadline = timeProvider.GetUtcNow() + timeout;
             int attempt = 0;
             Exception lastException = null;
 
-            while (DateTime.UtcNow < deadline)
+            while (timeProvider.GetUtcNow() < deadline)
             {
                 attempt++;
                 try
                 {
-                    await probe();
+                    TimeSpan probeTimeout = deadline - timeProvider.GetUtcNow();
+                    await Task.Run(probe).WaitAsync(probeTimeout, timeProvider).ConfigureAwait(false);
                     Log.Info($"[Preflight] {name} 連線成功（第 {attempt} 次嘗試）");
                     return;
                 }
@@ -67,7 +73,7 @@ namespace DiscordStreamNotifyBot.Shared
                 {
                     lastException = ex;
                     var delaySeconds = Math.Min(30, Math.Pow(2, Math.Min(attempt, 5)));
-                    var remaining = deadline - DateTime.UtcNow;
+                    var remaining = deadline - timeProvider.GetUtcNow();
                     if (remaining <= TimeSpan.Zero)
                         break;
 
@@ -76,7 +82,10 @@ namespace DiscordStreamNotifyBot.Shared
                         delay = remaining;
 
                     Log.Warn($"[Preflight] {name} 連線失敗（第 {attempt} 次）：{ex.Message}；{delay.TotalSeconds:0} 秒後重試");
-                    await Task.Delay(delay);
+                    if (delayAsync == null)
+                        await Task.Delay(delay, timeProvider).ConfigureAwait(false);
+                    else
+                        await delayAsync(delay).ConfigureAwait(false);
                 }
             }
 

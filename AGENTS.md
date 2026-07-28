@@ -10,19 +10,21 @@
 
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
 - 本地化第一階段的程式實作已完成，待手動 Discord 驗證：Slash group／command／parameter／choice 名稱固定使用英文 canonical，description 支援 `zh-TW`／`en-US`／`ja`；一般互動、Help、三平台背景通知與會限訊息維持三語，通知事件對本 shard guild 批次讀取 locale，通知 DTO 不攜帶 locale。
+- 自動化測試第一至四批已完成，第五批 Redis／MySQL component tests 已實跑通過；多 shard guild ownership 與外部 API request contract 待完成。細節見 [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release   # commit 前必跑，0 error 才可提交
+dotnet test DiscordStreamNotifyBot.sln -c Release    # 執行 tests/ 下的自動化測試
 dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier        # 單 shard（現行有功能的 app）
 dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier -- 0 4 # [ShardId, TotalShards]
 ```
 
 - 首次執行若無 `bot_config.json` 會產生 `bot_config_example.json` 後退出；必填 DiscordToken、WebHookUrl、GoogleApiKey、ApiServerDomain。
 - **一律建置整個 solution，不要只建單一專案**（拆分後跨專案相依多，單建會漏編譯錯誤）。
-- **無自動化測試框架**；驗證靠 Release build + 手動實測（重構期間用計畫 §11 清單）。
+- 自動化測試放在 `tests/`；驗證需跑 Release build、Release test，整合行為仍依計畫 §11 清單手動實測。
 
 ### 組態旗標（`#if` 改變行為，不是最佳化）
 
@@ -98,7 +100,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 ## 適用 Skills
 
 - 本專案 skills（`.claude/skills/`）：`add-detection-platform`（新增平台/通知事件）、`debug-detection-bus`（偵測→匯流排→發送除錯）、`ef-migration-baseline`（EF 遷移/基線化）。
-- 外掛 skills：`/migrate`（EF 變更後）、`/code-review`（重構/PR 後）、`/security-scan`（Auth 或加密變更時）、`/health-check`、`/de-sloppify`、`/checkpoint`。不適用：`/scaffold`、`/tdd`（無測試框架）、`/api-versioning`、`/aspire`。
+- 外掛 skills：`/migrate`（EF 變更後）、`/code-review`（重構/PR 後）、`/security-scan`（Auth 或加密變更時）、`/health-check`、`/de-sloppify`、`/checkpoint`。不適用：`/scaffold`、`/api-versioning`、`/aspire`。
 
 ## graphify
 

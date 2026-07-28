@@ -47,6 +47,37 @@ namespace DiscordStreamNotifyBot.Shared
                 maxLength: MaxApproxLength, useApproximateMaxLength: true);
         }
 
+        /// <summary>以 Redis Lua 原子完成去重檢查、XADD 與 marker 寫入，供不可重播的來源安全重試。</summary>
+        public static async Task<RedisValue> PublishOnceAsync(
+            IDatabase db,
+            RedisKey dedupKey,
+            TimeSpan dedupExpiry,
+            string type,
+            object payload)
+        {
+            const string script = """
+                local existing = redis.call('GET', KEYS[2])
+                if existing then
+                    return existing
+                end
+                local id = redis.call('XADD', KEYS[1], 'MAXLEN', '~', ARGV[1], '*', ARGV[2], ARGV[3], ARGV[4], ARGV[5])
+                redis.call('SET', KEYS[2], id, 'EX', ARGV[6])
+                return id
+                """;
+            var result = await db.ScriptEvaluateAsync(
+                script,
+                [StreamKey, dedupKey],
+                [
+                    MaxApproxLength,
+                    FieldType,
+                    type,
+                    FieldPayload,
+                    JsonConvert.SerializeObject(payload),
+                    Math.Max(1, (long)Math.Ceiling(dedupExpiry.TotalSeconds)),
+                ]).ConfigureAwait(false);
+            return (string)result;
+        }
+
         /// <summary>
         /// 建立本 shard 的 consumer group（§4.4）：從 <c>0</c> 建群（首次部署不漏既有訊息），
         /// 並以 <c>MKSTREAM</c> 建 stream；已存在（BUSYGROUP）視為成功。歷史重播由消費端去重鍵吸收。
@@ -79,10 +110,27 @@ namespace DiscordStreamNotifyBot.Shared
         /// </summary>
         public static async Task<StreamEntry[]> AutoClaimAsync(IDatabase db, int shardId, TimeSpan minIdle, int count)
         {
-            var result = await db.StreamAutoClaimAsync(StreamKey, GroupName(shardId), ConsumerName(shardId),
-                (long)minIdle.TotalMilliseconds, "0-0", count);
+            var result = await AutoClaimPageAsync(db, shardId, minIdle, "0-0", count);
             return result.ClaimedEntries;
         }
+
+        /// <summary>
+        /// 從指定 cursor 認領一頁 pending 訊息；呼叫端必須保存 <see cref="StreamAutoClaimResult.NextStartId" />，
+        /// 避免持續失敗的前段訊息讓後段 PEL 永遠無法被掃到。
+        /// </summary>
+        public static Task<StreamAutoClaimResult> AutoClaimPageAsync(
+            IDatabase db,
+            int shardId,
+            TimeSpan minIdle,
+            RedisValue startId,
+            int count)
+            => db.StreamAutoClaimAsync(
+                StreamKey,
+                GroupName(shardId),
+                ConsumerName(shardId),
+                (long)minIdle.TotalMilliseconds,
+                startId,
+                count);
 
         /// <summary>
         /// 取得 stream 各 consumer group 的狀態（pending 數 / consumer 數）供 Coordinator 監控（§4.4 / §9.3）。

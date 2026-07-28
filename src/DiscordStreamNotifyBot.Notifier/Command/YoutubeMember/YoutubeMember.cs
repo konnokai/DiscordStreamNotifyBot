@@ -98,6 +98,7 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
                     foreach (var guildYoutubeMemberConfig in guildYoutubeMemberConfigs)
                     {
                         guildYoutubeMemberConfig.MemberCheckVideoId = videoId;
+                        guildYoutubeMemberConfig.IsManualVideoId = true;
                         db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
                     }
 

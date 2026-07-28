@@ -3,6 +3,7 @@ using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
 using Google;
 using Polly;
+using System.Collections.Concurrent;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
 
@@ -12,31 +13,42 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 {
     public partial class YoutubeDetectionService
     {
-        private const int MaxReminderDays = 14;
-        private const int ReminderAdvanceMinutes = 1;
-        private const int StartTimeGraceMinutes = 2;
-        private const int MinTimerDelayMs = 1000;
+        private static readonly TimeSpan ReminderRetryDelay = TimeSpan.FromMinutes(1);
 
         private void StartReminder(TableVideo streamVideo, TableVideo.YTChannelType channelType)
         {
-            if (streamVideo.ScheduledStartTime > DateTime.Now.AddDays(MaxReminderDays)) return;
+            var decision = YoutubeReminderPolicy.PlanStart(streamVideo.ScheduledStartTime, DateTime.Now);
+            if (decision.Action == YoutubeReminderStartAction.Ignore)
+                return;
 
             try
             {
-                TimeSpan ts = streamVideo.ScheduledStartTime.AddMinutes(-ReminderAdvanceMinutes).Subtract(DateTime.Now);
-
-                if (ts <= TimeSpan.Zero)
+                var reminder = new ReminderItem
                 {
-                    Task.Run(() => SafeReminderTimerActionAsync(streamVideo));
+                    StreamVideo = streamVideo,
+                    ChannelType = channelType,
+                };
+                var dueTime = decision.Action == YoutubeReminderStartAction.RunImmediately
+                    ? TimeSpan.Zero
+                    : decision.Delay;
+                var remT = new Timer(TimerCallbackWrapper, reminder, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+                reminder.Timer = remT;
+
+                if (!Reminders.TryAdd(streamVideo.VideoId, reminder))
+                {
+                    remT.Dispose();
+                    return;
                 }
-                else
-                {
-                    var remT = new Timer(TimerCallbackWrapper, streamVideo, Math.Max(MinTimerDelayMs, (long)ts.TotalMilliseconds), Timeout.Infinite);
 
-                    if (!Reminders.TryAdd(streamVideo.VideoId, new ReminderItem() { StreamVideo = streamVideo, Timer = remT, ChannelType = channelType }))
-                    {
-                        remT.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
+                try
+                {
+                    remT.Change(dueTime, Timeout.InfiniteTimeSpan);
+                }
+                catch
+                {
+                    Reminders.TryRemove(new KeyValuePair<string, ReminderItem>(streamVideo.VideoId, reminder));
+                    remT.Dispose();
+                    throw;
                 }
             }
             catch (Exception ex)
@@ -53,33 +65,49 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private async Task SafeReminderTimerActionAsync(object rObj)
         {
+            var owner = rObj as ReminderItem;
+            var streamVideo = owner?.StreamVideo ?? (TableVideo)rObj;
             try
             {
-                await ReminderTimerActionAsync(rObj);
+                await ReminderTimerActionAsync(streamVideo, owner);
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"SafeReminderTimerActionAsync: {((TableVideo)rObj).VideoId}");
+                Log.Error(ex.Demystify(), $"SafeReminderTimerActionAsync: {streamVideo.VideoId}");
             }
         }
 
-        private async Task ReminderTimerActionAsync(object rObj)
+        private async Task ReminderTimerActionAsync(TableVideo streamVideo, ReminderItem owner = null)
         {
-            var streamVideo = (TableVideo)rObj;
             using var db = _dbService.GetDbContext();
 
             try
             {
-                var videoResult = await TryGetVideoResult(streamVideo);
-                if (videoResult == null) return;
+                var (videoResult, isDeleted) = await TryGetVideoResult(streamVideo);
+                if (videoResult == null)
+                {
+                    if (isDeleted)
+                    {
+                        if (TryClaimReminderAction(streamVideo, owner))
+                            await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
+                    }
+                    else
+                        ScheduleReminderRetry(streamVideo, owner);
+                    return;
+                }
 
                 if (!TryGetStartTime(videoResult, out DateTime startTime))
                 {
                     Log.Error($"無法解析影片開始時間: {streamVideo.VideoId}");
+                    ScheduleReminderRetry(streamVideo, owner);
                     return;
                 }
 
-                if (startTime.AddMinutes(-StartTimeGraceMinutes) < DateTime.Now)
+                if (!TryClaimReminderAction(streamVideo, owner))
+                    return;
+
+                if (YoutubeReminderPolicy.DecideApiRecheck(startTime, DateTime.Now) ==
+                    YoutubeReminderApiAction.TreatAsStarted)
                 {
                     await HandleStreamStartAsync(streamVideo, videoResult, db);
                 }
@@ -91,7 +119,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             catch (Exception ex) { Log.Error(ex.Demystify(), $"ReminderAction: {streamVideo.VideoId}"); }
         }
 
-        private async Task<YTApiVideo> TryGetVideoResult(TableVideo streamVideo)
+        private async Task<(YTApiVideo Video, bool IsDeleted)> TryGetVideoResult(TableVideo streamVideo)
         {
             try
             {
@@ -99,15 +127,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 if (videoResult == null)
                 {
                     Log.Info($"{streamVideo.VideoId} 待機所被刪了");
-                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
-                    return null;
+                    return (null, true);
                 }
-                return videoResult;
+                return (videoResult, false);
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"ReminderTimerAction-CheckVideoExist");
-                return null;
+                return (null, false);
             }
         }
 
@@ -121,7 +148,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return false;
         }
 
-        private async Task HandleStreamStartAsync(TableVideo streamVideo, YTApiVideo videoResult, MainDbContext db)
+        private async Task HandleStreamStartAsync(
+            TableVideo streamVideo,
+            YTApiVideo videoResult,
+            MainDbContext db)
         {
             bool isRecord = false;
             streamVideo.VideoTitle = videoResult.Snippet.Title;
@@ -179,11 +209,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
             }
 
-            if (Reminders.TryRemove(streamVideo.VideoId, out var t))
-                t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
-        private async Task HandleStreamTimeChangedAsync(TableVideo streamVideo, YTApiVideo videoResult, MainDbContext db, DateTime startTime)
+        private async Task HandleStreamTimeChangedAsync(
+            TableVideo streamVideo,
+            YTApiVideo videoResult,
+            MainDbContext db,
+            DateTime startTime)
         {
             var previousScheduledStartTime = streamVideo.ScheduledStartTime;
             Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}: {previousScheduledStartTime:O} -> {startTime:O}");
@@ -214,10 +246,119 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
                 previousScheduledStartTime: previousScheduledStartTime).ConfigureAwait(false);
 
-            if (Reminders.TryRemove(streamVideo.VideoId, out var t))
-                t.Timer.Change(Timeout.Infinite, Timeout.Infinite);
-
             StartReminder(streamVideo, streamVideo.ChannelType);
+        }
+
+        private bool TryClaimReminderAction(TableVideo streamVideo, ReminderItem owner)
+        {
+            if (!TryClaimReminderAction(
+                Reminders,
+                streamVideo.VideoId,
+                streamVideo,
+                owner,
+                out var reminder))
+                return false;
+
+            if (reminder != null)
+            {
+                reminder.Timer?.Change(Timeout.Infinite, Timeout.Infinite);
+                reminder.Timer?.Dispose();
+            }
+            return true;
+        }
+
+        internal static bool TryClaimReminderAction(
+            ConcurrentDictionary<string, ReminderItem> reminders,
+            string videoId,
+            TableVideo expectedStreamVideo,
+            ReminderItem expectedReminder,
+            out ReminderItem reminder)
+        {
+            reminder = null;
+            if (expectedReminder == null)
+                return !reminders.ContainsKey(videoId);
+
+            return TryTakeReminder(
+                reminders,
+                videoId,
+                expectedStreamVideo,
+                expectedReminder,
+                out reminder);
+        }
+
+        private bool RemoveReminder(
+            string videoId,
+            TableVideo expectedStreamVideo = null,
+            ReminderItem expectedReminder = null)
+        {
+            if (!TryTakeReminder(Reminders, videoId, expectedStreamVideo, expectedReminder, out var reminder))
+                return false;
+
+            reminder.Timer?.Change(Timeout.Infinite, Timeout.Infinite);
+            reminder.Timer?.Dispose();
+            return true;
+        }
+
+        private void ScheduleReminderRetry(TableVideo streamVideo, ReminderItem owner)
+        {
+            if (Reminders.TryGetValue(streamVideo.VideoId, out var current))
+            {
+                lock (current)
+                {
+                    if (!Reminders.TryGetValue(streamVideo.VideoId, out var latest) || !ReferenceEquals(latest, current))
+                        return;
+                    if (!ReferenceEquals(current.StreamVideo, streamVideo) ||
+                        (owner != null && !ReferenceEquals(current, owner)))
+                        return;
+
+                    Volatile.Write(ref current.RetryPending, 1);
+                    current.Timer.Change(ReminderRetryDelay, Timeout.InfiniteTimeSpan);
+                }
+                return;
+            }
+
+            if (owner != null)
+                return;
+
+            var reminder = new ReminderItem
+            {
+                StreamVideo = streamVideo,
+                ChannelType = streamVideo.ChannelType,
+                RetryPending = 1,
+            };
+            var timer = new Timer(TimerCallbackWrapper, reminder, ReminderRetryDelay, Timeout.InfiniteTimeSpan);
+            reminder.Timer = timer;
+            if (!Reminders.TryAdd(streamVideo.VideoId, reminder))
+            {
+                timer.Change(Timeout.Infinite, Timeout.Infinite);
+                timer.Dispose();
+            }
+        }
+
+        internal static bool TryTakeReminder(
+            ConcurrentDictionary<string, ReminderItem> reminders,
+            string videoId,
+            TableVideo expectedStreamVideo,
+            ReminderItem expectedReminder,
+            out ReminderItem reminder)
+        {
+            reminder = null;
+            if (!reminders.TryGetValue(videoId, out var current))
+                return false;
+            lock (current)
+            {
+                if (!reminders.TryGetValue(videoId, out var latest) || !ReferenceEquals(latest, current))
+                    return false;
+                if (expectedStreamVideo != null && !ReferenceEquals(current.StreamVideo, expectedStreamVideo))
+                    return false;
+                if (expectedReminder != null && !ReferenceEquals(current, expectedReminder))
+                    return false;
+                if (!reminders.TryRemove(new KeyValuePair<string, ReminderItem>(videoId, current)))
+                    return false;
+            }
+
+            reminder = current;
+            return true;
         }
 
         private TableVideo GetDbVideoByType(MainDbContext db, TableVideo streamVideo)

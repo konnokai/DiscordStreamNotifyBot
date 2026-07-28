@@ -195,47 +195,47 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                         return;
                     }
 
-                    bool isChangeTitle = twitchStream.StreamTitle != data.Title;
-                    bool isChangeCategory = twitchStream.GameName != data.CategoryName;
-                    if (!isChangeTitle && !isChangeCategory)
+                    var decision = TwitchChannelUpdatePolicy.Decide(
+                        new TwitchChannelStateFacts(
+                            twitchStream.StreamTitle,
+                            twitchStream.GameName,
+                            twitchStream.UserLogin,
+                            twitchStream.UserName,
+                            twitchStream.StreamStartAt),
+                        new TwitchChannelEventFacts(
+                            data.Title,
+                            data.CategoryName,
+                            data.BroadcasterUserLogin,
+                            data.BroadcasterUserName,
+                            DateTime.UtcNow));
+                    if (decision.Action == TwitchChannelUpdateAction.Ignore)
                     {
                         Log.Warn($"Twitch 頻道更新資料相同，忽略: {data.BroadcasterUserName}");
                         return;
                     }
 
-                    var update = new TwitchChannelUpdateInfo
+                    if (decision.Action == TwitchChannelUpdateAction.Queue)
                     {
-                        ElapsedSeconds = Math.Max(0, (long)DateTime.UtcNow.Subtract(twitchStream.StreamStartAt).TotalSeconds),
-                    };
-                    if (isChangeTitle)
-                    {
-                        update.OldTitle = twitchStream.StreamTitle;
-                        update.NewTitle = data.Title;
-                    }
-                    if (isChangeCategory)
-                    {
-                        update.OldCategory = twitchStream.GameName;
-                        update.NewCategory = data.CategoryName;
+                        var update = decision.Change.ToDto();
+                        _debounceChannelUpdateMessage.AddOrUpdate(data.BroadcasterUserId,
+                            _ =>
+                            {
+                                var debounce = new DebounceChannelUpdateMessage(this, data.BroadcasterUserName,
+                                    data.BroadcasterUserLogin, data.BroadcasterUserId);
+                                debounce.AddUpdate(update);
+                                return debounce;
+                            },
+                            (_, debounce) =>
+                            {
+                                debounce.AddUpdate(update);
+                                return debounce;
+                            });
                     }
 
-                    _debounceChannelUpdateMessage.AddOrUpdate(data.BroadcasterUserId,
-                        _ =>
-                        {
-                            var debounce = new DebounceChannelUpdateMessage(this, data.BroadcasterUserName,
-                                data.BroadcasterUserLogin, data.BroadcasterUserId);
-                            debounce.AddUpdate(update);
-                            return debounce;
-                        },
-                        (_, debounce) =>
-                        {
-                            debounce.AddUpdate(update);
-                            return debounce;
-                        });
-
-                    twitchStream.StreamTitle = data.Title;
-                    twitchStream.GameName = data.CategoryName;
-                    twitchStream.UserLogin = data.BroadcasterUserLogin;
-                    twitchStream.UserName = data.BroadcasterUserName;
+                    twitchStream.StreamTitle = decision.NextState.Title;
+                    twitchStream.GameName = decision.NextState.Category;
+                    twitchStream.UserLogin = decision.NextState.UserLogin;
+                    twitchStream.UserName = decision.NextState.UserName;
                     await SetStreamStateAsync(twitchStream);
                 }
                 finally
@@ -329,7 +329,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
         private async Task HandleStreamStartedAsync(HelixStream stream)
         {
-            if (stream == null || string.IsNullOrWhiteSpace(stream.Id) || string.IsNullOrWhiteSpace(stream.UserId))
+            if (stream == null)
+                return;
+
+            var streamFacts = CreateStreamDataFacts(stream);
+            if (TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
+                streamFacts.StreamId, streamFacts.UserId, HasSpider: true,
+                ProcessDuplicate: false, RedisDuplicate: false, DatabaseDuplicate: false)) ==
+                TwitchStreamStartAction.IgnoreInvalid)
                 return;
 
             var userLock = GetUserLock(stream.UserId);
@@ -340,19 +347,26 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 var spider = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == stream.UserId);
                 if (spider == null)
                 {
-                    Log.Warn($"Twitch 開台事件沒有對應 spider，交由 reconcile 清理: {stream.UserId}");
+                    if (TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
+                        stream.Id, stream.UserId, HasSpider: false,
+                        ProcessDuplicate: false, RedisDuplicate: false, DatabaseDuplicate: false)) ==
+                        TwitchStreamStartAction.IgnoreMissingSpider)
+                        Log.Warn($"Twitch 開台事件沒有對應 spider，交由 reconcile 清理: {stream.UserId}");
                     return;
                 }
 
                 var authorization = await db.TwitchBroadcasterAuthorization.AsNoTracking()
                     .SingleOrDefaultAsync(x => x.TwitchUserId == stream.UserId);
-                var twitchStream = CreateTwitchStream(stream);
+                var twitchStream = TwitchStreamNotificationFactory.CreateState(streamFacts);
                 CancelOfflineReminder(stream.UserId);
                 bool databaseDuplicate = await db.TwitchStreams.AsNoTracking().AnyAsync(x => x.StreamId == stream.Id);
-                bool notificationPublished = _handledStreamIds.ContainsKey(stream.Id) ||
-                    await IsStreamNotificationPublishedAsync(stream.Id);
+                bool processDuplicate = _handledStreamIds.ContainsKey(stream.Id);
+                bool redisDuplicate = !processDuplicate && await IsStreamNotificationPublishedAsync(stream.Id);
+                var startAction = TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
+                    stream.Id, stream.UserId, HasSpider: true,
+                    processDuplicate, redisDuplicate, databaseDuplicate));
 
-                if (notificationPublished)
+                if (startAction == TwitchStreamStartAction.RefreshStateOnly)
                 {
                     // 重複開台事件仍要刷新直播快取與 EventSub，但不可再次發布通知或啟動錄影。
                     await SetStreamStateAsync(twitchStream);
@@ -377,19 +391,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 await MaintainLiveSubscriptionsAsync(spider, authorization, stream.StartedAt);
 
                 bool isRecord = spider.IsRecord && await RecordTwitchAsync(twitchStream);
-                RedisValue messageId = await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Twitch, new TwitchNotification
-                {
-                    NoticeType = TwitchNoticeType.StartStream,
-                    UserId = twitchStream.UserId,
-                    StreamId = twitchStream.StreamId,
-                    UserLogin = twitchStream.UserLogin,
-                    UserName = twitchStream.UserName,
-                    StreamTitle = twitchStream.StreamTitle,
-                    GameName = twitchStream.GameName,
-                    ThumbnailUrl = twitchStream.ThumbnailUrl,
-                    StreamStartAt = twitchStream.StreamStartAt,
-                    IsRecord = isRecord,
-                });
+                RedisValue messageId = await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Twitch,
+                    TwitchStreamNotificationFactory.CreateStart(twitchStream, isRecord));
                 await MarkStreamNotificationPublishedAsync(stream.Id, messageId);
                 _handledStreamIds[stream.Id] = 0;
             }
@@ -406,34 +409,28 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         private async Task MaintainLiveSubscriptionsAsync(TwitchSpider spider,
             TwitchBroadcasterAuthorization authorization, DateTime streamStartedAt)
         {
-            // ClientId 不一致代表授權不屬於目前應用程式；此時不得替外部應用程式調整訂閱。
-            if (HasClientIdMismatch(authorization))
+            var action = TwitchReconcilePolicy.Decide(CreateReconcileFacts(
+                spider, authorization, liveStateKnown: true, isLive: true,
+                hasLocalStreamState: true, offlineConfirmationCompleted: false, streamStartedAt));
+            switch (action)
             {
-                SetPending(spider.UserId, null);
-                Log.Error($"Twitch broadcaster {spider.UserId} 的授權 ClientId 與目前設定不符，禁止自動調整 EventSub");
-                return;
+                case TwitchReconcileAction.RejectClientIdMismatch:
+                    SetPending(spider.UserId, null);
+                    Log.Error($"Twitch broadcaster {spider.UserId} 的授權 ClientId 與目前設定不符，禁止自動調整 EventSub");
+                    break;
+                case TwitchReconcileAction.EnsurePermanentSubscriptions:
+                    await EnsureSubscriptionsAsync(spider.UserId, TwitchEventSubEnsureMode.PermanentOAuth);
+                    break;
+                case TwitchReconcileAction.EnsureFallbackSubscriptions:
+                    await EnsureSubscriptionsAsync(spider.UserId, TwitchEventSubEnsureMode.Fallback);
+                    break;
+                case TwitchReconcileAction.KeepPollingWithoutSubscriptions:
+                    ClearPending(spider.UserId);
+                    break;
+                case TwitchReconcileAction.DeferLive:
+                    SetPending(spider.UserId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
+                    break;
             }
-
-            if (IsValidAuthorization(authorization))
-            {
-                await EnsureSubscriptionsAsync(spider.UserId, TwitchEventSubEnsureMode.PermanentOAuth);
-                return;
-            }
-
-            if (WasLiveWhenAuthorizationRevoked(authorization, streamStartedAt))
-            {
-                // 授權是在本次直播開始後才失效；保留既有訂閱到確認關台，避免直播中斷偵測。
-                SetPending(spider.UserId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
-                return;
-            }
-
-            if (spider.IsWarningUser)
-            {
-                ClearPending(spider.UserId);
-                return;
-            }
-
-            await EnsureSubscriptionsAsync(spider.UserId, TwitchEventSubEnsureMode.Fallback);
         }
 
         /// <summary>
@@ -539,73 +536,41 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             await userLock.WaitAsync();
             try
             {
-                if (HasClientIdMismatch(state.Authorization))
+                TwitchStream streamState = null;
+                if (liveStateKnown && liveStream == null)
+                    streamState = await GetStreamStateAsync(userId);
+
+                var action = TwitchReconcilePolicy.Decide(CreateReconcileFacts(
+                    state.Spider,
+                    state.Authorization,
+                    liveStateKnown,
+                    liveStream != null,
+                    streamState != null,
+                    offlineConfirmationCompleted: false,
+                    liveStream?.StartedAt ?? default));
+                switch (action)
                 {
-                    SetPending(userId, null);
-                    Log.Error($"Twitch broadcaster {userId} 的授權 ClientId 與目前設定不符，禁止自動刪除 EventSub 或 spider");
-                    return false;
-                }
-
-                bool hasValidAuthorization = IsValidAuthorization(state.Authorization);
-                if (hasValidAuthorization && state.Spider != null)
-                    return await EnsureSubscriptionsAsync(userId, TwitchEventSubEnsureMode.PermanentOAuth);
-
-                if (!liveStateKnown)
-                {
-                    if (state.Authorization == null && state.Spider?.IsWarningUser == true)
-                    {
-                        ClearPending(userId);
-                        return true;
-                    }
-
-                    SetPending(userId, TwitchEventSubCleanupDeferredMetricReason.TwitchApiFailure);
-                    return false;
-                }
-
-                if (liveStream != null)
-                {
-                    // 直播中只能建立或保留偵測能力，不進行 EventSub 或 spider 清理。
-                    if (state.Authorization == null && state.Spider != null && !state.Spider.IsWarningUser)
+                    case TwitchReconcileAction.RejectClientIdMismatch:
+                        SetPending(userId, null);
+                        Log.Error($"Twitch broadcaster {userId} 的授權 ClientId 與目前設定不符，禁止自動刪除 EventSub 或 spider");
+                        return false;
+                    case TwitchReconcileAction.EnsurePermanentSubscriptions:
+                        return await EnsureSubscriptionsAsync(userId, TwitchEventSubEnsureMode.PermanentOAuth);
+                    case TwitchReconcileAction.EnsureFallbackSubscriptions:
                         return await EnsureSubscriptionsAsync(userId, TwitchEventSubEnsureMode.Fallback);
-
-                    if (state.Authorization == null && state.Spider?.IsWarningUser == true)
-                    {
+                    case TwitchReconcileAction.KeepPollingWithoutSubscriptions:
                         ClearPending(userId);
                         return true;
-                    }
-
-                    if (WasLiveWhenAuthorizationRevoked(state.Authorization, liveStream.StartedAt))
-                    {
+                    case TwitchReconcileAction.DeferApiFailure:
+                        SetPending(userId, TwitchEventSubCleanupDeferredMetricReason.TwitchApiFailure);
+                        return false;
+                    case TwitchReconcileAction.DeferLive:
                         SetPending(userId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
                         return true;
-                    }
-
-                    if (state.Spider?.IsWarningUser == true)
-                    {
-                        ClearPending(userId);
+                    case TwitchReconcileAction.ScheduleOfflineConfirmation:
+                        ScheduleOfflineCleanup(userId, streamState.UserLogin, streamState.UserName);
+                        SetPending(userId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
                         return true;
-                    }
-
-                    if (state.Spider != null)
-                        return await EnsureSubscriptionsAsync(userId, TwitchEventSubEnsureMode.Fallback);
-
-                    SetPending(userId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
-                    return true;
-                }
-
-                if (state.Authorization == null && state.Spider?.IsWarningUser == true)
-                {
-                    ClearPending(userId);
-                    return true;
-                }
-
-                var streamState = await GetStreamStateAsync(userId);
-                if (streamState != null)
-                {
-                    // Helix 已顯示離線，但本地仍有直播狀態；先走關台去抖動，避免瞬斷造成誤刪與誤通知。
-                    ScheduleOfflineCleanup(userId, streamState.UserLogin, streamState.UserName);
-                    SetPending(userId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
-                    return true;
                 }
 
                 var deleteResult = await DeleteSubscriptionsAsync(userId);
@@ -614,7 +579,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 if (deleteResult is TwitchEventSubDeleteStatus.DeferredLive)
                     return true;
 
-                if (state.Authorization != null && state.Spider != null)
+                if (action == TwitchReconcileAction.DeleteSubscriptionsThenEvaluateGuild)
                     return await ApplyRevokedAuthorizationGuildPolicyAsync(state.Spider);
 
                 ClearPending(userId);
@@ -695,12 +660,21 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             TwitchSpiderRemovalMetricReason reason)
         {
             var streams = await _apiService.GetNowStreamsResultAsync(expectedSpider.UserId);
-            if (!streams.IsSuccess)
+            var preflightAction = TwitchSpiderRemovalPolicy.Decide(new TwitchSpiderRemovalFacts(
+                streams.IsSuccess,
+                streams.Streams.Any(x => x.UserId == expectedSpider.UserId),
+                SpiderExists: true,
+                GuildBindingMatches: true,
+                HasValidAuthorization: false,
+                HasClientIdMismatch: false,
+                reason,
+                LatestEligibility: null));
+            if (preflightAction == TwitchSpiderRemovalAction.DeferApiFailure)
             {
                 SetPending(expectedSpider.UserId, TwitchEventSubCleanupDeferredMetricReason.TwitchApiFailure);
                 return true;
             }
-            if (streams.Streams.Any(x => x.UserId == expectedSpider.UserId))
+            if (preflightAction == TwitchSpiderRemovalAction.DeferLive)
             {
                 SetPending(expectedSpider.UserId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
                 return true;
@@ -710,14 +684,22 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             var currentSpider = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == expectedSpider.UserId);
             var currentAuthorization = await db.TwitchBroadcasterAuthorization.AsNoTracking()
                 .SingleOrDefaultAsync(x => x.TwitchUserId == expectedSpider.UserId);
-            if (currentSpider == null)
+            var currentFacts = new TwitchSpiderRemovalFacts(
+                StreamLookupSucceeded: true,
+                IsLive: false,
+                SpiderExists: currentSpider != null,
+                GuildBindingMatches: currentSpider?.GuildId == expectedSpider.GuildId,
+                HasValidAuthorization: IsValidAuthorization(currentAuthorization),
+                HasClientIdMismatch: HasClientIdMismatch(currentAuthorization),
+                reason,
+                LatestEligibility: null);
+            var currentAction = TwitchSpiderRemovalPolicy.Decide(currentFacts);
+            if (currentAction == TwitchSpiderRemovalAction.AlreadyRemoved)
             {
                 ClearPending(expectedSpider.UserId);
                 return true;
             }
-
-            if (currentSpider.GuildId != expectedSpider.GuildId || IsValidAuthorization(currentAuthorization) ||
-                HasClientIdMismatch(currentAuthorization))
+            if (currentAction == TwitchSpiderRemovalAction.StateChanged)
             {
                 // 評估期間資料已變更，放棄本次刪除並等待下一輪以新狀態重新判斷。
                 SetPending(expectedSpider.UserId, TwitchEventSubCleanupDeferredMetricReason.GuildSnapshotUnavailable);
@@ -725,16 +707,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
 
             var latestEligibility = await _guildEligibility.EvaluateAsync(currentSpider);
-            bool removalStillAllowed = reason switch
+            var finalAction = TwitchSpiderRemovalPolicy.Decide(currentFacts with
             {
-                TwitchSpiderRemovalMetricReason.GuildIneligible => latestEligibility == TwitchGuildEligibilityStatus.Ineligible,
-                TwitchSpiderRemovalMetricReason.GuildMissing => latestEligibility == TwitchGuildEligibilityStatus.MissingConfirmed,
-                _ => false
-            };
-            if (!removalStillAllowed)
+                LatestEligibility = latestEligibility
+            });
+            if (finalAction != TwitchSpiderRemovalAction.Remove)
             {
                 SetPending(expectedSpider.UserId,
-                    latestEligibility == TwitchGuildEligibilityStatus.NotifierUnavailable
+                    finalAction == TwitchSpiderRemovalAction.DeferNotifier
                         ? TwitchEventSubCleanupDeferredMetricReason.NotifierUnavailable
                         : TwitchEventSubCleanupDeferredMetricReason.GuildSnapshotUnavailable);
                 return true;
@@ -758,29 +738,33 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 return;
 
             var cancellation = CancellationTokenSource.CreateLinkedTokenSource(GracefulShutdown.Token);
-            if (!replaceExisting)
+            var cancellationToken = cancellation.Token;
+            while (true)
             {
-                if (!_streamOfflineReminders.TryAdd(userId, cancellation))
+                if (_streamOfflineReminders.TryGetValue(userId, out var previous))
                 {
-                    cancellation.Dispose();
-                    return;
-                }
-            }
-            else
-            {
-                if (_streamOfflineReminders.TryRemove(userId, out var previous))
-                {
+                    if (!replaceExisting)
+                    {
+                        cancellation.Dispose();
+                        return;
+                    }
+
+                    if (!_streamOfflineReminders.TryUpdate(userId, cancellation, previous))
+                        continue;
+
                     previous.Cancel();
-                    previous.Dispose();
+                    break;
                 }
-                _streamOfflineReminders[userId] = cancellation;
+
+                if (_streamOfflineReminders.TryAdd(userId, cancellation))
+                    break;
             }
 
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(OfflineDebounce, cancellation.Token);
+                    await Task.Delay(OfflineDebounce, cancellationToken);
                     await HandleStreamEndedAsync(userId, userLogin, userName, DateTime.UtcNow - OfflineDebounce,
                         publishEndNotification);
                 }
@@ -808,7 +792,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         {
             HelixStream resumedStream = null;
             TwitchStream twitchStream = null;
-            bool shouldPublishEnd = false;
+            TwitchOfflineAction offlineAction = TwitchOfflineAction.Defer;
             var userLock = GetUserLock(userId);
             await userLock.WaitAsync();
             try
@@ -817,21 +801,36 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 if (!streams.IsSuccess)
                 {
                     SetPending(userId, TwitchEventSubCleanupDeferredMetricReason.TwitchApiFailure);
-                    return;
                 }
-
-                resumedStream = streams.Streams.FirstOrDefault(x => x.UserId == userId);
-                if (resumedStream == null)
+                else
                 {
-                    twitchStream = await GetStreamStateAsync(userId);
-                    var state = await LoadUserStateAsync(userId);
-                    // 先處理 EventSub 與授權失效清理，再決定是否能安全發布關台通知。
-                    await ReconcileOfflineStateCoreAsync(state);
-                    if (_deferredCleanup.TryGetValue(userId, out var reason) &&
-                        reason == TwitchEventSubCleanupDeferredMetricReason.StreamLive)
-                        return;
-
-                    shouldPublishEnd = twitchStream != null || state.Spider != null;
+                    resumedStream = streams.Streams.FirstOrDefault(x => x.UserId == userId);
+                    if (resumedStream == null)
+                    {
+                        twitchStream = await GetStreamStateAsync(userId);
+                        var state = await LoadUserStateAsync(userId);
+                        // 先處理 EventSub 與授權失效清理，再決定是否能安全發布關台通知。
+                        await ReconcileOfflineStateCoreAsync(state);
+                        bool cleanupStillDeferredForLive = _deferredCleanup.TryGetValue(userId, out var reason) &&
+                            reason == TwitchEventSubCleanupDeferredMetricReason.StreamLive;
+                        offlineAction = TwitchOfflinePolicy.Decide(new TwitchOfflineFacts(
+                            StreamLookupSucceeded: true,
+                            HasResumedStream: false,
+                            cleanupStillDeferredForLive,
+                            publishEndNotification,
+                            HasStreamState: twitchStream != null,
+                            HasSpider: state.Spider != null));
+                    }
+                    else
+                    {
+                        offlineAction = TwitchOfflinePolicy.Decide(new TwitchOfflineFacts(
+                            StreamLookupSucceeded: true,
+                            HasResumedStream: true,
+                            CleanupStillDeferredForLive: false,
+                            publishEndNotification,
+                            HasStreamState: false,
+                            HasSpider: false));
+                    }
                 }
             }
             finally
@@ -839,20 +838,22 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 userLock.Release();
             }
 
-            if (resumedStream != null)
+            if (offlineAction == TwitchOfflineAction.Defer)
+                return;
+            if (offlineAction == TwitchOfflineAction.ResumeStream)
             {
                 await HandleStreamStartedAsync(resumedStream);
                 return;
             }
 
-            if (!publishEndNotification)
+            if (offlineAction == TwitchOfflineAction.ClearState)
             {
                 await Bot.RedisDb.KeyDeleteAsync(RedisChannels.Twitch.StreamData(userId));
                 if (!string.IsNullOrEmpty(twitchStream?.StreamId))
                     _handledStreamIds.TryRemove(twitchStream.StreamId, out _);
                 return;
             }
-            if (!shouldPublishEnd)
+            if (offlineAction == TwitchOfflineAction.Ignore)
                 return;
 
             var clipItems = new List<TwitchClipInfo>();
@@ -925,20 +926,25 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         private async Task<bool> ReconcileOfflineStateCoreAsync(TwitchUserState state)
         {
             string userId = state.UserId;
-            if (HasClientIdMismatch(state.Authorization))
+            var action = TwitchReconcilePolicy.Decide(CreateReconcileFacts(
+                state.Spider,
+                state.Authorization,
+                liveStateKnown: true,
+                isLive: false,
+                hasLocalStreamState: false,
+                offlineConfirmationCompleted: true,
+                streamStartedAt: default));
+            switch (action)
             {
-                SetPending(userId, null);
-                Log.Error($"Twitch broadcaster {userId} 的授權 ClientId 與目前設定不符，關台後禁止自動刪除 EventSub 或 spider");
-                return false;
-            }
-
-            if (IsValidAuthorization(state.Authorization) && state.Spider != null)
-                return await EnsureSubscriptionsAsync(userId, TwitchEventSubEnsureMode.PermanentOAuth);
-
-            if (state.Authorization == null && state.Spider?.IsWarningUser == true)
-            {
-                ClearPending(userId);
-                return true;
+                case TwitchReconcileAction.RejectClientIdMismatch:
+                    SetPending(userId, null);
+                    Log.Error($"Twitch broadcaster {userId} 的授權 ClientId 與目前設定不符，關台後禁止自動刪除 EventSub 或 spider");
+                    return false;
+                case TwitchReconcileAction.EnsurePermanentSubscriptions:
+                    return await EnsureSubscriptionsAsync(userId, TwitchEventSubEnsureMode.PermanentOAuth);
+                case TwitchReconcileAction.KeepPollingWithoutSubscriptions:
+                    ClearPending(userId);
+                    return true;
             }
 
             var deleteResult = await DeleteSubscriptionsAsync(userId);
@@ -947,7 +953,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             if (deleteResult == TwitchEventSubDeleteStatus.DeferredLive)
                 return true;
 
-            if (state.Authorization != null && state.Spider != null)
+            if (action == TwitchReconcileAction.DeleteSubscriptionsThenEvaluateGuild)
                 return await ApplyRevokedAuthorizationGuildPolicyAsync(state.Spider);
 
             ClearPending(userId);
@@ -1038,7 +1044,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 return false;
 
             cancellation.Cancel();
-            cancellation.Dispose();
             return true;
         }
 
@@ -1098,17 +1103,36 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
         }
 
-        private static TwitchStream CreateTwitchStream(HelixStream stream) => new()
-        {
-            StreamId = stream.Id,
-            StreamTitle = stream.Title,
-            GameName = stream.GameName,
-            ThumbnailUrl = (stream.ThumbnailUrl ?? string.Empty).Replace("{width}", "854").Replace("{height}", "480"),
-            UserId = stream.UserId,
-            UserLogin = stream.UserLogin,
-            UserName = stream.UserName,
-            StreamStartAt = stream.StartedAt
-        };
+        private static TwitchStreamDataFacts CreateStreamDataFacts(HelixStream stream) => new(
+            stream.Id,
+            stream.Title,
+            stream.StartedAt,
+            stream.UserId,
+            stream.UserLogin,
+            stream.UserName,
+            stream.GameName,
+            stream.ThumbnailUrl);
+
+        private TwitchReconcileFacts CreateReconcileFacts(
+            TwitchSpider spider,
+            TwitchBroadcasterAuthorization authorization,
+            bool liveStateKnown,
+            bool isLive,
+            bool hasLocalStreamState,
+            bool offlineConfirmationCompleted,
+            DateTime streamStartedAt) => new(
+                HasSpider: spider != null,
+                IsWarningSpider: spider?.IsWarningUser == true,
+                HasAuthorization: authorization != null,
+                HasValidAuthorization: IsValidAuthorization(authorization),
+                HasClientIdMismatch: HasClientIdMismatch(authorization),
+                liveStateKnown,
+                isLive,
+                hasLocalStreamState,
+                offlineConfirmationCompleted,
+                AuthorizationRevokedDuringCurrentStream: isLive &&
+                    TwitchReconcilePolicy.WasAuthorizationRevokedDuringStream(
+                        authorization?.RevokedAt, streamStartedAt));
 
         private bool IsValidAuthorization(TwitchBroadcasterAuthorization authorization) =>
             authorization != null && authorization.RevokedAt == null && !HasClientIdMismatch(authorization);
@@ -1125,22 +1149,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             if (IsValidAuthorization(authorization))
                 return TwitchSpiderMetricMode.OAuth;
             return spider.IsWarningUser ? TwitchSpiderMetricMode.Warning : TwitchSpiderMetricMode.Fallback;
-        }
-
-        private static bool WasLiveWhenAuthorizationRevoked(
-            TwitchBroadcasterAuthorization authorization, DateTime streamStartedAt)
-        {
-            if (authorization?.RevokedAt == null)
-                return false;
-
-            DateTime startedAtUtc = streamStartedAt.Kind == DateTimeKind.Utc
-                ? streamStartedAt
-                : DateTime.SpecifyKind(streamStartedAt, DateTimeKind.Utc);
-            DateTime revokedAtUtc = authorization.RevokedAt.Value.Kind == DateTimeKind.Utc
-                ? authorization.RevokedAt.Value
-                : DateTime.SpecifyKind(authorization.RevokedAt.Value, DateTimeKind.Utc);
-            // 開台時間早於或等於撤銷時間，表示撤銷發生時該場直播已在進行。
-            return startedAtUtc <= revokedAtUtc;
         }
 
         private static string GetBroadcasterUserId(EventSubSubscription subscription)
@@ -1205,34 +1213,25 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         {
             try
             {
-                string description = string.Join("\n\n", updates.Select(FormatLegacyChannelUpdate));
+                var batch = TwitchChannelUpdatePolicy.CreateBatch(
+                    updates.Select(TwitchChannelUpdateChange.FromDto));
+                if (batch.Updates.Count == 0)
+                    return;
+
                 await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Twitch, new TwitchNotification
                 {
                     NoticeType = TwitchNoticeType.ChangeStreamData,
                     UserId = userId,
                     UserLogin = userLogin,
                     UserName = userName,
-                    Updates = updates.ToList(),
-                    Description = description,
+                    Updates = batch.Updates.ToList(),
+                    Description = batch.LegacyDescription,
                 });
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"發布 Twitch 頻道更新通知失敗: {userId}");
             }
-        }
-
-        private static string FormatLegacyChannelUpdate(TwitchChannelUpdateInfo update)
-        {
-            string message = $"`{TimeSpan.FromSeconds(update.ElapsedSeconds):hh':'mm':'ss}`";
-            if (update.NewTitle != null)
-                message += $"\n標題變更 `{update.OldTitle}` => `{update.NewTitle}`";
-            if (update.NewCategory != null)
-            {
-                message += $"\n分類變更 `{(string.IsNullOrEmpty(update.OldCategory) ? "無" : update.OldCategory)}`" +
-                    $" => `{(string.IsNullOrEmpty(update.NewCategory) ? "無" : update.NewCategory)}`";
-            }
-            return message;
         }
 
         private async Task<bool> RecordTwitchAsync(TwitchStream twitchStream)

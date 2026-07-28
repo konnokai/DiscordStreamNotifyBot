@@ -16,36 +16,46 @@ namespace DiscordStreamNotifyBot.Shared
         /// <returns>背景 Task（通常不需保留參考；生命週期由 <paramref name="token"/> 控制）。</returns>
         public static Task RunAsync(string name, TimeSpan dueTime, TimeSpan interval, Func<Task> action, CancellationToken token)
         {
-            return Task.Run(async () =>
-            {
-                try
-                {
-                    if (dueTime > TimeSpan.Zero)
-                        await Task.Delay(dueTime, token).ConfigureAwait(false);
+            return Task.Run(
+                () => RunCoreAsync(name, dueTime, interval, action, TimeProvider.System, token),
+                token);
+        }
 
-                    using var timer = new PeriodicTimer(interval);
-                    do
-                    {
-                        try
-                        {
-                            await action().ConfigureAwait(false);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex.Demystify(), $"PeriodicRunner[{name}]");
-                        }
-                    }
-                    while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false));
-                }
-                catch (OperationCanceledException)
+        internal static async Task RunCoreAsync(
+            string name,
+            TimeSpan dueTime,
+            TimeSpan interval,
+            Func<Task> action,
+            TimeProvider timeProvider,
+            CancellationToken token)
+        {
+            try
+            {
+                if (dueTime > TimeSpan.Zero)
+                    await Task.Delay(dueTime, timeProvider, token).ConfigureAwait(false);
+
+                using var timer = new PeriodicTimer(interval, timeProvider);
+                do
                 {
-                    // 關閉中，正常結束
+                    try
+                    {
+                        await action().ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), $"PeriodicRunner[{name}]");
+                    }
                 }
-            }, token);
+                while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false));
+            }
+            catch (OperationCanceledException)
+            {
+                // 關閉中，正常結束
+            }
         }
     }
 }

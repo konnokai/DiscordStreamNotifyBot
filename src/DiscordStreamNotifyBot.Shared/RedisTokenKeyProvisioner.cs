@@ -26,13 +26,12 @@ namespace DiscordStreamNotifyBot.Shared
             bool isAuthority = role == BotRole.Notifier && shardId == 0;
             const string rkKey = RedisChannels.Cluster.RedisTokenKey;
 
-            // 1) 設定檔已有金鑰 → 視為權威（與後端手動共用的密鑰）；鏡射到 Redis 供其他程序一致取用。
-            if (!string.IsNullOrWhiteSpace(cfg.RedisTokenKey))
+            // 1) 只有 shard 0 能以設定檔金鑰更新叢集真實來源；其餘 shard 即使帶到舊設定也只能採用 Redis 值。
+            if (isAuthority && !string.IsNullOrWhiteSpace(cfg.RedisTokenKey))
             {
                 await db.StringSetAsync(rkKey, cfg.RedisTokenKey);
-                Utility.RedisKey = cfg.RedisTokenKey;
-                if (isAuthority)
-                    await PublishToBackendAsync(sub, cfg.RedisTokenKey);
+                Adopt(cfg, cfg.RedisTokenKey);
+                await PublishToBackendAsync(sub, cfg.RedisTokenKey);
                 return;
             }
 
