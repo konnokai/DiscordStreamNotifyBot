@@ -63,11 +63,13 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly GuildLocaleService _guildLocaleService;
         private readonly CommandDisplayResolver _commandDisplayResolver;
         private readonly EmojiService _emojiService;
+        private readonly NotifierMetrics _metrics;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory,
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
             Shared.YoutubeApiService apiService, BotLocalizer localizer,
-            GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver)
+            GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver,
+            NotifierMetrics metrics)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
@@ -78,6 +80,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _guildLocaleService = guildLocaleService;
             _commandDisplayResolver = commandDisplayResolver;
             _emojiService = emojiService;
+            _metrics = metrics;
             _noticeCache = new NoticeCache<NoticeYoutubeStreamChannel>(dbService, db => db.NoticeYoutubeStreamChannel.AsNoTracking().ToList());
         }
 
@@ -238,6 +241,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             if (!Bot.IsConnect)
                 return;
 
+            NotificationMetricEvent metricEvent = NotifierMetrics.ToMetricEvent(dto.NoticeType);
+
             string type;
             switch (streamVideo.ChannelType)
             {
@@ -304,6 +309,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                 foreach (var item in noticeYoutubeStreamChannels)
                 {
+                    NotificationDeliveryResult? deliveryResult = null;
+                    Stopwatch deliveryStopwatch = null;
+                    bool primaryMessageSent = false;
                     try
                     {
                         if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
@@ -313,6 +321,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 continue;
 
                             Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | 找不到伺服器 {item.GuildId}");
+                            deliveryResult = NotificationDeliveryResult.MissingGuild;
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
                             _noticeCache.Invalidate();
@@ -332,7 +341,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         // 只有新影片會發到影片通知頻道，首播類的影片歸類在直播類型
                         // 原則上 DiscordNoticeVideoChannelId 預設會跟 DiscordNoticeStreamChannelId 一樣，不該為空
                         var channel = guild.GetTextChannel(noticeType == NoticeType.NewVideo ? item.DiscordNoticeVideoChannelId : item.DiscordNoticeStreamChannelId);
-                        if (channel == null) continue;
+                        if (channel == null)
+                        {
+                            deliveryResult = NotificationDeliveryResult.MissingChannel;
+                            continue;
+                        }
 
                         // 如果是新直播的話就建立活動，或更改活動開始時間
                         try
@@ -472,12 +485,18 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 break;
                         }
 
-                        if (sendMessage == "-") continue;
+                        if (sendMessage == "-")
+                        {
+                            deliveryResult = NotificationDeliveryResult.Disabled;
+                            continue;
+                        }
 
+                        deliveryStopwatch = Stopwatch.StartNew();
                         await Policy.Handle<TimeoutException>()
                             .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                             .WaitAndRetryAsync(3, (retryAttempt) =>
                             {
+                                _metrics.RecordNotificationDeliveryRetry(metricEvent);
                                 var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
                                 Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {channel.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
@@ -487,6 +506,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 var message = await channel.SendMessageAsync(text: sendMessage, embed: variant.Embed,
                                     components: variant.Component,
                                     options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                primaryMessageSent = true;
 
                                 try
                                 {
@@ -498,14 +518,23 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                     // ignore
                                 }
                             });
+                        deliveryResult = NotificationDeliveryResult.Sent;
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
                         if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"YouTube 通知 ({streamVideo.VideoId})"))
+                        {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.AuthorizationFailure;
                             throw;
+                        }
 
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.MissingPermission;
                             Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 遺失權限");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.DiscordNoticeVideoChannelId));
                             db.SaveChanges();
@@ -513,20 +542,43 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.Discord5xx;
                             Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 50X 錯誤: {httpEx.HttpCode}");
                         }
                         else
                         {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.UnknownError;
                             Log.Error(httpEx, $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 未知錯誤");
                         }
                     }
                     catch (TimeoutException)
                     {
+                        deliveryResult = primaryMessageSent
+                            ? NotificationDeliveryResult.Sent
+                            : NotificationDeliveryResult.Timeout;
                         Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Timeout");
                     }
                     catch (Exception ex)
                     {
+                        deliveryResult = primaryMessageSent
+                            ? NotificationDeliveryResult.Sent
+                            : NotificationDeliveryResult.UnknownError;
                         Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 未知錯誤");
+                    }
+                    finally
+                    {
+                        if (deliveryStopwatch != null)
+                        {
+                            deliveryStopwatch.Stop();
+                            _metrics.ObserveNotificationDeliveryDuration(metricEvent, deliveryStopwatch.Elapsed);
+                        }
+
+                        if (deliveryResult.HasValue)
+                            _metrics.RecordNotificationDelivery(metricEvent, deliveryResult.Value);
                     }
                 }
             }

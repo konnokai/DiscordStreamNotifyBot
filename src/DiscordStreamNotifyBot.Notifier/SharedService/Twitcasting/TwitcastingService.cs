@@ -28,11 +28,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         private readonly NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel> _noticeCache;
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
+        private readonly NotifierMetrics _metrics;
 
         public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient,
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
-            BotLocalizer localizer, GuildLocaleService guildLocaleService)
+            BotLocalizer localizer, GuildLocaleService guildLocaleService, NotifierMetrics metrics)
         {
+            _metrics = metrics;
             if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
                 Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 遺失，無法運行 TwitCasting 類功能");
@@ -129,6 +131,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 
                 foreach (var item in noticeGuildList)
                 {
+                    NotificationDeliveryResult? deliveryResult = null;
+                    Stopwatch deliveryStopwatch = null;
+                    bool primaryMessageSent = false;
                     try
                     {
                         if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
@@ -138,6 +143,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                                 continue;
 
                             Log.Warn($"TwitCasting 通知 ({item.DiscordChannelId}) | 找不到伺服器 {item.GuildId}");
+                            deliveryResult = NotificationDeliveryResult.MissingGuild;
                             db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == item.GuildId));
                             db.SaveChanges();
                             _noticeCache.Invalidate();
@@ -166,12 +172,18 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                         TwitcastingNotificationVariant variant = variantValue.Value;
 
                         var channel = guild.GetTextChannel(item.DiscordChannelId);
-                        if (channel == null) continue;
+                        if (channel == null)
+                        {
+                            deliveryResult = NotificationDeliveryResult.MissingChannel;
+                            continue;
+                        }
 
+                        deliveryStopwatch = Stopwatch.StartNew();
                         await Policy.Handle<TimeoutException>()
                             .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                             .WaitAndRetryAsync(3, (retryAttempt) =>
                             {
+                                _metrics.RecordNotificationDeliveryRetry(NotificationMetricEvent.TwitcastingStart);
                                 var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
                                 Log.Warn($"{item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
@@ -181,6 +193,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                                 var message = await channel.SendMessageAsync(text: item.StartStreamMessage,
                                     embed: variant.Embed, components: variant.Component,
                                     options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
+                                primaryMessageSent = true;
 
                                 try
                                 {
@@ -192,14 +205,23 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                                     // ignore
                                 }
                             });
+                        deliveryResult = NotificationDeliveryResult.Sent;
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
                         if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"TwitCasting 通知 ({item.DiscordChannelId})"))
+                        {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.AuthorizationFailure;
                             throw;
+                        }
 
                         if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
                         {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.MissingPermission;
                             Log.Warn($"TwitCasting 通知 - 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
                             db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
@@ -207,20 +229,43 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.Discord5xx;
                             Log.Warn($"TwitCasting 通知 - Discord 50X 錯誤: {httpEx.HttpCode}");
                         }
                         else
                         {
+                            deliveryResult = primaryMessageSent
+                                ? NotificationDeliveryResult.Sent
+                                : NotificationDeliveryResult.UnknownError;
                             Log.Error(httpEx, $"TwitCasting 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                         }
                     }
                     catch (TimeoutException)
                     {
+                        deliveryResult = primaryMessageSent
+                            ? NotificationDeliveryResult.Sent
+                            : NotificationDeliveryResult.Timeout;
                         Log.Warn($"TwitCasting 通知 - Timeout {item.GuildId} / {item.DiscordChannelId}");
                     }
                     catch (Exception ex)
                     {
+                        deliveryResult = primaryMessageSent
+                            ? NotificationDeliveryResult.Sent
+                            : NotificationDeliveryResult.UnknownError;
                         Log.Error(ex.Demystify(), $"TwitCasting 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
+                    }
+                    finally
+                    {
+                        if (deliveryStopwatch != null)
+                        {
+                            deliveryStopwatch.Stop();
+                            _metrics.ObserveNotificationDeliveryDuration(NotificationMetricEvent.TwitcastingStart, deliveryStopwatch.Elapsed);
+                        }
+
+                        if (deliveryResult.HasValue)
+                            _metrics.RecordNotificationDelivery(NotificationMetricEvent.TwitcastingStart, deliveryResult.Value);
                     }
                 }
             }

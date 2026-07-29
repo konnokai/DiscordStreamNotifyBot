@@ -28,11 +28,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         private readonly GuildLocaleService _guildLocaleService;
         private readonly LocaleResolver _localeResolver;
         private readonly IServiceProvider _services;
+        private readonly NotifierMetrics _metrics;
 
         public YoutubeMemberService(YoutubeStreamService streamService, DiscordSocketClient discordSocketClient,
             BotConfig botConfig, MainDbService dbService, BotLocalizer localizer,
             CommandDisplayResolver commandDisplayResolver, GuildLocaleService guildLocaleService,
-            LocaleResolver localeResolver, IServiceProvider services)
+            LocaleResolver localeResolver, IServiceProvider services, NotifierMetrics metrics)
         {
             _streamService = streamService;
             _client = discordSocketClient;
@@ -43,6 +44,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             _guildLocaleService = guildLocaleService;
             _localeResolver = localeResolver;
             _services = services;
+            _metrics = metrics;
 
             if (string.IsNullOrEmpty(_botConfig.GoogleClientId) || string.IsNullOrEmpty(_botConfig.GoogleClientSecret))
             {

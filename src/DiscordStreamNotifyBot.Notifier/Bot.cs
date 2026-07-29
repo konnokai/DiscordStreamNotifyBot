@@ -51,11 +51,13 @@ namespace DiscordStreamNotifyBot
         private readonly static BotConfig _botConfig = new();
         private readonly int _shardId;
         private readonly int _totalShardCount;
+        private readonly NotifierMetrics _metrics;
 
-        public Bot(int shardId, int totalShardCount)
+        internal Bot(int shardId, int totalShardCount, NotifierMetrics metrics)
         {
             _shardId = shardId;
             _totalShardCount = totalShardCount;
+            _metrics = metrics;
             ShardId = shardId;
             TotalShardCount = totalShardCount;
 
@@ -267,6 +269,7 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<CommandDisplayResolver>()
                 .AddSingleton<LocaleResolver>()
                 .AddSingleton<GuildLocaleService>()
+                .AddSingleton(_metrics)
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton<SharedService.EmojiService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
@@ -313,7 +316,8 @@ namespace DiscordStreamNotifyBot
                     serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>(),
                     serviceProvider.GetService<SharedService.Twitch.TwitchService>(),
                     serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>(),
-                    serviceProvider.GetService<SharedService.YoutubeMember.YoutubeMemberService>());
+                    serviceProvider.GetService<SharedService.YoutubeMember.YoutubeMemberService>(),
+                    _metrics);
                 await _busConsumer.StartAsync(_shardId);
             }
             catch (Exception ex)

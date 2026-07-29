@@ -71,6 +71,9 @@ services:
     environment:
       ROLE: notifier
     command: ["0", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
+    ports:
+      # Notifier 容器內皆使用 9466；固定 shard 以不同宿主機 port 供 Prometheus 抓取。
+      - "9466:9466"
     depends_on: [coordinator]
 
   notifier-1:
@@ -80,4 +83,6 @@ services:
     environment:
       ROLE: notifier
     command: ["1", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
+    ports:
+      - "9467:9466"
     depends_on: [coordinator]

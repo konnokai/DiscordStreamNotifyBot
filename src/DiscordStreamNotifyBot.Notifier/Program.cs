@@ -7,6 +7,7 @@ namespace DiscordStreamNotifyBot
     public class Program
     {
         private const BotRole Role = BotRole.Notifier;
+        private const int MetricsPort = 9466;
         private static int _isHandlingUnhandledException;
 
         public static string Version => GetLinkerTime(Assembly.GetEntryAssembly());
@@ -64,8 +65,14 @@ namespace DiscordStreamNotifyBot
 
             RegisterUnhandledExceptionHandler(preflightConfig, shardId, totalShards);
 
+            var metrics = new NotifierMetrics();
+            using var metricServer = new Prometheus.KestrelMetricServer(port: MetricsPort);
             try
             {
+                metricServer.Start();
+                metrics.Start();
+                Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
+
                 // RedisTokenKey 叢集佈建（僅 shard 0 有權建立，以 Redis 為單一真實來源同步至各 shard 與後端）。
                 // 必須在建立 Bot（其 YoutubeMemberService/RedisDataStore 會捕捉 Utility.RedisKey）之前完成。
                 try
@@ -103,11 +110,13 @@ namespace DiscordStreamNotifyBot
                 // id 以 shard 為鍵（非 machine:pid）：同一 shard 被多個程序重複認領時會共用同一鍵，數量才等於「實際被涵蓋的 shard 數」。
                 _ = Task.Run(() => RunHeartbeatLoopAsync(preflightConfig, shardId, GracefulShutdown.Token));
 
-                var bot = new Bot(shardId, totalShards);
+                var bot = new Bot(shardId, totalShards, metrics);
                 bot.StartAndBlockAsync().GetAwaiter().GetResult();
             }
             finally
             {
+                metrics.Stop();
+                await metricServer.StopAsync();
                 await Log.ShutdownAsync(TimeSpan.FromSeconds(3));
             }
         }
