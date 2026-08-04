@@ -1,11 +1,10 @@
-using DiscordStreamNotifyBot;
 using DiscordStreamNotifyBot.Shared;
 
 public class BotConfig
 {
     public string MySqlConnectionString { get; set; } = "Server=localhost;Port=3306;User Id=stream_bot;Password=Ch@nge_Me;Database=discord_stream_bot";
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
-    public string RedisTokenKey { get; set; } = "";
+    public string ProviderTokenEncryptionKey { get; set; } = "";
 
     public string ApiServerDomain { get; set; } = "";
     public string UptimeKumaPushUrl { get; set; } = "";
@@ -98,7 +97,7 @@ public class BotConfig
 
             MySqlConnectionString = config.MySqlConnectionString;
             RedisOption = config.RedisOption;
-            RedisTokenKey = config.RedisTokenKey;
+            ProviderTokenEncryptionKey = config.ProviderTokenEncryptionKey;
             ApiServerDomain = config.ApiServerDomain;
             DiscordToken = config.DiscordToken;
             WebHookUrl = config.WebHookUrl;
@@ -121,12 +120,8 @@ public class BotConfig
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
 
-            // RedisTokenKey 的佈建改由 Redis 連線後的 RedisTokenKeyProvisioner 統一處理：僅 notifier shard 0 有權
-            // 建立，並以 Redis 為單一真實來源同步至各 shard 與後端。此處不再各自產生金鑰（會導致每個程序產生不同
-            // 金鑰、彼此與後端對不上，且原 GenRandomKey 產生空字串使「重建」實際無效）。設定檔已有金鑰時直接採用；
-            // 為空則留給 Provisioner，且不覆寫其可能已設好的 Utility.RedisKey。
-            if (!string.IsNullOrWhiteSpace(RedisTokenKey))
-                Utility.RedisKey = RedisTokenKey;
+            if (needsDiscord)
+                ValidateProviderTokenEncryptionKey(ProviderTokenEncryptionKey);
         }
         catch (Exception ex)
         {
@@ -143,6 +138,7 @@ public class BotConfig
     {
         SetIfPresent("MYSQL_CONNECTION_STRING", v => MySqlConnectionString = v);
         SetIfPresent("REDIS_OPTION", v => RedisOption = v);
+        SetIfPresent("PROVIDER_TOKEN_ENCRYPTION_KEY", v => ProviderTokenEncryptionKey = v);
         SetIfPresent("DISCORD_TOKEN", v => DiscordToken = v);
         SetIfPresent("GOOGLE_API_KEY", v => GoogleApiKey = v);
         SetIfPresent("LOKI_URL", v => LokiUrl = v);
@@ -182,17 +178,12 @@ public class BotConfig
         }
     }
 
-    public static string GenRandomKey(int length = 128)
+    internal static void ValidateProviderTokenEncryptionKey(string value)
     {
-        const string characters = "ABCDEF_GHIJKLMNOPQRSTUVWXYZ@abcdefghijklmnopqrstuvwx-yz0123456789";
-        var random = new Random();
-        var chars = new char[length];
-
-        for (int i = 0; i < length; i++)
-        {
-            chars[i] = characters[random.Next(characters.Length)];
-        }
-
-        return new string(chars);
+        if (string.IsNullOrWhiteSpace(value))
+            throw new InvalidOperationException($"{nameof(ProviderTokenEncryptionKey)} 不得為空");
+        if (value.Length < 64)
+            throw new InvalidOperationException($"{nameof(ProviderTokenEncryptionKey)} 長度不得少於 64 字元");
     }
+
 }

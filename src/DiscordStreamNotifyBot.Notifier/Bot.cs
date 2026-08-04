@@ -110,7 +110,7 @@ namespace DiscordStreamNotifyBot
             {
                 ShardId = _shardId,
                 TotalShards = _totalShardCount,
-                LogLevel = LogSeverity.Info,
+                LogLevel = Debugger.IsAttached ? LogSeverity.Debug : LogSeverity.Info,
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 0,
                 // 因為沒有註冊事件，Discord .NET 建議可移除這兩個沒用到的特權
@@ -187,6 +187,14 @@ namespace DiscordStreamNotifyBot
                         IEnumerable<YoutubeMemberCheck> youtubeMemberChecks;
                         if ((youtubeMemberChecks = db.YoutubeMemberCheck.Where(x => x.GuildId == guild.Id)).Any())
                             db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
+
+                        IEnumerable<TwitchSubscriptionCheck> twitchSubscriptionChecks;
+                        if ((twitchSubscriptionChecks = db.TwitchSubscriptionCheck.Where(x => x.GuildId == guild.Id)).Any())
+                            db.TwitchSubscriptionCheck.RemoveRange(twitchSubscriptionChecks);
+
+                        IEnumerable<GuildTwitchSubscriptionConfig> guildTwitchSubscriptionConfigs;
+                        if ((guildTwitchSubscriptionConfigs = db.GuildTwitchSubscriptionConfig.Where(x => x.GuildId == guild.Id)).Any())
+                            db.GuildTwitchSubscriptionConfig.RemoveRange(guildTwitchSubscriptionConfigs);
 
                         var saveTime = DateTime.Now;
                         bool saveFailed;
@@ -274,6 +282,11 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<SharedService.EmojiService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
+                .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionApiClient>()
+                .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionOperationCoordinator>()
+                .AddSingleton<SharedService.TwitchSubscription.TwitchAuthorizationTokenService>()
+                .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionRoleService>()
+                .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
                 .AddSingleton(client)
@@ -296,6 +309,9 @@ namespace DiscordStreamNotifyBot
             //https://blog.darkthread.net/blog/polly/
             //HandleTransientHttpError 包含 5xx 及 408 錯誤
             services.AddHttpClient<DiscordWebhookClient>();
+            services.AddHttpClient(
+                SharedService.TwitchSubscription.TwitchSubscriptionApiClient.HttpClientName,
+                client => client.Timeout = TimeSpan.FromSeconds(30));
             services.AddHttpClient<TwitcastingClient>()
                 .AddPolicyHandler(HttpPolicyExtensions
                 .HandleTransientHttpError()
@@ -304,9 +320,16 @@ namespace DiscordStreamNotifyBot
             services.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             services.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
 
-            IServiceProvider serviceProvider = services.BuildServiceProvider();
-            await serviceProvider.GetService<InteractionHandler>().InitializeAsync();
-            await serviceProvider.GetService<CommandHandler>().InitializeAsync();
+            IServiceProvider serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateOnBuild = true,
+                ValidateScopes = true
+            });
+            await serviceProvider.GetRequiredService<InteractionHandler>().InitializeAsync();
+            await serviceProvider.GetRequiredService<CommandHandler>().InitializeAsync();
+            var twitchSubscriptionService = serviceProvider
+                .GetRequiredService<SharedService.TwitchSubscription.TwitchSubscriptionService>();
+            twitchSubscriptionService.Start();
             #endregion
 
             #region 通知匯流排消費（Notifier 的通知一律來自 bot:notify Redis Stream；消費啟動失敗 = 無法服務，直接結束交由重啟）
@@ -486,6 +509,10 @@ namespace DiscordStreamNotifyBot
                 await Task.Delay(5000);
             }
 
+            await twitchSubscriptionService.StopAsync();
+            await serviceProvider
+                .GetRequiredService<SharedService.TwitchSubscription.TwitchAuthorizationTokenService>()
+                .StopAsync();
             await client.StopAsync();
 
             Redis.GetSubscriber().UnsubscribeAll();

@@ -58,7 +58,7 @@ E:\repos\_konnokai\auto-discord-ytmember-checker
 ### 2.2 Backend
 
 - 已有 `TwitchOAuthController`，但前端尚未接線。
-- Twitch token 存在 Redis DB 1 的 `twitch:oauth:{discordUserId}`。
+- 舊版程式曾將 Twitch token 設計為存放於 Redis DB 1，但正式環境沒有需要遷移的既有資料。
 - token 沒保存 Twitch user ID，Bot/Scraper 也不讀取此資料。
 - Twitch OAuth 目前使用共用 `RedirectUrl`，scopes 為 `moderation:read` 與 `user:read:subscriptions`。
 - Google callback 也使用相同 `RedirectUrl`。
@@ -594,13 +594,13 @@ unmonitored
 
 - [ ] 確認 Backend 與 Bot Twitch Client ID 完全相同。
 - [ ] 確認正式 Twitch WebHook secret 與 Redis DB 0 值相同。
-- [x] 使用 Redis `SCAN` 確認是否已有 `twitch:oauth:*` token；有資料才設計一次性遷移。
-- [ ] 從 access log 確認舊 Twitch OAuth endpoints 是否有外部客戶端；有實際使用才保留相容期。
+- [x] 確認正式環境沒有需要遷移的 Redis Twitch token，不加入舊版相容流程。
+- [x] 確認不保留舊 Twitch OAuth endpoint 相容期。
 - [ ] 在 Google/Twitch/Discord Provider Console 加入第 6 節 URI。
 
 完成定義：部署前提與既有資料量已確認，不依猜測加入相容程式碼。
 
-> 2026-07-20 再次檢查：`127.0.0.1:6379` 已可連線，Redis DB 1 發現 1 筆舊 `twitch:oauth:*` token，因此 Backend 已補上啟動期一次性遷移：在 HTTP 開始服務前執行，refresh rotation 先 CAS 保存回 Redis，MySQL 寫入與狀態提示入列後才 CAS 刪除舊 key；失敗或衝突保留到下次 Backend 啟動或人工處理，hourly validation 不碰 legacy key以避免與新 OAuth/解除連結競態。MySQL 已有 row 時永遠優先，且若實際掃到超過 1 筆 legacy key會停止自動遷移，避免以 SCAN 順序決定帳號所有權。Bot 與 Backend 本機 Twitch Client ID/Secret 仍未填，Backend production config、access log 與 Provider Console 仍需部署帳號權限確認。
+> 2026-08-04 確認正式 Redis DB 1 沒有舊版 Twitch OAuth token，因此移除啟動期 SCAN、token migration、unlink tombstone 與 Discord 維度 coordination lock。MySQL 是 provider token 的唯一資料來源，Redis DB 1 僅保留跨 Bot／Backend 的 refresh lock。
 
 ### 階段 1：資料模型與 Backend 設定
 
@@ -780,7 +780,7 @@ pnpm lint:style
 
 1. 備份並套用經審核的 DB migration SQL。
 2. 部署 Backend的新 schema mapping、OAuth API、token validation、Webhook與 metrics。
-3. 確認舊 Backend 已完全停止，禁止新舊版本同時寫入 `twitch:oauth:*`；檢查 legacy token 遷移 log並處理所有待重試/衝突項目。
+3. 確認 MySQL `twitch_broadcaster_authorization` 是唯一 token 資料來源，Redis DB 1 僅用於 refresh lock。
 4. 部署 Bot/Scraper的新 EventSub雙模式、guild policy與 metrics。
 5. 驗證 Client ID、Webhook secret、FrontendDomain、ApiServerDomain。
 6. 手動以測試 Twitch broadcaster完成授權，確認三筆 cost 0。

@@ -45,6 +45,55 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
             await Assert.ThrowsAsync<DbUpdateException>(() => duplicateDb.SaveChangesAsync());
         }
 
+        [MySqlComponentFact]
+        public async Task TwitchSubscriptionTablesEnforceUniqueKeysAndTierConstraint()
+        {
+            ulong guildId = NextUserId();
+            ulong discordUserId = NextUserId();
+            await using (var db = _fixture.DbService.GetDbContext())
+            {
+                db.GuildTwitchSubscriptionConfig.Add(CreateSubscriptionConfig(guildId, "broadcaster-1"));
+                db.TwitchSubscriptionCheck.Add(CreateSubscriptionCheck(guildId, discordUserId, "broadcaster-1", "1000"));
+                await db.SaveChangesAsync();
+            }
+
+            await using (var duplicateConfigDb = _fixture.DbService.GetDbContext())
+            {
+                duplicateConfigDb.GuildTwitchSubscriptionConfig.Add(CreateSubscriptionConfig(guildId, "broadcaster-1"));
+                await Assert.ThrowsAsync<DbUpdateException>(() => duplicateConfigDb.SaveChangesAsync());
+            }
+
+            await using (var duplicateCheckDb = _fixture.DbService.GetDbContext())
+            {
+                duplicateCheckDb.TwitchSubscriptionCheck.Add(CreateSubscriptionCheck(guildId, discordUserId, "broadcaster-1", "2000"));
+                await Assert.ThrowsAsync<DbUpdateException>(() => duplicateCheckDb.SaveChangesAsync());
+            }
+
+            await using var invalidTierDb = _fixture.DbService.GetDbContext();
+            invalidTierDb.TwitchSubscriptionCheck.Add(CreateSubscriptionCheck(guildId, NextUserId(), "broadcaster-1", "4000"));
+            await Assert.ThrowsAsync<DbUpdateException>(() => invalidTierDb.SaveChangesAsync());
+        }
+
+        [MySqlComponentFact]
+        public async Task TwitchSubscriptionConfigurationHasDurableDeletionPendingColumn()
+        {
+            await using var db = _fixture.DbService.GetDbContext();
+
+            int matchingColumns = await db.Database.SqlQueryRaw<int>(
+                """
+                SELECT COUNT(*) AS `Value`
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'guild_twitch_subscription_config'
+                  AND column_name = 'deletion_pending'
+                  AND is_nullable = 'NO'
+                  AND data_type = 'tinyint'
+                  AND column_default = '0'
+                """).SingleAsync();
+
+            Assert.Equal(1, matchingColumns);
+        }
+
         private static TwitchBroadcasterAuthorization CreateAuthorization(string suffix, ulong discordUserId)
         {
             var now = DateTime.UtcNow;
@@ -62,6 +111,37 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
                 DateUpdated = now
             };
         }
+
+        private static GuildTwitchSubscriptionConfig CreateSubscriptionConfig(ulong guildId, string broadcasterId)
+            => new()
+            {
+                GuildId = guildId,
+                BroadcasterId = broadcasterId,
+                BroadcasterLogin = "component_channel",
+                BroadcasterDisplayName = "Component Channel",
+                SubscriberRoleId = 100,
+                Tier1RoleId = 101,
+                Tier2RoleId = 102,
+                Tier3RoleId = 103,
+                DateAdded = DateTime.UtcNow
+            };
+
+        private static TwitchSubscriptionCheck CreateSubscriptionCheck(
+            ulong guildId,
+            ulong discordUserId,
+            string broadcasterId,
+            string tier)
+            => new()
+            {
+                GuildId = guildId,
+                DiscordUserId = discordUserId,
+                BroadcasterId = broadcasterId,
+                Locale = "zh-TW",
+                IsChecked = true,
+                Tier = tier,
+                LastCheckTime = DateTime.UtcNow,
+                DateAdded = DateTime.UtcNow
+            };
 
         private static ulong NextUserId()
             => (ulong)Random.Shared.NextInt64(1, long.MaxValue);

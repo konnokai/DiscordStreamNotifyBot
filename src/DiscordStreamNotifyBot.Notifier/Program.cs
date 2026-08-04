@@ -73,18 +73,6 @@ namespace DiscordStreamNotifyBot
                 metrics.Start();
                 Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
 
-                // RedisTokenKey 叢集佈建（僅 shard 0 有權建立，以 Redis 為單一真實來源同步至各 shard 與後端）。
-                // 必須在建立 Bot（其 YoutubeMemberService/RedisDataStore 會捕捉 Utility.RedisKey）之前完成。
-                try
-                {
-                    await RedisTokenKeyProvisioner.EnsureAsync(Role, shardId, preflightConfig, TimeSpan.FromSeconds(60));
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "RedisTokenKey 佈建失敗");
-                    Environment.Exit(1);
-                }
-
                 // 官方伺服器白名單改存 Redis（階段 5：跨 shard 共享）；首次啟動由舊 OfficialList.json 播種
                 try
                 {
@@ -108,10 +96,10 @@ namespace DiscordStreamNotifyBot
                 // 寫入 notifier 心跳（計畫 §5.2）：coordinator 依 cluster:heartbeat:notifier:* 的數量判斷有幾個 shard 有人認領。
                 // scraper / coordinator 已各自寫心跳，唯獨 notifier 先前漏寫，導致 coordinator 永遠顯示 notifier 存活=0。
                 // id 以 shard 為鍵（非 machine:pid）：同一 shard 被多個程序重複認領時會共用同一鍵，數量才等於「實際被涵蓋的 shard 數」。
-                _ = Task.Run(() => RunHeartbeatLoopAsync(preflightConfig, shardId, GracefulShutdown.Token));
+                _ = RunHeartbeatLoopAsync(preflightConfig, shardId, GracefulShutdown.Token);
 
                 var bot = new Bot(shardId, totalShards, metrics);
-                bot.StartAndBlockAsync().GetAwaiter().GetResult();
+                await bot.StartAndBlockAsync();
             }
             finally
             {

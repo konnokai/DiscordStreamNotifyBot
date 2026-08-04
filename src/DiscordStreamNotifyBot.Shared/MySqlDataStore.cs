@@ -1,21 +1,23 @@
 using DiscordStreamNotifyBot.Auth;
 using DiscordStreamNotifyBot.DataBase;
-using DiscordStreamNotifyBot.DataBase.Table;
 
 namespace DiscordStreamNotifyBot
 {
     /// <summary>
     /// 會限 OAuth token 的 MySQL 儲存後端（真實來源）。
-    /// T 恆為 Google.Apis 的 TokenResponse、key 為 Discord userId 字串；密文格式與 <see cref="RedisDataStore"/> 相同，兩端可互相解密。
+    /// T 恆為 Google.Apis 的 TokenResponse、key 為 Discord userId 字串。
     /// </summary>
     public class MySqlDataStore : ITokenDataStore
     {
         private readonly MainDbService _dbService;
-        private readonly string _key = Utility.RedisKey;
+        private readonly string _key;
 
-        public MySqlDataStore(MainDbService dbService)
+        public MySqlDataStore(MainDbService dbService, string providerTokenEncryptionKey)
         {
             _dbService = dbService;
+            if (string.IsNullOrWhiteSpace(providerTokenEncryptionKey) || providerTokenEncryptionKey.Length < 64)
+                throw new ArgumentException("Provider token 加密金鑰不得為空且至少需要 64 字元", nameof(providerTokenEncryptionKey));
+            _key = providerTokenEncryptionKey;
         }
 
         public Task ClearAsync()
@@ -27,7 +29,7 @@ namespace DiscordStreamNotifyBot
         {
             var userId = ulong.Parse(key);
             var encValue = TokenManager.CreateToken(value, _key);
-            var dateAdded = DateTime.Now;
+            var dateAdded = DateTime.UtcNow;
 
             using var db = _dbService.GetDbContext();
             // 同一使用者可能由多個 shard 同時刷新 token，使用單一 upsert 避免 read-then-insert 競爭。

@@ -218,6 +218,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 Log.Error("建立 Twitch EventSub 時 broadcaster user ID 不可為空");
                 return new TwitchEventSubEnsureResult { Mode = mode };
             }
+            if (!IsEnable)
+                return new TwitchEventSubEnsureResult { Mode = mode };
 
             var current = await GetEventSubSubscriptionsResultAsync(broadcasterUserId);
             if (!current.IsSuccess)
@@ -325,6 +327,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             else if (!string.IsNullOrEmpty(twitchUserLogin))
                 userLogin = new List<string> { twitchUserLogin };
             else throw new ArgumentException("兩者參數不可同時為空");
+            if (!IsEnable)
+                return null;
 
             try
             {
@@ -345,6 +349,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public async Task<IReadOnlyList<User>> GetUsersAsync(params string[] twitchUserLogins)
         {
+            if (!IsEnable)
+                return Array.Empty<User>();
+
             try
             {
                 List<User> result = new();
@@ -373,6 +380,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public async Task<Video> GetLatestVODAsync(string twitchUserId)
         {
+            if (!IsEnable)
+                return null;
+
             try
             {
                 var videosResponse = await TwitchApi.Value.Helix.Videos.GetVideosAsync(userId: twitchUserId, first: 1, type: VideoType.Archive);
@@ -392,6 +402,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public async Task<IReadOnlyList<Clip>> GetClipsAsync(string twitchUserId, DateTime startedAt, DateTime endedAt)
         {
+            if (!IsEnable)
+                return Array.Empty<Clip>();
+
             try
             {
                 var clipsResponse = await TwitchApi.Value.Helix.Clips.GetClipsAsync(broadcasterId: twitchUserId, startedAt: startedAt, endedAt: endedAt, first: 5);
@@ -418,6 +431,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public async Task<TwitchStreamsResult> GetNowStreamsResultAsync(params string[] twitchUserIds)
         {
+            if (!IsEnable)
+                return new TwitchStreamsResult();
+
             try
             {
                 List<Stream> result = new();
@@ -446,6 +462,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public async Task<TwitchEventSubSubscriptionsResult> GetEventSubSubscriptionsResultAsync(string userId = null)
         {
+            if (!IsEnable)
+                return new TwitchEventSubSubscriptionsResult();
+
             try
             {
                 string appAccessToken = await GetAppAccessTokenAsync();
@@ -503,6 +522,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 Log.Error("刪除 Twitch EventSub 時 broadcaster user ID 不可為空");
                 return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.ApiFailure };
             }
+            if (!IsEnable)
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.ApiFailure };
 
             var streams = await GetNowStreamsResultAsync(userId);
             if (!streams.IsSuccess)

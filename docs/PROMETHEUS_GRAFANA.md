@@ -119,12 +119,21 @@ Scraper label 只接受固定 enum 映射，不包含 Twitch user ID、Discord u
 | `discord_stream_notify_youtube_member_check_last_success_unixtime{check_type}` | 各檢查類型最近一次成功完成時間 |
 | `discord_stream_notify_youtube_member_verifications_total{check_type,result}` | 逐使用者的 YouTube 會員資格、token、配額與 provider 判定結果 |
 | `discord_stream_notify_youtube_member_role_operations_total{operation,result}` | 會限驗證新增／移除 Discord 身分組的結果 |
+| `discord_stream_notify_twitch_subscription_verifications_total{result,tier}` | Twitch 訂閱查詢結果與 Tier |
+| `discord_stream_notify_twitch_subscription_role_operations_total{operation,result}` | Twitch 訂閱身分組同步與移除結果 |
+| `discord_stream_notify_twitch_subscription_token_operations_total{operation,result}` | Twitch token 解密、驗證、刷新與 refresh lock 結果 |
+| `discord_stream_notify_twitch_refresh_pending_persistences` | Twitch 已接受但仍等待保存至 MySQL 的 refresh rotation 數量 |
+| `discord_stream_notify_twitch_refresh_shutdown_draining` | Notifier 是否正在關閉並等待 refresh rotation 保存 |
+| `discord_stream_notify_twitch_refresh_shutdown_drain_duration_seconds` | 關閉等待 refresh rotation 保存的耗時 histogram |
+| `discord_stream_notify_twitch_subscription_provider_errors_total{reason}` | Twitch 429、4xx、5xx、網路與無效回應 |
+| `discord_stream_notify_twitch_subscription_cycles_total{result}` | 每小時 Twitch 訂閱複驗週期結果 |
+| `discord_stream_notify_twitch_subscription_cycle_duration_seconds` | Twitch 訂閱複驗週期耗時 histogram |
 | `discord_stream_notify_notification_bus_messages_total{type,result}` | Redis Streams 訊息的 invalid、deduplicated、dispatched、dispatch_failed 結果 |
 | `discord_stream_notify_notification_deliveries_total{platform,event,result}` | YouTube、Twitch、TwitCasting 對本 shard 目的地的最終發送結果 |
 | `discord_stream_notify_notification_delivery_retries_total{platform,event}` | Discord timeout 或 5xx 觸發的通知重試次數 |
 | `discord_stream_notify_notification_delivery_duration_seconds{platform,event}` | 單一通知目的地的發送耗時 histogram |
 
-Notifier 不會把非本 shard 的 guild 當成 delivery skip 計數，避免每個通知因 shard 數量被重複放大。`notification_bus_messages_total` 則是每個 shard consumer group 的處理嘗試，同一則訊息會由每個 shard 各計一次，重投也會再次計數；Grafana 會保留 `instance` 維度避免誤認為唯一訊息數。通知 label 只使用固定 platform、event、result；不包含 guild、channel、影片、直播或使用者 ID。
+Notifier 不會把非本 shard 的 guild 當成 delivery skip 計數，避免每個通知因 shard 數量被重複放大。`notification_bus_messages_total` 則是每個 shard consumer group 的處理嘗試，同一則訊息會由每個 shard 各計一次，重投也會再次計數；Grafana 會保留 `instance` 維度避免誤認為唯一訊息數。所有 label 只使用固定 platform、event、result、tier、operation 或 reason；不包含 guild、channel、broadcaster、影片、直播或使用者 ID。
 
 ## Grafana
 

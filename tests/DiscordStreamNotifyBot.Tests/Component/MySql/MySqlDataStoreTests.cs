@@ -24,7 +24,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
                 AccessToken = "component-access-token",
                 RefreshToken = "component-refresh-token"
             };
-            var store = new MySqlDataStore(_fixture.DbService);
+            var store = CreateStore();
 
             await store.StoreAsync(key, payload);
             var result = await store.GetAsync<StoredToken>(key);
@@ -44,7 +44,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
         public async Task StoreUpdatesExistingRowAndDeleteRemovesIt()
         {
             var key = NextUserId().ToString();
-            var store = new MySqlDataStore(_fixture.DbService);
+            var store = CreateStore();
             await store.StoreAsync(key, new StoredToken { AccessToken = "first" });
 
             string firstDatabaseValue;
@@ -94,7 +94,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
                 await db.SaveChangesAsync();
             }
 
-            var store = new MySqlDataStore(_fixture.DbService);
+            var store = CreateStore();
             var result = await store.GetAsync<StoredToken>(userId.ToString());
 
             Assert.Equal(payload.AccessToken, result.AccessToken);
@@ -116,7 +116,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
             var stores = payloads.Select(async payload =>
             {
                 await start.Task;
-                await new MySqlDataStore(_fixture.DbService).StoreAsync(key, payload);
+                await CreateStore().StoreAsync(key, payload);
             }).ToArray();
 
             start.SetResult();
@@ -126,7 +126,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
             var rows = await db.YoutubeMemberAccessToken.AsNoTracking()
                 .Where(x => x.DiscordUserId == ulong.Parse(key))
                 .ToArrayAsync();
-            var restored = await new MySqlDataStore(_fixture.DbService).GetAsync<StoredToken>(key);
+            var restored = await CreateStore().GetAsync<StoredToken>(key);
 
             Assert.Single(rows);
             Assert.Contains(payloads, payload =>
@@ -136,6 +136,9 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
 
         private static ulong NextUserId()
             => (ulong)Random.Shared.NextInt64(1, long.MaxValue);
+
+        private MySqlDataStore CreateStore()
+            => new(_fixture.DbService, MySqlComponentFixture.EncryptionKey);
 
         private sealed class StoredToken
         {

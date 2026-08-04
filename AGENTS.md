@@ -11,6 +11,7 @@
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
 - 本地化第一階段的程式實作已完成，待手動 Discord 驗證：Slash group／command／parameter／choice 名稱固定使用英文 canonical，description 支援 `zh-TW`／`en-US`／`ja`；一般互動、Help、三平台背景通知與會限訊息維持三語，通知事件對本 shard guild 批次讀取 locale，通知 DTO 不攜帶 locale。
 - 自動化測試第一至四批已完成，第五批 Redis／MySQL component tests 已實跑通過；多 shard guild ownership 與外部 API request contract 待完成。細節見 [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)。
+- Twitch 訂閱驗證 Bot 端已實作：共用 MySQL OAuth token、provider secret 金鑰、跨程序 refresh lock、rotation 關閉 drain、Helix 訂閱查詢、可重試的設定刪除、Tier 角色、三語 Slash 指令及每小時複驗；正式 Twitch／Discord 行為仍需依計畫手動驗收。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run
@@ -73,9 +74,9 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 | YouTube | `youtube.startstream` `youtube.endstream` `youtube.addstream` `youtube.deletestream` `youtube.unarchived` `youtube.memberonly` `youtube.record` `youtube.429error` `youtube.pubsub.{CreateOrUpdate,Deleted,NeedRegister}` |
 | Twitch | `twitch.record` `twitch:stream_online` `twitch:channel_update` `twitch:stream_offline` `twitch:authorization_changed` |
 | TwitCasting | `twitcasting.pubsub.startlive` `twitcasting.record` |
-| 會限 | `member.revokeToken` `member.syncRedisToken` |
+| 會限 | `member.revokeToken` |
 
-改名 = 破壞另外兩個 repo。`Auth/`（TokenManager，AES-CBC+HMAC，金鑰 `RedisTokenKey`）與後端共享，同屬契約。
+改名 = 破壞另外兩個 repo。`Auth/`（TokenManager，AES-CBC+HMAC，金鑰 `ProviderTokenEncryptionKey`）與後端共享，同屬契約；金鑰只由部署 secret 提供，不透過 Redis 傳輸。
 
 ## Conventions
 

@@ -109,6 +109,75 @@ namespace DiscordStreamNotifyBot.Migrations
                     b.ToTable("guild_config", (string)null);
                 });
 
+            modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.GuildTwitchSubscriptionConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BroadcasterDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("broadcaster_display_name");
+
+                    b.Property<string>("BroadcasterId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("broadcaster_id");
+
+                    b.Property<string>("BroadcasterLogin")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("broadcaster_login");
+
+                    b.Property<DateTime?>("DateAdded")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("date_added");
+
+                    b.Property<bool>("DeletionPending")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("deletion_pending");
+
+                    b.Property<ulong>("GuildId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("guild_id");
+
+                    b.Property<ulong?>("PreviousSubscriberRoleId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("previous_subscriber_role_id");
+
+                    b.Property<ulong>("SubscriberRoleId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("subscriber_role_id");
+
+                    b.Property<ulong>("Tier1RoleId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("tier1role_id");
+
+                    b.Property<ulong>("Tier2RoleId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("tier2role_id");
+
+                    b.Property<ulong>("Tier3RoleId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("tier3role_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_guild_twitch_subscription_config");
+
+                    b.HasIndex("GuildId", "BroadcasterId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_guild_twitch_subscription_config_guild_id_broadcaster_id");
+
+                    b.ToTable("guild_twitch_subscription_config", (string)null);
+                });
+
             modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.GuildYoutubeMemberConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -719,6 +788,72 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasName("pk_twitch_streams");
 
                     b.ToTable("twitch_streams", (string)null);
+                });
+
+            modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.TwitchSubscriptionCheck", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BroadcasterId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("broadcaster_id");
+
+                    b.Property<DateTime?>("DateAdded")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("date_added");
+
+                    b.Property<ulong>("DiscordUserId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("discord_user_id");
+
+                    b.Property<ulong>("GuildId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("guild_id");
+
+                    b.Property<bool>("IsChecked")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_checked");
+
+                    b.Property<bool>("IsGift")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_gift");
+
+                    b.Property<DateTime>("LastCheckTime")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("last_check_time");
+
+                    b.Property<string>("Locale")
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("locale");
+
+                    b.Property<bool>("PendingRoleRemoval")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("pending_role_removal");
+
+                    b.Property<string>("Tier")
+                        .HasMaxLength(4)
+                        .HasColumnType("varchar(4)")
+                        .HasColumnName("tier");
+
+                    b.HasKey("Id")
+                        .HasName("pk_twitch_subscription_check");
+
+                    b.HasIndex("GuildId", "DiscordUserId", "BroadcasterId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_twitch_subscription_check_guild_id_discord_user_id_broadcast");
+
+                    b.ToTable("twitch_subscription_check", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_twitch_subscription_check_tier", "`tier` IS NULL OR `tier` IN ('1000', '2000', '3000')");
+                        });
                 });
 
             modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.YoutubeChannelNameToId", b =>

@@ -61,7 +61,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     ClientSecret = _botConfig.GoogleClientSecret
                 },
                 Scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"],
-                DataStore = new MySqlDataStore(_dbService)
+                DataStore = new MySqlDataStore(_dbService, _botConfig.ProviderTokenEncryptionKey)
             });
 
             Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), async (channel, value) =>
@@ -95,9 +95,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
                 try
                 {
-                    string locale = await component.ResolveLocaleAsync(_services, true);
+                    if (!IsYoutubeMemberSelectMenu(component.Data.CustomId))
+                        return;
+
                     string[] customId = component.Data.CustomId.Split(new char[] { ':' });
-                    if (customId.Length <= 2 || customId[0] != "member")
+                    string locale = await component.ResolveLocaleAsync(_services, true);
+                    if (customId.Length != 4 || customId[1] != "check")
                     {
                         await component.SendErrorAsync(_localizer, locale, "Components.Invalid", ephemeral: true);
                         return;
@@ -192,15 +195,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             // token 儲存已改走 MySQL（MySqlDataStore 為真實來源），不再需要啟動時 Redis→DB 備份。
             // 一次性 backfill（切換前把 Redis TokenResponse:* 回填至 youtube_member_access_token）見 docs/MEMBER_TOKEN_STORE_MYSQL_PLAN.md 遷移章節。
 
-            // 用 Utility.RedisKey（由 RedisTokenKeyProvisioner 佈建的叢集真實來源），而非 _botConfig.RedisTokenKey
-            // （bootstrap 時非 shard 0 的設定檔可能仍為空）。只需公告一次，收斂到 shard 0。
-            if (Bot.ShardId == 0)
-            {
-                Bot.RedisSub.Publish(new RedisChannel("member.syncRedisToken", RedisChannel.PatternMode.Literal), Utility.RedisKey);
-                Log.Info("已同步 Redis Token");
-            }
             _dbService = dbService;
         }
+
+        internal static bool IsYoutubeMemberSelectMenu(string customId)
+            => customId?.StartsWith("member:", StringComparison.Ordinal) == true;
 
         public async Task<bool> IsExistUserTokenAsync(string discordUserId)
         {
@@ -380,6 +379,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     if (cfg == null || cfg.MemberCheckGrantRoleId == 0)
                         continue;
 
+                    var role = user.Guild.GetRole(cfg.MemberCheckGrantRoleId);
+                    if (role == null || role.IsManaged)
+                        continue;
+
                     try { await _client.Rest.AddRoleAsync(cfg.GuildId, user.Id, cfg.MemberCheckGrantRoleId); } catch { }
                 }
 
@@ -411,7 +414,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         continue; // 非本 shard 持有 → 交給擁有的 shard
 
                     var role = guild.GetRole(cfg.MemberCheckGrantRoleId);
-                    if (role == null)
+                    if (role == null || role.IsManaged)
                         continue;
 
                     try { await guild.DownloadUsersAsync(); } catch { } // 需 GuildMembers intent 才有完整名單

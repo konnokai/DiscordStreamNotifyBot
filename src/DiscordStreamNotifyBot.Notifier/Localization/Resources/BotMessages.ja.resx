@@ -265,6 +265,7 @@
   <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` をメンバーシップ認証ログチャンネルに設定しました。</value></data>
   <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>Bot に「ロールの管理」権限が必要です。権限を付与してから再試行してください。</value></data>
   <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>everyone ロールをメンバーシップ認証用ロールに設定することはできません。</value></data>
+  <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>連携サービスが管理するロールはメンバーシップ認証用ロールとして使用できません。</value></data>
   <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>ロール `{0}` は Bot の最上位ロールより上にあります。Bot のロールを上へ移動してください。</value></data>
   <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>このサーバーではすでに {0} 個のメンバーシップ認証チャンネルを使用しています。不要なチャンネルを削除してください。</value></data>
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord の選択メニューは最大 {0} 項目です。不要なメンバーシップ認証チャンネルを削除してください。</value></data>
@@ -289,6 +290,7 @@
   <data name="Member.Status.RoleMissing" xml:space="preserve"><value>{0} のメンバーシップ認証ロールが存在しません。再設定してください。</value></data>
   <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>メンバーシップ認証ロールを処理するには「ロールの管理」権限が必要です。権限を付与してから再試行してください。</value></data>
   <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>everyone ロールはメンバーシップ認証ロールに設定できません。別のロールを設定してください。</value></data>
+  <data name="Member.Status.ManagedRoleInvalid" xml:space="preserve"><value>連携サービスが管理するロールはメンバーシップ認証に使用できません。この設定を削除しました。別のロールを設定してください。</value></data>
   <data name="Member.Status.NotLoggedIn" xml:space="preserve"><value>未ログイン</value></data>
   <data name="Member.Status.RefreshFailed" xml:space="preserve"><value>認証情報を更新できません</value></data>
   <data name="Member.Status.CredentialExpired" xml:space="preserve"><value>Google 認証の有効期限切れ</value></data>
@@ -355,4 +357,53 @@
   <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>メンバーシップチャンネル名が変更されました：`{0}` → `{1}`。</value></data>
   <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>また、`{0}` にはメンバーシップ認証ログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {1} で設定してください。</value></data>
   <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>また、`{0}` の `{1}` で Bot にチャンネル表示、メッセージ送信、またはリンク埋め込み権限がありません。</value></data>
+  <data name="TwitchMember.Errors.NotConfigured" xml:space="preserve"><value>このサーバーには Twitch サブスク認証チャンネルが設定されていません。</value></data>
+  <data name="TwitchMember.Errors.TooManyChannels" xml:space="preserve"><value>認証可能なチャンネル数が Discord のメニュー上限を超えています。管理者へお問い合わせください。</value></data>
+  <data name="TwitchMember.Errors.NoActiveCheck" xml:space="preserve"><value>このサーバーでは、あなたの Twitch サブスク認証記録が見つかりません。</value></data>
+  <data name="TwitchMember.Errors.AuthorizationMissing" xml:space="preserve"><value>Twitch アカウントが連携されていません。{0} で連携してから再試行してください。</value></data>
+  <data name="TwitchMember.Errors.AuthorizationInvalid" xml:space="preserve"><value>Twitch の認証が無効です。{0} でアカウントを再連携してください。</value></data>
+  <data name="TwitchMember.Errors.BroadcasterUnavailable" xml:space="preserve"><value>このチャンネルでは Twitch サブスク認証を利用できません。</value></data>
+  <data name="TwitchMember.Errors.TemporaryFailure" xml:space="preserve"><value>Twitch または Discord で一時的な問題が発生しました。既存のロールは変更されません。後でもう一度お試しください。</value></data>
+  <data name="TwitchMember.Select.Placeholder" xml:space="preserve"><value>認証する Twitch チャンネルを選択</value></data>
+  <data name="TwitchMember.Select.Description" xml:space="preserve"><value>複数のチャンネルを一度に選択して、Twitch のサブスク資格を認証できます。</value></data>
+  <data name="TwitchMember.Cancelled" xml:space="preserve"><value>このサーバーでの Twitch サブスク認証を解除し、関連ロールを削除しました。</value></data>
+  <data name="TwitchMember.LinkedAccount" xml:space="preserve"><value>連携中の Twitch アカウント：{0}</value></data>
+  <data name="TwitchMember.ChannelList" xml:space="preserve"><value>認証可能な Twitch チャンネル：&#10;{0}</value></data>
+  <data name="TwitchMember.Verified" xml:space="preserve"><value>`{0}` のサブスクを認証しました：`{1}` {2}</value></data>
+  <data name="TwitchMember.Gift" xml:space="preserve"><value>（ギフトサブスク）</value></data>
+  <data name="TwitchMember.NotSubscribed" xml:space="preserve"><value>Twitch の情報では、現在 `{0}` をサブスクしていません。関連ロールを削除しました。</value></data>
+  <data name="TwitchMember.Selection.Verified" xml:space="preserve"><value>✅ `{0}`：{1}</value></data>
+  <data name="TwitchMember.Selection.Failed" xml:space="preserve"><value>❌ `{0}`：{1}</value></data>
+  <data name="TwitchMember.Status.NotSubscribed" xml:space="preserve"><value>未サブスク</value></data>
+  <data name="TwitchMember.Status.AuthorizationMissing" xml:space="preserve"><value>Twitch 未連携</value></data>
+  <data name="TwitchMember.Status.AuthorizationInvalid" xml:space="preserve"><value>Twitch 認証無効</value></data>
+  <data name="TwitchMember.Status.BroadcasterUnavailable" xml:space="preserve"><value>チャンネル認証不可</value></data>
+  <data name="TwitchMember.Status.TemporaryFailure" xml:space="preserve"><value>一時的な失敗</value></data>
+  <data name="TwitchMemberSetting.RemovePrompt" xml:space="preserve"><value>`{0}` の Twitch サブスク認証設定とメンバーに付与された関連ロールを削除し、3 つの Tier ロールも削除しますか？</value></data>
+  <data name="TwitchMemberSetting.Configured" xml:space="preserve"><value>`{0}` の Twitch サブスク認証を設定しました。有効なサブスクライバーには `{1}` と対応する Tier ロールが付与されます。</value></data>
+  <data name="TwitchMemberSetting.Removed" xml:space="preserve"><value>`{0}` のサブスク認証設定と Tier ロールを削除しました。</value></data>
+  <data name="TwitchMemberSetting.CheckedMembersTitle" xml:space="preserve"><value>Twitch サブスク認証済みメンバー</value></data>
+  <data name="TwitchMemberSetting.Errors.ChannelNotFound" xml:space="preserve"><value>Twitch チャンネルが見つかりません。</value></data>
+  <data name="TwitchMemberSetting.Errors.IneligibleBroadcaster" xml:space="preserve"><value>この Twitch チャンネルはアフィリエイトまたはパートナーではないため、サブスク認証を利用できません。</value></data>
+  <data name="TwitchMemberSetting.Errors.TooManyChannels" xml:space="preserve"><value>1 つのサーバーに設定できる Twitch サブスク認証チャンネルは最大 25 件です。</value></data>
+  <data name="TwitchMemberSetting.Errors.InvalidCommonRole" xml:space="preserve"><value>共通ロール ID が無効です。</value></data>
+  <data name="TwitchMemberSetting.Errors.CommonRoleOverlapsTier" xml:space="preserve"><value>共通ロールに Twitch Tier ロールは使用できません。</value></data>
+  <data name="TwitchMemberSetting.Errors.RolesMustBeDistinct" xml:space="preserve"><value>共通ロールと 3 つの Twitch Tier ロールはすべて異なるロールである必要があります。</value></data>
+  <data name="TwitchMemberSetting.Errors.TierRoleOverlap" xml:space="preserve"><value>Twitch Tier ロールを他の認証設定で使用中のロールと重複させることはできません。</value></data>
+  <data name="TwitchMemberSetting.Errors.MissingManageRoles" xml:space="preserve"><value>Bot にロール管理権限がありません。</value></data>
+  <data name="TwitchMemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>@everyone ロールは使用できません。</value></data>
+  <data name="TwitchMemberSetting.Errors.ManagedRole" xml:space="preserve"><value>連携サービスが管理するロールは使用できません。</value></data>
+  <data name="TwitchMemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>共通ロールは Bot の最高ロールより下に配置してください。</value></data>
+  <data name="TwitchMemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定は保存されましたが、Discord ロールの同期が完了していません。権限の問題を修正するか、一時的なエラーが解消されてから、同じ設定を再実行してください。</value></data>
+  <data name="TwitchMemberSetting.Errors.DeletionPending" xml:space="preserve"><value>このチャンネルの設定と関連ロールが完全に削除されていないため、再設定できません。Bot は 1 時間ごとに再試行します。ロール権限を修正し、削除が完了してから追加してください。</value></data>
+  <data name="TwitchMemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>前回の共通ロール更新が完全に同期されていません。現在保存されている共通ロールでもう一度設定を実行し、修復が完了してから別のロールに変更してください。</value></data>
+  <data name="TwitchMemberSetting.Errors.SaveFailed" xml:space="preserve"><value>Tier ロールの作成または設定の保存に失敗しました。データベース設定は変更されていません。</value></data>
+  <data name="TwitchMemberSetting.Errors.NotConfigured" xml:space="preserve"><value>この Twitch チャンネルにはサブスク認証が設定されていません。</value></data>
+  <data name="TwitchMemberSetting.Errors.RemovePending" xml:space="preserve"><value>一部のロールを削除できなかったため、設定と後で再試行するために必要なデータを保持しました。</value></data>
+  <data name="TwitchMemberSetting.Errors.NoCheckedMembers" xml:space="preserve"><value>現在、認証済みの Twitch サブスクライバーはいません。</value></data>
+  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク認証に成功しました（Tier `{2}`）。</value></data>
+  <data name="TwitchMember.StatusLog.Removed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` をサブスクしていないため、関連ロールを削除しました。</value></data>
+  <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク確認に成功しましたが、Discord ロールの同期に失敗しました。後で再試行します。</value></data>
+  <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` のサブスク条件を満たしていませんが、Discord ロールの削除に失敗しました。後で再試行します。</value></data>
+  <data name="TwitchMember.StatusLog.AuthorizationInvalid" xml:space="preserve"><value>&lt;@{0}&gt; の Twitch 認証が無効になったため、`{1}` の認証ロールを削除しました。</value></data>
 </root>

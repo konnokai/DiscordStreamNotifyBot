@@ -66,7 +66,6 @@ namespace DiscordStreamNotifyBot.Shared
         public static class Member
         {
             public const string RevokeToken = "member.revokeToken";
-            public const string SyncRedisToken = "member.syncRedisToken";
         }
 
         /// <summary>跨 shard 共享狀態鍵（計畫階段 5）。</summary>
@@ -110,9 +109,6 @@ namespace DiscordStreamNotifyBot.Shared
             /// <summary>TOTAL_SHARDS 公告（叢集真實來源）。</summary>
             public const string TotalShards = "cluster:total_shards";
 
-            /// <summary>RedisTokenKey（Auth 加解密金鑰，與後端共用）叢集真實來源。僅 notifier shard 0 有權建立。</summary>
-            public const string RedisTokenKey = "cluster:redis_token_key";
-
             /// <summary>各程序心跳鍵：<c>cluster:heartbeat:{role}:{id}</c>。</summary>
             public static string Heartbeat(string role, string id) => $"cluster:heartbeat:{role}:{id}";
 
@@ -124,6 +120,15 @@ namespace DiscordStreamNotifyBot.Shared
 
             /// <summary>跨 shard 查詢回應頻道：<c>cluster:query:reply:{correlationId}</c>（請求端依 correlationId 訂閱收集）。</summary>
             public static string QueryReply(string correlationId) => $"cluster:query:reply:{correlationId}";
+        }
+
+        /// <summary>Provider OAuth token 協調鍵。</summary>
+        public static class OAuth
+        {
+            /// <summary>Provider token 與 refresh lock 的固定 Redis logical database，需與 Backend 契約一致。</summary>
+            public const int DatabaseNumber = 1;
+
+            public static string TwitchRefreshLock(string twitchUserId) => $"twitch:oauth:refresh-lock:{twitchUserId}";
         }
     }
 }

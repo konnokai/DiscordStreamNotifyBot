@@ -32,7 +32,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         }
 
         internal bool IsEnable => _apiService.IsEnable;
-        internal Lazy<TwitchLib.Api.TwitchAPI> TwitchApi => _apiService.TwitchApi;
 
         private readonly DiscordSocketClient _client;
         private readonly TwitchApiService _apiService;

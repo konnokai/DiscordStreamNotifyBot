@@ -1,3 +1,4 @@
+using Discord;
 using Discord.Interactions;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.SharedService.Youtube;
@@ -75,6 +76,37 @@ namespace DiscordStreamNotifyBot.Tests
                 parameter => AssertParameter(parameter, "channel", typeof(string), true),
                 parameter => AssertParameter(parameter, "notification-type", typeof(YoutubeStreamService.NoticeType), true),
                 parameter => AssertParameter(parameter, "message", typeof(string), false));
+        }
+
+        [Fact]
+        public async Task TwitchSubscriptionCommandsKeepCanonicalNamesPermissionsAndParameters()
+        {
+            using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
+            string[] userCommands = fixture.Interactions.SlashCommands
+                .Where(command => command.Module.SlashGroupName == "twitch-member")
+                .Select(command => command.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal([
+                "cancel-subscription-check",
+                "check",
+                "list-can-check-channel",
+                "show-my-twitch-account"
+            ], userCommands);
+
+            SlashCommandInfo add = fixture.Interactions.SlashCommands.Single(command =>
+                command.Module.SlashGroupName == "twitch-member-set" && command.Name == "add-subscription-check");
+            Assert.Equal(GuildPermission.Administrator, add.DefaultMemberPermissions);
+            Assert.Collection(add.Parameters,
+                parameter => AssertParameter(parameter, "channel-url", typeof(string), true),
+                parameter => AssertParameter(parameter, "role", typeof(IRole), true));
+
+            SlashCommandInfo remove = fixture.Interactions.SlashCommands.Single(command =>
+                command.Module.SlashGroupName == "twitch-member-set" && command.Name == "remove-subscription-check");
+            Assert.Equal(GuildPermission.Administrator, remove.DefaultMemberPermissions);
+            SlashCommandParameterInfo channel = Assert.Single(remove.Parameters);
+            AssertParameter(channel, "channel", typeof(string), true);
+            Assert.True(channel.IsAutocomplete);
         }
 
         private static void AssertParameter(

@@ -130,6 +130,12 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 return;
             }
 
+            if (role.IsManaged)
+            {
+                await SendLocalizedErrorAsync("MemberSetting.Errors.ManagedRole");
+                return;
+            }
+
             using (var db = _dbService.GetDbContext())
             {
                 try

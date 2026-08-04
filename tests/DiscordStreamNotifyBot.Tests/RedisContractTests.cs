@@ -36,7 +36,6 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("twitcasting.pubsub.startlive", RedisChannels.Twitcasting.PubSubStartLive);
             Assert.Equal("twitcasting.record", RedisChannels.Twitcasting.Record);
             Assert.Equal("member.revokeToken", RedisChannels.Member.RevokeToken);
-            Assert.Equal("member.syncRedisToken", RedisChannels.Member.SyncRedisToken);
 
             Assert.Equal("DiscordStreamBot:OfficialGuildList", RedisChannels.SharedState.OfficialGuildList);
             Assert.Equal("cluster:stats:guild_count", RedisChannels.SharedState.GuildCountHash);
@@ -50,7 +49,6 @@ namespace DiscordStreamNotifyBot.Tests
 
             Assert.Equal("cluster:scraper:leader", RedisChannels.Cluster.ScraperLeader);
             Assert.Equal("cluster:total_shards", RedisChannels.Cluster.TotalShards);
-            Assert.Equal("cluster:redis_token_key", RedisChannels.Cluster.RedisTokenKey);
             Assert.Equal("cluster:query:request", RedisChannels.Cluster.QueryRequest);
         }
 
@@ -62,6 +60,8 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("cluster:heartbeat:notifier:2", RedisChannels.Cluster.Heartbeat("notifier", "2"));
             Assert.Equal("cluster:shard:lease:7", RedisChannels.Cluster.ShardLease(7));
             Assert.Equal("cluster:query:reply:correlation-id", RedisChannels.Cluster.QueryReply("correlation-id"));
+            Assert.Equal("twitch:oauth:refresh-lock:user-42", RedisChannels.OAuth.TwitchRefreshLock("user-42"));
+            Assert.Equal(1, RedisChannels.OAuth.DatabaseNumber);
         }
 
         [Fact]

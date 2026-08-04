@@ -10,6 +10,8 @@
 >
 > 本文件是重做的權威設計。各階段的「參考實作」欄位指向 `claude` 分支檔案，用
 > `git show claude:<路徑>` 閱讀。收割它的判斷與程式碼片段，但匯流排層一律改為本文件 §4 的 Redis Streams 契約。
+>
+> 歷史註記（2026-08-03）：文中提到的 `RedisDataStore` 是當時的搬移清單；provider token 現已改由 MySQL 保存，該類別已依 Twitch 訂閱驗證計畫移除。
 
 ---
 

@@ -26,7 +26,7 @@
 - `InteractionHandler.ValidateCommandLocalizationResources()`：保留 metadata／資源 fail-fast，單元測試另行提早攔截。
 - `BotLocalizer.ValidateResources()`：保留三語 key 與 placeholder fail-fast。
 - `StartupPreflight.EnsureAsync()`：保留 MySQL／Redis 可連線檢查。
-- `RedisTokenKeyProvisioner.EnsureAsync()`：保留叢集金鑰佈建與同步。
+- `ProviderTokenEncryptionKey`：Notifier 啟動時驗證部署 secret 已提供且至少 64 字元。
 - `NotificationBus.EnsureConsumerGroupAsync()`：保留 Redis Streams consumer group 建立。
 - Discord login、Slash command registration 與 NotificationBus consumer 啟動失敗仍應直接終止 Notifier。
 
@@ -90,11 +90,13 @@
 
 - [x] Redis Streams：XGROUP、XACK、PEL、XAUTOCLAIM、MKSTREAM 與 consumer restart。
 - [x] Redis leader lock／TTL／Lua owner check 與 shard lease。
-- [x] RedisTokenKey `SET NX` 競爭、Pub/Sub 同步與 RedisDataStore round-trip。
+- [x] Twitch OAuth refresh lock `SET NX`、TTL 與 Lua owner-only release。
 - [x] MySQL：migration model、唯一鍵、concurrency、四影片表查詢與 token store。
 - [x] NotificationBus Scraper publish → Notifier consume／dedup／ack。
 - [ ] 多 shard guild ownership 與不互刪設定。
 - [ ] 外部 API request contract：YouTube、Twitch EventSub、TwitCasting、Discord webhook。
+- [x] Twitch 訂閱 Helix 200/401/404/429/5xx、Tier/gift、refresh 表單與共用 token JSON 契約。
+- [x] Twitch 訂閱設定 deletion-pending／shared-role 修復 policy、refresh rotation graceful-shutdown drain lifecycle 與 migration 欄位 assertion。
 
 ### Component tests 執行方式
 
@@ -112,9 +114,9 @@ dotnet test tests/DiscordStreamNotifyBot.Tests/DiscordStreamNotifyBot.Tests.cspr
 docker compose -f tests/docker-compose.component.yml down -v
 ```
 
-Redis component tests 強制使用明確指定且編號至少為 2 的空白 DB，避免碰觸 production DB 0 與 `RedisDataStore` 的 production DB 1。
+Redis component tests 強制使用明確指定且編號至少為 2 的空白 DB，避免碰觸 production DB 0 與其他既有用途。
 
-額外恢復與競爭案例已覆蓋：非權威 shard 不得覆寫 RedisTokenKey、XAUTOCLAIM cursor 必須越過 poison head、dedup marker 保留時間需長於 reclaim 門檻、租約到期接手／併發搶 shard，以及同一使用者 token 首次併發寫入。
+額外恢復與競爭案例已覆蓋：XAUTOCLAIM cursor 必須越過 poison head、dedup marker 保留時間需長於 reclaim 門檻、租約到期接手／併發搶 shard，以及同一使用者 token 首次併發寫入。
 
 ## 9. 手動 Discord 驗證
 

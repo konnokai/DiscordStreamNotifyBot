@@ -143,6 +143,14 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     continue;
                 }
 
+                if (role.IsManaged)
+                {
+                    Log.Warn($"{guildYoutubeMemberConfig.GuildId} / {guildYoutubeMemberConfig.MemberCheckChannelId} 設定成整合服務管理的身分組");
+                    await logChannel.SendMessageAsync(_localizer.Get("Member.Status.ManagedRoleInvalid", guildLocale));
+                    db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
+                    continue;
+                }
+
                 int checkedMemberCount = 0;
                 foreach (var member in list)
                 {

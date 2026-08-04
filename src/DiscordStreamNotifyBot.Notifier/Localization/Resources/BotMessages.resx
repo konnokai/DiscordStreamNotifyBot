@@ -265,6 +265,7 @@
   <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>已將 `{0}` 設定為會限驗證狀態紀錄頻道。</value></data>
   <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>Bot 缺少「管理身分組」權限，請授予後再試。</value></data>
   <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>不能將「everyone」身分組設為會限驗證身分組。</value></data>
+  <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>由整合服務管理的身分組不能用於會限驗證。</value></data>
   <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>身分組 `{0}` 排在 Bot 的最高身分組之上，請先調整順序。</value></data>
   <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>此伺服器已設定 {0} 個會限驗證頻道，請先移除不再使用的頻道。</value></data>
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord 選單最多支援 {0} 個選項，請先移除未使用的會限驗證頻道。</value></data>
@@ -289,6 +290,7 @@
   <data name="Member.Status.RoleMissing" xml:space="preserve"><value>{0} 的會限驗證身分組不存在，請重新設定。</value></data>
   <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>Bot 缺少「管理身分組」權限，無法處理會限驗證身分組。請授予權限後再試。</value></data>
   <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>不可將 everyone 身分組設為會限驗證身分組，請重新設定。</value></data>
+  <data name="Member.Status.ManagedRoleInvalid" xml:space="preserve"><value>這個身分組由整合服務管理，不能用於會限驗證。已移除此設定，請重新設定。</value></data>
   <data name="Member.Status.NotLoggedIn" xml:space="preserve"><value>尚未登入</value></data>
   <data name="Member.Status.RefreshFailed" xml:space="preserve"><value>無法重新整理授權</value></data>
   <data name="Member.Status.CredentialExpired" xml:space="preserve"><value>Google 授權已失效</value></data>
@@ -355,4 +357,53 @@
   <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>會員頻道名稱已變更：`{0}` → `{1}`。</value></data>
   <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>另外，`{0}` 尚未設定會員驗證紀錄頻道。請建立頻道、授予 Bot 查看頻道、發送訊息與嵌入連結權限，再使用 {1} 設定。</value></data>
   <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>另外，Bot 在 `{0}` 的 `{1}` 缺少紀錄所需的查看頻道、發送訊息或嵌入連結權限。</value></data>
+  <data name="TwitchMember.Errors.NotConfigured" xml:space="preserve"><value>此伺服器尚未設定 Twitch 訂閱驗證頻道。</value></data>
+  <data name="TwitchMember.Errors.TooManyChannels" xml:space="preserve"><value>可驗證的頻道數量已超過 Discord 選單上限，請聯絡伺服器管理員。</value></data>
+  <data name="TwitchMember.Errors.NoActiveCheck" xml:space="preserve"><value>此伺服器找不到你的 Twitch 訂閱驗證紀錄。</value></data>
+  <data name="TwitchMember.Errors.AuthorizationMissing" xml:space="preserve"><value>尚未連結 Twitch 帳號。請前往 {0} 完成連結後再試一次。</value></data>
+  <data name="TwitchMember.Errors.AuthorizationInvalid" xml:space="preserve"><value>Twitch 授權已失效。請前往 {0} 重新連結帳號。</value></data>
+  <data name="TwitchMember.Errors.BroadcasterUnavailable" xml:space="preserve"><value>此頻道目前無法使用 Twitch 訂閱驗證。</value></data>
+  <data name="TwitchMember.Errors.TemporaryFailure" xml:space="preserve"><value>目前因 Twitch 或 Discord 服務異常，無法完成驗證。既有身分組不會被移除，請稍後再試。</value></data>
+  <data name="TwitchMember.Select.Placeholder" xml:space="preserve"><value>選擇要驗證的 Twitch 頻道</value></data>
+  <data name="TwitchMember.Select.Description" xml:space="preserve"><value>一次可選擇多個頻道，驗證 Twitch 訂閱資格。</value></data>
+  <data name="TwitchMember.Cancelled" xml:space="preserve"><value>已取消你在此伺服器的 Twitch 訂閱驗證，並移除相關身分組。</value></data>
+  <data name="TwitchMember.LinkedAccount" xml:space="preserve"><value>目前連結的 Twitch 帳號：{0}</value></data>
+  <data name="TwitchMember.ChannelList" xml:space="preserve"><value>此伺服器可驗證的 Twitch 頻道：&#10;{0}</value></data>
+  <data name="TwitchMember.Verified" xml:space="preserve"><value>已確認你訂閱了 `{0}`：`{1}` {2}</value></data>
+  <data name="TwitchMember.Gift" xml:space="preserve"><value>（贈送訂閱）</value></data>
+  <data name="TwitchMember.NotSubscribed" xml:space="preserve"><value>Twitch 顯示你目前未訂閱 `{0}`，相關身分組已移除。</value></data>
+  <data name="TwitchMember.Selection.Verified" xml:space="preserve"><value>✅ `{0}`：{1}</value></data>
+  <data name="TwitchMember.Selection.Failed" xml:space="preserve"><value>❌ `{0}`：{1}</value></data>
+  <data name="TwitchMember.Status.NotSubscribed" xml:space="preserve"><value>未訂閱</value></data>
+  <data name="TwitchMember.Status.AuthorizationMissing" xml:space="preserve"><value>尚未連結 Twitch</value></data>
+  <data name="TwitchMember.Status.AuthorizationInvalid" xml:space="preserve"><value>Twitch 授權失效</value></data>
+  <data name="TwitchMember.Status.BroadcasterUnavailable" xml:space="preserve"><value>頻道無法驗證</value></data>
+  <data name="TwitchMember.Status.TemporaryFailure" xml:space="preserve"><value>暫時失敗</value></data>
+  <data name="TwitchMemberSetting.RemovePrompt" xml:space="preserve"><value>確定要移除 `{0}` 的 Twitch 訂閱驗證設定、成員身上的相關身分組，並刪除三個 Tier 身分組嗎？</value></data>
+  <data name="TwitchMemberSetting.Configured" xml:space="preserve"><value>已設定 `{0}` 的 Twitch 訂閱驗證。有效訂閱者會取得 `{1}` 和對應的 Tier 身分組。</value></data>
+  <data name="TwitchMemberSetting.Removed" xml:space="preserve"><value>已移除 `{0}` 的訂閱驗證設定與 Tier 身分組。</value></data>
+  <data name="TwitchMemberSetting.CheckedMembersTitle" xml:space="preserve"><value>Twitch 訂閱驗證名單</value></data>
+  <data name="TwitchMemberSetting.Errors.ChannelNotFound" xml:space="preserve"><value>找不到 Twitch 頻道。</value></data>
+  <data name="TwitchMemberSetting.Errors.IneligibleBroadcaster" xml:space="preserve"><value>這個 Twitch 頻道不是實況盟友（Affiliate）或實況夥伴（Partner），無法使用訂閱驗證。</value></data>
+  <data name="TwitchMemberSetting.Errors.TooManyChannels" xml:space="preserve"><value>單一伺服器最多可設定 25 個 Twitch 訂閱驗證頻道。</value></data>
+  <data name="TwitchMemberSetting.Errors.InvalidCommonRole" xml:space="preserve"><value>共用身分組 ID 無效。</value></data>
+  <data name="TwitchMemberSetting.Errors.CommonRoleOverlapsTier" xml:space="preserve"><value>共用身分組不能與任何 Twitch Tier 身分組相同。</value></data>
+  <data name="TwitchMemberSetting.Errors.RolesMustBeDistinct" xml:space="preserve"><value>共用身分組和三個 Twitch Tier 身分組必須各不相同。</value></data>
+  <data name="TwitchMemberSetting.Errors.TierRoleOverlap" xml:space="preserve"><value>Twitch Tier 身分組不可與其他驗證設定的身分組重疊。</value></data>
+  <data name="TwitchMemberSetting.Errors.MissingManageRoles" xml:space="preserve"><value>Bot 缺少「管理身分組」權限。</value></data>
+  <data name="TwitchMemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>不可使用 @everyone。</value></data>
+  <data name="TwitchMemberSetting.Errors.ManagedRole" xml:space="preserve"><value>不可使用由整合服務管理的身分組。</value></data>
+  <data name="TwitchMemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>共用身分組必須低於 Bot 的最高身分組。</value></data>
+  <data name="TwitchMemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定已儲存，但 Discord 身分組尚未完全同步。請先修正權限問題，或等暫時性錯誤排除後，再執行一次相同設定完成修復。</value></data>
+  <data name="TwitchMemberSetting.Errors.DeletionPending" xml:space="preserve"><value>此頻道的設定和相關身分組尚未移除完成，因此無法重新設定。Bot 每小時會重試一次。請先修正身分組權限，等移除完成後再新增。</value></data>
+  <data name="TwitchMemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>上次更新共用身分組時尚未完全同步。請用目前已儲存的共用身分組重新執行設定；修復完成後，才能改用其他身分組。</value></data>
+  <data name="TwitchMemberSetting.Errors.SaveFailed" xml:space="preserve"><value>建立 Tier 身分組或儲存設定時發生錯誤，資料庫中的設定未變更。</value></data>
+  <data name="TwitchMemberSetting.Errors.NotConfigured" xml:space="preserve"><value>此 Twitch 頻道尚未設定訂閱驗證。</value></data>
+  <data name="TwitchMemberSetting.Errors.RemovePending" xml:space="preserve"><value>部分身分組移除失敗，因此已保留設定和稍後重試所需的資料。</value></data>
+  <data name="TwitchMemberSetting.Errors.NoCheckedMembers" xml:space="preserve"><value>目前沒有通過驗證的 Twitch 訂閱者。</value></data>
+  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; 已通過 `{1}` 的 Twitch 訂閱驗證（Tier `{2}`）。</value></data>
+  <data name="TwitchMember.StatusLog.Removed" xml:space="preserve"><value>&lt;@{0}&gt; 目前未訂閱 `{1}`，相關身分組已移除。</value></data>
+  <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; 已通過 `{1}` 的 Twitch 訂閱驗證，但 Discord 身分組同步失敗。Bot 稍後會再試一次。</value></data>
+  <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; 已不符合 `{1}` 的 Twitch 訂閱資格，但 Bot 無法移除 Discord 身分組，稍後會再試一次。</value></data>
+  <data name="TwitchMember.StatusLog.AuthorizationInvalid" xml:space="preserve"><value>&lt;@{0}&gt; 的 Twitch 授權已失效，已移除該使用者在 `{1}` 的驗證身分組。</value></data>
 </root>

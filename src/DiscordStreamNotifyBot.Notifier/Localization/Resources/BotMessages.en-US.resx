@@ -265,6 +265,7 @@
   <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` is now the membership verification log channel.</value></data>
   <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>The bot needs the Manage Roles permission. Grant it and try again.</value></data>
   <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>The everyone role cannot be used as the membership verification role.</value></data>
+  <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>Roles managed by an integration cannot be used as membership verification roles.</value></data>
   <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>Role `{0}` is above the bot’s highest role. Move the bot role above it and try again.</value></data>
   <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>This server already uses {0} membership verification channels. Remove an unused channel first.</value></data>
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord select menus support at most {0} options. Remove unused membership verification channels first.</value></data>
@@ -289,6 +290,7 @@
   <data name="Member.Status.RoleMissing" xml:space="preserve"><value>The membership verification role for {0} no longer exists. Configure it again.</value></data>
   <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>The bot needs the Manage Roles permission to process membership verification roles. Grant the permission and try again.</value></data>
   <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>The everyone role cannot be used as a membership verification role. Configure another role.</value></data>
+  <data name="Member.Status.ManagedRoleInvalid" xml:space="preserve"><value>Roles managed by an integration cannot be used for membership verification. This configuration was removed; configure another role.</value></data>
   <data name="Member.Status.NotLoggedIn" xml:space="preserve"><value>Not signed in</value></data>
   <data name="Member.Status.RefreshFailed" xml:space="preserve"><value>Could not refresh authorization</value></data>
   <data name="Member.Status.CredentialExpired" xml:space="preserve"><value>Google authorization expired</value></data>
@@ -355,4 +357,53 @@
   <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>The membership channel name changed: `{0}` → `{1}`.</value></data>
   <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>Also, `{0}` has no membership verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then configure it with {1}.</value></data>
   <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>Also, the bot is missing View Channel, Send Messages, or Embed Links in `{1}` on `{0}`.</value></data>
+  <data name="TwitchMember.Errors.NotConfigured" xml:space="preserve"><value>This server has no Twitch subscription verification channels.</value></data>
+  <data name="TwitchMember.Errors.TooManyChannels" xml:space="preserve"><value>The number of channels exceeds Discord's menu limit. Contact a server administrator.</value></data>
+  <data name="TwitchMember.Errors.NoActiveCheck" xml:space="preserve"><value>No Twitch subscription verification record was found for you on this server.</value></data>
+  <data name="TwitchMember.Errors.AuthorizationMissing" xml:space="preserve"><value>Your Twitch account is not linked. Link it on {0}, then try again.</value></data>
+  <data name="TwitchMember.Errors.AuthorizationInvalid" xml:space="preserve"><value>Your Twitch authorization has expired. Reconnect your account on {0}.</value></data>
+  <data name="TwitchMember.Errors.BroadcasterUnavailable" xml:space="preserve"><value>Twitch subscription verification is unavailable for this channel.</value></data>
+  <data name="TwitchMember.Errors.TemporaryFailure" xml:space="preserve"><value>Verification is temporarily unavailable because of a Twitch or Discord service issue. Existing roles will not be removed; try again later.</value></data>
+  <data name="TwitchMember.Select.Placeholder" xml:space="preserve"><value>Select Twitch channels to verify</value></data>
+  <data name="TwitchMember.Select.Description" xml:space="preserve"><value>You can select multiple channels at once to verify your Twitch subscriptions.</value></data>
+  <data name="TwitchMember.Cancelled" xml:space="preserve"><value>Your Twitch subscription verification for this server was cancelled, and related roles were removed.</value></data>
+  <data name="TwitchMember.LinkedAccount" xml:space="preserve"><value>Linked Twitch account: {0}</value></data>
+  <data name="TwitchMember.ChannelList" xml:space="preserve"><value>Twitch channels available for verification:&#10;{0}</value></data>
+  <data name="TwitchMember.Verified" xml:space="preserve"><value>Your subscription to `{0}` was verified: `{1}` {2}</value></data>
+  <data name="TwitchMember.Gift" xml:space="preserve"><value>(gift subscription)</value></data>
+  <data name="TwitchMember.NotSubscribed" xml:space="preserve"><value>Twitch reports that you are not subscribed to `{0}`. Related roles were removed.</value></data>
+  <data name="TwitchMember.Selection.Verified" xml:space="preserve"><value>✅ `{0}`: {1}</value></data>
+  <data name="TwitchMember.Selection.Failed" xml:space="preserve"><value>❌ `{0}`: {1}</value></data>
+  <data name="TwitchMember.Status.NotSubscribed" xml:space="preserve"><value>Not subscribed</value></data>
+  <data name="TwitchMember.Status.AuthorizationMissing" xml:space="preserve"><value>Twitch account not linked</value></data>
+  <data name="TwitchMember.Status.AuthorizationInvalid" xml:space="preserve"><value>Twitch authorization expired</value></data>
+  <data name="TwitchMember.Status.BroadcasterUnavailable" xml:space="preserve"><value>Channel unavailable</value></data>
+  <data name="TwitchMember.Status.TemporaryFailure" xml:space="preserve"><value>Temporary failure</value></data>
+  <data name="TwitchMemberSetting.RemovePrompt" xml:space="preserve"><value>Remove Twitch subscription verification for `{0}`, remove related roles from members, and delete all three Tier roles?</value></data>
+  <data name="TwitchMemberSetting.Configured" xml:space="preserve"><value>Twitch subscription verification was configured for `{0}`. Valid subscribers receive `{1}` and the corresponding Tier role.</value></data>
+  <data name="TwitchMemberSetting.Removed" xml:space="preserve"><value>Subscription verification and Tier roles for `{0}` were removed.</value></data>
+  <data name="TwitchMemberSetting.CheckedMembersTitle" xml:space="preserve"><value>Verified Twitch subscribers</value></data>
+  <data name="TwitchMemberSetting.Errors.ChannelNotFound" xml:space="preserve"><value>Twitch channel not found.</value></data>
+  <data name="TwitchMemberSetting.Errors.IneligibleBroadcaster" xml:space="preserve"><value>This Twitch channel is not an Affiliate or Partner and cannot provide subscription verification.</value></data>
+  <data name="TwitchMemberSetting.Errors.TooManyChannels" xml:space="preserve"><value>A server can configure at most 25 Twitch subscription verification channels.</value></data>
+  <data name="TwitchMemberSetting.Errors.InvalidCommonRole" xml:space="preserve"><value>The shared role ID is invalid.</value></data>
+  <data name="TwitchMemberSetting.Errors.CommonRoleOverlapsTier" xml:space="preserve"><value>A shared role cannot be one of the Twitch Tier roles.</value></data>
+  <data name="TwitchMemberSetting.Errors.RolesMustBeDistinct" xml:space="preserve"><value>The shared role and all three Twitch Tier roles must be different roles.</value></data>
+  <data name="TwitchMemberSetting.Errors.TierRoleOverlap" xml:space="preserve"><value>Twitch Tier roles cannot overlap roles used by another verification configuration.</value></data>
+  <data name="TwitchMemberSetting.Errors.MissingManageRoles" xml:space="preserve"><value>The bot does not have Manage Roles permission.</value></data>
+  <data name="TwitchMemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>The @everyone role cannot be used.</value></data>
+  <data name="TwitchMemberSetting.Errors.ManagedRole" xml:space="preserve"><value>Roles managed by an integration cannot be used.</value></data>
+  <data name="TwitchMemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>The shared role must be below the bot's highest role.</value></data>
+  <data name="TwitchMemberSetting.Errors.RepairPending" xml:space="preserve"><value>The configuration was saved, but Discord role synchronization is incomplete. Fix any permission issues, or wait for the temporary error to clear, then run the same configuration again to finish the repair.</value></data>
+  <data name="TwitchMemberSetting.Errors.DeletionPending" xml:space="preserve"><value>This channel cannot be configured because its configuration and related roles have not been fully removed. The bot retries hourly. Fix the role permissions, then add it again after removal completes.</value></data>
+  <data name="TwitchMemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>The previous shared-role update has not fully synchronized. Run the configuration again with the currently saved shared role; after the repair finishes, you can select a different role.</value></data>
+  <data name="TwitchMemberSetting.Errors.SaveFailed" xml:space="preserve"><value>Creating the Tier roles or saving the configuration failed. The database configuration was not changed.</value></data>
+  <data name="TwitchMemberSetting.Errors.NotConfigured" xml:space="preserve"><value>This Twitch channel has no subscription verification configuration.</value></data>
+  <data name="TwitchMemberSetting.Errors.RemovePending" xml:space="preserve"><value>Some roles could not be removed, so the configuration and data needed for a later retry were retained.</value></data>
+  <data name="TwitchMemberSetting.Errors.NoCheckedMembers" xml:space="preserve"><value>There are currently no verified Twitch subscribers.</value></data>
+  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; passed Twitch subscription verification for `{1}` (Tier `{2}`).</value></data>
+  <data name="TwitchMember.StatusLog.Removed" xml:space="preserve"><value>&lt;@{0}&gt; is no longer subscribed to `{1}`. Related roles were removed.</value></data>
+  <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; passed the Twitch subscription check for `{1}`, but Discord role synchronization failed and will be retried.</value></data>
+  <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; no longer qualifies for `{1}`, but Discord role removal failed and will be retried.</value></data>
+  <data name="TwitchMember.StatusLog.AuthorizationInvalid" xml:space="preserve"><value>&lt;@{0}&gt;'s Twitch authorization expired. Their verification roles for `{1}` were removed.</value></data>
 </root>

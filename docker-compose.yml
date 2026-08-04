@@ -8,7 +8,7 @@
 # 啟動前置：
 #   1. 外部 MySQL / Redis 已啟動且容器可達（bind 0.0.0.0 或主機 IP、防火牆放行）。
 #   2. 複製 .env.example -> .env 並填入連線資訊與 Token。
-#   3. 準備 bot_config.json（含 RedisTokenKey〔與後端共用〕、WebHookUrl、ApiServerDomain 等非 env 設定）。
+#   3. 準備 bot_config.json（含 WebHookUrl、ApiServerDomain 等設定）；provider token 金鑰可改由 .env secret 注入。
 #
 # 建置 / 啟動：
 #   docker compose up -d      # pull_policy=build，從本 repo 建置單一 image，三角色共用
@@ -37,8 +37,8 @@ x-app: &app-common
   logging: *app-logging
   env_file: .env
   volumes:
-    # InitBotConfig 需要 bot_config.json 存在；RedisTokenKey 等非 env 設定由此提供（rw 以便首次自動補金鑰）
-    - ./bot_config.json:/app/bot_config.json
+    # InitBotConfig 需要 bot_config.json 存在；程序不再修改或自動產生 provider token 金鑰。
+    - ./bot_config.json:/app/bot_config.json:ro
   <<: *host-gateway
 
 # 角色由 ROLE 環境變數選擇執行檔（entrypoint）；各 exe 的 BotRole 已寫死於 Program.cs

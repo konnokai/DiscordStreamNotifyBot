@@ -4,6 +4,11 @@
 > 涉及兩個 repo：
 > - **Bot**：`E:\repos\_konnokai\Discord\DiscordStreamNotifyBot`（本 repo）
 > - **Backend**：`E:\repos\_konnokai\Discord\DiscordStreamBotBackend`（[Discord-Stream-Bot-Backend](https://github.com/konnokai/Discord-Stream-Bot-Backend)）
+>
+> **歷史文件更新（2026-08-03）**：本計畫原本刻意保留的 Redis 金鑰同步已由
+> `TWITCH_SUBSCRIPTION_VERIFICATION_PLAN.md` 取代。現行實作使用部署 secret
+> `ProviderTokenEncryptionKey`，並已移除 `RedisDataStore`、`RedisTokenKeyProvisioner`、
+> `Utility.RedisKey` 與 `member.syncRedisToken`。下文保留原始決策脈絡，不代表現行契約。
 
 ## 目的
 

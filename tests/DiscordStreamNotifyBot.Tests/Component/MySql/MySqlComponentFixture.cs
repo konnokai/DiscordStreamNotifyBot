@@ -17,7 +17,6 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
         private const string DatabaseNamePrefix = "discord_stream_bot_component_";
 
         private readonly MainDbService _originalDbService = BotState.DbService;
-        private readonly string _originalRedisKey = Utility.RedisKey;
         private string _adminConnectionString;
         private string _databaseName;
 
@@ -61,7 +60,6 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
                 await db.Database.MigrateAsync();
 
                 BotState.DbService = DbService;
-                Utility.RedisKey = EncryptionKey;
             }
             catch
             {
@@ -73,7 +71,6 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
         public async Task DisposeAsync()
         {
             BotState.DbService = _originalDbService;
-            Utility.RedisKey = _originalRedisKey;
             await DropDatabaseAsync();
         }
 

@@ -134,4 +134,17 @@
   <data name="member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>已設定會限驗證的 YouTube 頻道</value></data>
   <data name="member-set.list-checked-member.description" xml:space="preserve"><value>顯示目前已成功驗證的成員</value></data>
   <data name="member-set.list-checked-member.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="twitch-member.description" xml:space="preserve"><value>Twitch 訂閱驗證</value></data>
+  <data name="twitch-member.check.description" xml:space="preserve"><value>立即確認 Twitch 訂閱資格</value></data>
+  <data name="twitch-member.cancel-subscription-check.description" xml:space="preserve"><value>取消此伺服器的 Twitch 訂閱驗證</value></data>
+  <data name="twitch-member.show-my-twitch-account.description" xml:space="preserve"><value>顯示目前連結的 Twitch 帳號</value></data>
+  <data name="twitch-member.list-can-check-channel.description" xml:space="preserve"><value>列出此伺服器可驗證的 Twitch 頻道</value></data>
+  <data name="twitch-member-set.description" xml:space="preserve"><value>Twitch 訂閱驗證設定</value></data>
+  <data name="twitch-member-set.add-subscription-check.description" xml:space="preserve"><value>新增或更新 Twitch 訂閱驗證頻道</value></data>
+  <data name="twitch-member-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch 頻道網址</value></data>
+  <data name="twitch-member-set.add-subscription-check.role.description" xml:space="preserve"><value>驗證成功後給予的身分組（另外也會給予對應的 Tier 身分組）</value></data>
+  <data name="twitch-member-set.remove-subscription-check.description" xml:space="preserve"><value>移除 Twitch 訂閱驗證頻道</value></data>
+  <data name="twitch-member-set.remove-subscription-check.channel.description" xml:space="preserve"><value>已設定的 Twitch 頻道</value></data>
+  <data name="twitch-member-set.list-checked-member.description" xml:space="preserve"><value>列出已驗證的 Twitch 訂閱者</value></data>
+  <data name="twitch-member-set.list-checked-member.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
 </root>

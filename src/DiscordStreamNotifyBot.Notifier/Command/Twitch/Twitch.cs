@@ -24,6 +24,9 @@ namespace DiscordStreamNotifyBot.Command.Twitch
         [Alias("tastg")]
         public async Task AddSpiderToGuild(string channelUrl, ulong guildId)
         {
+            if (!await EnsureTwitchApiEnabledAsync())
+                return;
+
             string userLogin = _service.GetUserLoginByUrl(channelUrl);
 
             using (var db = _dbService.GetDbContext())
@@ -144,6 +147,9 @@ namespace DiscordStreamNotifyBot.Command.Twitch
         [Alias("cess")]
         public async Task CreateEventSubSubscriptionAsync(string broadcasterUserId)
         {
+            if (!await EnsureTwitchApiEnabledAsync())
+                return;
+
             await Context.Channel.TriggerTypingAsync();
 
             if (await _service.CreateEventSubSubscriptionAsync(broadcasterUserId))
@@ -164,6 +170,9 @@ namespace DiscordStreamNotifyBot.Command.Twitch
         [Alias("gess")]
         public async Task GetEventSubSubscriptionsAsync(string broadcasterUserId = "")
         {
+            if (!await EnsureTwitchApiEnabledAsync())
+                return;
+
             await Context.Channel.TriggerTypingAsync();
 
             var list = await _service.GetEventSubSubscriptionsAsync(broadcasterUserId);
@@ -189,6 +198,9 @@ namespace DiscordStreamNotifyBot.Command.Twitch
         [Alias("dess")]
         public async Task DeleteEventSubSubscriptionAsync(string broadcasterUserId)
         {
+            if (!await EnsureTwitchApiEnabledAsync())
+                return;
+
             await Context.Channel.TriggerTypingAsync();
 
             if (await _service.DeleteEventSubSubscriptionAsync(broadcasterUserId))
@@ -209,6 +221,9 @@ namespace DiscordStreamNotifyBot.Command.Twitch
         [Alias("tglv")]
         public async Task GetLatestVOD([Summary("頻道網址")] string channelUrl)
         {
+            if (!await EnsureTwitchApiEnabledAsync())
+                return;
+
             try
             {
                 await Context.Channel.TriggerTypingAsync();
@@ -260,6 +275,15 @@ namespace DiscordStreamNotifyBot.Command.Twitch
                 Log.Error(ex.Demystify(), "TwitchGetLatestVOD Error");
                 await Context.Channel.SendErrorAsync("Error");
             }
+        }
+
+        private async Task<bool> EnsureTwitchApiEnabledAsync()
+        {
+            if (_service.IsEnable)
+                return true;
+
+            await Context.Channel.SendErrorAsync("Twitch API 功能目前未啟用。").ConfigureAwait(false);
+            return false;
         }
 
         private static Task PublishReconcileRequestedAsync(string twitchUserId, string reason)

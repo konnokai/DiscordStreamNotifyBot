@@ -10,6 +10,7 @@ namespace DiscordStreamNotifyBot.DataBase
 
         public DbSet<BannerChange> BannerChange { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
+        public DbSet<GuildTwitchSubscriptionConfig> GuildTwitchSubscriptionConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
         public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
@@ -18,6 +19,7 @@ namespace DiscordStreamNotifyBot.DataBase
         public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
         public DbSet<TwitchBroadcasterAuthorization> TwitchBroadcasterAuthorization { get; set; }
         public DbSet<TwitchSpider> TwitchSpider { get; set; }
+        public DbSet<TwitchSubscriptionCheck> TwitchSubscriptionCheck { get; set; }
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
         public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
@@ -62,6 +64,28 @@ namespace DiscordStreamNotifyBot.DataBase
                 entity.Property(x => x.AuthorizedAt).HasColumnType("datetime(6)");
                 entity.Property(x => x.RevokedAt).HasColumnType("datetime(6)");
                 entity.Property(x => x.DateUpdated).HasColumnType("datetime(6)");
+            });
+
+            modelBuilder.Entity<GuildTwitchSubscriptionConfig>(entity =>
+            {
+                entity.HasIndex(x => new { x.GuildId, x.BroadcasterId }).IsUnique();
+                entity.Property(x => x.BroadcasterId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
+                entity.Property(x => x.BroadcasterLogin).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
+                entity.Property(x => x.BroadcasterDisplayName).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired();
+                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
+            });
+
+            modelBuilder.Entity<TwitchSubscriptionCheck>(entity =>
+            {
+                entity.HasIndex(x => new { x.GuildId, x.DiscordUserId, x.BroadcasterId }).IsUnique();
+                entity.Property(x => x.BroadcasterId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
+                entity.Property(x => x.Locale).HasColumnType("varchar(16)").HasMaxLength(16).IsRequired(false);
+                entity.Property(x => x.Tier).HasColumnType("varchar(4)").HasMaxLength(4).IsRequired(false);
+                entity.Property(x => x.LastCheckTime).HasColumnType("datetime(6)");
+                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
+                entity.ToTable(table => table.HasCheckConstraint(
+                    "ck_twitch_subscription_check_tier",
+                    "`tier` IS NULL OR `tier` IN ('1000', '2000', '3000')"));
             });
         }
 

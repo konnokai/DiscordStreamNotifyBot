@@ -46,6 +46,46 @@ namespace DiscordStreamNotifyBot
         UnknownError
     }
 
+    internal enum TwitchSubscriptionRoleOperation
+    {
+        Synchronize,
+        Remove
+    }
+
+    internal enum TwitchSubscriptionRoleResult
+    {
+        Success,
+        MissingPermission,
+        UserMissing,
+        DiscordError,
+        UnknownError
+    }
+
+    internal enum TwitchTokenOperation
+    {
+        Decrypt,
+        Validate,
+        Refresh,
+        RefreshLock
+    }
+
+    internal enum TwitchTokenOperationResult
+    {
+        Success,
+        Invalid,
+        Contended,
+        TemporaryFailure
+    }
+
+    internal enum TwitchSubscriptionProviderError
+    {
+        RateLimited,
+        Provider4xx,
+        Provider5xx,
+        NetworkFailure,
+        InvalidResponse
+    }
+
     internal enum NotificationBusMetricResult
     {
         InvalidPayload,
@@ -95,6 +135,15 @@ namespace DiscordStreamNotifyBot
         private readonly Gauge _youtubeMemberCheckLastSuccess;
         private readonly Counter _youtubeMemberVerifications;
         private readonly Counter _youtubeMemberRoleOperations;
+        private readonly Counter _twitchSubscriptionVerifications;
+        private readonly Counter _twitchSubscriptionRoleOperations;
+        private readonly Counter _twitchTokenOperations;
+        private readonly Gauge _twitchRefreshPendingPersistences;
+        private readonly Gauge _twitchRefreshShutdownDraining;
+        private readonly Histogram _twitchRefreshShutdownDrainDuration;
+        private readonly Counter _twitchSubscriptionCycles;
+        private readonly Histogram _twitchSubscriptionCycleDuration;
+        private readonly Counter _twitchSubscriptionProviderErrors;
         private readonly Counter _notificationBusMessages;
         private readonly Counter _notificationDeliveries;
         private readonly Counter _notificationDeliveryRetries;
@@ -125,6 +174,31 @@ namespace DiscordStreamNotifyBot
             _youtubeMemberRoleOperations = metricFactory.CreateCounter(
                 Prefix + "youtube_member_role_operations_total", "YouTube 會限驗證身分組操作結果。",
                 new CounterConfiguration { LabelNames = ["operation", "result"] });
+            _twitchSubscriptionVerifications = metricFactory.CreateCounter(
+                Prefix + "twitch_subscription_verifications_total", "Twitch 訂閱驗證結果。",
+                new CounterConfiguration { LabelNames = ["result", "tier"] });
+            _twitchSubscriptionRoleOperations = metricFactory.CreateCounter(
+                Prefix + "twitch_subscription_role_operations_total", "Twitch 訂閱驗證身分組操作結果。",
+                new CounterConfiguration { LabelNames = ["operation", "result"] });
+            _twitchTokenOperations = metricFactory.CreateCounter(
+                Prefix + "twitch_subscription_token_operations_total", "Twitch 訂閱驗證 token 操作結果。",
+                new CounterConfiguration { LabelNames = ["operation", "result"] });
+            _twitchRefreshPendingPersistences = metricFactory.CreateGauge(
+                Prefix + "twitch_refresh_pending_persistences", "已由 Twitch 接受 rotation、仍等待保存至 MySQL 的 token 數量。");
+            _twitchRefreshShutdownDraining = metricFactory.CreateGauge(
+                Prefix + "twitch_refresh_shutdown_draining", "Notifier 是否正在等待已接受的 Twitch token rotation 保存完成。");
+            _twitchRefreshShutdownDrainDuration = metricFactory.CreateHistogram(
+                Prefix + "twitch_refresh_shutdown_drain_duration_seconds", "Notifier 關閉時等待 Twitch token rotation 保存的耗時秒數。",
+                new HistogramConfiguration { Buckets = [0.1, 1, 5, 15, 30, 60, 120, 300, 600] });
+            _twitchSubscriptionCycles = metricFactory.CreateCounter(
+                Prefix + "twitch_subscription_cycles_total", "Twitch 訂閱重新驗證週期執行次數。",
+                new CounterConfiguration { LabelNames = ["result"] });
+            _twitchSubscriptionCycleDuration = metricFactory.CreateHistogram(
+                Prefix + "twitch_subscription_cycle_duration_seconds", "Twitch 訂閱重新驗證週期耗時秒數。",
+                new HistogramConfiguration { Buckets = [1, 5, 15, 30, 60, 120, 300, 600] });
+            _twitchSubscriptionProviderErrors = metricFactory.CreateCounter(
+                Prefix + "twitch_subscription_provider_errors_total", "Twitch 訂閱查詢 provider 錯誤。",
+                new CounterConfiguration { LabelNames = ["reason"] });
             _notificationBusMessages = metricFactory.CreateCounter(
                 Prefix + "notification_bus_messages_total", "Notifier 通知匯流排訊息處理結果。",
                 new CounterConfiguration { LabelNames = ["type", "result"] });
@@ -170,6 +244,51 @@ namespace DiscordStreamNotifyBot
         internal void RecordYoutubeMemberRoleOperation(YoutubeMemberRoleOperation operation, YoutubeMemberRoleResult result)
         {
             _youtubeMemberRoleOperations.WithLabels(ToLabel(operation), ToLabel(result)).Inc();
+        }
+
+        internal void RecordTwitchSubscriptionVerification(SharedService.Twitch.TwitchSubscriptionStatus result, string tier)
+        {
+            _twitchSubscriptionVerifications.WithLabels(ToLabel(result), ToTwitchTierLabel(tier)).Inc();
+        }
+
+        internal void RecordTwitchSubscriptionRoleOperation(TwitchSubscriptionRoleOperation operation, TwitchSubscriptionRoleResult result)
+        {
+            _twitchSubscriptionRoleOperations.WithLabels(ToLabel(operation), ToLabel(result)).Inc();
+        }
+
+        internal void RecordTwitchTokenOperation(TwitchTokenOperation operation, TwitchTokenOperationResult result)
+        {
+            _twitchTokenOperations.WithLabels(ToLabel(operation), ToLabel(result)).Inc();
+        }
+
+        internal void SetTwitchRefreshPendingPersistenceCount(int count)
+        {
+            _twitchRefreshPendingPersistences.Set(Math.Max(0, count));
+        }
+
+        internal void SetTwitchRefreshShutdownDraining(bool draining)
+        {
+            _twitchRefreshShutdownDraining.Set(draining ? 1 : 0);
+        }
+
+        internal void ObserveTwitchRefreshShutdownDrainDuration(TimeSpan duration)
+        {
+            _twitchRefreshShutdownDrainDuration.Observe(Math.Max(0, duration.TotalSeconds));
+        }
+
+        internal void RecordTwitchSubscriptionCycle(bool succeeded)
+        {
+            _twitchSubscriptionCycles.WithLabels(succeeded ? "success" : "failure").Inc();
+        }
+
+        internal void ObserveTwitchSubscriptionCycleDuration(TimeSpan duration)
+        {
+            _twitchSubscriptionCycleDuration.Observe(Math.Max(0, duration.TotalSeconds));
+        }
+
+        internal void RecordTwitchSubscriptionProviderError(TwitchSubscriptionProviderError error)
+        {
+            _twitchSubscriptionProviderErrors.WithLabels(ToLabel(error)).Inc();
         }
 
         internal void RecordNotificationBusMessage(string type, NotificationBusMetricResult result)
@@ -274,6 +393,70 @@ namespace DiscordStreamNotifyBot
             YoutubeMemberRoleResult.UserMissing => "user_missing",
             YoutubeMemberRoleResult.DiscordError => "discord_error",
             YoutubeMemberRoleResult.UnknownError => "unknown_error",
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
+        internal static string ToLabel(SharedService.Twitch.TwitchSubscriptionStatus value) => value switch
+        {
+            SharedService.Twitch.TwitchSubscriptionStatus.Subscribed => "subscribed",
+            SharedService.Twitch.TwitchSubscriptionStatus.NotSubscribed => "not_subscribed",
+            SharedService.Twitch.TwitchSubscriptionStatus.AuthorizationMissing => "authorization_missing",
+            SharedService.Twitch.TwitchSubscriptionStatus.AuthorizationInvalid => "authorization_invalid",
+            SharedService.Twitch.TwitchSubscriptionStatus.BroadcasterUnavailable => "broadcaster_unavailable",
+            SharedService.Twitch.TwitchSubscriptionStatus.TemporaryFailure => "temporary_failure",
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
+        internal static string ToTwitchTierLabel(string tier) => tier switch
+        {
+            "1000" => "1000",
+            "2000" => "2000",
+            "3000" => "3000",
+            _ => "unknown"
+        };
+
+        private static string ToLabel(TwitchSubscriptionRoleOperation value) => value switch
+        {
+            TwitchSubscriptionRoleOperation.Synchronize => "synchronize",
+            TwitchSubscriptionRoleOperation.Remove => "remove",
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
+        private static string ToLabel(TwitchSubscriptionRoleResult value) => value switch
+        {
+            TwitchSubscriptionRoleResult.Success => "success",
+            TwitchSubscriptionRoleResult.MissingPermission => "missing_permission",
+            TwitchSubscriptionRoleResult.UserMissing => "user_missing",
+            TwitchSubscriptionRoleResult.DiscordError => "discord_error",
+            TwitchSubscriptionRoleResult.UnknownError => "unknown_error",
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
+        private static string ToLabel(TwitchTokenOperation value) => value switch
+        {
+            TwitchTokenOperation.Decrypt => "decrypt",
+            TwitchTokenOperation.Validate => "validate",
+            TwitchTokenOperation.Refresh => "refresh",
+            TwitchTokenOperation.RefreshLock => "refresh_lock",
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
+        private static string ToLabel(TwitchTokenOperationResult value) => value switch
+        {
+            TwitchTokenOperationResult.Success => "success",
+            TwitchTokenOperationResult.Invalid => "invalid",
+            TwitchTokenOperationResult.Contended => "contended",
+            TwitchTokenOperationResult.TemporaryFailure => "temporary_failure",
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
+        private static string ToLabel(TwitchSubscriptionProviderError value) => value switch
+        {
+            TwitchSubscriptionProviderError.RateLimited => "rate_limited",
+            TwitchSubscriptionProviderError.Provider4xx => "provider_4xx",
+            TwitchSubscriptionProviderError.Provider5xx => "provider_5xx",
+            TwitchSubscriptionProviderError.NetworkFailure => "network_failure",
+            TwitchSubscriptionProviderError.InvalidResponse => "invalid_response",
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
         };
 
