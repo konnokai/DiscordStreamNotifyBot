@@ -91,6 +91,14 @@ Grafana Loki LogQL：
 {app="discord-stream-notify-bot", role="notifier:0"}
 ```
 
+### Grafana Dashboard
+
+1. 開啟 Grafana 的 **Dashboards -> New -> Import**。
+2. 上傳 `deploy/grafana/dashboards/logs-loki.json`。
+3. 選擇接收上述 stream labels 的 Loki datasource。
+
+Dashboard 預設顯示最近 6 小時並每 10 秒更新，可依 service、role、level 與內容 regex 篩選。錯誤統計固定計算 `ERROR`／`CRITICAL`，不受 level 選項影響；展開 Logs panel 的單筆資料可檢視 exception 與其他 structured properties。
+
 ## Console 備援
 
 Compose 使用 Docker `json-file` driver，每個容器設定 `max-size: "10m"`、`max-file: "3"`，本機最多約保留 30 MB。Loki 不可用時可使用：
