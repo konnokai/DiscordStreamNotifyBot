@@ -152,7 +152,7 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
                 db.GuildConfig.Add(guildConfig);
             }
 
-            guildConfig.LogMemberStatusChannelId = textChannel.Id;
+            guildConfig.VerificationLogChannelId = textChannel.Id;
             await db.SaveChangesAsync(GracefulShutdown.Token);
 
             await SendLocalizedConfirmAsync("MemberSetting.LogChannelChanged", true, false, textChannel);

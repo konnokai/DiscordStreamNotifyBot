@@ -4,7 +4,7 @@
     {
         public ulong GuildId { get; set; }
         public string Locale { get; set; }
-        public ulong LogMemberStatusChannelId { get; set; } = 0;
+        public ulong VerificationLogChannelId { get; set; } = 0;
         public ulong NoticeChannelId { get; set; } = 0;
         public uint MaxYouTubeSpiderCount { get; set; } = 3;
         public uint MaxYouTubeMemberCheckCount { get; set; } = 5;

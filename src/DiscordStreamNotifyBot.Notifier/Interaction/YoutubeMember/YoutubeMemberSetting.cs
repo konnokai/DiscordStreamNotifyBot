@@ -148,20 +148,20 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                         return;
                     }
 
-                    if (guildConfig.LogMemberStatusChannelId == 0)
+                    if (guildConfig.VerificationLogChannelId == 0)
                     {
                         string logLocale = await GetLocaleAsync(true);
                         string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "utility", "set-verification-log-channel");
                         await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelRequired", true, true, setLogPath);
                         return;
                     }
-                    else if (Context.Guild.GetTextChannel(guildConfig.LogMemberStatusChannelId) == null)
+                    else if (Context.Guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
                     {
                         string logLocale = await GetLocaleAsync(true);
                         string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "utility", "set-verification-log-channel");
                         await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelDeleted", true, true, setLogPath);
 
-                        guildConfig.LogMemberStatusChannelId = 0;
+                        guildConfig.VerificationLogChannelId = 0;
                         db.GuildConfig.Update(guildConfig);
                         db.SaveChanges();
                         return;

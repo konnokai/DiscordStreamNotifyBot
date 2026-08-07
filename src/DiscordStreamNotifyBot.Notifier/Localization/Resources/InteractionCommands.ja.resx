@@ -134,17 +134,17 @@
   <data name="youtube-member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
   <data name="youtube-member-set.list-checked-member.description" xml:space="preserve"><value>認証に成功したメンバーを表示します</value></data>
   <data name="youtube-member-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-	  <data name="twitch-member.description" xml:space="preserve"><value>Twitch サブスク認証</value></data>
-  <data name="twitch-member.check.description" xml:space="preserve"><value>Twitch サブスクを今すぐ認証します</value></data>
-  <data name="twitch-member.cancel-subscription-check.description" xml:space="preserve"><value>このサーバーの Twitch サブスク認証を解除します</value></data>
-  <data name="twitch-member.show-my-twitch-account.description" xml:space="preserve"><value>現在連携中の Twitch アカウントを表示します</value></data>
-  <data name="twitch-member.list-can-check-channel.description" xml:space="preserve"><value>認証可能な Twitch チャンネルを表示します</value></data>
-  <data name="twitch-member-set.description" xml:space="preserve"><value>Twitch サブスク認証設定</value></data>
-  <data name="twitch-member-set.add-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを追加または更新します</value></data>
-  <data name="twitch-member-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch チャンネル URL または login</value></data>
-  <data name="twitch-member-set.add-subscription-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール（対応する Tier ロールも追加で付与）</value></data>
-  <data name="twitch-member-set.remove-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを削除します</value></data>
-  <data name="twitch-member-set.remove-subscription-check.channel.description" xml:space="preserve"><value>設定済み Twitch チャンネル</value></data>
-  <data name="twitch-member-set.list-checked-member.description" xml:space="preserve"><value>認証済み Twitch サブスクメンバーを表示します</value></data>
-  <data name="twitch-member-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+	  <data name="twitch-subscription.description" xml:space="preserve"><value>Twitch サブスク認証</value></data>
+  <data name="twitch-subscription.check.description" xml:space="preserve"><value>Twitch サブスクを今すぐ認証します</value></data>
+  <data name="twitch-subscription.cancel-subscription-check.description" xml:space="preserve"><value>このサーバーの Twitch サブスク認証を解除します</value></data>
+  <data name="twitch-subscription.show-my-twitch-account.description" xml:space="preserve"><value>現在連携中の Twitch アカウントを表示します</value></data>
+  <data name="twitch-subscription.list-can-check-channel.description" xml:space="preserve"><value>認証可能な Twitch チャンネルを表示します</value></data>
+  <data name="twitch-subscription-set.description" xml:space="preserve"><value>Twitch サブスク認証設定</value></data>
+  <data name="twitch-subscription-set.add-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを追加または更新します</value></data>
+  <data name="twitch-subscription-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch チャンネル URL または login</value></data>
+  <data name="twitch-subscription-set.add-subscription-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール（対応する Tier ロールも追加で付与）</value></data>
+  <data name="twitch-subscription-set.remove-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを削除します</value></data>
+  <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>設定済み Twitch チャンネル</value></data>
+  <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>認証済み Twitch サブスクメンバーを表示します</value></data>
+  <data name="twitch-subscription-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 </root>

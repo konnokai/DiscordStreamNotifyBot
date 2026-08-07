@@ -1,5 +1,5 @@
 using DiscordStreamNotifyBot.DataBase.Table;
-using DiscordStreamNotifyBot.Interaction.TwitchMember;
+using DiscordStreamNotifyBot.Interaction.TwitchSubscription;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.SharedService.TwitchSubscription;
 
@@ -63,7 +63,7 @@ namespace DiscordStreamNotifyBot.Tests
         [InlineData("3000", "Tier 3")]
         public void TierDisplayDoesNotExposeProviderCodes(string tier, string expected)
         {
-            Assert.Equal(expected, TwitchMember.FormatTier(tier));
+            Assert.Equal(expected, TwitchSubscription.FormatTier(tier));
         }
 
         [Theory]
@@ -73,7 +73,7 @@ namespace DiscordStreamNotifyBot.Tests
         public void VerifiedStatusLogUsesReadableTierName(string locale)
         {
             string message = new BotLocalizer().Format(
-                "TwitchMember.StatusLog.Verified", locale, 123UL, "broadcaster", TwitchMember.FormatTier("1000"));
+                "TwitchMember.StatusLog.Verified", locale, 123UL, "broadcaster", TwitchSubscription.FormatTier("1000"));
 
             Assert.Contains("`Tier 1`", message, StringComparison.Ordinal);
             Assert.DoesNotContain("1000", message, StringComparison.Ordinal);

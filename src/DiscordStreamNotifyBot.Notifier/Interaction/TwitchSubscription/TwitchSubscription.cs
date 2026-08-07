@@ -4,16 +4,16 @@ using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using DiscordStreamNotifyBot.SharedService.TwitchSubscription;
 
-namespace DiscordStreamNotifyBot.Interaction.TwitchMember
+namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
 {
-    [Group("twitch-member", "Twitch 訂閱驗證相關指令")]
-    public sealed class TwitchMember : TopLevelModule
+    [Group("twitch-subscription", "Twitch 訂閱驗證相關指令")]
+    public sealed class TwitchSubscription : TopLevelModule
     {
         private readonly MainDbService _dbService;
         private readonly TwitchApiService _twitchApiService;
         private readonly TwitchSubscriptionService _subscriptionService;
 
-        public TwitchMember(
+        public TwitchSubscription(
             MainDbService dbService,
             TwitchApiService twitchApiService,
             TwitchSubscriptionService subscriptionService)
@@ -70,7 +70,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
                 .WithPlaceholder(BotLocalizer.Get("TwitchMember.Select.Placeholder", responseLocale))
                 .WithMinValues(1)
                 .WithMaxValues(configs.Count)
-                .WithCustomId($"twitch-member-check:{Context.Guild.Id}:{Context.User.Id}");
+                .WithCustomId($"twitch-subscription-check:{Context.Guild.Id}:{Context.User.Id}");
             foreach (var config in configs)
                 menu.AddOption(config.BroadcasterDisplayName, config.BroadcasterId);
 
@@ -185,13 +185,13 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
         };
     }
 
-    public sealed class TwitchMemberComponent : TopLevelModule
+    public sealed class TwitchSubscriptionComponent : TopLevelModule
     {
         private readonly MainDbService _dbService;
         private readonly TwitchApiService _twitchApiService;
         private readonly TwitchSubscriptionService _subscriptionService;
 
-        public TwitchMemberComponent(
+        public TwitchSubscriptionComponent(
             MainDbService dbService,
             TwitchApiService twitchApiService,
             TwitchSubscriptionService subscriptionService)
@@ -201,7 +201,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
             _subscriptionService = subscriptionService;
         }
 
-        [ComponentInteraction("twitch-member-check:*:*", true)]
+        [ComponentInteraction("twitch-subscription-check:*:*", true)]
         public async Task HandleSelectionAsync(string guildValue, string userValue, string[] broadcasterIds)
         {
             var component = (SocketMessageComponent)Context.Interaction;
@@ -241,7 +241,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
                     locale,
                     config.BroadcasterDisplayName,
                     result.Status == TwitchSubscriptionStatus.Subscribed
-                        ? TwitchMember.FormatTier(result.Tier)
+                        ? TwitchSubscription.FormatTier(result.Tier)
                         : BotLocalizer.Get($"TwitchMember.Status.{result.Status}", locale)));
             }
 

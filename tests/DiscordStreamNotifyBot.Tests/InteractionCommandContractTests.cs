@@ -98,7 +98,7 @@ namespace DiscordStreamNotifyBot.Tests
         {
             using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
             string[] userCommands = fixture.Interactions.SlashCommands
-                .Where(command => command.Module.SlashGroupName == "twitch-member")
+                .Where(command => command.Module.SlashGroupName == "twitch-subscription")
                 .Select(command => command.Name)
                 .OrderBy(name => name, StringComparer.Ordinal)
                 .ToArray();
@@ -110,14 +110,14 @@ namespace DiscordStreamNotifyBot.Tests
             ], userCommands);
 
             SlashCommandInfo add = fixture.Interactions.SlashCommands.Single(command =>
-                command.Module.SlashGroupName == "twitch-member-set" && command.Name == "add-subscription-check");
+                command.Module.SlashGroupName == "twitch-subscription-set" && command.Name == "add-subscription-check");
             Assert.Equal(GuildPermission.Administrator, add.DefaultMemberPermissions);
             Assert.Collection(add.Parameters,
                 parameter => AssertParameter(parameter, "channel-url", typeof(string), true),
                 parameter => AssertParameter(parameter, "role", typeof(IRole), true));
 
             SlashCommandInfo remove = fixture.Interactions.SlashCommands.Single(command =>
-                command.Module.SlashGroupName == "twitch-member-set" && command.Name == "remove-subscription-check");
+                command.Module.SlashGroupName == "twitch-subscription-set" && command.Name == "remove-subscription-check");
             Assert.Equal(GuildPermission.Administrator, remove.DefaultMemberPermissions);
             SlashCommandParameterInfo channel = Assert.Single(remove.Parameters);
             AssertParameter(channel, "channel", typeof(string), true);

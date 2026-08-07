@@ -125,8 +125,8 @@ namespace DiscordStreamNotifyBot.Interaction
                 Context.Interaction.GuildLocale,
                 Context.Interaction.UserLocale);
 
-            bool hasNoMemberNotice = initialized.GuildConfig.LogMemberStatusChannelId == 0;
-            if (hasNoYoutubeNotice && hasNoTwitchNotice && hasNoTwitcastingNotice && hasNoMemberNotice)
+            bool hasNoVerificationLog = initialized.GuildConfig.VerificationLogChannelId == 0;
+            if (hasNoYoutubeNotice && hasNoTwitchNotice && hasNoTwitcastingNotice && hasNoVerificationLog)
             {
                 string responseLocale = LocaleResolver.ResolvePrivate(
                     Context.Interaction.UserLocale,

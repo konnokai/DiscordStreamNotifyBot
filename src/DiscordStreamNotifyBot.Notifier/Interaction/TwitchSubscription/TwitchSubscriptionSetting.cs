@@ -4,19 +4,19 @@ using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using DiscordStreamNotifyBot.SharedService.TwitchSubscription;
 
-namespace DiscordStreamNotifyBot.Interaction.TwitchMember
+namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
 {
     [RequireContext(ContextType.Guild)]
     [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
-    [Group("twitch-member-set", "Twitch 訂閱驗證設定")]
-    public sealed class TwitchMemberSetting : TopLevelModule
+    [Group("twitch-subscription-set", "Twitch 訂閱驗證設定")]
+    public sealed class TwitchSubscriptionSetting : TopLevelModule
     {
         private readonly MainDbService _dbService;
         private readonly TwitchApiService _twitchApiService;
         private readonly TwitchSubscriptionRoleService _roleService;
 
-        public TwitchMemberSetting(
+        public TwitchSubscriptionSetting(
             MainDbService dbService,
             TwitchApiService twitchApiService,
             TwitchSubscriptionRoleService roleService)
@@ -69,15 +69,15 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
                 string locale = await GetLocaleAsync(true);
                 string setLogPath = CommandDisplayResolver.GetCommandPath(
                     locale, "utility", "set-verification-log-channel");
-                if (guildConfig == null || guildConfig.LogMemberStatusChannelId == 0)
+                if (guildConfig == null || guildConfig.VerificationLogChannelId == 0)
                 {
                     await SendLocalizedErrorAsync(
                         "MemberSetting.Errors.LogChannelRequired", false, true, setLogPath);
                     return;
                 }
-                if (Context.Guild.GetTextChannel(guildConfig.LogMemberStatusChannelId) == null)
+                if (Context.Guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
                 {
-                    guildConfig.LogMemberStatusChannelId = 0;
+                    guildConfig.VerificationLogChannelId = 0;
                     await db.SaveChangesAsync(GracefulShutdown.Token);
                     await SendLocalizedErrorAsync(
                         "MemberSetting.Errors.LogChannelDeleted", false, true, setLogPath);
@@ -166,7 +166,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
                 .WithTitle(BotLocalizer.Get("TwitchMemberSetting.CheckedMembersTitle", locale))
                 .WithDescription(string.Join('\n', checks.Skip(currentPage * 20).Take(20)
                     .AsEnumerable()
-                    .Select(x => $"<@{x.DiscordUserId}>: `{x.BroadcasterDisplayName}` / {TwitchMember.FormatTier(x.Tier)}"))),
+                    .Select(x => $"<@{x.DiscordUserId}>: `{x.BroadcasterDisplayName}` / {TwitchSubscription.FormatTier(x.Tier)}"))),
                 count, 20, true, true);
         }
 

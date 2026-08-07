@@ -134,17 +134,17 @@
   <data name="youtube-member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>A YouTube channel configured for membership verification</value></data>
   <data name="youtube-member-set.list-checked-member.description" xml:space="preserve"><value>List members who have completed verification</value></data>
   <data name="youtube-member-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="twitch-member.description" xml:space="preserve"><value>Twitch subscription verification</value></data>
-  <data name="twitch-member.check.description" xml:space="preserve"><value>Verify your Twitch subscription now</value></data>
-  <data name="twitch-member.cancel-subscription-check.description" xml:space="preserve"><value>Cancel Twitch subscription verification in this server</value></data>
-  <data name="twitch-member.show-my-twitch-account.description" xml:space="preserve"><value>Show your currently linked Twitch account</value></data>
-  <data name="twitch-member.list-can-check-channel.description" xml:space="preserve"><value>List Twitch channels available for verification</value></data>
-  <data name="twitch-member-set.description" xml:space="preserve"><value>Configure Twitch subscription verification</value></data>
-  <data name="twitch-member-set.add-subscription-check.description" xml:space="preserve"><value>Add or update a Twitch subscription channel</value></data>
-  <data name="twitch-member-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch channel URL</value></data>
-  <data name="twitch-member-set.add-subscription-check.role.description" xml:space="preserve"><value>Role granted after verification (the corresponding Tier role is also granted)</value></data>
-  <data name="twitch-member-set.remove-subscription-check.description" xml:space="preserve"><value>Remove a Twitch subscription channel</value></data>
-  <data name="twitch-member-set.remove-subscription-check.channel.description" xml:space="preserve"><value>A configured Twitch channel</value></data>
-  <data name="twitch-member-set.list-checked-member.description" xml:space="preserve"><value>List verified Twitch subscribers</value></data>
-  <data name="twitch-member-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
+  <data name="twitch-subscription.description" xml:space="preserve"><value>Twitch subscription verification</value></data>
+  <data name="twitch-subscription.check.description" xml:space="preserve"><value>Verify your Twitch subscription now</value></data>
+  <data name="twitch-subscription.cancel-subscription-check.description" xml:space="preserve"><value>Cancel Twitch subscription verification in this server</value></data>
+  <data name="twitch-subscription.show-my-twitch-account.description" xml:space="preserve"><value>Show your currently linked Twitch account</value></data>
+  <data name="twitch-subscription.list-can-check-channel.description" xml:space="preserve"><value>List Twitch channels available for verification</value></data>
+  <data name="twitch-subscription-set.description" xml:space="preserve"><value>Configure Twitch subscription verification</value></data>
+  <data name="twitch-subscription-set.add-subscription-check.description" xml:space="preserve"><value>Add or update a Twitch subscription channel</value></data>
+  <data name="twitch-subscription-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch channel URL</value></data>
+  <data name="twitch-subscription-set.add-subscription-check.role.description" xml:space="preserve"><value>Role granted after verification (the corresponding Tier role is also granted)</value></data>
+  <data name="twitch-subscription-set.remove-subscription-check.description" xml:space="preserve"><value>Remove a Twitch subscription channel</value></data>
+  <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>A configured Twitch channel</value></data>
+  <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>List verified Twitch subscribers</value></data>
+  <data name="twitch-subscription-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
 </root>

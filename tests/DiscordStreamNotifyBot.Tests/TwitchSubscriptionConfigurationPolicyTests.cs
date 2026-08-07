@@ -1,4 +1,4 @@
-using DiscordStreamNotifyBot.Interaction.TwitchMember;
+using DiscordStreamNotifyBot.Interaction.TwitchSubscription;
 
 namespace DiscordStreamNotifyBot.Tests
 {
@@ -12,7 +12,7 @@ namespace DiscordStreamNotifyBot.Tests
         [InlineData(null, false)]
         public void OnlyAffiliateAndPartnerCanBeConfigured(string broadcasterType, bool expected)
         {
-            Assert.Equal(expected, TwitchMemberSetting.IsEligibleBroadcaster(broadcasterType));
+            Assert.Equal(expected, TwitchSubscriptionSetting.IsEligibleBroadcaster(broadcasterType));
         }
     }
 }

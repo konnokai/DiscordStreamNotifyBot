@@ -25,7 +25,7 @@
 - Leaf command 名稱與既有一般使用者行為原則上維持不變。
 - YouTube 與 Twitch 不允許新增跨平台 role 重疊。
 - 既有跨平台 role 重疊不自動改 role；清理時必須保守保留其他平台仍需要的 entitlement。
-- `GuildConfig.LogMemberStatusChannelId` 繼續由兩平台共用。
+- `GuildConfig.VerificationLogChannelId` 繼續由兩平台共用。
 - DB migration 只由 Bot repo 產生與管理。
 - 前端、後端與 Bot 可在同一維護窗口全部停止後更新。
 - `member.revokeToken` 名稱及 payload 不變；Redis 僅作即時喚醒，MySQL 才是 durable truth。
@@ -421,7 +421,7 @@ Redis publish 失敗不得回滾已 durable 保存的 unlink intent；Bot 週期
 - GoogleSection 說明改為「YouTube 頻道資料與會員限定影片留言」。
 - Account 名稱與頭像標示為 YouTube channel，而不是 Google profile。
 - Privacy 補上 membership check result、last-check time 與 pending role cleanup retention。
-- Twitch `/twitch-member check` 文案不改。
+- Twitch `/twitch-subscription check` 文案不改。
 
 ## 15. 實作階段
 

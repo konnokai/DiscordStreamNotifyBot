@@ -583,7 +583,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         continue;
                     }
 
-                    var logChannel = guild.GetTextChannel(guildConfig.LogMemberStatusChannelId);
+                    var logChannel = guild.GetTextChannel(guildConfig.VerificationLogChannelId);
                     if (logChannel == null)
                     {
                         isExistLogChannel = false;
@@ -595,7 +595,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         var permission = guild.GetUser(_client.CurrentUser.Id).GetPermissions(logChannel);
                         if (!permission.ViewChannel || !permission.SendMessages || !permission.EmbedLinks)
                         {
-                            Log.Warn($"{item.GuildId} / {guildConfig.LogMemberStatusChannelId} 無權限可紀錄");
+                            Log.Warn($"{item.GuildId} / {guildConfig.VerificationLogChannelId} 無權限可紀錄");
                             message += "\n" + _localizer.Format("Member.VideoLog.LogChannelPermissionMissing",
                                 guildLocale, guild.Name, logChannel.Name);
                             isExistLogChannel = false;

@@ -86,7 +86,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     }
                     continue;
                 }
-                SocketTextChannel logChannel = guildConfig == null ? null : guild.GetTextChannel(guildConfig.LogMemberStatusChannelId);
+                SocketTextChannel logChannel = guildConfig == null ? null : guild.GetTextChannel(guildConfig.VerificationLogChannelId);
                 SocketRole role = guild.GetRole(configuration.MemberCheckGrantRoleId);
                 if (!CanProcessConfiguration(guild, configuration, role, logChannel))
                     continue;

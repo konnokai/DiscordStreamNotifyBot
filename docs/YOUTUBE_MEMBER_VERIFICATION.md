@@ -4,7 +4,7 @@
 
 - 一般使用者指令群組為 `/youtube-member`，管理員設定群組為 `/youtube-member-set`。
 - 初次驗證仍由 `/youtube-member check` 建立 queued row，交給背景週期探測會員限定影片留言。
-- `GuildConfig.LogMemberStatusChannelId` 由 YouTube 與 Twitch 共用。
+- `GuildConfig.VerificationLogChannelId` 由 YouTube 與 Twitch 共用。
 - `member.revokeToken` 頻道、decimal user ID payload、`youtube_member_access_token` 表與 `ProviderTokenEncryptionKey` 密文契約不變。
 
 ## Durable state

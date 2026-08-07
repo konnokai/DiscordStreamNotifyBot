@@ -241,12 +241,12 @@ namespace DiscordStreamNotifyBot.Command.Admin
                 using (var db = _dbService.GetDbContext())
                 {
                     var guildConfig = await db.GuildConfig.AsNoTracking().FirstOrDefaultAsync((x) => x.GuildId == gid);
-                    if (guildConfig != null && guildConfig.LogMemberStatusChannelId != 0)
+                    if (guildConfig != null && guildConfig.VerificationLogChannelId != 0)
                     {
-                        if (channels.TryGetValue(guildConfig.LogMemberStatusChannelId, out var logChannelName))
-                            result += $"伺服器會限記錄頻道: {logChannelName} ({guildConfig.LogMemberStatusChannelId})\n";
+                        if (channels.TryGetValue(guildConfig.VerificationLogChannelId, out var logChannelName))
+                            result += $"伺服器會員驗證記錄頻道: {logChannelName} ({guildConfig.VerificationLogChannelId})\n";
                         else
-                            result += $"伺服器會限記錄頻道: (不存在) {guildConfig.LogMemberStatusChannelId}\n";
+                            result += $"伺服器會員驗證記錄頻道: (不存在) {guildConfig.VerificationLogChannelId}\n";
                     }
 
                     var youtubeChannelSpiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.GuildId == gid);
@@ -290,7 +290,13 @@ namespace DiscordStreamNotifyBot.Command.Admin
                     var memberChcekList = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == gid);
                     if (memberChcekList.Any())
                     {
-                        result += $"設定會限的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```\n";
+                        result += $"設定 YouTube 會員驗證的頻道: \n```{string.Join('\n', memberChcekList.Select((x) => $"{x.MemberCheckChannelTitle}: {x.MemberCheckGrantRoleId}"))}```\n";
+                    }
+
+                    var twitchSubscriptionList = db.GuildTwitchSubscriptionConfig.AsNoTracking().Where((x) => x.GuildId == gid);
+                    if (twitchSubscriptionList.Any())
+                    {
+                        result += $"設定 Twitch 訂閱驗證的頻道: \n```{string.Join('\n', twitchSubscriptionList.Select((x) => $"{x.BroadcasterDisplayName}: {x.SubscriberRoleId}"))}```\n";
                     }
 
                     var twitchSpiders = db.TwitchSpider.AsNoTracking().Where((x) => x.GuildId == gid);

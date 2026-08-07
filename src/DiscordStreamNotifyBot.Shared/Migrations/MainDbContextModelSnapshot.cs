@@ -98,9 +98,9 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasColumnType("varchar(16)")
                         .HasColumnName("locale");
 
-                    b.Property<ulong>("LogMemberStatusChannelId")
+                    b.Property<ulong>("VerificationLogChannelId")
                         .HasColumnType("bigint unsigned")
-                        .HasColumnName("log_member_status_channel_id");
+                        .HasColumnName("verification_log_channel_id");
 
                     b.Property<uint>("MaxTwitcastingSpiderCount")
                         .HasColumnType("int unsigned")

@@ -540,7 +540,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 if (synchronized && (!wasChecked || previousTier != result.Tier))
                     await LogStatusAsync(guildId, "TwitchMember.StatusLog.Verified", cancellationToken,
                         discordUserId, config.BroadcasterDisplayName,
-                        Interaction.TwitchMember.TwitchMember.FormatTier(result.Tier));
+                        Interaction.TwitchSubscription.TwitchSubscription.FormatTier(result.Tier));
                 else if (!synchronized)
                     await LogStatusAsync(guildId, "TwitchMember.StatusLog.RoleFailed", cancellationToken,
                         discordUserId, config.BroadcasterDisplayName);
@@ -616,8 +616,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 return;
             using var db = _dbService.GetDbContext();
             ulong? channelId = await db.GuildConfig.AsNoTracking()
-                .Where(x => x.GuildId == guildId && x.LogMemberStatusChannelId != 0)
-                .Select(x => (ulong?)x.LogMemberStatusChannelId)
+                .Where(x => x.GuildId == guildId && x.VerificationLogChannelId != 0)
+                .Select(x => (ulong?)x.VerificationLogChannelId)
                 .SingleOrDefaultAsync(cancellationToken);
             SocketTextChannel channel = channelId.HasValue ? guild.GetTextChannel(channelId.Value) : null;
             if (channel == null)

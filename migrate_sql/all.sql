@@ -49,7 +49,7 @@ BEGIN
     CREATE TABLE `guild_config` (
         `id` int NOT NULL AUTO_INCREMENT,
         `guild_id` bigint unsigned NOT NULL,
-        `log_member_status_channel_id` bigint unsigned NOT NULL,
+        `verification_log_channel_id` bigint unsigned NOT NULL,
         `notice_channel_id` bigint unsigned NOT NULL,
         `date_added` datetime(6) NULL,
         CONSTRAINT `pk_guild_config` PRIMARY KEY (`id`)

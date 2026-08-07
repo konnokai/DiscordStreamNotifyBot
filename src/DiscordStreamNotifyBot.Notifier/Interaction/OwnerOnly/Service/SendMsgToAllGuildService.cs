@@ -440,8 +440,8 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 {
                     var memberList = db.GuildConfig
                         .Distinct((x) => x.GuildId)
-                        .Where((x) => x.LogMemberStatusChannelId != 0 && !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
-                        .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.LogMemberStatusChannelId))
+                        .Where((x) => x.VerificationLogChannelId != 0 && !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                        .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.VerificationLogChannelId))
                         .ToList();
 
                     int i = 0, num = memberList.Count;

@@ -28,7 +28,7 @@ YouTube 會員驗證的指令與資料不變。Twitch 使用獨立指令、資�
 ## 3. 已確認的產品規則
 
 1. 功能範圍是完整 Discord 驗證，不只在網站顯示訂閱狀態。
-2. 使用獨立的 `/twitch-member` 與 `/twitch-member-set` 指令，不改現有 `/member` 與 `/member-set` 契約。
+2. 使用獨立的 `/twitch-subscription` 與 `/twitch-subscription-set` 指令，不改現有 `/member` 與 `/member-set` 契約。
 3. Twitch 訂閱驗證與既有 Twitch EventSub broadcaster 授權共用同一個 Twitch 帳號連結及 token。
 4. 現有 OAuth scope `user:read:subscriptions` 保留，不新增第二套 Twitch OAuth 流程。
 5. 管理員新增設定時，參數比照 YouTube `add-member-check`：指定 Twitch 頻道及一個既有 Discord 身分組。
@@ -226,7 +226,7 @@ DateAdded
 指令參數比照 YouTube `add-member-check`：
 
 ```text
-/twitch-member-set add-subscription-check channel-url:<Twitch 頻道> role:<共用訂閱者身分組>
+/twitch-subscription-set add-subscription-check channel-url:<Twitch 頻道> role:<共用訂閱者身分組>
 ```
 
 流程：
@@ -281,7 +281,7 @@ DateAdded
 
 ## 8. Slash 指令
 
-### 8.1 使用者指令 `/twitch-member`
+### 8.1 使用者指令 `/twitch-subscription`
 
 | 指令 | 行為 |
 |---|---|
@@ -292,7 +292,7 @@ DateAdded
 
 首次驗證直接由 Bot 呼叫 Twitch，不等待背景排程。互動先 `DeferAsync(true)`，並只允許原發起者操作選單。
 
-### 8.2 管理員指令 `/twitch-member-set`
+### 8.2 管理員指令 `/twitch-subscription-set`
 
 | 指令 | 行為 |
 |---|---|
@@ -300,7 +300,7 @@ DateAdded
 | `remove-subscription-check` | 移除指定 Twitch 頻道的驗證設定 |
 | `list-checked-member` | 分頁顯示已驗證使用者、頻道及目前 Tier |
 
-驗證狀態紀錄沿用 `GuildConfig.LogMemberStatusChannelId`，不再新增第二個 log channel 設定指令。
+驗證狀態紀錄沿用 `GuildConfig.VerificationLogChannelId`，不再新增第二個 log channel 設定指令。
 
 所有一般使用者訊息需提供 `zh-TW`、`en-US`、`ja`；管理員及營運 log 維持繁體中文。
 
@@ -342,7 +342,7 @@ Frontend 不新增驗證 API，也不在網站判斷特定 guild 的訂閱資格
    - Twitch OAuth 成功訊息加入訂閱驗證用途。
    - Twitch 解除連結訊息加入訂閱身分組清理提示。
 3. `HomePage.vue`
-   - 說明 Discord + Twitch 綁定後，需回 Discord 執行 `/twitch-member check`。
+   - 說明 Discord + Twitch 綁定後，需回 Discord 執行 `/twitch-subscription check`。
 4. `PrivacyPage.vue`
    - 揭露會保存 Twitch user ID、加密 token、授權 scope、驗證結果與最後檢查時間。
    - 說明會呼叫 Twitch API 檢查使用者對管理員設定頻道的訂閱狀態及 Tier。
@@ -440,8 +440,8 @@ pnpm lint:style
 5. Bot token 讀取、解密、刷新、Helix 查詢及純結果分類 policy。
 6. Bot entity、DbContext、migration 與 SQL。
 7. Bot 自動角色建立、更新、移除。
-8. `/twitch-member-set` 管理員指令。
-9. `/twitch-member` 使用者指令。
+8. `/twitch-subscription-set` 管理員指令。
+9. `/twitch-subscription` 使用者指令。
 10. 每小時複驗、OAuth 失效事件及 GuildMembers intent 補償流程。
 11. 三語本地化、指令契約、metrics 及測試。
 12. Frontend 文案、隱私權及 README。

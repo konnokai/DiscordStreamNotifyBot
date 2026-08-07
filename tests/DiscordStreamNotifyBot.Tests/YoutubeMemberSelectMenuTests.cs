@@ -9,7 +9,7 @@ namespace DiscordStreamNotifyBot.Tests
         [Theory]
         [InlineData("youtube-member-check:123:456", true)]
         [InlineData("member:check:123:456", false)]
-        [InlineData("twitch-member-check:123:456", false)]
+        [InlineData("twitch-subscription-check:123:456", false)]
         [InlineData("spider_youtube:trusted:channel", false)]
         [InlineData("youtube-member-check:123", false)]
         [InlineData("1234", false)]
@@ -26,7 +26,7 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal((ulong)123, guildId);
             Assert.Equal((ulong)456, userId);
             Assert.False(YoutubeMemberPolicies.TryParseSelectionRoute("youtube-member-check:123:456:789", out _, out _));
-            Assert.False(YoutubeMemberPolicies.TryParseSelectionRoute("twitch-member-check:123:456", out _, out _));
+            Assert.False(YoutubeMemberPolicies.TryParseSelectionRoute("twitch-subscription-check:123:456", out _, out _));
             Assert.False(YoutubeMemberPolicies.IsValidSelection([]));
             Assert.False(YoutubeMemberPolicies.IsValidSelection(Enumerable.Repeat("UC1", 26).ToArray()));
             Assert.False(YoutubeMemberPolicies.IsValidSelection(["UC1", "UC1"]));

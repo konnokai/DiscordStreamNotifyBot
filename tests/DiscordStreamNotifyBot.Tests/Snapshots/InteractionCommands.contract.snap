@@ -4,9 +4,9 @@ group /help
 group /twitcasting
 group /twitcasting-spider
 group /twitch
-group /twitch-member
-group /twitch-member-set
 group /twitch-spider
+group /twitch-subscription
+group /twitch-subscription-set
 group /utility
 group /youtube
 group /youtube-member
@@ -38,17 +38,6 @@ command /twitcasting remove permissions=- dm=true nsfw=false contexts=- integrat
 command /twitcasting set-message permissions=- dm=true nsfw=false contexts=- integrations=-
   option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
   option 1 message type=String required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
-command /twitch-member-set add-subscription-check permissions=Administrator dm=true nsfw=false contexts=- integrations=-
-  option 0 channel-url type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
-  option 1 role type=Role required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
-command /twitch-member-set list-checked-member permissions=Administrator dm=true nsfw=false contexts=- integrations=-
-  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
-command /twitch-member-set remove-subscription-check permissions=Administrator dm=true nsfw=false contexts=- integrations=-
-  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
-command /twitch-member cancel-subscription-check permissions=- dm=true nsfw=false contexts=- integrations=-
-command /twitch-member check permissions=- dm=true nsfw=false contexts=- integrations=-
-command /twitch-member list-can-check-channel permissions=- dm=true nsfw=false contexts=- integrations=-
-command /twitch-member show-my-twitch-account permissions=- dm=true nsfw=false contexts=- integrations=-
 command /twitch-spider add permissions=- dm=true nsfw=false contexts=- integrations=-
   option 0 channel type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
 command /twitch-spider list permissions=- dm=true nsfw=false contexts=- integrations=-
@@ -57,6 +46,17 @@ command /twitch-spider list-not-trusted permissions=- dm=true nsfw=false context
   option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
 command /twitch-spider remove permissions=- dm=true nsfw=false contexts=- integrations=-
   option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /twitch-subscription-set add-subscription-check permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 channel-url type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+  option 1 role type=Role required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch-subscription-set list-checked-member permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /twitch-subscription-set remove-subscription-check permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /twitch-subscription cancel-subscription-check permissions=- dm=true nsfw=false contexts=- integrations=-
+command /twitch-subscription check permissions=- dm=true nsfw=false contexts=- integrations=-
+command /twitch-subscription list-can-check-channel permissions=- dm=true nsfw=false contexts=- integrations=-
+command /twitch-subscription show-my-twitch-account permissions=- dm=true nsfw=false contexts=- integrations=-
 command /twitch add permissions=- dm=true nsfw=false contexts=- integrations=-
   option 0 streamer type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
   option 1 notification-channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
