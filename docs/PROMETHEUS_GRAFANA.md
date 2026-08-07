@@ -142,7 +142,7 @@ Notifier 不會把非本 shard 的 guild 當成 delivery skip 計數，避免每
 3. 選擇抓取四個角色的 Prometheus datasource。
 4. 依部署環境選擇 Coordinator、Scraper、Backend、Notifier 的 job / instance，必要時再選 Consumer Group。
 
-Dashboard 預設每 30 秒更新、顯示最近 6 小時，涵蓋叢集與 Redis Streams、OAuth/token、YT 會限驗證、三平台通知、Twitch spider/EventSub、Webhook、cleanup 與四個角色的程序資源使用量。
+Dashboard 預設每 30 秒更新、顯示最近 6 小時，涵蓋叢集與 Redis Streams、OAuth/token、YouTube 會員驗證、Twitch 訂閱驗證、三平台通知、Twitch spider/EventSub、Webhook、cleanup 與四個角色的程序資源使用量。
 
 ## 排障
 

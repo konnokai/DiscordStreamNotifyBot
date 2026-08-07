@@ -57,7 +57,7 @@
       }
     ]
   },
-  "description": "直播小幫手整體服務監控：Coordinator 叢集與 Redis Streams、Scraper Twitch 偵測、Backend OAuth/Webhook、Notifier 會限驗證與三平台通知。所有 PromQL 只依固定低基數 label 聚合。",
+  "description": "直播小幫手整體服務監控：Coordinator 叢集與 Redis Streams、Scraper Twitch 偵測、Backend OAuth/Webhook、Notifier YouTube 會員與 Twitch 訂閱驗證及三平台通知。所有 PromQL 只依固定低基數 label 聚合。",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -82,7 +82,7 @@
       "id": 1,
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "max(up{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"})", "instant": true, "legendFormat": "Coordinator", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "min(up{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"})", "instant": true, "legendFormat": "Coordinator", "range": false, "refId": "A" }
       ],
       "title": "Coordinator Endpoint",
       "type": "stat"
@@ -104,7 +104,7 @@
       "id": 2,
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "max(up{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "Scraper", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "min(up{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "Scraper", "range": false, "refId": "A" }
       ],
       "title": "Scraper Endpoint",
       "type": "stat"
@@ -126,7 +126,7 @@
       "id": 3,
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "max(up{job=~\"$backend_job\", instance=~\"$backend_instance\"})", "instant": true, "legendFormat": "Backend", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "min(up{job=~\"$backend_job\", instance=~\"$backend_instance\"})", "instant": true, "legendFormat": "Backend", "range": false, "refId": "A" }
       ],
       "title": "Backend Endpoint",
       "type": "stat"
@@ -257,7 +257,7 @@
       "id": 8,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "sum(discord_stream_notify_bus_group_unhealthy{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\", group=~\"$group\"})", "instant": true, "legendFormat": "異常", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "sum(max by (group, reason) (discord_stream_notify_bus_group_unhealthy{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\", group=~\"$group\"}))", "instant": true, "legendFormat": "異常", "range": false, "refId": "A" }
       ],
       "title": "Consumer Group 異常數",
       "type": "stat"
@@ -283,8 +283,47 @@
       "type": "timeseries"
     },
     {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Coordinator 最近一次成功完成監控迴圈距今秒數；尚未成功時顯示無資料。",
+      "fieldConfig": { "defaults": { "decimals": 0, "noValue": "無資料", "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 21 },
+      "id": 41,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "time() - max(discord_stream_notify_coordinator_last_success_unixtime{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"} > 0)", "instant": true, "legendFormat": "距今", "range": false, "refId": "A" }
+      ],
+      "title": "Coordinator 最近成功距今",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Coordinator 目前觀察到的 Redis Stream consumer group 數量。",
+      "fieldConfig": { "defaults": { "decimals": 0, "noValue": "無資料", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 21 },
+      "id": 42,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "max(discord_stream_notify_bus_groups{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\"})", "instant": true, "legendFormat": "Groups", "range": false, "refId": "A" }
+      ],
+      "title": "Consumer Group 數量",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "各 Redis Stream consumer group 目前註冊的 consumer 數量。",
+      "fieldConfig": { "defaults": { "decimals": 0, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 21 },
+      "id": 43,
+      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
+      "targets": [
+        { "editorMode": "code", "expr": "max by (group) (discord_stream_notify_bus_consumers{job=~\"$coordinator_job\", instance=~\"$coordinator_instance\", group=~\"$group\"})", "instant": true, "legendFormat": "{{group}}", "range": false, "refId": "A" }
+      ],
+      "title": "各 Group Consumer 數量",
+      "type": "bargauge"
+    },
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 },
       "id": 101,
       "panels": [],
       "title": "OAuth 與 Token",
@@ -301,7 +340,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 22 },
+      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 30 },
       "id": 10,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -317,7 +356,7 @@
         "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 8, "x": 8, "y": 22 },
+      "gridPos": { "h": 9, "w": 8, "x": 8, "y": 30 },
       "id": 11,
       "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
       "targets": [
@@ -337,7 +376,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 22 },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 30 },
       "id": 12,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -349,7 +388,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
       "id": 102,
       "panels": [],
       "title": "Twitch Spider 與 EventSub",
@@ -362,7 +401,7 @@
         "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 32 },
+      "gridPos": { "h": 9, "w": 6, "x": 0, "y": 40 },
       "id": 13,
       "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
       "targets": [
@@ -383,13 +422,33 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 16, "x": 8, "y": 32 },
+      "gridPos": { "h": 9, "w": 12, "x": 6, "y": 40 },
       "id": 14,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
         { "editorMode": "code", "expr": "sum by (type, mode, status) (discord_stream_notify_twitch_eventsub_subscriptions{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "legendFormat": "{{type}} / {{mode}} / {{status}}", "range": true, "refId": "A" }
       ],
       "title": "EventSub Type / Mode / Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Twitch spider 與 EventSub reconcile 週期的成功與失敗速率。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 6, "x": 18, "y": 40 },
+      "id": 44,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (result) (rate(discord_stream_notify_twitch_reconcile_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__rate_interval]))", "legendFormat": "{{result}}", "range": true, "refId": "A" }
+      ],
+      "title": "Twitch Reconcile 結果率",
       "type": "timeseries"
     },
     {
@@ -404,7 +463,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 41 },
+      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 49 },
       "id": 15,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -426,7 +485,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 5, "x": 10, "y": 41 },
+      "gridPos": { "h": 8, "w": 5, "x": 10, "y": 49 },
       "id": 16,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -447,11 +506,11 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 4, "x": 15, "y": 41 },
+      "gridPos": { "h": 8, "w": 4, "x": 15, "y": 49 },
       "id": 17,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "time() - max(discord_stream_notify_twitch_reconcile_last_success_unixtime{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "距今", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "time() - max(discord_stream_notify_twitch_reconcile_last_success_unixtime{job=~\"$scraper_job\", instance=~\"$scraper_instance\"} > 0)", "instant": true, "legendFormat": "距今", "range": false, "refId": "A" }
       ],
       "title": "最近 Reconcile 距今",
       "type": "stat"
@@ -468,7 +527,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 5, "x": 19, "y": 41 },
+      "gridPos": { "h": 8, "w": 5, "x": 19, "y": 49 },
       "id": 18,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -479,7 +538,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 57 },
       "id": 103,
       "panels": [],
       "title": "Twitch Webhook",
@@ -496,7 +555,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 50 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 58 },
       "id": 19,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -512,7 +571,7 @@
         "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 3600 }, { "color": "red", "value": 21600 }] }, "unit": "s" },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 8, "x": 12, "y": 50 },
+      "gridPos": { "h": 9, "w": 8, "x": 12, "y": 58 },
       "id": 20,
       "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
       "targets": [
@@ -532,7 +591,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 4, "x": 20, "y": 50 },
+      "gridPos": { "h": 9, "w": 4, "x": 20, "y": 58 },
       "id": 21,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -543,7 +602,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 59 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 67 },
       "id": 104,
       "panels": [],
       "title": "授權變更與 Cleanup",
@@ -560,7 +619,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 60 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 68 },
       "id": 22,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -581,14 +640,14 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 60 },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 68 },
       "id": 23,
-      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
       "targets": [
-        { "editorMode": "code", "expr": "sum by (reason) (increase(discord_stream_notify_twitch_spider_removals_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__range]))", "legendFormat": "{{reason}}", "range": true, "refId": "A" }
+        { "editorMode": "code", "expr": "sum by (reason) (increase(discord_stream_notify_twitch_spider_removals_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__range]))", "instant": true, "legendFormat": "{{reason}}", "range": false, "refId": "A" }
       ],
       "title": "授權失效後自動移除 Spider",
-      "type": "timeseries"
+      "type": "bargauge"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
@@ -601,7 +660,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 4, "x": 12, "y": 60 },
+      "gridPos": { "h": 8, "w": 4, "x": 12, "y": 68 },
       "id": 24,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -617,7 +676,7 @@
         "defaults": { "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] }, "unit": "short" },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 5, "x": 16, "y": 60 },
+      "gridPos": { "h": 8, "w": 5, "x": 16, "y": 68 },
       "id": 25,
       "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
       "targets": [
@@ -633,7 +692,7 @@
         "defaults": { "decimals": 0, "noValue": "0", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 3, "x": 21, "y": 60 },
+      "gridPos": { "h": 8, "w": 3, "x": 21, "y": 68 },
       "id": 26,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -644,15 +703,15 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 68 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 76 },
       "id": 106,
       "panels": [],
-      "title": "Google OAuth 與 YT 會限驗證",
+      "title": "Google OAuth 與 YouTube 會員驗證",
       "type": "row"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "新驗證與舊驗證的 YouTube API 判定結果；Google OAuth/token 狀態請搭配上方 OAuth 區塊判讀。",
+      "description": "新舊 YouTube 會員驗證的 API 判定與週期結果；Google OAuth/token 狀態請搭配上方 OAuth 區塊判讀。",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -661,13 +720,14 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 69 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 77 },
       "id": 30,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        { "editorMode": "code", "expr": "sum by (check_type, result) (rate(discord_stream_notify_youtube_member_verifications_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval]))", "legendFormat": "{{check_type}} / {{result}}", "range": true, "refId": "A" }
+        { "editorMode": "code", "expr": "sum by (check_type, result) (rate(discord_stream_notify_youtube_member_verifications_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval]))", "legendFormat": "判定 {{check_type}} / {{result}}", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "sum by (check_type, result) (rate(discord_stream_notify_youtube_member_check_cycles_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval]))", "legendFormat": "週期 {{check_type}} / {{result}}", "range": true, "refId": "B" }
       ],
-      "title": "會限驗證結果率",
+      "title": "YouTube 會員驗證結果率",
       "type": "timeseries"
     },
     {
@@ -682,7 +742,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 4, "x": 8, "y": 69 },
+      "gridPos": { "h": 8, "w": 4, "x": 8, "y": 77 },
       "id": 31,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -693,7 +753,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "YouTube 會限驗證後新增或移除 Discord 身分組的非成功結果。",
+      "description": "YouTube 會員驗證後新增或移除 Discord 身分組的非成功結果。",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -702,13 +762,13 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 5, "x": 12, "y": 69 },
+      "gridPos": { "h": 8, "w": 5, "x": 12, "y": 77 },
       "id": 32,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
         { "editorMode": "code", "expr": "sum by (operation, result) (rate(discord_stream_notify_youtube_member_role_operations_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result!=\"success\"}[$__rate_interval]))", "legendFormat": "{{operation}} / {{result}}", "range": true, "refId": "A" }
       ],
-      "title": "會限身分組操作失敗",
+      "title": "YouTube 會員身分組操作失敗",
       "type": "timeseries"
     },
     {
@@ -723,13 +783,13 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 4, "x": 17, "y": 69 },
+      "gridPos": { "h": 8, "w": 4, "x": 17, "y": 77 },
       "id": 33,
       "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "time() - max by (instance, check_type) (discord_stream_notify_youtube_member_check_last_success_unixtime{job=~\"$notifier_job\", instance=~\"$notifier_instance\"})", "instant": true, "legendFormat": "{{instance}} / {{check_type}}", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "time() - max by (instance, check_type) (discord_stream_notify_youtube_member_check_last_success_unixtime{job=~\"$notifier_job\", instance=~\"$notifier_instance\"} > 0)", "instant": true, "legendFormat": "{{instance}} / {{check_type}}", "range": false, "refId": "A" }
       ],
-      "title": "會限檢查最近成功距今",
+      "title": "YouTube 會員檢查最近成功距今",
       "type": "stat"
     },
     {
@@ -744,18 +804,128 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 3, "x": 21, "y": 69 },
+      "gridPos": { "h": 8, "w": 3, "x": 21, "y": 77 },
       "id": 40,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name", "wideLayout": true },
       "targets": [
         { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le, check_type) (rate(discord_stream_notify_youtube_member_check_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval])))", "instant": true, "legendFormat": "{{check_type}}", "range": false, "refId": "A" }
       ],
-      "title": "會限檢查 p95",
+      "title": "YouTube 會員檢查 p95",
       "type": "stat"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 77 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 85 },
+      "id": 108,
+      "panels": [],
+      "title": "Twitch 訂閱驗證",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Twitch 訂閱逐使用者驗證結果，依固定 result 與 tier 聚合。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 86 },
+      "id": 45,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (result, tier) (rate(discord_stream_notify_twitch_subscription_verifications_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval]))", "legendFormat": "{{result}} / {{tier}}", "range": true, "refId": "A" }
+      ],
+      "title": "Twitch 訂閱驗證結果率",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Twitch 訂閱驗證的 Discord 身分組、token 與 provider 非成功結果。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 86 },
+      "id": 46,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (operation, result) (rate(discord_stream_notify_twitch_subscription_role_operations_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result!=\"success\"}[$__rate_interval]))", "legendFormat": "role {{operation}} / {{result}}", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "sum by (operation, result) (rate(discord_stream_notify_twitch_subscription_token_operations_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result!=\"success\"}[$__rate_interval]))", "legendFormat": "token {{operation}} / {{result}}", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "sum by (reason) (rate(discord_stream_notify_twitch_subscription_provider_errors_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval]))", "legendFormat": "provider / {{reason}}", "range": true, "refId": "C" }
+      ],
+      "title": "Twitch 訂閱驗證操作失敗",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "每小時 Twitch 訂閱重新驗證週期的成功與失敗速率。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 86 },
+      "id": 47,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (result) (rate(discord_stream_notify_twitch_subscription_cycles_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval]))", "legendFormat": "{{result}}", "range": true, "refId": "A" }
+      ],
+      "title": "Twitch 訂閱複驗週期",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "最近區間 Twitch 訂閱重新驗證完整週期的 p95 耗時。",
+      "fieldConfig": { "defaults": { "decimals": 1, "noValue": "無資料", "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 94 },
+      "id": 48,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le) (rate(discord_stream_notify_twitch_subscription_cycle_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval])))", "instant": true, "legendFormat": "p95", "range": false, "refId": "A" }
+      ],
+      "title": "Twitch 訂閱複驗 p95",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "各 Notifier 等待寫入 MySQL 的 Twitch token rotation 數量，以及關機 drain 狀態。",
+      "fieldConfig": { "defaults": { "decimals": 0, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 94 },
+      "id": 49,
+      "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
+      "targets": [
+        { "editorMode": "code", "expr": "max by (instance) (discord_stream_notify_twitch_refresh_pending_persistences{job=~\"$notifier_job\", instance=~\"$notifier_instance\"})", "instant": true, "legendFormat": "pending {{instance}}", "range": false, "refId": "A" },
+        { "editorMode": "code", "expr": "max by (instance) (discord_stream_notify_twitch_refresh_shutdown_draining{job=~\"$notifier_job\", instance=~\"$notifier_instance\"})", "instant": true, "legendFormat": "draining {{instance}}", "range": false, "refId": "B" }
+      ],
+      "title": "Twitch Token Rotation 狀態",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "最近區間 Notifier 關機時等待 Twitch token rotation 寫入完成的 p95 耗時。",
+      "fieldConfig": { "defaults": { "decimals": 1, "noValue": "無資料", "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 94 },
+      "id": 50,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le) (rate(discord_stream_notify_twitch_refresh_shutdown_drain_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval])))", "instant": true, "legendFormat": "p95", "range": false, "refId": "A" }
+      ],
+      "title": "Twitch 關機 Drain p95",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 102 },
       "id": 107,
       "panels": [],
       "title": "全平台通知",
@@ -772,7 +942,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 78 },
+      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 103 },
       "id": 34,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -793,7 +963,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 5, "x": 10, "y": 78 },
+      "gridPos": { "h": 8, "w": 5, "x": 10, "y": 103 },
       "id": 35,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "name", "wideLayout": true },
       "targets": [
@@ -813,7 +983,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 78 },
+      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 103 },
       "id": 36,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -833,7 +1003,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 86 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 111 },
       "id": 37,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -853,7 +1023,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 86 },
+      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 111 },
       "id": 38,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -873,7 +1043,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 86 },
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 111 },
       "id": 39,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -884,7 +1054,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 94 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 119 },
       "id": 105,
       "panels": [],
       "title": "程序資源",
@@ -901,7 +1071,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 95 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 120 },
       "id": 27,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -924,7 +1094,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 95 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 120 },
       "id": 28,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -948,7 +1118,8 @@
     "notifier",
     "oauth",
     "twitch-eventsub",
-    "youtube-member",
+    "youtube-membership",
+    "twitch-subscription",
     "notifications"
   ],
   "templating": {
@@ -1058,7 +1229,7 @@
         "multi": true,
         "name": "notifier_job",
         "options": [],
-        "query": { "query": "label_values(up{job=~\"discord-stream-notify-notifier.*\"}, job)", "refId": "PrometheusVariableQueryEditor-NotifierJob" },
+        "query": { "query": "label_values(discord_stream_notify_notifier_up, job)", "refId": "PrometheusVariableQueryEditor-NotifierJob" },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1074,7 +1245,7 @@
         "multi": true,
         "name": "notifier_instance",
         "options": [],
-        "query": { "query": "label_values(up{job=~\"$notifier_job\"}, instance)", "refId": "PrometheusVariableQueryEditor-NotifierInstance" },
+        "query": { "query": "label_values(discord_stream_notify_notifier_up{job=~\"$notifier_job\"}, instance)", "refId": "PrometheusVariableQueryEditor-NotifierInstance" },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1105,6 +1276,6 @@
   "timezone": "browser",
   "title": "直播小幫手 - 整體服務",
   "uid": "discord-stream-coordinator",
-  "version": 3,
+  "version": 4,
   "weekStart": "monday"
 }

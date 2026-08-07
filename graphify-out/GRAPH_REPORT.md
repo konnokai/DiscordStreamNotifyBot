@@ -1,16 +1,16 @@
 # Graph Report - DiscordStreamNotifyBot  (2026-08-07)
 
 ## Corpus Check
-- 315 files · ~158,248 words
+- 315 files · ~158,271 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3868 nodes · 8913 edges · 251 communities (212 shown, 39 thin omitted)
+- 3868 nodes · 8913 edges · 259 communities (213 shown, 46 thin omitted)
 - Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 789 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c23e1d93`
+- Built from commit: `6241b1a7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -45,12 +45,12 @@
 - 多語系支援計畫
 - Serilog Logging 遷移計畫
 - 12. 分階段執行
-- YoutubeDetectionService
-- .Info
+- MainDbContext
+- CoordinatorMetrics
 - YoutubeMemberService
 - .ReconcileUserStateAsync
 - Log 與 Loki
-- MainDbContext
+- DbEntity
 - TwitchOAuthRefreshLockLease
 - BotConfig
 - .AddChannelSpider
@@ -79,7 +79,7 @@
 - YoutubeStreamService
 - graphify reference: extra exports and benchmark
 - Bot
-- .SendMsgToLogChannelAsync
+- DiscordStreamNotifyBot.DataBase
 - TwitchReconcileDecisionTests
 - RedisComponentFixture
 - .Main
@@ -134,9 +134,9 @@
 - TwitchService
 - ReactionEventWrapper
 - ClusterService
-- DiscordStreamNotifyBot.HttpClients.Twitcasting.Model
+- TwitcastingDetectionService.cs
 - Twitch OAuth 與零成本 EventSub 實作計畫
-- .ShutdownAsync
+- LogEvent
 - YoutubeMemberApiClient
 - .Filter
 - 16. 執行階段
@@ -164,9 +164,9 @@
 - .SendLocalizedConfirmAsync
 - NotificationEmbedFactoryTests
 - DiscordStreamNotifyBot.Migrations
-- IDisposable
+- .PrepareMemberCheckCleanupAsync
 - RefactorDbContext
-- ModifyTwitCastingTable
+- Migration
 - AddMaxSpiderCountSettingField
 - SyncModelDrift
 - AddTwitchBroadcasterAuthorization
@@ -175,11 +175,11 @@
 - SendMsgToAllGuildService
 - .CheckRequirementsAsync
 - .Classify
-- GetMovieInfoResponse
+- DiscordStreamNotifyBot.HttpClients.Twitcasting.Model
 - 20260611015819_SyncModelDrift.Designer.cs
 - MetadataServiceProvider
 - 20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs
-- ReactionEventWrapper
+- MySqlDataStoreTests
 - .LoadSnapshotAsync
 - .CheckRequirementsAsync
 - .CheckMemberShipCore
@@ -193,42 +193,42 @@
 - MySqlDataStore
 - GuildTwitchSubscriptionConfig
 - .RefreshAfterUnauthorizedCoreAsync
-- TwitchStream
+- 給未來 session 的信
 - YoutubeApiVideoPolicyTests
-- .PlanChannel
+- .CheckMemberShipOnlyVideoIdAsync
 - .DecideAutomaticMutation
 - .HandleStartLiveMessageAsync
 - RedisConnection
 - .GenerateSuggestionsAsync
 - YoutubeVideoIdParser
-- .SameUserMutationsAreExclusiveAndOwnerReleaseRemovesTheKey
+- 8. 分階段實作步驟
 - .MakeNamesUnique
 - UptimeKumaClient
-- BotStateTests
+- .AddSubscriptionCheckAsync
 - 5. 目標架構
 - .GetCulture
 - Category
 - DebounceFixture
-- GetAllRegistedWebHookJson.cs
+- .RefreshMetricsAsync
 - DiscordStreamNotifyBot.Tests
 - NijisanjiStreamJson.cs
 - .GenerateSuggestionsAsync
 - RedisContractTests
-- .LoadInteractionFrom
+- .GenerateSuggestionsAsync
 - TcBackendStreamData.cs
 - 20260803141135_AddTwitchSubscriptionVerification.Designer.cs
 - .GenerateSuggestionsAsync
 - .LockGuildAsync
-- .GenerateSuggestionsAsync
+- 2. 專案拆分 (Solution Layout)
 - MainDbService
 - AddTwitchSubscriptionVerification
-- Migration
+- AddTwitchSubscriptionDeletionPending
 - .CreateAsync
-- .RevokeUserGoogleCertAsync
+- .DescribeFailure
 - .FixTCDbAsync
 - .CheckPermissionsAsync
 - .CheckRequirementsAsync
-- .Main
+- .Info
 - .Resolve
 - YouTube 會員驗證架構重構計畫
 - TwitchOAuthRefreshLockRedisComponentTests
@@ -236,7 +236,7 @@
 - .SendMessageToAllGuildAsync
 - YoutubeMemberRolePoliciesTests
 - .Get
-- .OnReaction
+- 4. 訊息契約：Redis Streams 通知匯流排
 - 20250320095452_RefactorDbContext.Designer.cs
 - BotState
 - .LoadCommandFrom
@@ -258,14 +258,22 @@
 - AddYoutubeMemberVerificationDurability
 - .GetStreamVideoByVideoId
 - 14. 部署與回滾
-- .CreateStreamStarted
+- 8. 驗證矩陣
 - 13. Backend Contract
 - 16. 驗證命令
 - 20260803165758_AddTwitchSubscriptionDeletionPending.Designer.cs
+- MainDbContextFactory
 - 10. Slash 與 Interaction Cutover
 - 6. 目標架構
 - 7. 狀態機
 - 9. Role 隔離政策
+- 5. Shard 歸屬與生命週期
+- 7. 資料庫變更
+- YoutubeChannelOwnedType
+- GoogleOAuthUnlinkIntent
+- RecordYoutubeChannel
+- YoutubeChannelSpider
+- YoutubeMemberAccessToken
 
 ## God Nodes (most connected - your core abstractions)
 1. `DiscordStreamNotifyBot.DataBase.Table` - 68 edges
@@ -288,13 +296,13 @@
   tests/DiscordStreamNotifyBot.Tests/NotificationEmbedFactoryTests.cs → src/DiscordStreamNotifyBot.Notifier/Localization/BotLocalizer.cs
 - `YoutubeMemberVideoLogMessageFormatterTests` --references--> `BotLocalizer`  [EXTRACTED]
   tests/DiscordStreamNotifyBot.Tests/YoutubeMemberVideoLogMessageFormatterTests.cs → src/DiscordStreamNotifyBot.Notifier/Localization/BotLocalizer.cs
-- `YoutubeMemberVideoLogMessageFormatterTests` --references--> `CommandDisplayResolver`  [EXTRACTED]
-  tests/DiscordStreamNotifyBot.Tests/YoutubeMemberVideoLogMessageFormatterTests.cs → src/DiscordStreamNotifyBot.Notifier/Localization/CommandDisplayResolver.cs
+- `MySqlComponentFixture` --references--> `MainDbService`  [EXTRACTED]
+  tests/DiscordStreamNotifyBot.Tests/Component/MySql/MySqlComponentFixture.cs → src/DiscordStreamNotifyBot.Shared/DataBase/MainDbService.cs
 
 ## Import Cycles
 - None detected.
 
-## Communities (251 total, 39 thin omitted)
+## Communities (259 total, 46 thin omitted)
 
 ### Community 0 - ".RefreshTokenAsync"
 Cohesion: 0.23
@@ -309,8 +317,8 @@ Cohesion: 0.18
 Nodes (11): PendingRefreshPersistence, CancellationToken, int, NotifierMetrics, object, string, Task, TimeSpan (+3 more)
 
 ### Community 3 - "DiscordStreamNotifyBot.SharedService.Twitch"
-Cohesion: 0.12
-Nodes (8): DiscordStreamNotifyBot.Interaction.TwitchMember, DiscordStreamNotifyBot.SharedService.Twitch, DiscordStreamNotifyBot.SharedService.TwitchSubscription, TwitchAppAccessTokenResponse, TwitchApiServiceDisabledTests, InlineData, Theory, TwitchSubscriptionConfigurationPolicyTests
+Cohesion: 0.14
+Nodes (7): DiscordStreamNotifyBot.SharedService.Twitch, DiscordStreamNotifyBot.Interaction.TwitchSubscription, DiscordStreamNotifyBot.SharedService.TwitchSubscription, TwitchApiServiceDisabledTests, InlineData, Theory, TwitchSubscriptionConfigurationPolicyTests
 
 ### Community 4 - "DiscordStreamNotifyBot.Shared.csproj"
 Cohesion: 0.08
@@ -341,16 +349,16 @@ Cohesion: 0.09
 Nodes (19): DateTime, TimeSpan, YoutubeReminderApiAction, YoutubeReminderBatchChangeAction, YoutubeReminderBatchFacts, YoutubeReminderPolicy, YoutubeReminderReconciliationAction, YoutubeReminderStartAction (+11 more)
 
 ### Community 11 - "BotLocalizer"
-Cohesion: 0.16
-Nodes (14): Dictionary, Regex, ResourceManager, string, BotLocalizer, DateTime, EmbedBuilder, TimeSpan (+6 more)
+Cohesion: 0.19
+Nodes (11): Dictionary, Regex, ResourceManager, string, BotLocalizer, DateTime, EmbedBuilder, TimeSpan (+3 more)
 
 ### Community 12 - "DiscordStreamNotifyBot.Localization"
-Cohesion: 0.11
-Nodes (10): DiscordStreamNotifyBot.SharedService.Youtube, DiscordStreamNotifyBot.SharedService.Twitcasting, DiscordStreamNotifyBot.Interaction.Utility.Service, DiscordStreamNotifyBot.Localization, DiscordStreamNotifyBot.Interaction.Utility, BannerDownloadResult, NoticeType, NowStreamingHost (+2 more)
+Cohesion: 0.09
+Nodes (14): DiscordStreamNotifyBot.SharedService.Youtube, DiscordStreamNotifyBot.SharedService.Twitcasting, DiscordStreamNotifyBot.Interaction.Utility.Service, DiscordStreamNotifyBot.Localization, DiscordStreamNotifyBot.Interaction.Utility, DiscordStreamNotifyBot.Interaction, BotPlayingStatus, EmbedBuilder (+6 more)
 
 ### Community 13 - "Extensions"
-Cohesion: 0.12
-Nodes (9): Process, EmbedBuilder, IDiscordInteraction, IEmote, IInteractionContext, IServiceProvider, Task, Video (+1 more)
+Cohesion: 0.06
+Nodes (26): Process, Assembly, DiscordSocketClient, EmbedBuilder, Func, IDiscordInteraction, IEmote, IEnumerable (+18 more)
 
 ### Community 14 - "TwitchSubscriptionService"
 Cohesion: 0.19
@@ -373,20 +381,20 @@ Cohesion: 0.28
 Nodes (12): CommandExample, CommandSummary, DefaultMemberPermissions, DiscordSocketClient, IChannel, NoticeType, RequireBotPermission, RequireContext (+4 more)
 
 ### Community 19 - ".SendStreamMessageAsync"
-Cohesion: 0.16
-Nodes (9): Event, HttpException, Platform, NotificationMetricEvent, Task, TwitcastingNotification, TwitchNotification, TwitchSpider (+1 more)
+Cohesion: 0.13
+Nodes (11): Event, HttpException, Platform, NoticeType, NotificationMetricEvent, Task, TwitcastingNotification, TwitchNotification (+3 more)
 
 ### Community 20 - "AuthTokenTests"
-Cohesion: 0.09
-Nodes (16): DiscordStreamNotifyBot.Auth, TokenCrypto, TokenManager, Fact, InlineData, string, Theory, AuthTokenTests (+8 more)
+Cohesion: 0.11
+Nodes (11): DiscordStreamNotifyBot.Auth, TokenCrypto, TokenManager, Fact, InlineData, string, Theory, AuthTokenTests (+3 more)
 
 ### Community 21 - "YoutubeMemberAuthorizationService"
 Cohesion: 0.22
 Nodes (9): GoogleAuthorizationCodeFlow, CancellationToken, HttpClient, MySqlDataStore, string, Task, YoutubeMemberAuthorizationService, YoutubeMemberTokenSnapshot (+1 more)
 
 ### Community 22 - "Log"
-Cohesion: 0.11
-Nodes (19): DelegatingHandler, ILogEventSink, ITextFormatter, LogEvent, LogEventLevel, Logger, LoggerConfiguration, bool (+11 more)
+Cohesion: 0.10
+Nodes (21): DelegatingHandler, ILogEventSink, ITextFormatter, Logger, LoggerConfiguration, LogMessage, bool, CancellationToken (+13 more)
 
 ### Community 23 - ".RunCoreAsync"
 Cohesion: 0.21
@@ -397,55 +405,55 @@ Cohesion: 0.05
 Nodes (36): 10. Frontend 調整, 11. 安全與錯誤處理, 12.1 Backend, 12.2 Bot, 12.3 Frontend, 12. 自動化測試, 13. 手動驗收, 14. 實作順序 (+28 more)
 
 ### Community 25 - "YoutubeMemberPolicies"
-Cohesion: 0.12
-Nodes (15): YoutubeMemberCheck, CancellationToken, UserId, YoutubeMemberCheckStateSnapshot, YoutubeMemberPolicies, YoutubeMemberProbeConfigurationSnapshot, YoutubeMemberSingleConfigurationQueueAction, DateTime (+7 more)
+Cohesion: 0.10
+Nodes (18): YoutubeMemberCheck, CancellationToken, IEnumerable, IReadOnlyList, UserId, YoutubeMemberCheckStateSnapshot, YoutubeMemberPolicies, YoutubeMemberProbeConfigurationSnapshot (+10 more)
 
 ### Community 26 - "新增 TwitCasting 錄影委派計畫（小幫手 ↔ StreamRecordTools）"
 Cohesion: 0.11
 Nodes (17): 1. 背景與動機, 2. 新增跨 repo 契約, 3. A（小幫手）改動, 4. B（StreamRecordTools）改動, 5. 部署順序與相容性, 6. 驗證, 7. 影響範圍, A1. `Shared/RedisChannels.cs` (+9 more)
 
 ### Community 27 - "多語系支援計畫"
-Cohesion: 0.11
-Nodes (18): 15. 預期修改檔案, 16. 完成定義, 1. 背景, 2. 目標, 3. 非目標, 4. 已確認的產品決策, 7.1 `GuildConfig.Locale`, 7.2 `YoutubeMemberCheck.Locale` (+10 more)
+Cohesion: 0.14
+Nodes (14): 15. 預期修改檔案, 16. 完成定義, 1. 背景, 2. 目標, 3. 非目標, 4. 已確認的產品決策, 8.1 首次設定流程, 8.2 語系設定指令 (+6 more)
 
 ### Community 28 - "Serilog Logging 遷移計畫"
-Cohesion: 0.13
-Nodes (15): 10. 預期修改檔案, 11. 完成定義, 1. 背景, 2. 目標, 3. 非目標, 4. 技術選型, 6.1 例外事件, 6. Facade 相容契約 (+7 more)
+Cohesion: 0.20
+Nodes (10): 10. 預期修改檔案, 11. 完成定義, 1. 背景, 2. 目標, 3. 非目標, 4. 技術選型, 6.1 例外事件, 6. Facade 相容契約 (+2 more)
 
 ### Community 29 - "12. 分階段執行"
 Cohesion: 0.22
 Nodes (9): 12. 分階段執行, 階段 0：建立基準與字串清冊, 階段 1：Localization 基礎與繁中資源化, 階段 2：資料庫與語系設定, 階段 3：Slash command 註冊本地化, 階段 4：共用互動、Help 與首次設定, 階段 5：一般 Interaction 模組, 階段 6：背景通知與會限 DM (+1 more)
 
-### Community 30 - "YoutubeDetectionService"
-Cohesion: 0.13
-Nodes (14): IsDeleted, int, Timer, Video, YTChannelType, ReminderItem, ConcurrentDictionary, DateTime (+6 more)
+### Community 30 - "MainDbContext"
+Cohesion: 0.09
+Nodes (25): DbContext, IsDeleted, int, Timer, Video, YTChannelType, ReminderItem, ConcurrentDictionary (+17 more)
 
-### Community 31 - ".Info"
+### Community 31 - "CoordinatorMetrics"
 Cohesion: 0.09
 Nodes (19): DiscordStreamNotifyBot.Coordinator, Counter, Gauge, HashSet, StreamGroupInfo, string, CoordinatorMetrics, CancellationToken (+11 more)
 
 ### Community 32 - "YoutubeMemberService"
-Cohesion: 0.11
-Nodes (20): CheckId, Snapshot, SocketMessageComponent, CancellationToken, IEnumerable, List, Task, YoutubeMemberService (+12 more)
+Cohesion: 0.15
+Nodes (13): SocketMessageComponent, CancellationToken, CancellationTokenSource, Func, int, MemberOperationCoordinator, NotifierMetrics, RedisValue (+5 more)
 
 ### Community 33 - ".ReconcileUserStateAsync"
 Cohesion: 0.20
 Nodes (10): DateTime, TwitchSpiderRemovalMetricReason, TwitchUserState, DateTime, TwitchBroadcasterAuthorization, DateTime, TwitchSpider, TwitchEventSubCleanupDeferredMetricReason (+2 more)
 
 ### Community 34 - "Log 與 Loki"
-Cohesion: 0.17
+Cohesion: 0.20
 Nodes (7): Console 備援, Grafana Dashboard, Log 與 Loki, Loki 主動推送, Serilog Pipeline, 排障, 檔案路由
 
-### Community 35 - "MainDbContext"
-Cohesion: 0.05
-Nodes (32): DbContext, IDesignTimeDbContextFactory, DbSet, ModelBuilder, MainDbContext, MainDbContextFactory, BannerChange, DateTime (+24 more)
+### Community 35 - "DbEntity"
+Cohesion: 0.09
+Nodes (13): BannerChange, DateTime, DbEntity, GuildConfig, NoticeTwitcastingStreamChannel, NoticeTwitchStreamChannel, NoticeYoutubeStreamChannel, TwitcastingSpider (+5 more)
 
 ### Community 36 - "TwitchOAuthRefreshLockLease"
 Cohesion: 0.15
 Nodes (17): CancellationToken, CancellationTokenSource, Exception, IDatabase, int, RedisKey, RedisValue, string (+9 more)
 
 ### Community 37 - "BotConfig"
-Cohesion: 0.16
+Cohesion: 0.18
 Nodes (6): BotConfig, Action, Fact, InlineData, Theory, ProviderTokenEncryptionKeyTests
 
 ### Community 38 - ".AddChannelSpider"
@@ -453,20 +461,20 @@ Cohesion: 0.18
 Nodes (13): CommandExample, CommandSummary, RequireGuildMemberCount, SlashCommand, Task, TwitcastingService, TwitcastingSpider, CommandExample (+5 more)
 
 ### Community 39 - "YoutubeMemberRoleService"
-Cohesion: 0.18
+Cohesion: 0.20
 Nodes (11): YoutubeMemberRoleApplyResult, CancellationToken, DiscordSocketClient, IEnumerable, IRole, SocketGuild, Task, YoutubeMemberRoleService (+3 more)
 
 ### Community 40 - "TwitchDetectionService"
-Cohesion: 0.16
-Nodes (10): ConcurrentDictionary, IReadOnlyCollection, IReadOnlyDictionary, RedisValue, ScraperMetrics, SemaphoreSlim, Task, TimeSpan (+2 more)
+Cohesion: 0.12
+Nodes (14): HelixStream, ConcurrentDictionary, IReadOnlyCollection, RedisValue, ScraperMetrics, SemaphoreSlim, Task, TimeSpan (+6 more)
 
 ### Community 41 - "Twitch"
 Cohesion: 0.40
 Nodes (9): Alias, Command, CommandExample, RequireContext, RequireOwner, Summary, Task, TwitchService (+1 more)
 
 ### Community 42 - "ScraperMetrics"
-Cohesion: 0.13
-Nodes (14): EventSubSubscription, Counter, Gauge, string, ScraperMetricResult, ScraperMetrics, TwitchAuthorizationChangeMetricResult, TwitchEventSubCleanupDeferredMetricReason (+6 more)
+Cohesion: 0.20
+Nodes (11): Counter, Gauge, string, ScraperMetricResult, ScraperMetrics, TwitchAuthorizationChangeMetricResult, TwitchEventSubCleanupDeferredMetricReason, TwitchEventSubMetricStatus (+3 more)
 
 ### Community 43 - "GuildLocaleService"
 Cohesion: 0.14
@@ -497,12 +505,12 @@ Cohesion: 0.08
 Nodes (28): DiscordStreamNotifyBot.Command.Help, ICommandService, IEqualityComparer, Func, CommonEqualityComparer, Alias, Command, CommandInfo (+20 more)
 
 ### Community 50 - ".HandleSelectionAsync"
-Cohesion: 0.21
-Nodes (5): ComponentInteraction, Task, IReadOnlyCollection, IReadOnlyList, YoutubeMemberSelectionTransition
+Cohesion: 0.27
+Nodes (3): ComponentInteraction, Task, IReadOnlyCollection
 
 ### Community 51 - "水平擴展（三層拆分）計畫 — Redis Streams 版"
-Cohesion: 0.05
-Nodes (41): 10. 可優化項目（claude 分支已有成品，對應階段順手移植）, 11. 驗證清單（部署前全過）, 1. 目標架構, 2.1 `Shared`（共用 library）, 2.2 `Scraper`（爬蟲層，叢集唯一）, 2.3 `Notifier`（通知層 / shard，可多個）, 2.4 `Coordinator`（主控層，1 個）, 2.5 SharedService 逐服務拆分歸屬（判斷準則表） (+33 more)
+Cohesion: 0.18
+Nodes (11): 10. 可優化項目（claude 分支已有成品，對應階段順手移植）, 11. 驗證清單（部署前全過）, 1. 目標架構, 3. 設定, 6.1 方式 A：固定 shard 服務（初期採用）, 6.2 方式 B：`--scale` + shard 租約（主控層租約成熟後再切）, 6. Docker Compose, 7. 跨 shard 指令（Redis 三機制） (+3 more)
 
 ### Community 52 - ".GetDbContext"
 Cohesion: 0.21
@@ -521,8 +529,8 @@ Cohesion: 0.25
 Nodes (8): 7. 分階段執行, 階段 0：建立基準, 階段 1：加入 Serilog 與 bootstrap logger, 階段 2：搬移 console 與檔案路由, 階段 3：切換 Loki sink, 階段 4：整理 facade 與 Discord.Net adapter, 階段 5：移除自製 sink 與更新文件, 階段 6：後續漸進式 structured logging（不阻擋本計畫完成）
 
 ### Community 56 - "TwitcastingService"
-Cohesion: 0.12
-Nodes (11): DiscordStreamNotifyBot.SharedService, Emote, IInteractionService, DiscordSocketClient, EmojiService, DiscordSocketClient, EmojiService, NoticeCache (+3 more)
+Cohesion: 0.13
+Nodes (10): Emote, IInteractionService, DiscordSocketClient, EmojiService, Broadcaster, DiscordSocketClient, EmojiService, NoticeCache (+2 more)
 
 ### Community 57 - "AGENTS.md"
 Cohesion: 0.17
@@ -541,8 +549,8 @@ Cohesion: 0.08
 Nodes (23): Attribute, AutocompleteHandler, DiscordStreamNotifyBot.Interaction.Attribute, DiscordStreamNotifyBot.Interaction.OwnerOnly, DiscordStreamNotifyBot.Interaction.TwitCasting, DiscordStreamNotifyBot.Interaction.Help, DiscordStreamNotifyBot.Interaction.Help.Service, DiscordStreamNotifyBot.Interaction.Twitch (+15 more)
 
 ### Community 61 - "YoutubeStreamService"
-Cohesion: 0.10
-Nodes (19): MessageComponent, NowStreamingHost, NoticeType, DiscordSocketClient, Embed, EmojiService, HttpClient, IEnumerable (+11 more)
+Cohesion: 0.12
+Nodes (14): MessageComponent, NowStreamingHost, DiscordSocketClient, Embed, EmojiService, HttpClient, IEnumerable, IHttpClientFactory (+6 more)
 
 ### Community 62 - "graphify reference: extra exports and benchmark"
 Cohesion: 0.22
@@ -552,9 +560,9 @@ Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only
 Cohesion: 0.10
 Nodes (17): BotPlayingStatus, ConnectionMultiplexer, DiscordSocketClient, IDatabase, int, ISubscriber, IUser, Task (+9 more)
 
-### Community 64 - ".SendMsgToLogChannelAsync"
-Cohesion: 0.33
-Nodes (5): YoutubeMemberVideoLogNotification, Fact, InlineData, Theory, YoutubeMemberVideoLogMessageFormatterTests
+### Community 64 - "DiscordStreamNotifyBot.DataBase"
+Cohesion: 0.19
+Nodes (6): DiscordStreamNotifyBot.SharedService.YoutubeMember, DiscordStreamNotifyBot.Interaction.YoutubeMember, DiscordStreamNotifyBot.Command.YoutubeMember, DiscordStreamNotifyBot.DataBase, DiscordStreamNotifyBot.SharedService.Member, YoutubeMemberRoleConfigurationResult
 
 ### Community 65 - "TwitchReconcileDecisionTests"
 Cohesion: 0.18
@@ -589,8 +597,8 @@ Cohesion: 0.29
 Nodes (7): 11.1 現況限制, 11.2 目標作法, 11.3 YouTube, 11.4 Twitch, 11.5 TwitCasting, 11.6 YouTube 會限驗證, 11. 通知與背景訊息
 
 ### Community 74 - "GoogleOAuthOperationLockLease"
-Cohesion: 0.15
-Nodes (15): CancellationToken, CancellationTokenSource, IDatabase, int, RedisKey, RedisValue, string, Task (+7 more)
+Cohesion: 0.06
+Nodes (32): IAsyncDisposable, IDisposable, List, SemaphoreSlim, ValueTask, Lease, LeaseGroup, Lease (+24 more)
 
 ### Community 80 - "YoutubeDetectionService"
 Cohesion: 0.05
@@ -673,16 +681,16 @@ Cohesion: 0.20
 Nodes (11): HashSet, IReadOnlyCollection, IReadOnlyList, TwitchEventSubCreateSpec, TwitchEventSubFact, TwitchEventSubFinalDecision, TwitchEventSubReconcilePlan, TwitchEventSubReconcilePolicy (+3 more)
 
 ### Community 103 - ".New"
-Cohesion: 0.31
-Nodes (4): ConsoleColor, LogFileRoute, LogLevel, Exception
+Cohesion: 0.33
+Nodes (3): ConsoleColor, LogLevel, Exception
 
 ### Community 105 - "DiscordWebhookClient"
 Cohesion: 0.31
 Nodes (6): CancellationToken, DiscordSocketClient, HttpClient, Task, DiscordWebhookClient, Message
 
 ### Community 106 - "DiscordStreamNotifyBot.DataBase.Table"
-Cohesion: 0.07
-Nodes (15): DiscordStreamNotifyBot.Tests.Component.MySql, DiscordStreamNotifyBot.SharedService.YoutubeMember, DiscordStreamNotifyBot.DataBase.Table, DiscordStreamNotifyBot.Interaction.YoutubeMember, DiscordStreamNotifyBot.Command.YoutubeMember, DiscordStreamNotifyBot.Command.Youtube, DiscordStreamNotifyBot.Command.Attribute, DiscordStreamNotifyBot.DataBase (+7 more)
+Cohesion: 0.10
+Nodes (7): DiscordStreamNotifyBot.Tests.Component.MySql, DiscordStreamNotifyBot.DataBase.Table, DiscordStreamNotifyBot.Command.Youtube, DiscordStreamNotifyBot.Command.Attribute, DiscordStreamNotifyBot.Command.Twitch, Fact, YoutubeMembershipSchemaContractTests
 
 ### Community 113 - ".CreateOrRepairConfigurationAsync"
 Cohesion: 0.23
@@ -708,17 +716,17 @@ Nodes (8): bool, Cacheable, DiscordSocketClient, IMessageChannel, IUserMessage, 
 Cohesion: 0.15
 Nodes (14): CancellationToken, PeriodicTimer, string, Task, TimeSpan, ScraperService, IDatabase, string (+6 more)
 
-### Community 119 - "DiscordStreamNotifyBot.HttpClients.Twitcasting.Model"
-Cohesion: 0.15
-Nodes (9): DiscordStreamNotifyBot.HttpClients, DiscordStreamNotifyBot.HttpClients.Twitcasting.Model, DiscordStreamNotifyBot.Command.TwitCasting, DiscordStreamNotifyBot.Scraper.Detection.Twitcasting, ServiceProvider, Broadcaster, Movie, TwitCastingWebHookJson (+1 more)
+### Community 119 - "TwitcastingDetectionService.cs"
+Cohesion: 0.20
+Nodes (6): DiscordStreamNotifyBot.HttpClients, DiscordStreamNotifyBot.Command.TwitCasting, DiscordStreamNotifyBot.Scraper.Detection.Twitcasting, Broadcaster, Movie, TwitCastingWebHookJson
 
 ### Community 120 - "Twitch OAuth 與零成本 EventSub 實作計畫"
 Cohesion: 0.14
 Nodes (13): 0. 涉及專案, 10. Backend EventSub Webhook, 12. Frontend, 14. Grafana, 18. 建置與遷移, 19. 部署順序, 1. 不可偏離的決策, 20. 官方參考 (+5 more)
 
-### Community 121 - ".ShutdownAsync"
-Cohesion: 0.21
-Nodes (6): LogMessage, CancellationToken, HttpRequestMessage, HttpResponseMessage, Task, TimeSpan
+### Community 121 - "LogEvent"
+Cohesion: 0.20
+Nodes (5): LogEvent, LogEventLevel, LogFileRoute, LogTextFormatter, TextWriter
 
 ### Community 122 - "YoutubeMemberApiClient"
 Cohesion: 0.26
@@ -733,8 +741,8 @@ Cohesion: 0.20
 Nodes (9): Backend 指標, Coordinator 指標, Endpoints, Grafana, Notifier 指標, Prometheus, Prometheus / Grafana 監控, Scraper 指標 (+1 more)
 
 ### Community 126 - "TwitcastingClient"
-Cohesion: 0.22
-Nodes (6): Broadcaster, HttpClient, List, string, Task, TwitcastingClient
+Cohesion: 0.27
+Nodes (5): HttpClient, List, string, Task, TwitcastingClient
 
 ### Community 127 - "DiscordStreamNotifyBot.Scraper.csproj"
 Cohesion: 0.50
@@ -753,15 +761,15 @@ Cohesion: 0.32
 Nodes (6): DateTime, EmbedBuilder, IReadOnlyCollection, TimeSpan, TwitchEmbedBuilderFactory, TwitchClipInfo
 
 ### Community 131 - "Notifications.cs"
-Cohesion: 0.17
-Nodes (12): CollectorRegistry, DateTime, List, string, NotifyType, TwitchNoticeType, TwitchNotification, YoutubeNoticeType (+4 more)
+Cohesion: 0.15
+Nodes (15): CollectorRegistry, DateTime, List, string, YTChannelType, BannerChangeNotification, NotifyType, TwitchNoticeType (+7 more)
 
 ### Community 132 - "7. OAuth API 與流程隔離"
 Cohesion: 0.40
 Nodes (5): 7.1 API, 7.2 State, 7.3 Callback, 7.4 Twitch scopes, 7. OAuth API 與流程隔離
 
 ### Community 133 - "TwitcastingLiveStartPlannerTests"
-Cohesion: 0.21
+Cohesion: 0.20
 Nodes (7): TwitcastingLiveStartEvent, TwitcastingWebhookParser, Fact, InlineData, string, Theory, TwitcastingLiveStartPlannerTests
 
 ### Community 134 - "ClusterQueryService"
@@ -797,8 +805,8 @@ Cohesion: 0.25
 Nodes (3): net8.0, prometheus-net.AspNetCore (8.2.1), Microsoft.NET.Sdk
 
 ### Community 143 - ".GetCommandPath"
-Cohesion: 0.09
-Nodes (27): RequireBotPermissionAttribute, RequireUserPermissionAttribute, AutocompletionResult, HelpService, IAutocompleteInteraction, IInteractionContext, InteractionService, IParameterInfo (+19 more)
+Cohesion: 0.07
+Nodes (32): RequireBotPermissionAttribute, RequireUserPermissionAttribute, AutocompletionResult, HelpService, IAutocompleteInteraction, IInteractionContext, InteractionService, IParameterInfo (+24 more)
 
 ### Community 144 - "13. Prometheus"
 Cohesion: 0.67
@@ -809,8 +817,8 @@ Cohesion: 0.67
 Nodes (3): 4.1 直播中授權失效, 4.2 關台後重新判斷, 4. 安全刪除狀態機
 
 ### Community 146 - ".SendLocalizedConfirmAsync"
-Cohesion: 0.21
-Nodes (10): CommandExample, CommandSummary, DiscordSocketClient, RequireBotPermission, TwitcastingService, Twitcasting, RequireContext, SlashCommand (+2 more)
+Cohesion: 0.27
+Nodes (7): CommandExample, CommandSummary, RequireBotPermission, RequireContext, SlashCommand, Task, YoutubeMember
 
 ### Community 147 - "NotificationEmbedFactoryTests"
 Cohesion: 0.24
@@ -820,13 +828,17 @@ Nodes (8): Color, DateTime, Embed, Fact, InlineData, string, Theory, Notificatio
 Cohesion: 0.20
 Nodes (6): DiscordStreamNotifyBot.Migrations, ModelSnapshot, ModelBuilder, AddLocalizationSettings, ModelBuilder, MainDbContextModelSnapshot
 
-### Community 149 - "IDisposable"
-Cohesion: 0.19
-Nodes (8): IAsyncDisposable, IDisposable, List, SemaphoreSlim, ValueTask, Lease, LeaseGroup, Lease
+### Community 149 - ".PrepareMemberCheckCleanupAsync"
+Cohesion: 0.31
+Nodes (7): CheckId, Snapshot, CancellationToken, IEnumerable, List, Task, YoutubeMemberService
+
+### Community 151 - "Migration"
+Cohesion: 0.40
+Nodes (3): Migration, MigrationBuilder, ModifyTwitCastingTable
 
 ### Community 156 - ".Get"
 Cohesion: 0.16
-Nodes (10): DateTimeOffset, Func, List, object, TimeProvider, TimeSpan, NoticeCache, Fact (+2 more)
+Nodes (11): DiscordStreamNotifyBot.SharedService, DateTimeOffset, Func, List, object, TimeProvider, TimeSpan, NoticeCache (+3 more)
 
 ### Community 157 - "SendMsgToAllGuildService"
 Cohesion: 0.16
@@ -837,20 +849,20 @@ Cohesion: 0.25
 Nodes (6): ICommandInfo, IInteractionContext, IServiceProvider, PreconditionResult, Task, RequireGuildAttribute
 
 ### Community 159 - ".Classify"
-Cohesion: 0.23
+Cohesion: 0.25
 Nodes (6): IEnumerable, YoutubeMemberProbeResultKind, Fact, InlineData, Theory, YoutubeMemberApiClientTests
 
-### Community 160 - "GetMovieInfoResponse"
-Cohesion: 0.38
-Nodes (5): List, Broadcaster, GetMovieInfoResponse, Movie, GetUserInfoResponse
+### Community 160 - "DiscordStreamNotifyBot.HttpClients.Twitcasting.Model"
+Cohesion: 0.21
+Nodes (9): DiscordStreamNotifyBot.HttpClients.Twitcasting.Model, List, GetAllRegistedWebHookJson, Webhook, List, Broadcaster, GetMovieInfoResponse, Movie (+1 more)
 
 ### Community 162 - "MetadataServiceProvider"
 Cohesion: 0.16
 Nodes (9): IServiceProvider, IServiceScope, IServiceScopeFactory, Dictionary, DiscordSocketClient, InteractionService, Type, InteractionMetadataFixture (+1 more)
 
-### Community 164 - "ReactionEventWrapper"
-Cohesion: 0.29
-Nodes (8): bool, Cacheable, DiscordSocketClient, IMessageChannel, IUserMessage, SocketReaction, Task, ReactionEventWrapper
+### Community 164 - "MySqlDataStoreTests"
+Cohesion: 0.40
+Nodes (5): MySqlComponentFact, MySqlDataStore, Task, MySqlDataStoreTests, StoredToken
 
 ### Community 165 - ".LoadSnapshotAsync"
 Cohesion: 0.24
@@ -876,10 +888,6 @@ Nodes (7): IResult, SocketInteraction, SocketSlashCommandDataOption, IDiscordInt
 Cohesion: 0.11
 Nodes (13): bool, ConcurrentDictionary, DateTime, IEnumerable, long, object, Task, TimeSpan (+5 more)
 
-### Community 171 - "NonPersistentGoogleDataStore"
-Cohesion: 0.24
-Nodes (5): IDataStore, Task, ITokenDataStore, Task, NonPersistentGoogleDataStore
-
 ### Community 172 - ".GenerateSuggestionsAsync"
 Cohesion: 0.33
 Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider
@@ -893,8 +901,8 @@ Cohesion: 0.38
 Nodes (5): ConcurrentDictionary, Task, TimeProvider, TimeSpan, TwitchGuildEligibilityEvaluator
 
 ### Community 175 - "MySqlDataStore"
-Cohesion: 0.33
-Nodes (4): CancellationToken, string, Task, MySqlDataStore
+Cohesion: 0.18
+Nodes (7): IDataStore, Task, ITokenDataStore, CancellationToken, string, Task, MySqlDataStore
 
 ### Community 176 - "GuildTwitchSubscriptionConfig"
 Cohesion: 0.11
@@ -904,25 +912,25 @@ Nodes (12): IQueryable, IEnumerable, int, IReadOnlyCollection, TwitchAuthorizati
 Cohesion: 0.26
 Nodes (4): TwitchAuthorizationAccessResult, TwitchAuthorizationLocalState, TwitchAuthorizationLocalStatePolicy, TwitchRefreshPersistencePolicy
 
-### Community 178 - "TwitchStream"
-Cohesion: 0.28
-Nodes (5): HelixStream, TwitchStreamDataFacts, TwitchStreamNotificationFactory, DateTime, TwitchStream
+### Community 178 - "給未來 session 的信"
+Cohesion: 0.22
+Nodes (5): 一、`claude` 分支是你最大的資產，也是最大的陷阱, 三、使用者已做的決策，不要重新辯論, 二、你在活的生產系統旁施工, 給未來 session 的信, 這套制度最可能的退化方式，與預防
 
 ### Community 179 - "YoutubeApiVideoPolicyTests"
 Cohesion: 0.20
 Nodes (9): YoutubeApiVideoAction, YoutubeApiVideoDecision, YoutubeApiVideoFacts, YoutubeApiVideoPolicy, DateTime, Fact, InlineData, Theory (+1 more)
 
-### Community 180 - ".PlanChannel"
-Cohesion: 0.20
-Nodes (9): YoutubeMemberCandidateAction, YoutubeMemberCandidateFacts, YoutubeMemberChannelDecision, YoutubeMemberChannelFacts, YoutubeMemberVideoPolicy, Fact, InlineData, Theory (+1 more)
+### Community 180 - ".CheckMemberShipOnlyVideoIdAsync"
+Cohesion: 0.15
+Nodes (11): Task, YoutubeDetectionService, YoutubeMemberCandidateAction, YoutubeMemberCandidateFacts, YoutubeMemberChannelDecision, YoutubeMemberChannelFacts, YoutubeMemberVideoPolicy, Fact (+3 more)
 
 ### Community 181 - ".DecideAutomaticMutation"
 Cohesion: 0.31
 Nodes (4): YoutubeMemberAutomaticMutationAction, YoutubeMemberManualPinPolicy, Fact, YoutubeMemberManualPinPolicyTests
 
 ### Community 182 - ".HandleStartLiveMessageAsync"
-Cohesion: 0.17
-Nodes (12): List, RedisValue, SemaphoreSlim, Task, TwitcastingDetectionService, IEnumerable, TwitcastingLiveStartAction, TwitcastingLiveStartFacts (+4 more)
+Cohesion: 0.19
+Nodes (11): List, RedisValue, SemaphoreSlim, Task, TwitcastingDetectionService, TwitcastingLiveStartAction, TwitcastingLiveStartFacts, TwitcastingLiveStartPlan (+3 more)
 
 ### Community 183 - "RedisConnection"
 Cohesion: 0.28
@@ -936,9 +944,9 @@ Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, 
 Cohesion: 0.19
 Nodes (7): string, Uri, YoutubeVideoIdParser, InlineData, string, Theory, YoutubeVideoIdParserTests
 
-### Community 186 - ".SameUserMutationsAreExclusiveAndOwnerReleaseRemovesTheKey"
-Cohesion: 0.33
-Nodes (4): IConnectionMultiplexer, RedisComponentFact, Task, GoogleOAuthOperationLockRedisComponentTests
+### Community 186 - "8. 分階段實作步驟"
+Cohesion: 0.22
+Nodes (9): 8. 分階段實作步驟, 階段 0：止血 PR — shard 歸屬守衛, 階段 1：Solution 骨架 + Shared, 階段 2：Notifier 上線（先維持單 shard 行為）, 階段 3：Scraper 拆出 + Redis Streams 匯流排（完成，正確性待測試環境驗）, 階段 4：Coordinator（完成，正確性待測試環境驗）, 階段 5：跨 shard 指令與共享狀態（完成，正確性待測試環境驗）, 階段 6：Docker 化與部署驗證（檔案完成，實跑待測試環境） (+1 more)
 
 ### Community 187 - ".MakeNamesUnique"
 Cohesion: 0.31
@@ -948,9 +956,9 @@ Nodes (5): IEnumerable, int, IReadOnlyList, AutocompleteCandidate, AutocompleteS
 Cohesion: 0.24
 Nodes (7): bool, DiscordSocketClient, HttpClient, string, Task, Timer, UptimeKumaClient
 
-### Community 189 - "BotStateTests"
-Cohesion: 0.31
-Nodes (5): bool, InlineData, int, Theory, BotStateTests
+### Community 189 - ".AddSubscriptionCheckAsync"
+Cohesion: 0.42
+Nodes (5): DefaultMemberPermissions, IRole, SlashCommand, Task, TwitchSubscriptionSetting
 
 ### Community 190 - "5. 目標架構"
 Cohesion: 0.40
@@ -961,19 +969,19 @@ Cohesion: 0.38
 Nodes (4): CultureInfo, IReadOnlyList, string, SupportedLocale
 
 ### Community 192 - "Category"
-Cohesion: 0.70
-Nodes (4): List, CategoriesJson, Category, SubCategory
+Cohesion: 0.43
+Nodes (5): IEnumerable, List, CategoriesJson, Category, SubCategory
 
 ### Community 193 - "DebounceFixture"
 Cohesion: 0.29
 Nodes (7): FakeTimeProvider, IReadOnlyCollection, List, UserId, DebounceFixture, UserLogin, UserName
 
-### Community 194 - "GetAllRegistedWebHookJson.cs"
-Cohesion: 0.67
-Nodes (3): List, GetAllRegistedWebHookJson, Webhook
+### Community 194 - ".RefreshMetricsAsync"
+Cohesion: 0.22
+Nodes (4): EventSubSubscription, IReadOnlyDictionary, TwitchEventSubMetricStatus, TwitchEventSubMetricType
 
 ### Community 195 - "DiscordStreamNotifyBot.Tests"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (14): DiscordStreamNotifyBot.Scraper.Detection.Youtube, DiscordStreamNotifyBot.Scraper, DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce, DiscordStreamNotifyBot.Tests, DiscordStreamNotifyBot.Command.Admin, DiscordStreamNotifyBot.Scraper.Detection.Twitch, DiscordStreamNotifyBot.SharedService.Cluster, DiscordStreamNotifyBot.Shared.Messages (+6 more)
 
 ### Community 196 - "NijisanjiStreamJson.cs"
@@ -988,9 +996,9 @@ Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, 
 Cohesion: 0.27
 Nodes (4): Fact, InlineData, Theory, RedisContractTests
 
-### Community 199 - ".LoadInteractionFrom"
+### Community 199 - ".GenerateSuggestionsAsync"
 Cohesion: 0.29
-Nodes (5): Assembly, Func, IEnumerable, IServiceCollection, Type
+Nodes (6): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider, ConfiguredBroadcasterAutocompleteHandler
 
 ### Community 200 - "TcBackendStreamData.cs"
 Cohesion: 0.44
@@ -1004,25 +1012,21 @@ Nodes (6): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, 
 Cohesion: 0.26
 Nodes (8): LeaseGroup, CancellationToken, ConcurrentDictionary, IEnumerable, Lease, Task, MemberOperationCoordinator, SocketGuildUser
 
-### Community 204 - ".GenerateSuggestionsAsync"
-Cohesion: 0.29
-Nodes (6): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, IParameterInfo, IServiceProvider, ConfiguredBroadcasterAutocompleteHandler
+### Community 204 - "2. 專案拆分 (Solution Layout)"
+Cohesion: 0.33
+Nodes (6): 2.1 `Shared`（共用 library）, 2.2 `Scraper`（爬蟲層，叢集唯一）, 2.3 `Notifier`（通知層 / shard，可多個）, 2.4 `Coordinator`（主控層，1 個）, 2.5 SharedService 逐服務拆分歸屬（判斷準則表）, 2. 專案拆分 (Solution Layout)
 
 ### Community 205 - "MainDbService"
-Cohesion: 0.13
-Nodes (18): DbContextOptions, TwitCasting, ComponentInteraction, GuildTwitchSubscriptionConfig, RequireContext, SlashCommand, Task, TwitchMember (+10 more)
-
-### Community 207 - "Migration"
-Cohesion: 0.40
-Nodes (3): Migration, MigrationBuilder, AddTwitchSubscriptionDeletionPending
+Cohesion: 0.15
+Nodes (16): DbContextOptions, TwitCasting, DiscordSocketClient, TwitcastingService, Twitcasting, ComponentInteraction, GuildTwitchSubscriptionConfig, RequireContext (+8 more)
 
 ### Community 208 - ".CreateAsync"
 Cohesion: 0.21
 Nodes (9): Fact, SlashCommandParameterInfo, Task, Type, InteractionCommandContractTests, Fact, Task, InteractionCommandLocalizationTests (+1 more)
 
-### Community 209 - ".RevokeUserGoogleCertAsync"
-Cohesion: 0.29
-Nodes (3): Exception, YoutubeMemberSafeLogging, Fact
+### Community 209 - ".DescribeFailure"
+Cohesion: 0.25
+Nodes (4): Exception, YoutubeMemberSafeLogging, Fact, YoutubeMemberSafeLoggingTests
 
 ### Community 210 - ".FixTCDbAsync"
 Cohesion: 0.33
@@ -1036,9 +1040,9 @@ Nodes (7): PreconditionAttribute, CommandInfo, ICommandContext, IServiceProvider
 Cohesion: 0.25
 Nodes (6): ICommandInfo, IInteractionContext, IServiceProvider, PreconditionResult, Task, RequireGuildOwnerAttribute
 
-### Community 213 - ".Main"
-Cohesion: 0.20
-Nodes (5): Task, CancellationToken, CancellationTokenSource, int, GracefulShutdown
+### Community 213 - ".Info"
+Cohesion: 0.16
+Nodes (7): ServiceProvider, DetectionHost, Task, CancellationToken, CancellationTokenSource, int, GracefulShutdown
 
 ### Community 214 - ".Resolve"
 Cohesion: 0.57
@@ -1060,21 +1064,17 @@ Nodes (5): AutocompletionResult, IAutocompleteInteraction, IInteractionContext, 
 Cohesion: 0.29
 Nodes (6): SendMsgToAllGuildService, DefaultMemberPermissions, RequireOwner, SlashCommand, Task, SendMsgToAllGuild
 
-### Community 219 - "YoutubeMemberRolePoliciesTests"
-Cohesion: 0.21
-Nodes (3): IEnumerable, Fact, YoutubeMemberRolePoliciesTests
-
 ### Community 220 - ".Get"
 Cohesion: 0.13
 Nodes (21): InteractionModuleBase, SocketInteractionContext, Task, TopLevelModule, IChannel, SlashCommand, Task, CommandExample (+13 more)
 
-### Community 221 - ".OnReaction"
+### Community 221 - "4. 訊息契約：Redis Streams 通知匯流排"
 Cohesion: 0.33
-Nodes (4): DiscordSocketClient, IMessage, IUserMessage, SocketReaction
+Nodes (6): 4.1 拓撲, 4.2 DTO（`Shared/Messages/`）, 4.3 消費迴圈（Notifier）, 4.4 建群與 Preflight, 4.5 Redis 控制平面鍵（非 stream）, 4. 訊息契約：Redis Streams 通知匯流排
 
 ### Community 223 - "BotState"
-Cohesion: 0.11
-Nodes (13): DiscordStreamNotifyBot.SharedService.Youtube.Json, DateTime, TwitchGuildEligibilityStatus, YoutubePubSubNotification, YTNotificationType, Task, YoutubeDetectionService, ConnectionMultiplexer (+5 more)
+Cohesion: 0.12
+Nodes (12): DiscordStreamNotifyBot.SharedService.Youtube.Json, DateTime, TwitchGuildEligibilityStatus, YoutubePubSubNotification, YTNotificationType, ConnectionMultiplexer, IDatabase, ISubscriber (+4 more)
 
 ### Community 224 - ".LoadCommandFrom"
 Cohesion: 0.40
@@ -1116,9 +1116,9 @@ Nodes (5): 8.1 Entity changes, 8.2 Indexes, 8.3 Migration 規則, 8.4 Preflight 
 Cohesion: 0.50
 Nodes (4): 14.1 建議部署順序, 14.2 相容性, 14.3 回滾, 14. 部署與回滾
 
-### Community 243 - ".CreateStreamStarted"
-Cohesion: 0.33
-Nodes (4): EmbedBuilder, TwitcastingEmbedBuilderFactory, DateTime, TwitcastingStream
+### Community 243 - "8. 驗證矩陣"
+Cohesion: 0.40
+Nodes (5): 8.1 編譯與靜態檢查, 8.2 Console 與檔案, 8.3 Loki, 8.4 生命週期, 8. 驗證矩陣
 
 ### Community 244 - "13. Backend Contract"
 Cohesion: 0.50
@@ -1144,25 +1144,37 @@ Nodes (3): 7.1 Check state, 7.2 Config state, 7. 狀態機
 Cohesion: 0.67
 Nodes (3): 9.1 新設定, 9.2 既有碰撞, 9. Role 隔離政策
 
+### Community 252 - "5. Shard 歸屬與生命週期"
+Cohesion: 0.50
+Nodes (4): 5.1 歸屬守衛（防多 shard 互刪設定，最高優先）, 5.2 心跳與重啟, 5.3 啟動連線檢查 (StartupPreflight), 5. Shard 歸屬與生命週期
+
+### Community 253 - "7. 資料庫變更"
+Cohesion: 0.50
+Nodes (4): 7.1 `GuildConfig.Locale`, 7.2 `YoutubeMemberCheck.Locale`, 7.3 Migration 鐵則, 7. 資料庫變更
+
+### Community 254 - "YoutubeChannelOwnedType"
+Cohesion: 0.50
+Nodes (3): DateTime, YTChannelType, YoutubeChannelOwnedType
+
 ## Knowledge Gaps
 - **414 isolated node(s):** `net8.0`, `prometheus-net.AspNetCore (8.2.1)`, `Microsoft.NET.Sdk`, `DiscordStreamNotifyBot.Command.Normal`, `DiscordStreamNotifyBot.Command.TwitCasting` (+409 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **39 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **46 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DiscordStreamNotifyBot.DataBase` connect `DiscordStreamNotifyBot.DataBase.Table` to `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `ClusterQueryService`, `DiscordStreamNotifyBot.Shared`, `DiscordStreamNotifyBot.Localization`, `Extensions`, `DiscordStreamNotifyBot.Migrations`, `AuthTokenTests`, `SendMsgToAllGuildService`, `YoutubeDetectionService`, `20260611015819_SyncModelDrift.Designer.cs`, `MainDbContext`, `20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs`, `.LoadSnapshotAsync`, `GuildLocaleService`, `MySqlComponentFixture`, `TwitcastingService`, `.RetryWithBackoffAsync`, `DiscordStreamNotifyBot.Interaction.Attribute`, `DiscordStreamNotifyBot.Tests`, `20260803141135_AddTwitchSubscriptionVerification.Designer.cs`, `YoutubeDetectionService`, `20250620094111_AddMaxSpiderCountSettingField.Designer.cs`, `20250320095452_RefactorDbContext.Designer.cs`, `BotState`, `20250603065853_ModifyTwitCastingTable.Designer.cs`, `20260709091318_AddManualMemberCheckVideoFlag.Designer.cs`, `20260804173737_AddYoutubeMemberVerificationDurability.Designer.cs`, `20260807045351_AddGoogleOAuthUnlinkIntent.Designer.cs`, `TwitchService`, `20260803165758_AddTwitchSubscriptionDeletionPending.Designer.cs`, `DiscordStreamNotifyBot.HttpClients.Twitcasting.Model`?**
+- **Why does `DiscordStreamNotifyBot.DataBase` connect `DiscordStreamNotifyBot.DataBase` to `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `ClusterQueryService`, `DiscordStreamNotifyBot.Shared`, `DiscordStreamNotifyBot.Localization`, `Extensions`, `DiscordStreamNotifyBot.Migrations`, `AuthTokenTests`, `.Get`, `SendMsgToAllGuildService`, `MainDbContext`, `20260611015819_SyncModelDrift.Designer.cs`, `20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs`, `.LoadSnapshotAsync`, `GuildLocaleService`, `MySqlComponentFixture`, `.RetryWithBackoffAsync`, `DiscordStreamNotifyBot.Interaction.Attribute`, `DiscordStreamNotifyBot.Tests`, `20260803141135_AddTwitchSubscriptionVerification.Designer.cs`, `YoutubeDetectionService`, `20250620094111_AddMaxSpiderCountSettingField.Designer.cs`, `MainDbContextFactory`, `20250320095452_RefactorDbContext.Designer.cs`, `BotState`, `20250603065853_ModifyTwitCastingTable.Designer.cs`, `20260709091318_AddManualMemberCheckVideoFlag.Designer.cs`, `20260804173737_AddYoutubeMemberVerificationDurability.Designer.cs`, `DiscordStreamNotifyBot.DataBase.Table`, `20260807045351_AddGoogleOAuthUnlinkIntent.Designer.cs`, `TwitchService`, `20260803165758_AddTwitchSubscriptionDeletionPending.Designer.cs`, `TwitcastingDetectionService.cs`?**
   _High betweenness centrality (0.068) - this node is a cross-community bridge._
-- **Why does `MainDbService` connect `MainDbService` to `.Warn`, `ClusterQueryService`, `TwitchSubscriptionService`, `.SendLocalizedConfirmAsync`, `.SendLocalizedErrorAsync`, `YoutubeMemberAuthorizationService`, `SendMsgToAllGuildService`, `YoutubeMemberService`, `.LoadSnapshotAsync`, `.AddChannelSpider`, `YoutubeMemberRoleService`, `TwitchDetectionService`, `Twitch`, `GuildLocaleService`, `MySqlDataStore`, `MySqlComponentFixture`, `.GetDbContext`, `Utility`, `.HandleStartLiveMessageAsync`, `TwitcastingService`, `YoutubeStreamService`, `Bot`, `YoutubeDetectionService`, `.Get`, `BotState`, `DiscordStreamNotifyBot.DataBase.Table`, `.CreateOrRepairConfigurationAsync`, `TwitchService`?**
+- **Why does `MainDbService` connect `MainDbService` to `.Warn`, `ClusterQueryService`, `TwitchSubscriptionService`, `.SendLocalizedErrorAsync`, `.SendLocalizedConfirmAsync`, `YoutubeMemberAuthorizationService`, `SendMsgToAllGuildService`, `YoutubeMemberService`, `.LoadSnapshotAsync`, `.AddChannelSpider`, `YoutubeMemberRoleService`, `TwitchDetectionService`, `Twitch`, `GuildLocaleService`, `MySqlDataStore`, `MySqlComponentFixture`, `.GetDbContext`, `Utility`, `.HandleStartLiveMessageAsync`, `TwitcastingService`, `.AddSubscriptionCheckAsync`, `YoutubeStreamService`, `Bot`, `DiscordStreamNotifyBot.DataBase`, `YoutubeDetectionService`, `.Get`, `BotState`, `.CreateOrRepairConfigurationAsync`, `TwitchService`?**
   _High betweenness centrality (0.063) - this node is a cross-community bridge._
-- **Why does `DiscordStreamNotifyBot.DataBase.Table` connect `DiscordStreamNotifyBot.DataBase.Table` to `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `BotLocalizer`, `DiscordStreamNotifyBot.Localization`, `Extensions`, `AuthTokenTests`, `YoutubeMemberPolicies`, `MainDbContext`, `GuildLocaleService`, `MySqlComponentFixture`, `GuildTwitchSubscriptionConfig`, `.RefreshAfterUnauthorizedCoreAsync`, `TwitchStateDecisions.cs`, `.HandleStartLiveMessageAsync`, `TwitcastingService`, `TwitchRefreshRotationLifecycle`, `DiscordStreamNotifyBot.Interaction.Attribute`, `DiscordStreamNotifyBot.Tests`, `.GetSynchronizationDiff`, `BotState`, `.CreateStreamStarted`, `DiscordStreamNotifyBot.HttpClients.Twitcasting.Model`?**
+- **Why does `DiscordStreamNotifyBot.DataBase.Table` connect `DiscordStreamNotifyBot.DataBase.Table` to `RecordYoutubeChannel`, `YoutubeChannelSpider`, `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `YoutubeMemberAccessToken`, `DiscordStreamNotifyBot.Shared`, `DiscordStreamNotifyBot.Localization`, `Extensions`, `YoutubeMemberPolicies`, `MainDbContext`, `DbEntity`, `MySqlDataStoreTests`, `GuildLocaleService`, `MySqlComponentFixture`, `GuildTwitchSubscriptionConfig`, `.RefreshAfterUnauthorizedCoreAsync`, `TwitchStateDecisions.cs`, `.HandleStartLiveMessageAsync`, `TwitchRefreshRotationLifecycle`, `DiscordStreamNotifyBot.Interaction.Attribute`, `DiscordStreamNotifyBot.DataBase`, `DiscordStreamNotifyBot.Tests`, `.GetSynchronizationDiff`, `BotState`, `TwitcastingDetectionService.cs`, `YoutubeChannelOwnedType`, `GoogleOAuthUnlinkIntent`?**
   _High betweenness centrality (0.062) - this node is a cross-community bridge._
 - **What connects `net8.0`, `prometheus-net.AspNetCore (8.2.1)`, `Microsoft.NET.Sdk` to the rest of the system?**
   _414 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DiscordStreamNotifyBot.SharedService.Twitch` be split into smaller, more focused modules?**
-  _Cohesion score 0.12105263157894737 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.13725490196078433 - nodes in this community are weakly interconnected._
 - **Should `DiscordStreamNotifyBot.Shared.csproj` be split into smaller, more focused modules?**
   _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
 - **Should `TwitchApiService` be split into smaller, more focused modules?**
-  _Cohesion score 0.08953900709219859 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08758503401360544 - nodes in this community are weakly interconnected._
