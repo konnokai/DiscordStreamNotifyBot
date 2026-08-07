@@ -107,10 +107,10 @@
   <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>Twitch チャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
   <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>TwitCasting チャンネル巡回を追加します。&#10;サーバーのメンバー数が 500 人を超えている必要があります。&#10;追加可能数は今後変更される場合があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
   <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>TwitCasting チャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
-  <data name="Help.CommandDetail.member-set.add-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを追加します。現在の上限は 5 チャンネルです。&#10;同じチャンネルを再追加すると付与ロールを変更できます。&#10;サーバーのメンバー数が 250 人を超えている必要があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
-  <data name="Help.CommandDetail.member-set.remove-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します。</value></data>
-  <data name="Help.CommandDetail.member-set.set-check-video" xml:space="preserve"><value>メンバーシップ認証に使用する確認動画を手動指定します。&#10;複数の会員ランクがある場合は、低ランクの正規会員が失敗扱いにならないよう、最下位ランクで視聴できるメンバー限定動画を指定してください。&#10;自動探索は指定動画を上書きしません。動画が無効になると通知チャンネルに再設定の案内が送信されます。</value></data>
-  <data name="Help.CommandDetail.member-set.clear-check-video" xml:space="preserve"><value>メンバーシップ認証動画を自動選択に戻し、手動指定を解除します。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.add-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを追加します。現在の上限は 5 チャンネルです。&#10;同じチャンネルを再追加すると付与ロールを変更できます。&#10;サーバーのメンバー数が 250 人を超えている必要があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.remove-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.set-check-video" xml:space="preserve"><value>メンバーシップ認証に使用する確認動画を手動指定します。&#10;複数の会員ランクがある場合は、低ランクの正規会員が失敗扱いにならないよう、最下位ランクで視聴できるメンバー限定動画を指定してください。&#10;自動探索は指定動画を上書きしません。動画が無効になると通知チャンネルに再設定の案内が送信されます。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.clear-check-video" xml:space="preserve"><value>メンバーシップ認証動画を自動選択に戻し、手動指定を解除します。</value></data>
   <data name="Utility.Ping" xml:space="preserve"><value>:ping_pong: レイテンシ：{0} ms</value></data>
   <data name="Utility.Invite" xml:space="preserve"><value>招待リンク：&lt;{0}&gt;</value></data>
   <data name="Utility.Status.Title" xml:space="preserve"><value>直播小幫手</value></data>
@@ -246,11 +246,13 @@
   <data name="Member.Errors.LoginRequired" xml:space="preserve"><value>{0} で Discord と Google にログインしてから、このコマンドをもう一度実行してください。</value></data>
   <data name="Member.CheckQueuedWithDmNotice" xml:space="preserve"><value>認証待ちに追加しました。完了まで最大 {0} 分かかる場合があります。結果を受け取れるよう、このサーバーでサーバーメンバーからのダイレクトメッセージを許可してください。</value></data>
   <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>チャンネルを選択</value></data>
-  <data name="Member.Select.Description" xml:space="preserve"><value>認証するチャンネルを選択してください。既存のメンバーシップ認証ロールは削除され、再認証されます。</value></data>
+  <data name="Member.Select.Description" xml:space="preserve"><value>今回認証するチャンネルを選択してください。以前選択したチャンネルを今回選択しなかった場合、関連ロールを削除します。すぐに削除できない場合は Bot が自動で再試行します。</value></data>
   <data name="Member.Select.SelectedCount" xml:space="preserve"><value>{0} チャンネルを選択済み</value></data>
   <data name="Member.Select.Selected" xml:space="preserve"><value>選択済み</value></data>
+  <data name="Member.Select.Expired" xml:space="preserve"><value>このメンバーシップ認証メニューは期限切れです。`/youtube-member check` をもう一度実行してください。</value></data>
   <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>このサーバーではまだメンバーシップ認証を実行していません。</value></data>
   <data name="Member.CheckCancelled" xml:space="preserve"><value>このサーバーでのメンバーシップ認証と関連ロールを削除しました。</value></data>
+  <data name="Member.Errors.RoleCleanupPending" xml:space="preserve"><value>メンバーシップ認証は解除しましたが、一部の関連ロールがまだ削除されていません。Bot が自動で再試行します。</value></data>
   <data name="Member.Errors.SaveFailed" xml:space="preserve"><value>データを保存できませんでした。{0} へ確認してください。</value></data>
   <data name="Member.UnlinkPrompt" xml:space="preserve"><value>Discord と Google の連携を解除しますか？メンバーシップ認証ロールも削除されます。再取得するにはウェブサイトで再連携が必要です。</value></data>
   <data name="Member.Unlinked" xml:space="preserve"><value>Discord と Google の連携を解除しました。</value></data>
@@ -262,15 +264,21 @@
   <data name="Member.LinkedChannel" xml:space="preserve"><value>連携中の YouTube チャンネル：{0}</value></data>
   <data name="Member.Errors.LinkedChannelUnavailable" xml:space="preserve"><value>連携中の YouTube チャンネルを取得できませんでした。ウェブサイトでの連携が完了し、Google アカウントに YouTube チャンネルがあることを確認してください。</value></data>
   <data name="Member.Errors.LinkedChannelUnavailableWithOwner" xml:space="preserve"><value>連携中の YouTube チャンネルを取得できませんでした。ウェブサイトでの連携と YouTube チャンネルを確認してください。解決しない場合は {0} へ連絡してください。</value></data>
-  <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` をメンバーシップ認証ログチャンネルに設定しました。</value></data>
+  <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` をメンバーシップとサブスク認証のログチャンネルに設定しました。</value></data>
   <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>Bot に「ロールの管理」権限が必要です。権限を付与してから再試行してください。</value></data>
   <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>everyone ロールをメンバーシップ認証用ロールに設定することはできません。</value></data>
   <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>連携サービスが管理するロールはメンバーシップ認証用ロールとして使用できません。</value></data>
+  <data name="MemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>このロールはすでに Twitch サブスク認証で使用されています。YouTube と Twitch の認証には異なるロールを使用してください。</value></data>
   <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>ロール `{0}` は Bot の最上位ロールより上にあります。Bot のロールを上へ移動してください。</value></data>
+  <data name="MemberSetting.Errors.DeletionPending" xml:space="preserve"><value>このチャンネルのメンバーシップ認証設定と関連ロールはまだ完全に削除されていないため、再設定できません。Bot に「ロールの管理」権限があり、関連ロールが Bot の最上位ロールより下にあることを確認してから、自動再試行が完了するまでお待ちください。</value></data>
+  <data name="MemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>前回のロール変更が完了していません。現在設定されているロールを指定して、同じ設定をもう一度実行してください。更新が完了すると、別のロールに変更できます。</value></data>
+  <data name="MemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定は保存されましたが、一部の認証済みメンバーへのロール変更が完了していません。Bot が変更前と変更後の両方のロールを管理できることを確認してください。権限とロールの順序に問題がなければ、しばらく待ってから同じロールを指定して、同じ設定をもう一度実行してください。</value></data>
+  <data name="MemberSetting.Errors.RemovePending" xml:space="preserve"><value>一部の関連ロールがまだ削除されていないため、このチャンネルのメンバーシップ認証設定の削除は完了していません。Bot が関連ロールを管理できることを確認してください。Bot が自動で再試行します。</value></data>
+  <data name="MemberSetting.Errors.SaveFailed" xml:space="preserve"><value>メンバーシップ認証設定の保存に失敗しました。しばらくしてから再試行してください。</value></data>
   <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>このサーバーではすでに {0} 個のメンバーシップ認証チャンネルを使用しています。不要なチャンネルを削除してください。</value></data>
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord の選択メニューは最大 {0} 項目です。不要なメンバーシップ認証チャンネルを削除してください。</value></data>
-  <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>このサーバーにはメンバーシップ認証ログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {0} を使用してください。ログチャンネルは必須です。</value></data>
-  <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>設定済みのメンバーシップ認証ログチャンネルが削除されました。新しいチャンネルを作成し、必要な権限を付与してから {0} を再実行してください。</value></data>
+  <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>このサーバーにはメンバーシップとサブスク認証のログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {0} を使用してください。ログチャンネルは必須です。</value></data>
+  <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>設定済みのメンバーシップとサブスク認証のログチャンネルが削除されました。新しいチャンネルを作成し、必要な権限を付与してから {0} を再実行してください。</value></data>
   <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>`{0}` をメンバーシップ認証チャンネルに設定しました。認証成功時に `{1}` ロールを付与します。{2}</value></data>
   <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>すぐに認証を開始できます。</value></data>
   <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>約 5 分後に認証を開始してください。</value></data>
@@ -355,7 +363,7 @@
   <data name="Member.VideoLog.NoVideos" xml:space="preserve"><value>{0} には現在、コメントが有効で認証に使用できるメンバー限定動画がありません。条件を満たす新しい動画が公開されてから、メンバーシップ認証を再度お試しください。再生リストは {1} で確認できます。</value></data>
   <data name="Member.VideoLog.NewProbeVideo" xml:space="preserve"><value>メンバーシップチャンネル `{0}` の新しい認証用動画として `{1}` を選択しました。</value></data>
   <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>メンバーシップチャンネル名が変更されました：`{0}` → `{1}`。</value></data>
-  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>また、`{0}` にはメンバーシップ認証ログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {1} で設定してください。</value></data>
+  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>また、`{0}` にはメンバーシップとサブスク認証のログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {1} で設定してください。</value></data>
   <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>また、`{0}` の `{1}` で Bot にチャンネル表示、メッセージ送信、またはリンク埋め込み権限がありません。</value></data>
   <data name="TwitchMember.Errors.NotConfigured" xml:space="preserve"><value>このサーバーには Twitch サブスク認証チャンネルが設定されていません。</value></data>
   <data name="TwitchMember.Errors.TooManyChannels" xml:space="preserve"><value>認証可能なチャンネル数が Discord のメニュー上限を超えています。管理者へお問い合わせください。</value></data>
@@ -393,6 +401,7 @@
   <data name="TwitchMemberSetting.Errors.MissingManageRoles" xml:space="preserve"><value>Bot にロール管理権限がありません。</value></data>
   <data name="TwitchMemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>@everyone ロールは使用できません。</value></data>
   <data name="TwitchMemberSetting.Errors.ManagedRole" xml:space="preserve"><value>連携サービスが管理するロールは使用できません。</value></data>
+  <data name="TwitchMemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>このロールはすでに YouTube メンバーシップ認証で使用されています。YouTube と Twitch の認証には異なるロールを使用してください。</value></data>
   <data name="TwitchMemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>共通ロールは Bot の最高ロールより下に配置してください。</value></data>
   <data name="TwitchMemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定は保存されましたが、Discord ロールの同期が完了していません。権限の問題を修正するか、一時的なエラーが解消されてから、同じ設定を再実行してください。</value></data>
   <data name="TwitchMemberSetting.Errors.DeletionPending" xml:space="preserve"><value>このチャンネルの設定と関連ロールが完全に削除されていないため、再設定できません。Bot は 1 時間ごとに再試行します。ロール権限を修正し、削除が完了してから追加してください。</value></data>
@@ -401,7 +410,7 @@
   <data name="TwitchMemberSetting.Errors.NotConfigured" xml:space="preserve"><value>この Twitch チャンネルにはサブスク認証が設定されていません。</value></data>
   <data name="TwitchMemberSetting.Errors.RemovePending" xml:space="preserve"><value>一部のロールを削除できなかったため、設定と後で再試行するために必要なデータを保持しました。</value></data>
   <data name="TwitchMemberSetting.Errors.NoCheckedMembers" xml:space="preserve"><value>現在、認証済みの Twitch サブスクライバーはいません。</value></data>
-  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク認証に成功しました（Tier `{2}`）。</value></data>
+  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク認証に成功しました（`{2}`）。</value></data>
   <data name="TwitchMember.StatusLog.Removed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` をサブスクしていないため、関連ロールを削除しました。</value></data>
   <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク確認に成功しましたが、Discord ロールの同期に失敗しました。後で再試行します。</value></data>
   <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` のサブスク条件を満たしていませんが、Discord ロールの削除に失敗しました。後で再試行します。</value></data>

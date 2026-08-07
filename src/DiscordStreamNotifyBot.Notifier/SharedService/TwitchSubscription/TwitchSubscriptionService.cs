@@ -3,6 +3,7 @@ using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService.Member;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using System.Collections.Concurrent;
 
@@ -24,7 +25,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         private readonly TwitchAuthorizationTokenService _tokenService;
         private readonly TwitchSubscriptionApiClient _apiClient;
         private readonly TwitchSubscriptionRoleService _roleService;
-        private readonly TwitchSubscriptionOperationCoordinator _operationCoordinator;
+        private readonly MemberOperationCoordinator _operationCoordinator;
         private readonly NotifierMetrics _metrics;
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
@@ -43,7 +44,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             TwitchAuthorizationTokenService tokenService,
             TwitchSubscriptionApiClient apiClient,
             TwitchSubscriptionRoleService roleService,
-            TwitchSubscriptionOperationCoordinator operationCoordinator,
+            MemberOperationCoordinator operationCoordinator,
             NotifierMetrics metrics,
             BotLocalizer localizer,
             GuildLocaleService guildLocaleService)
@@ -221,6 +222,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             var configs = await db.GuildTwitchSubscriptionConfig.AsNoTracking()
                 .Where(x => x.GuildId == guildId && broadcasterIds.Contains(x.BroadcasterId))
                 .ToDictionaryAsync(x => x.BroadcasterId, cancellationToken);
+            MemberRoleOwnershipSnapshot ownership = await _roleService.LoadOwnershipSnapshotAsync(
+                guildId, cancellationToken);
             bool cleanupComplete = true;
             foreach (var check in checks.ToArray())
             {
@@ -230,7 +233,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     continue;
                 }
                 if (!configs.TryGetValue(check.BroadcasterId, out var config) ||
-                    await _roleService.RemoveSubscriptionRolesAsync(config, discordUserId, cancellationToken))
+                    await _roleService.RemoveSubscriptionRolesAsync(
+                        config, discordUserId, ownership, cancellationToken))
                 {
                     db.TwitchSubscriptionCheck.Remove(check);
                 }
@@ -390,12 +394,15 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             var configs = await db.GuildTwitchSubscriptionConfig.AsNoTracking()
                 .Where(x => x.GuildId == guildId && broadcasterIds.Contains(x.BroadcasterId))
                 .ToListAsync(cancellationToken);
+            MemberRoleOwnershipSnapshot ownership = await _roleService.LoadOwnershipSnapshotAsync(
+                guildId, cancellationToken);
             foreach (var check in checks.ToArray())
             {
                 var config = configs.FirstOrDefault(x => x.GuildId == check.GuildId && x.BroadcasterId == check.BroadcasterId);
                 if (config?.DeletionPending == true)
                     continue;
-                if (config == null || await _roleService.RemoveSubscriptionRolesAsync(config, discordUserId, cancellationToken))
+                if (config == null || await _roleService.RemoveSubscriptionRolesAsync(
+                    config, discordUserId, ownership, cancellationToken))
                 {
                     db.TwitchSubscriptionCheck.Remove(check);
                     if (config != null && previouslyChecked.Contains(check.Id))
@@ -532,7 +539,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 await db.SaveChangesAsync(cancellationToken);
                 if (synchronized && (!wasChecked || previousTier != result.Tier))
                     await LogStatusAsync(guildId, "TwitchMember.StatusLog.Verified", cancellationToken,
-                        discordUserId, config.BroadcasterDisplayName, result.Tier);
+                        discordUserId, config.BroadcasterDisplayName,
+                        Interaction.TwitchMember.TwitchMember.FormatTier(result.Tier));
                 else if (!synchronized)
                     await LogStatusAsync(guildId, "TwitchMember.StatusLog.RoleFailed", cancellationToken,
                         discordUserId, config.BroadcasterDisplayName);
@@ -700,12 +708,14 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     .ActiveConfigurations()
                     .Where(x => x.GuildId == user.Guild.Id && broadcasterIds.Contains(x.BroadcasterId))
                     .ToListAsync(_lifecycleCancellation.Token);
+                MemberRoleOwnershipSnapshot ownership = await _roleService.LoadOwnershipSnapshotAsync(
+                    user.Guild.Id, _lifecycleCancellation.Token);
                 foreach (var check in checks)
                 {
                     var config = configs.FirstOrDefault(x => x.BroadcasterId == check.BroadcasterId);
                     if (config != null)
                         await _roleService.SynchronizeSubscribedRolesAsync(
-                            config, user.Id, check.Tier, _lifecycleCancellation.Token);
+                            config, user.Id, check.Tier, ownership, _lifecycleCancellation.Token);
                 }
             }
             catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested)
@@ -756,6 +766,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 var checks = await guildDb.TwitchSubscriptionCheck.AsNoTracking()
                     .Where(x => x.GuildId == guildId && x.IsChecked && !x.PendingRoleRemoval)
                     .ToListAsync(cancellationToken);
+                MemberRoleOwnershipSnapshot ownership = await _roleService.LoadOwnershipSnapshotAsync(
+                    guildId, cancellationToken);
                 var checksByBroadcaster = checks
                     .GroupBy(x => x.BroadcasterId)
                     .ToDictionary(x => x.Key, x => x.ToArray(), StringComparer.Ordinal);
@@ -779,7 +791,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                             .Select(x => x.DiscordUserId)
                             .ToHashSet();
                         foreach (SocketGuildUser member in role.Members.Where(x => !validUsers.Contains(x.Id)).ToArray())
-                            await _roleService.RemoveOrphanRoleAsync(guild, member.Id, role.Id, cancellationToken);
+                            await _roleService.RemoveOrphanRoleAsync(
+                                guild, member.Id, role.Id, ownership, cancellationToken);
                     }
                 }
 
@@ -796,7 +809,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         .Select(x => x.DiscordUserId)
                         .ToHashSet();
                     foreach (SocketGuildUser member in sharedRole.Members.Where(x => !validUsers.Contains(x.Id)).ToArray())
-                        await _roleService.RemoveOrphanRoleAsync(guild, member.Id, sharedRole.Id, cancellationToken);
+                        await _roleService.RemoveOrphanRoleAsync(
+                            guild, member.Id, sharedRole.Id, ownership, cancellationToken);
                 }
             }
         }

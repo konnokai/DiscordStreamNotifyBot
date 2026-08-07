@@ -66,6 +66,21 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
+        public async Task VerificationLogChannelIsASharedUtilityAdministratorCommand()
+        {
+            using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
+            SlashCommandInfo command = fixture.Interactions.SlashCommands.Single(command =>
+                command.Module.SlashGroupName == "utility" && command.Name == "set-verification-log-channel");
+
+            Assert.Equal(GuildPermission.Administrator, command.DefaultMemberPermissions);
+            SlashCommandParameterInfo channel = Assert.Single(command.Parameters);
+            AssertParameter(channel, "log-channel", typeof(ITextChannel), true);
+            Assert.DoesNotContain(fixture.Interactions.SlashCommands, command =>
+                command.Module.SlashGroupName == "youtube-member-set" &&
+                command.Name == "set-notice-member-status-channel");
+        }
+
+        [Fact]
         public async Task YoutubeSetMessageKeepsParameterOrderTypesAndOptionality()
         {
             using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
@@ -107,6 +122,40 @@ namespace DiscordStreamNotifyBot.Tests
             SlashCommandParameterInfo channel = Assert.Single(remove.Parameters);
             AssertParameter(channel, "channel", typeof(string), true);
             Assert.True(channel.IsAutocomplete);
+        }
+
+        [Fact]
+        public async Task YoutubeMemberCommandsUseDedicatedGroupsAndPreserveLeafNames()
+        {
+            using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
+            string[] userCommands = fixture.Interactions.SlashCommands
+                .Where(command => command.Module.SlashGroupName == "youtube-member")
+                .Select(command => command.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal([
+                "cancel-member-check",
+                "check",
+                "list-can-check-channel",
+                "show-my-youtube-account",
+                "unlink"
+            ], userCommands);
+
+            string[] settingCommands = fixture.Interactions.SlashCommands
+                .Where(command => command.Module.SlashGroupName == "youtube-member-set")
+                .Select(command => command.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal([
+                "add-member-check",
+                "clear-check-video",
+                "list-checked-member",
+                "remove-member-check",
+                "set-check-video"
+            ], settingCommands);
+
+            Assert.DoesNotContain(fixture.Interactions.SlashCommands,
+                command => command.Module.SlashGroupName is "member" or "member-set");
         }
 
         private static void AssertParameter(

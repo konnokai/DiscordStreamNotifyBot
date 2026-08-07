@@ -1,17 +1,27 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService.Member;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 {
-    [Group("member", "YouTube 會限驗證相關指令")]
+    [Group("youtube-member", "YouTube 會限驗證相關指令")]
     public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
         private readonly MainDbService _dbService;
-        public YoutubeMember(MainDbService dbService)
+        private readonly MemberOperationCoordinator _operationCoordinator;
+        private readonly YoutubeMemberRoleService _roleService;
+
+        public YoutubeMember(
+            MainDbService dbService,
+            MemberOperationCoordinator operationCoordinator,
+            YoutubeMemberRoleService roleService)
         {
             _dbService = dbService;
+            _operationCoordinator = operationCoordinator;
+            _roleService = roleService;
         }
 
         [RequireContext(ContextType.Guild)]
@@ -28,70 +38,64 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
             try
             {
+                List<DataBase.Table.GuildYoutubeMemberConfig> guildYoutubeMemberConfigs;
                 using (var db = _dbService.GetDbContext())
                 {
-                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.AsNoTracking().Where((x) => x.GuildId == Context.Guild.Id);
-                    if (!guildYoutubeMemberConfigs.Any())
+                    guildYoutubeMemberConfigs = await db.GuildYoutubeMemberConfig.AsNoTracking()
+                        .Where(x => x.GuildId == Context.Guild.Id && !x.DeletionPending)
+                        .ToListAsync(GracefulShutdown.Token);
+                }
+                if (guildYoutubeMemberConfigs.Count == 0)
+                {
+                    await SendLocalizedErrorAsync("Member.Errors.NotConfigured", true);
+                    return;
+                }
+
+                if (guildYoutubeMemberConfigs.Any(x => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
+                {
+                    await SendLocalizedErrorAsync("Member.Errors.Initializing", true);
+                    return;
+                }
+
+                if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
+                {
+                    string locale = await GetLocaleAsync(true);
+                    await SendLocalizedErrorAsync("Member.Errors.LoginRequired", true, true,
+                        Format.Url(BotLocalizer.Get("Common.Website", locale), "https://stream-bot.konnokai.me/"));
+                    return;
+                }
+
+                if (guildYoutubeMemberConfigs.Count > 25)
+                {
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.SelectLimit", true, true, 25);
+                    return;
+                }
+
+                if (guildYoutubeMemberConfigs.Count == 1)
+                {
+                    if (!await QueueSingleConfigurationCheckAsync(guildYoutubeMemberConfigs[0].MemberCheckChannelId))
                     {
-                        await SendLocalizedErrorAsync("Member.Errors.NotConfigured", true);
+                        await SendLocalizedErrorAsync("Components.Invalid", true, true);
                         return;
                     }
+                    await SendLocalizedConfirmAsync("Member.CheckQueuedWithDmNotice", true, true, 5);
+                }
+                else
+                {
+                    // Todo: 超過 25 個選項時需提供換頁的選項
+                    SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
+                       .WithPlaceholder(BotLocalizer.Get("Member.Select.ChannelPlaceholder", await GetLocaleAsync(true)))
+                       .WithMinValues(1)
+                       .WithMaxValues(guildYoutubeMemberConfigs.Count)
+                        .WithCustomId($"youtube-member-check:{Context.Guild.Id}:{Context.User.Id}");
 
-                    if (guildYoutubeMemberConfigs.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle) || x.MemberCheckVideoId == "-"))
-                    {
-                        await SendLocalizedErrorAsync("Member.Errors.Initializing", true);
-                        return;
-                    }
+                    foreach (var item in guildYoutubeMemberConfigs)
+                        selectMenuBuilder.AddOption(item.MemberCheckChannelTitle, item.MemberCheckChannelId);
 
-                    if (!await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
-                    {
-                        string locale = await GetLocaleAsync(true);
-                        await SendLocalizedErrorAsync("Member.Errors.LoginRequired", true, true,
-                            Format.Url(BotLocalizer.Get("Common.Website", locale), "https://stream-bot.konnokai.me/"));
-                        return;
-                    }
-
-                    if (guildYoutubeMemberConfigs.Count() == 1)
-                    {
-                        string locale = SupportedLocale.Normalize(Context.Interaction.UserLocale);
-                        var memberCheck = db.YoutubeMemberCheck.FirstOrDefault((x) =>
-                            x.UserId == Context.User.Id &&
-                            x.GuildId == Context.Guild.Id &&
-                            x.CheckYTChannelId == guildYoutubeMemberConfigs.First().MemberCheckChannelId);
-                        if (memberCheck == null)
-                        {
-                            db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck()
-                            {
-                                UserId = Context.User.Id,
-                                GuildId = Context.Guild.Id,
-                                CheckYTChannelId = guildYoutubeMemberConfigs.First().MemberCheckChannelId,
-                                Locale = locale
-                            });
-                        }
-                        else
-                        {
-                            memberCheck.Locale = locale;
-                        }
-                        db.SaveChanges();
-                        await SendLocalizedConfirmAsync("Member.CheckQueuedWithDmNotice", true, true, 5);
-                    }
-                    else
-                    {
-                        // Todo: 超過 25 個選項時需提供換頁的選項
-                        SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
-                           .WithPlaceholder(BotLocalizer.Get("Member.Select.ChannelPlaceholder", await GetLocaleAsync(true)))
-                           .WithMinValues(1)
-                           .WithMaxValues(guildYoutubeMemberConfigs.Count())
-                           .WithCustomId($"member:check:{Context.Guild.Id}:{Context.User.Id}");
-
-                        foreach (var item in guildYoutubeMemberConfigs)
-                            selectMenuBuilder.AddOption(item.MemberCheckChannelTitle, item.MemberCheckChannelId);
-
-                        string locale = await GetLocaleAsync(true);
-                        await Context.Interaction.FollowupAsync(BotLocalizer.Get("Member.Select.Description", locale), components: new ComponentBuilder()
-                       .WithSelectMenu(selectMenuBuilder)
-                       .Build(), ephemeral: true);
-                    }
+                    string locale = await GetLocaleAsync(true);
+                    await Context.Interaction.FollowupAsync(BotLocalizer.Get("Member.Select.Description", locale), components: new ComponentBuilder()
+                   .WithSelectMenu(selectMenuBuilder)
+                   .Build(), ephemeral: true);
                 }
             }
             catch (Exception ex)
@@ -99,6 +103,65 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 Log.Error(ex.Demystify(), "Member Check Error");
                 await SendLocalizedErrorAsync("Errors.Unknown", true);
             }
+        }
+
+        /// <summary>單一設定也要使用與選單相同的 user→guild 鎖與 fresh read，跨 instance 唯一鍵競爭時重讀後安全 requeue。</summary>
+        private async Task<bool> QueueSingleConfigurationCheckAsync(string channelId)
+        {
+            string locale = SupportedLocale.Normalize(Context.Interaction.UserLocale);
+            await using var userLock = await _operationCoordinator.LockUserAsync(Context.User.Id, GracefulShutdown.Token);
+            await using var guildLock = await _operationCoordinator.LockGuildAsync(Context.Guild.Id, GracefulShutdown.Token);
+            try
+            {
+                using var db = _dbService.GetDbContext();
+                var config = await db.GuildYoutubeMemberConfig.AsNoTracking().SingleOrDefaultAsync(x =>
+                    x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId && !x.DeletionPending,
+                    GracefulShutdown.Token);
+                if (!YoutubeMemberPolicies.IsActiveConfiguration(config))
+                    return false;
+
+                var check = await db.YoutubeMemberCheck.SingleOrDefaultAsync(x =>
+                    x.UserId == Context.User.Id && x.GuildId == Context.Guild.Id && x.CheckYTChannelId == channelId,
+                    GracefulShutdown.Token);
+                if (check == null)
+                {
+                    db.YoutubeMemberCheck.Add(new DataBase.Table.YoutubeMemberCheck
+                    {
+                        UserId = Context.User.Id,
+                        GuildId = Context.Guild.Id,
+                        CheckYTChannelId = channelId,
+                        Locale = locale
+                    });
+                }
+                else
+                    ApplySingleConfigurationQueue(check, locale);
+                await db.SaveChangesAsync(GracefulShutdown.Token);
+                return true;
+            }
+            catch (DbUpdateException)
+            {
+                // 其他 Notifier instance 剛插入相同自然鍵時，重新讀取並將它轉回待驗證而非回傳 500。
+                using var retryDb = _dbService.GetDbContext();
+                var existing = await retryDb.YoutubeMemberCheck.SingleOrDefaultAsync(x =>
+                    x.UserId == Context.User.Id && x.GuildId == Context.Guild.Id && x.CheckYTChannelId == channelId,
+                    GracefulShutdown.Token);
+                if (existing == null)
+                    return false;
+                ApplySingleConfigurationQueue(existing, locale);
+                await retryDb.SaveChangesAsync(GracefulShutdown.Token);
+                return true;
+            }
+        }
+
+        private static void ApplySingleConfigurationQueue(DataBase.Table.YoutubeMemberCheck check, string locale)
+        {
+            // 必須與 YoutubeMemberComponent 的 selection diff 保持一致；重試同樣不可降級 verified row。
+            if (YoutubeMemberPolicies.DecideSingleConfigurationQueue(check) ==
+                YoutubeMemberSingleConfigurationQueueAction.RequeuePendingRoleRemoval)
+            {
+                YoutubeMemberPolicies.QueueVerification(check);
+            }
+            check.Locale = locale;
         }
 
         [RequireContext(ContextType.Guild)]
@@ -111,27 +174,43 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             {
                 try
                 {
-                    var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.UserId == Context.User.Id && x.GuildId == Context.Guild.Id);
+                    await using var userLock = await _operationCoordinator.LockUserAsync(
+                        Context.User.Id, GracefulShutdown.Token);
+                    await using var guildLock = await _operationCoordinator.LockGuildAsync(
+                        Context.Guild.Id, GracefulShutdown.Token);
+                    var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.UserId == Context.User.Id && x.GuildId == Context.Guild.Id).ToList();
                     if (!youtubeMemberChecks.Any())
                     {
                         await SendLocalizedErrorAsync("Member.Errors.NoActiveCheck", true);
                         return;
                     }
 
-                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
-                    foreach (var item in guildYoutubeMemberConfigs)
-                    {
-                        try
-                        {
-                            await Context.Client.Rest.RemoveRoleAsync(Context.Guild.Id, Context.User.Id, item.MemberCheckGrantRoleId);
-                        }
-                        catch { }
-                    }
-
-                    db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
+                    foreach (var item in youtubeMemberChecks)
+                        YoutubeMemberPolicies.QueueRoleRemoval(item);
                     db.SaveChanges();
 
-                    await SendLocalizedConfirmAsync("Member.CheckCancelled", true, true);
+                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.AsNoTracking()
+                        .Where((x) => x.GuildId == Context.Guild.Id).ToDictionary(x => x.MemberCheckChannelId);
+                    bool cleanupComplete = true;
+                    foreach (var item in youtubeMemberChecks)
+                    {
+                        if (!guildYoutubeMemberConfigs.TryGetValue(item.CheckYTChannelId, out var config))
+                        {
+                            cleanupComplete = false;
+                            continue;
+                        }
+
+                        if (await _roleService.RemoveAsync(config, Context.User.Id, GracefulShutdown.Token))
+                            db.YoutubeMemberCheck.Remove(item);
+                        else
+                            cleanupComplete = false;
+                    }
+                    db.SaveChanges();
+
+                    if (cleanupComplete)
+                        await SendLocalizedConfirmAsync("Member.CheckCancelled", true, true);
+                    else
+                        await SendLocalizedErrorAsync("Member.Errors.RoleCleanupPending", true, true);
                 }
                 catch (Exception ex)
                 {
@@ -159,11 +238,11 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     if (!await PromptUserConfirmAsync("Member.UnlinkPrompt"))
                         return;
 
-                    await Bot.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
-
                     try
                     {
                         await _service.RevokeUserGoogleCertAsync(Context.User.Id.ToString());
+                        // 本 shard 已保存 cleanup intent 並刪除本機 token，其他 shard 僅用此 hint 補做 Discord cleanup。
+                        await Bot.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
                         await SendLocalizedConfirmAsync("Member.Unlinked", true, true);
                     }
                     catch (NullReferenceException nullEx)
@@ -191,7 +270,8 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         {
             using (var db = _dbService.GetDbContext())
             {
-                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == Context.Guild.Id);
+                var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig
+                    .Where((x) => x.GuildId == Context.Guild.Id && !x.DeletionPending);
                 if (!guildYoutubeMemberConfigs.Any())
                 {
                     await SendLocalizedErrorAsync("Member.Errors.ChannelListEmpty");

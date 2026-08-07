@@ -14,6 +14,8 @@
   <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>傳送訊息給 Bot 擁有者</value></data>
   <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>設定接收 Bot 擁有者公告的頻道</value></data>
   <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>用來接收公告的文字或公告頻道</value></data>
+  <data name="utility.set-verification-log-channel.description" xml:space="preserve"><value>設定 YouTube 會員與 Twitch 訂閱驗證紀錄頻道</value></data>
+  <data name="utility.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>接收會員與訂閱驗證狀態紀錄的文字頻道</value></data>
 
   <data name="help.description" xml:space="preserve"><value>查詢指令與使用說明</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>顯示所有可用的指令模組</value></data>
@@ -112,28 +114,26 @@
   <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>顯示已標記警告的 TwitCasting 監測頻道；可能包含中之人或前世頻道</value></data>
   <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
 
-  <data name="member.description" xml:space="preserve"><value>YouTube 會員資格驗證</value></data>
-  <data name="member.check.description" xml:space="preserve"><value>確認網站綁定並開始會限驗證</value></data>
-  <data name="member.cancel-member-check.description" xml:space="preserve"><value>取消本伺服器的會限驗證並移除身分組</value></data>
-  <data name="member.unlink.description" xml:space="preserve"><value>解除 Discord 與 Google 綁定並移除授權</value></data>
-  <data name="member.list-can-check-channel.description" xml:space="preserve"><value>顯示目前可供驗證的會限頻道</value></data>
-  <data name="member.show-my-youtube-account.description" xml:space="preserve"><value>顯示目前綁定的 YouTube 帳號</value></data>
+  <data name="youtube-member.description" xml:space="preserve"><value>YouTube 會員資格驗證</value></data>
+  <data name="youtube-member.check.description" xml:space="preserve"><value>確認網站綁定並開始會限驗證</value></data>
+  <data name="youtube-member.cancel-member-check.description" xml:space="preserve"><value>取消本伺服器的會限驗證並移除身分組</value></data>
+  <data name="youtube-member.unlink.description" xml:space="preserve"><value>解除 Discord 與 Google 綁定並移除授權</value></data>
+  <data name="youtube-member.list-can-check-channel.description" xml:space="preserve"><value>顯示目前可供驗證的會限頻道</value></data>
+  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>顯示目前綁定的 YouTube 帳號</value></data>
 
-  <data name="member-set.description" xml:space="preserve"><value>YouTube 會員限定驗證設定</value></data>
-  <data name="member-set.set-notice-member-status-channel.description" xml:space="preserve"><value>設定會限驗證紀錄頻道</value></data>
-  <data name="member-set.set-notice-member-status-channel.log-channel.description" xml:space="preserve"><value>接收驗證狀態紀錄的文字頻道</value></data>
-  <data name="member-set.add-member-check.description" xml:space="preserve"><value>新增會限驗證頻道，並設定驗證成功後授予的身分組</value></data>
-  <data name="member-set.add-member-check.channel-url.description" xml:space="preserve"><value>要驗證會員資格的 YouTube 頻道</value></data>
-  <data name="member-set.add-member-check.role.description" xml:space="preserve"><value>驗證成功後授予的身分組</value></data>
-  <data name="member-set.remove-member-check.description" xml:space="preserve"><value>移除會限驗證頻道</value></data>
-  <data name="member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>要移除驗證的 YouTube 頻道</value></data>
-  <data name="member-set.set-check-video.description" xml:space="preserve"><value>手動指定會限驗證使用的影片</value></data>
-  <data name="member-set.set-check-video.channel.description" xml:space="preserve"><value>已設定會限驗證的 YouTube 頻道</value></data>
-  <data name="member-set.set-check-video.video.description" xml:space="preserve"><value>會限影片網址或 11 碼影片 ID</value></data>
-  <data name="member-set.clear-check-video.description" xml:space="preserve"><value>改回自動挑選會限驗證影片</value></data>
-  <data name="member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>已設定會限驗證的 YouTube 頻道</value></data>
-  <data name="member-set.list-checked-member.description" xml:space="preserve"><value>顯示目前已成功驗證的成員</value></data>
-  <data name="member-set.list-checked-member.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="youtube-member-set.description" xml:space="preserve"><value>YouTube 會員限定驗證設定</value></data>
+  <data name="youtube-member-set.add-member-check.description" xml:space="preserve"><value>新增會限驗證頻道，並設定驗證成功後授予的身分組</value></data>
+  <data name="youtube-member-set.add-member-check.channel-url.description" xml:space="preserve"><value>要驗證會員資格的 YouTube 頻道</value></data>
+  <data name="youtube-member-set.add-member-check.role.description" xml:space="preserve"><value>驗證成功後授予的身分組</value></data>
+  <data name="youtube-member-set.remove-member-check.description" xml:space="preserve"><value>移除會限驗證頻道</value></data>
+  <data name="youtube-member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>要移除驗證的 YouTube 頻道</value></data>
+  <data name="youtube-member-set.set-check-video.description" xml:space="preserve"><value>手動指定會限驗證使用的影片</value></data>
+  <data name="youtube-member-set.set-check-video.channel.description" xml:space="preserve"><value>已設定會限驗證的 YouTube 頻道</value></data>
+  <data name="youtube-member-set.set-check-video.video.description" xml:space="preserve"><value>會限影片網址或 11 碼影片 ID</value></data>
+  <data name="youtube-member-set.clear-check-video.description" xml:space="preserve"><value>改回自動挑選會限驗證影片</value></data>
+  <data name="youtube-member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>已設定會限驗證的 YouTube 頻道</value></data>
+  <data name="youtube-member-set.list-checked-member.description" xml:space="preserve"><value>顯示目前已成功驗證的成員</value></data>
+  <data name="youtube-member-set.list-checked-member.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
   <data name="twitch-member.description" xml:space="preserve"><value>Twitch 訂閱驗證</value></data>
   <data name="twitch-member.check.description" xml:space="preserve"><value>立即確認 Twitch 訂閱資格</value></data>
   <data name="twitch-member.cancel-subscription-check.description" xml:space="preserve"><value>取消此伺服器的 Twitch 訂閱驗證</value></data>

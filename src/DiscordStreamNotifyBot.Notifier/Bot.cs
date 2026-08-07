@@ -279,11 +279,16 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<GuildLocaleService>()
                 .AddSingleton(_metrics)
                 .AddSingleton<Shared.YoutubeApiService>()
+                .AddSingleton(SharedService.Google.GoogleOAuthOperationLock.Create(Redis))
                 .AddSingleton<SharedService.EmojiService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionApiClient>()
-                .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionOperationCoordinator>()
+                .AddSingleton<SharedService.Member.MemberOperationCoordinator>()
+                .AddSingleton<SharedService.Member.MemberRoleOwnershipService>()
+                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberRoleService>()
+                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberApiClient>()
+                .AddSingleton<SharedService.YoutubeMember.YoutubeMemberAuthorizationService>()
                 .AddSingleton<SharedService.TwitchSubscription.TwitchAuthorizationTokenService>()
                 .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionRoleService>()
                 .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionService>()
@@ -330,6 +335,7 @@ namespace DiscordStreamNotifyBot
             var twitchSubscriptionService = serviceProvider
                 .GetRequiredService<SharedService.TwitchSubscription.TwitchSubscriptionService>();
             twitchSubscriptionService.Start();
+            serviceProvider.GetRequiredService<SharedService.YoutubeMember.YoutubeMemberService>().Start();
             #endregion
 
             #region 通知匯流排消費（Notifier 的通知一律來自 bot:notify Redis Stream；消費啟動失敗 = 無法服務，直接結束交由重啟）
@@ -509,6 +515,7 @@ namespace DiscordStreamNotifyBot
                 await Task.Delay(5000);
             }
 
+            await serviceProvider.GetRequiredService<SharedService.YoutubeMember.YoutubeMemberService>().StopAsync();
             await twitchSubscriptionService.StopAsync();
             await serviceProvider
                 .GetRequiredService<SharedService.TwitchSubscription.TwitchAuthorizationTokenService>()

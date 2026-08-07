@@ -1,6 +1,6 @@
 # YouTube 會員驗證架構重構計畫
 
-> 狀態：尚未開始實作
+> 狀態：實作與隔離部署 rehearsal 已完成，待真實 Discord／Google manual acceptance
 >
 > 建立日期：2026-08-04
 >
@@ -371,6 +371,7 @@ OAuth `status` 維持 `linked | unlinked | invalid`，不得把 Discord role cle
 5. Commit 後 publish `member.revokeToken` wake-up hint。
 6. 有 pending rows 時回傳 HTTP 202 與 typed body。
 7. 沒有 pending rows 時回傳 HTTP 200。
+8. 若 revoke 期間 token 已被新連結取代，保留新 token/check state 並回傳 HTTP 409 retryable response。
 
 建議 response：
 
@@ -428,101 +429,105 @@ Redis publish 失敗不得回滾已 durable 保存的 unlink intent；Bot 週期
 
 ### Phase 0：Baseline 與 characterization
 
-- [ ] 確認 Bot HEAD 以 `d060f08` 為基準，三個 repo status 已記錄。
-- [ ] 跑 Bot、Backend、Frontend baseline build/test/lint。
-- [ ] 新增 Slash rename、component route、DB transition、Backend JSON contract 的失敗測試或 characterization tests。
-- [ ] 確認現有 YouTube managed-role 與 Twitch select-menu isolation tests 保留。
+- [x] 確認 Bot HEAD 以 `d060f08` 為基準，三個 repo status 已記錄。
+- [x] 跑 Bot、Backend、Frontend baseline build/test/lint。
+- [x] 新增 Slash rename、component route、DB transition、Backend JSON contract 的失敗測試或 characterization tests。
+- [x] 確認現有 YouTube managed-role 與 Twitch select-menu isolation tests 保留。
 
 驗證：三個 repo baseline command 全部成功；新增測試只因尚未實作目標行為而失敗。
 
 ### Phase 1：Schema 與 migration
 
-- [ ] 更新 Bot entities 與 `MainDbContext` indexes。
-- [ ] 產生 migration/designer/snapshot。
-- [ ] 產生增量冪等 SQL 並更新 `all.sql`。
-- [ ] 新增 real-MySQL migration/constraint tests。
-- [ ] 建立 production preflight SQL 或文件化查詢。
-- [ ] Backend entity mirror 新欄位，但不建立 migration。
+- [x] 更新 Bot entities 與 `MainDbContext` indexes。
+- [x] 產生 migration/designer/snapshot。
+- [x] 產生增量冪等 SQL 並更新 `all.sql`。
+- [x] 新增 real-MySQL migration/constraint tests。
+- [x] 建立 production preflight SQL 或文件化查詢。
+- [x] Backend entity mirror 新欄位，但不建立 migration。
 
 驗證：EF 無 pending model changes；generated SQL 與 checked-in SQL 一致；MySQL component tests 通過。
 
 ### Phase 2：共用操作與 role ownership
 
-- [ ] 將 Twitch coordinator 提升為共用 service，保持現有 Twitch tests 通過。
-- [ ] 新增跨平台 role reference/entitlement service。
-- [ ] YouTube/Twitch config validation 都拒絕新跨平台 role collision。
-- [ ] Twitch Tier role deletion 加入 YouTube reference guard。
-- [ ] 新增 legacy collision tests。
+- [x] 將 Twitch coordinator 提升為共用 service，保持現有 Twitch tests 通過。
+- [x] 新增跨平台 role reference/entitlement service。
+- [x] YouTube/Twitch config validation 都拒絕新跨平台 role collision。
+- [x] Twitch Tier role deletion 加入 YouTube reference guard。
+- [x] 新增 legacy collision tests。
 
 驗證：Twitch 既有 4-role policy 不退化；YouTube/Twitch 各種 grant/remove/delete 組合均不互相影響。
 
 ### Phase 3：YouTube interaction 與 state machine
 
-- [ ] Rename Slash groups 與所有三語 metadata/help/snapshot。
-- [ ] 建立 `YoutubeMemberComponent`，移除 raw global select handler。
-- [ ] 實作 selection diff 與 legacy component expired response。
-- [ ] 實作 queued/verified/removal-pending transitions。
-- [ ] Cancel/unlink/non-member 在 Discord mutation 前保存 intent。
-- [ ] 以 row ID/state reload 防止 stale provider result。
+- [x] Rename Slash groups 與所有三語 metadata/help/snapshot。
+- [x] 建立 `YoutubeMemberComponent`，移除 raw global select handler。
+- [x] 實作 selection diff 與 legacy component expired response。
+- [x] 實作 queued/verified/removal-pending transitions。
+- [x] Cancel/unlink/non-member 在 Discord mutation 前保存 intent。
+- [x] 以 row ID/state reload 防止 stale provider result。
 
 驗證：command contract、localization、component authorization、wrong-guild/user/value、stale-result tests 通過。
 
 ### Phase 4：Role/config durability
 
-- [ ] 建立 YouTube role service。
-- [ ] 實作 previous-role repair 與 third-role rejection。
-- [ ] 實作 deletion-pending complete retry path。
-- [ ] Rejoin restore 排除 pending/deletion states。
-- [ ] Orphan reconciliation 使用跨平台 entitlement snapshot。
-- [ ] 缺少 log channel/permission 不刪 config。
+- [x] 建立 YouTube role service。
+- [x] 實作 previous-role repair 與 third-role rejection。
+- [x] 實作 deletion-pending complete retry path。
+- [x] Rejoin restore 排除 pending/deletion states。
+- [x] Orphan reconciliation 使用跨平台 entitlement snapshot。
+- [x] 缺少 log channel/permission 不刪 config。
 
 驗證：注入 Discord role failure 後重啟可恢復；config deletion 即使 zero checks 仍完成；shared log failure 不造成資料損失。
 
 ### Phase 5：Provider 與 lifecycle
 
-- [ ] 將 provider call 封裝為 typed result client。
-- [ ] 移除 message-text destructive classification。
-- [ ] 移除 credential/token 序列化 log。
-- [ ] Raw timers 全部改為 tracked `PeriodicRunner` tasks。
-- [ ] Bot startup/shutdown 明確 start/stop YouTube service。
-- [ ] Redis/UserJoined subscriptions 可解除並 drain。
+- [x] 將 provider call 封裝為 typed result client。
+- [x] 移除 message-text destructive classification。
+- [x] 移除 credential/token 序列化 log。
+- [x] Raw timers 全部改為 tracked `PeriodicRunner` tasks。
+- [x] Bot startup/shutdown 明確 start/stop YouTube service。
+- [x] Redis/UserJoined subscriptions 可解除並 drain。
 
 驗證：timer 不重入、shutdown 可取消、temporary/quota/local failures 保留 entitlement、disabled mode 仍處理 pending cleanup。
 
 ### Phase 6：Backend
 
-- [ ] Mirror pending field。
-- [ ] GET account-links 回傳 cleanup state。
-- [ ] Google unlink durable 保存 pending intent。
-- [ ] DELETE 回傳 typed 200/202 response。
-- [ ] Redis revoke 保持原 channel/payload，只作 hint。
-- [ ] 新增 Google JSON/unlink/DB transition tests。
+- [x] Mirror pending field。
+- [x] GET account-links 回傳 cleanup state。
+- [x] Google unlink durable 保存 pending intent。
+- [x] DELETE 回傳 typed 200/202/409 response。
+- [x] Redis revoke 保持原 channel/payload，只作 hint。
+- [x] 新增 Google JSON/unlink/DB transition tests。
 
 驗證：linked、unlinked、invalid、pending cleanup、503 與 Redis publish failure cases 全部通過。
 
 ### Phase 7：Frontend
 
-- [ ] 更新 TypeScript contract。
-- [ ] 正確處理 unlink 200/202/401/503。
-- [ ] GoogleSection 顯示 `/youtube-member check` 與 cleanup pending。
-- [ ] Refresh failure 保留 last-known state。
-- [ ] 更新 Privacy 與 account label。
-- [ ] 檢查 mobile/desktop、keyboard、screen-reader live region。
+- [x] 更新 TypeScript contract。
+- [x] 正確處理 unlink 200/202/401/409/503。
+- [x] GoogleSection 顯示 `/youtube-member check` 與 cleanup pending。
+- [x] Refresh failure 保留 last-known state。
+- [x] 更新 Privacy 與 account label。
+- [x] 檢查 mobile/desktop、keyboard、screen-reader live region。
 
 驗證：build、ESLint、Stylelint、Prettier 全部通過；手動覆蓋 empty/linked/unlinked/invalid/pending/network failure。
 
 ### Phase 8：整合、文件與部署 rehearsal
 
-- [ ] 更新 Bot `AGENTS.md` 架構狀態。
-- [ ] 更新 Bot testing/token/member 文件。
-- [ ] 更新 Backend README account-links/shared-schema 契約。
-- [ ] 更新 Frontend README/Privacy。
-- [ ] 跑三個 repo 完整驗證。
-- [ ] 在 production-shaped DB rehearsal migration 與 rollback application binaries。
-- [ ] 驗證 Docker SIGTERM 與 stop grace period 足以 drain。
+- [x] 更新 Bot `AGENTS.md` 架構狀態。
+- [x] 更新 Bot testing/token/member 文件。
+- [x] 更新 Backend README account-links/shared-schema 契約。
+- [x] 更新 Frontend README/Privacy。
+- [x] 跑三個 repo 完整驗證。
+- [x] 在 production-shaped DB rehearsal migration 與 rollback application binaries。
+- [x] 驗證 Docker SIGTERM 與 stop grace period 足以 drain。
 - [ ] 執行 Discord manual acceptance matrix。
 
 驗證：全部 completion criteria 滿足後才可標記計畫完成。
+
+驗證紀錄（2026-08-05）：Bot Release build 通過、548 passed／33 environment-gated skipped，EF 無 pending model；Backend Release build 通過、51 passed；Frontend build、ESLint、Stylelint、Prettier 通過。增量與完整 SQL 已由最終 migration 重產比對。另於 SSH 測試主機以隔離的 MariaDB 10.11、Redis 8.4 與 .NET 8 SDK container 實跑 component tests，33 passed／0 skipped，包含完整 migration、preflight、constraint、token store 與兩 context row-lock/CAS。Chrome DevTools 已覆蓋 desktop/mobile、長字串、keyboard focus、live region、pending refresh failure 與 DELETE 200/202/401/409/503 mock contract；最終 accessibility、best practices、SEO、agentic browsing 均為 100，無 console error 或水平 overflow。
+
+同日 production-shaped rehearsal 由上一筆 migration 建立 MariaDB schema 並放入代表性舊資料；read-only preflight 無 blocker 後，checked-in 增量 SQL 連續執行兩次，migration history 維持單筆、舊資料 backfill 為 `false`／`null`、五個 indexes 正確建立且 duplicate natural key 被拒絕。Current Scraper 與基準 commit `d060f08` Scraper 均可在保留 additive schema 的情況下啟動，SIGTERM 後 exit 0，驗證優先回退 application binary 而不執行 schema Down。Notifier 另以不連 Discord 的 `Debug_DontRegisterCommand` rehearsal artifact 啟動完整 Redis consumer 與 YouTube/Twitch lifecycle，收到 `member.revokeToken` 後送 SIGTERM，在 1 秒內 drain 並 exit 0，低於 30 秒 stop grace。Rehearsal 期間發現 preflight 使用錯誤的 Twitch Tier 欄位名，已修正並加入直接執行 SQL 的 MySQL component regression test。真實 Discord／Google acceptance 尚未執行，因此計畫仍未完成。
 
 ## 16. 驗證命令
 

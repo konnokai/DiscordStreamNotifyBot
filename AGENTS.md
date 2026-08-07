@@ -12,6 +12,7 @@
 - 本地化第一階段的程式實作已完成，待手動 Discord 驗證：Slash group／command／parameter／choice 名稱固定使用英文 canonical，description 支援 `zh-TW`／`en-US`／`ja`；一般互動、Help、三平台背景通知與會限訊息維持三語，通知事件對本 shard guild 批次讀取 locale，通知 DTO 不攜帶 locale。
 - 自動化測試第一至四批已完成，第五批 Redis／MySQL component tests 已實跑通過；多 shard guild ownership 與外部 API request contract 待完成。細節見 [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)。
 - Twitch 訂閱驗證 Bot 端已實作：共用 MySQL OAuth token、provider secret 金鑰、跨程序 refresh lock、rotation 關閉 drain、Helix 訂閱查詢、可重試的設定刪除、Tier 角色、三語 Slash 指令及每小時複驗；正式 Twitch／Discord 行為仍需依計畫手動驗收。
+- YouTube 會員驗證已重構為 `/youtube-member`／`/youtube-member-set`、durable pending cleanup、role migration/deletion checkpoint、typed provider result 與可 drain 的 `PeriodicRunner`；Google callback/refresh/revoke 以 Redis DB1 per-user lease 加 MySQL unlink intent fence 跨 Bot/Backend 協調，SDK 不直接寫刪 authoritative token；YouTube/Twitch 共用 operation coordinator 與跨平台 role ownership 保護。Backend/Frontend 已同步 cleanup-pending contract，正式 MySQL migration 與 Discord acceptance 尚待維護窗口人工執行。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run

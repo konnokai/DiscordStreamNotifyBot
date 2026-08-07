@@ -23,6 +23,21 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 .ToArray();
         }
 
+        public static (ulong[] AddRoleIds, ulong[] RemoveRoleIds) GetSynchronizationDiff(
+            GuildTwitchSubscriptionConfig config,
+            string tier,
+            IReadOnlySet<ulong> currentRoleIds)
+        {
+            ulong tierRoleId = GetTierRoleId(config, tier);
+            ulong[] addRoleIds = new[] { config.SubscriberRoleId, tierRoleId }
+                .Where(x => x != 0 && !currentRoleIds.Contains(x))
+                .ToArray();
+            ulong[] removeRoleIds = GetOtherTierRoleIds(config, tier)
+                .Where(currentRoleIds.Contains)
+                .ToArray();
+            return (addRoleIds, removeRoleIds);
+        }
+
         public static string GetTierRoleName(string subscriberRoleName, string tier)
         {
             string suffix = tier switch

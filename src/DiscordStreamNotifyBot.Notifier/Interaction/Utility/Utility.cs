@@ -2,6 +2,7 @@
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Utility.Service;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 using System.Globalization;
 
@@ -112,6 +113,49 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
             string displayLanguage = _botLocalizer.GetLocaleDisplayName(selectedLocale, responseLocale);
             await Context.Interaction.SendConfirmAsync(_botLocalizer, responseLocale, "Utility.LanguageChanged",
                 false, true, displayLanguage);
+        }
+
+        [RequireContext(ContextType.Guild)]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [SlashCommand("set-verification-log-channel", "設定會員與訂閱驗證紀錄頻道")]
+        public async Task SetVerificationLogChannelAsync(
+            [Summary("log-channel", "紀錄頻道")] ITextChannel textChannel)
+        {
+            await DeferAsync(true);
+
+            using var db = _dbService.GetDbContext();
+            var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
+            string locale = await GetLocaleAsync(true);
+            if (!permissions.ViewChannel || !permissions.SendMessages)
+            {
+                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
+                    $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
+                        BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
+                        BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
+                return;
+            }
+
+            if (!permissions.EmbedLinks)
+            {
+                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
+                    $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
+                return;
+            }
+
+            await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
+
+            var guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == Context.Guild.Id);
+            if (guildConfig == null)
+            {
+                guildConfig = new DataBase.Table.GuildConfig { GuildId = Context.Guild.Id };
+                db.GuildConfig.Add(guildConfig);
+            }
+
+            guildConfig.LogMemberStatusChannelId = textChannel.Id;
+            await db.SaveChangesAsync(GracefulShutdown.Token);
+
+            await SendLocalizedConfirmAsync("MemberSetting.LogChannelChanged", true, false, textChannel);
         }
 
         [RequireContext(ContextType.Guild)]

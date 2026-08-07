@@ -134,6 +134,58 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
                 payload.RefreshToken == restored.RefreshToken);
         }
 
+        [MySqlComponentFact]
+        public async Task RefreshUsesCiphertextCasAndDurableUnlinkFence()
+        {
+            ulong userId = NextUserId();
+            string key = userId.ToString();
+            var store = CreateStore();
+            await store.StoreAsync(key, new StoredToken
+            {
+                AccessToken = "old-access",
+                RefreshToken = "old-refresh"
+            });
+
+            string expectedEncryptedToken;
+            await using (var db = _fixture.DbService.GetDbContext())
+            {
+                expectedEncryptedToken = await db.YoutubeMemberAccessToken.AsNoTracking()
+                    .Where(x => x.DiscordUserId == userId)
+                    .Select(x => x.EncryptedAccessToken)
+                    .SingleAsync();
+            }
+            Assert.True(await store.StoreRefreshIfCurrentAsync(
+                userId,
+                expectedEncryptedToken,
+                new StoredToken { AccessToken = "refreshed-access", RefreshToken = "refreshed-token" },
+                CancellationToken.None));
+
+            await using (var db = _fixture.DbService.GetDbContext())
+            {
+                string refreshedEncryptedToken = await db.YoutubeMemberAccessToken.AsNoTracking()
+                    .Where(x => x.DiscordUserId == userId)
+                    .Select(x => x.EncryptedAccessToken)
+                    .SingleAsync();
+                db.GoogleOAuthUnlinkIntent.Add(new GoogleOAuthUnlinkIntent
+                {
+                    DiscordUserId = userId,
+                    ExpectedEncryptedToken = refreshedEncryptedToken,
+                    DateAdded = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync();
+
+                Assert.False(await store.StoreRefreshIfCurrentAsync(
+                    userId,
+                    refreshedEncryptedToken,
+                    new StoredToken { AccessToken = "blocked-access", RefreshToken = "blocked-token" },
+                    CancellationToken.None));
+            }
+
+            StoredToken current = await store.GetAsync<StoredToken>(key);
+            Assert.Equal("refreshed-access", current.AccessToken);
+            Assert.Equal("refreshed-token", current.RefreshToken);
+        }
+
         private static ulong NextUserId()
             => (ulong)Random.Shared.NextInt64(1, long.MaxValue);
 

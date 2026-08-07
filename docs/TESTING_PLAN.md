@@ -97,6 +97,7 @@
 - [ ] 外部 API request contract：YouTube、Twitch EventSub、TwitCasting、Discord webhook。
 - [x] Twitch 訂閱 Helix 200/401/404/429/5xx、Tier/gift、refresh 表單與共用 token JSON 契約。
 - [x] Twitch 訂閱設定 deletion-pending／shared-role 修復 policy、refresh rotation graceful-shutdown drain lifecycle 與 migration 欄位 assertion。
+- [x] YouTube 會員 Slash/component contract、queued/verified/removal-pending state、跨平台 role ownership、provider 分類、lifecycle drain 與 migration constraint assertion。
 
 ### Component tests 執行方式
 

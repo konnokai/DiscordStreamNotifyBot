@@ -9,6 +9,10 @@
 > `TWITCH_SUBSCRIPTION_VERIFICATION_PLAN.md` 取代。現行實作使用部署 secret
 > `ProviderTokenEncryptionKey`，並已移除 `RedisDataStore`、`RedisTokenKeyProvisioner`、
 > `Utility.RedisKey` 與 `member.syncRedisToken`。下文保留原始決策脈絡，不代表現行契約。
+>
+> **生命週期更新（2026-08-05）**：Google unlink 與授權失效會先在 MySQL 將所有
+> `YoutubeMemberCheck` 標成 `PendingRoleRemoval`，再刪除本機 token；`member.revokeToken`
+> 只負責即時喚醒 Bot。角色清理失敗時保留 pending row，由週期工作重試。
 
 ## 目的
 

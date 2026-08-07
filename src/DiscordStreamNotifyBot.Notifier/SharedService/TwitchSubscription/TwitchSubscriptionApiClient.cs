@@ -87,7 +87,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 string body = await response.Content.ReadAsStringAsync(cancellationToken);
                 var payload = JsonConvert.DeserializeObject<TwitchSubscriptionResponse>(body);
                 TwitchSubscriptionData subscription = payload?.Data?.FirstOrDefault();
-                if (subscription == null || subscription.UserId != twitchUserId || subscription.BroadcasterId != broadcasterId)
+                if (subscription == null || subscription.BroadcasterId != broadcasterId)
                 {
                     _metrics.RecordTwitchSubscriptionProviderError(TwitchSubscriptionProviderError.InvalidResponse);
                     return Result(TwitchSubscriptionStatus.TemporaryFailure, twitchUserId, broadcasterId);
@@ -236,9 +236,6 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
             [JsonProperty("tier")]
             public string Tier { get; set; }
-
-            [JsonProperty("user_id")]
-            public string UserId { get; set; }
         }
     }
 }

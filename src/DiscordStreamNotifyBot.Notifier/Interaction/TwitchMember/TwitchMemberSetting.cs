@@ -39,7 +39,11 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
                 var candidates = await db.GuildTwitchSubscriptionConfig.AsNoTracking()
                     .ActiveConfigurations()
                     .Where(x => x.GuildId == context.Guild.Id)
-                    .Select(x => new AutocompleteCandidate(x.BroadcasterDisplayName, x.BroadcasterId))
+                    .Select(x => new AutocompleteCandidate(
+                        x.BroadcasterDisplayName,
+                        x.BroadcasterDisplayName,
+                        x.BroadcasterLogin,
+                        x.BroadcasterId))
                     .ToListAsync();
                 return AutocompletionResult.FromSuccess(AutocompleteSearch.Filter(candidates, value)
                     .Select(x => new AutocompleteResult(x.Name, x.Value)));
@@ -56,6 +60,29 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
             {
                 await SendLocalizedErrorAsync("Errors.FeatureDisabled");
                 return;
+            }
+
+            using (var db = _dbService.GetDbContext())
+            {
+                var guildConfig = await db.GuildConfig
+                    .SingleOrDefaultAsync(x => x.GuildId == Context.Guild.Id);
+                string locale = await GetLocaleAsync(true);
+                string setLogPath = CommandDisplayResolver.GetCommandPath(
+                    locale, "utility", "set-verification-log-channel");
+                if (guildConfig == null || guildConfig.LogMemberStatusChannelId == 0)
+                {
+                    await SendLocalizedErrorAsync(
+                        "MemberSetting.Errors.LogChannelRequired", false, true, setLogPath);
+                    return;
+                }
+                if (Context.Guild.GetTextChannel(guildConfig.LogMemberStatusChannelId) == null)
+                {
+                    guildConfig.LogMemberStatusChannelId = 0;
+                    await db.SaveChangesAsync(GracefulShutdown.Token);
+                    await SendLocalizedErrorAsync(
+                        "MemberSetting.Errors.LogChannelDeleted", false, true, setLogPath);
+                    return;
+                }
             }
 
             await DeferAsync(true);
@@ -92,12 +119,13 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
         [SlashCommand("remove-subscription-check", "移除 Twitch 訂閱驗證頻道")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task RemoveSubscriptionCheckAsync(
-            [Summary("channel", "已設定的 Twitch 頻道"), Autocomplete(typeof(ConfiguredBroadcasterAutocompleteHandler))] string broadcasterId)
+            [Summary("channel", "已設定的 Twitch 頻道"), Autocomplete(typeof(ConfiguredBroadcasterAutocompleteHandler))] string channel)
         {
             await DeferAsync(true);
             using var db = _dbService.GetDbContext();
             var config = await db.GuildTwitchSubscriptionConfig.AsNoTracking().SingleOrDefaultAsync(
-                x => x.GuildId == Context.Guild.Id && x.BroadcasterId == broadcasterId && !x.DeletionPending);
+                x => x.GuildId == Context.Guild.Id && !x.DeletionPending &&
+                    (x.BroadcasterDisplayName == channel || x.BroadcasterLogin == channel || x.BroadcasterId == channel));
             if (config == null)
             {
                 await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.NotConfigured", true);

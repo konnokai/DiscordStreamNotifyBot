@@ -12,6 +12,7 @@ namespace DiscordStreamNotifyBot.DataBase
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<GuildTwitchSubscriptionConfig> GuildTwitchSubscriptionConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
+        public DbSet<GoogleOAuthUnlinkIntent> GoogleOAuthUnlinkIntent { get; set; }
         public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
@@ -43,11 +44,35 @@ namespace DiscordStreamNotifyBot.DataBase
                 .HasMaxLength(16)
                 .IsRequired(false);
 
-            modelBuilder.Entity<YoutubeMemberCheck>()
-                .Property(x => x.Locale)
-                .HasColumnType("varchar(16)")
-                .HasMaxLength(16)
-                .IsRequired(false);
+            modelBuilder.Entity<GuildYoutubeMemberConfig>(entity =>
+            {
+                entity.Property(x => x.MemberCheckChannelId).HasColumnType("longtext").IsRequired();
+                entity.HasIndex(x => new { x.GuildId, x.MemberCheckChannelId })
+                    .IsUnique()
+                    .HasPrefixLength(0, 24);
+                entity.HasIndex(x => new { x.DeletionPending, x.GuildId });
+            });
+
+            modelBuilder.Entity<GoogleOAuthUnlinkIntent>(entity =>
+            {
+                entity.ToTable("google_oauth_unlink_intent");
+                entity.Property(x => x.ExpectedEncryptedToken).HasColumnType("longtext").IsRequired(false);
+                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
+            });
+
+            modelBuilder.Entity<YoutubeMemberCheck>(entity =>
+            {
+                entity.Property(x => x.CheckYTChannelId).HasColumnType("longtext").IsRequired();
+                entity.HasIndex(x => new { x.GuildId, x.UserId, x.CheckYTChannelId })
+                    .IsUnique()
+                    .HasPrefixLength(0, 0, 24);
+                entity.HasIndex(x => new { x.PendingRoleRemoval, x.GuildId });
+                entity.HasIndex(x => new { x.UserId, x.PendingRoleRemoval });
+                entity.Property(x => x.Locale)
+                    .HasColumnType("varchar(16)")
+                    .HasMaxLength(16)
+                    .IsRequired(false);
+            });
 
             modelBuilder.Entity<TwitchBroadcasterAuthorization>(entity =>
             {

@@ -129,6 +129,9 @@ namespace DiscordStreamNotifyBot.Shared
             public const int DatabaseNumber = 1;
 
             public static string TwitchRefreshLock(string twitchUserId) => $"twitch:oauth:refresh-lock:{twitchUserId}";
+
+            public static string GoogleOperationLock(ulong discordUserId)
+                => $"google:oauth:operation-lock:{discordUserId}";
         }
     }
 }

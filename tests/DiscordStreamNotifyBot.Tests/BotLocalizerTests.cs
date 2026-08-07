@@ -16,6 +16,15 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Theory]
+        [InlineData("zh-TW", "/youtube-member check")]
+        [InlineData("en-US", "/youtube-member check")]
+        [InlineData("ja", "/youtube-member check")]
+        public void LegacyYoutubeMemberSelectionExpiryIsLocalized(string locale, string commandPath)
+        {
+            Assert.Contains(commandPath, Localizer.Get("Member.Select.Expired", locale));
+        }
+
+        [Theory]
         [InlineData("zh-TW", "是")]
         [InlineData("en-US", "Yes")]
         [InlineData("ja", "はい")]

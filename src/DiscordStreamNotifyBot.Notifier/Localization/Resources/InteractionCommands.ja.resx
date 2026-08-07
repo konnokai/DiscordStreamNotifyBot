@@ -14,6 +14,8 @@
   <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>Bot の所有者へメッセージを送ります</value></data>
   <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>Bot の所有者からのお知らせを受信するチャンネルを設定します</value></data>
   <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>お知らせを受信するテキストまたはアナウンスチャンネル</value></data>
+  <data name="utility.set-verification-log-channel.description" xml:space="preserve"><value>YouTube メンバーシップと Twitch サブスク認証のログチャンネルを設定します</value></data>
+  <data name="utility.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>メンバーシップとサブスク認証ログを受信するテキストチャンネル</value></data>
 
   <data name="help.description" xml:space="preserve"><value>コマンドと使い方を確認します</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>利用可能なコマンドモジュールをすべて表示します</value></data>
@@ -112,28 +114,26 @@
   <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>警告対象の TwitCasting 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
   <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 
-  <data name="member.description" xml:space="preserve"><value>YouTube メンバーシップの認証</value></data>
-  <data name="member.check.description" xml:space="preserve"><value>サイト連携を確認してメンバーシップ認証を開始します</value></data>
-  <data name="member.cancel-member-check.description" xml:space="preserve"><value>このサーバーの認証を取り消してロールを削除します</value></data>
-  <data name="member.unlink.description" xml:space="preserve"><value>Discord と Google の連携を解除して認可を取り消します</value></data>
-  <data name="member.list-can-check-channel.description" xml:space="preserve"><value>現在認証できるメンバー限定チャンネルを表示します</value></data>
-  <data name="member.show-my-youtube-account.description" xml:space="preserve"><value>現在連携している YouTube アカウントを表示します</value></data>
+  <data name="youtube-member.description" xml:space="preserve"><value>YouTube メンバーシップの認証</value></data>
+  <data name="youtube-member.check.description" xml:space="preserve"><value>サイト連携を確認してメンバーシップ認証を開始します</value></data>
+  <data name="youtube-member.cancel-member-check.description" xml:space="preserve"><value>このサーバーの認証を取り消してロールを削除します</value></data>
+  <data name="youtube-member.unlink.description" xml:space="preserve"><value>Discord と Google の連携を解除して認可を取り消します</value></data>
+  <data name="youtube-member.list-can-check-channel.description" xml:space="preserve"><value>現在認証できるメンバー限定チャンネルを表示します</value></data>
+  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>現在連携している YouTube アカウントを表示します</value></data>
 
-  <data name="member-set.description" xml:space="preserve"><value>YouTube メンバーシップ認証の設定</value></data>
-  <data name="member-set.set-notice-member-status-channel.description" xml:space="preserve"><value>メンバーシップ認証状態の記録チャンネルを設定します</value></data>
-  <data name="member-set.set-notice-member-status-channel.log-channel.description" xml:space="preserve"><value>認証状態の記録を受信するテキストチャンネル</value></data>
-  <data name="member-set.add-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルと付与ロールを追加します</value></data>
-  <data name="member-set.add-member-check.channel-url.description" xml:space="preserve"><value>メンバーシップを認証する YouTube チャンネル</value></data>
-  <data name="member-set.add-member-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール</value></data>
-  <data name="member-set.remove-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します</value></data>
-  <data name="member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>認証対象から削除する YouTube チャンネル</value></data>
-  <data name="member-set.set-check-video.description" xml:space="preserve"><value>認証に使うメンバー限定動画を手動で指定します</value></data>
-  <data name="member-set.set-check-video.channel.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
-  <data name="member-set.set-check-video.video.description" xml:space="preserve"><value>メンバー限定動画の URL または 11 文字の動画 ID</value></data>
-  <data name="member-set.clear-check-video.description" xml:space="preserve"><value>認証動画を自動選択へ戻します</value></data>
-  <data name="member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
-  <data name="member-set.list-checked-member.description" xml:space="preserve"><value>認証に成功したメンバーを表示します</value></data>
-  <data name="member-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="youtube-member-set.description" xml:space="preserve"><value>YouTube メンバーシップ認証の設定</value></data>
+  <data name="youtube-member-set.add-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルと付与ロールを追加します</value></data>
+  <data name="youtube-member-set.add-member-check.channel-url.description" xml:space="preserve"><value>メンバーシップを認証する YouTube チャンネル</value></data>
+  <data name="youtube-member-set.add-member-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール</value></data>
+  <data name="youtube-member-set.remove-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します</value></data>
+  <data name="youtube-member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>認証対象から削除する YouTube チャンネル</value></data>
+  <data name="youtube-member-set.set-check-video.description" xml:space="preserve"><value>認証に使うメンバー限定動画を手動で指定します</value></data>
+  <data name="youtube-member-set.set-check-video.channel.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
+  <data name="youtube-member-set.set-check-video.video.description" xml:space="preserve"><value>メンバー限定動画の URL または 11 文字の動画 ID</value></data>
+  <data name="youtube-member-set.clear-check-video.description" xml:space="preserve"><value>認証動画を自動選択へ戻します</value></data>
+  <data name="youtube-member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
+  <data name="youtube-member-set.list-checked-member.description" xml:space="preserve"><value>認証に成功したメンバーを表示します</value></data>
+  <data name="youtube-member-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 	  <data name="twitch-member.description" xml:space="preserve"><value>Twitch サブスク認証</value></data>
   <data name="twitch-member.check.description" xml:space="preserve"><value>Twitch サブスクを今すぐ認証します</value></data>
   <data name="twitch-member.cancel-subscription-check.description" xml:space="preserve"><value>このサーバーの Twitch サブスク認証を解除します</value></data>

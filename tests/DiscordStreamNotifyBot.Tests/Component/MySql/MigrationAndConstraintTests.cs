@@ -94,6 +94,102 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
             Assert.Equal(1, matchingColumns);
         }
 
+        [MySqlComponentFact]
+        public async Task YoutubeMembershipTablesPersistDurableStateAndRejectDuplicateNaturalKeys()
+        {
+            ulong guildId = NextUserId();
+            ulong userId = NextUserId();
+            string channelId = $"UC{Guid.NewGuid():N}"[..24];
+
+            await using (var db = _fixture.DbService.GetDbContext())
+            {
+                db.GuildYoutubeMemberConfig.Add(new GuildYoutubeMemberConfig
+                {
+                    GuildId = guildId,
+                    MemberCheckChannelId = channelId,
+                    MemberCheckChannelTitle = "Component Channel",
+                    MemberCheckVideoId = "abcdefghijk",
+                    MemberCheckGrantRoleId = 100,
+                    PreviousMemberCheckGrantRoleId = 99,
+                    DeletionPending = true
+                });
+                db.YoutubeMemberCheck.Add(new YoutubeMemberCheck
+                {
+                    GuildId = guildId,
+                    UserId = userId,
+                    CheckYTChannelId = channelId,
+                    Locale = "zh-TW",
+                    IsChecked = false,
+                    PendingRoleRemoval = true,
+                    LastCheckTime = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync();
+            }
+
+            await using (var readDb = _fixture.DbService.GetDbContext())
+            {
+                var config = await readDb.GuildYoutubeMemberConfig.AsNoTracking()
+                    .SingleAsync(x => x.GuildId == guildId && x.MemberCheckChannelId == channelId);
+                var check = await readDb.YoutubeMemberCheck.AsNoTracking()
+                    .SingleAsync(x => x.GuildId == guildId && x.UserId == userId);
+
+                Assert.Equal((ulong)99, config.PreviousMemberCheckGrantRoleId);
+                Assert.True(config.DeletionPending);
+                Assert.False(check.IsChecked);
+                Assert.True(check.PendingRoleRemoval);
+            }
+
+            await using (var schemaDb = _fixture.DbService.GetDbContext())
+            {
+                int requiredNaturalKeys = await schemaDb.Database.SqlQueryRaw<int>(
+                    """
+                    SELECT COUNT(*) AS `Value`
+                    FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND data_type = 'longtext'
+                      AND is_nullable = 'NO'
+                      AND ((table_name = 'guild_youtube_member_config' AND column_name = 'member_check_channel_id')
+                        OR (table_name = 'youtube_member_check' AND column_name = 'check_yt_channel_id'))
+                    """).SingleAsync();
+                Assert.Equal(2, requiredNaturalKeys);
+            }
+
+            await using (var duplicateConfigDb = _fixture.DbService.GetDbContext())
+            {
+                duplicateConfigDb.GuildYoutubeMemberConfig.Add(new GuildYoutubeMemberConfig
+                {
+                    GuildId = guildId,
+                    MemberCheckChannelId = channelId,
+                    MemberCheckChannelTitle = "Duplicate",
+                    MemberCheckGrantRoleId = 101
+                });
+                await Assert.ThrowsAsync<DbUpdateException>(() => duplicateConfigDb.SaveChangesAsync());
+            }
+
+            await using var duplicateCheckDb = _fixture.DbService.GetDbContext();
+            duplicateCheckDb.YoutubeMemberCheck.Add(new YoutubeMemberCheck
+            {
+                GuildId = guildId,
+                UserId = userId,
+                CheckYTChannelId = channelId,
+                Locale = "zh-TW"
+            });
+            await Assert.ThrowsAsync<DbUpdateException>(() => duplicateCheckDb.SaveChangesAsync());
+        }
+
+        [MySqlComponentFact]
+        public async Task YoutubeMembershipPreflightSqlExecutesAgainstCurrentSchema()
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "YOUTUBE_MEMBER_VERIFICATION_PREFLIGHT.sql");
+            string sql = await File.ReadAllTextAsync(path);
+            string executableSql = string.Join('\n', sql.Split('\n')
+                .Where(line => !line.TrimStart().StartsWith("--", StringComparison.Ordinal)));
+
+            await using var db = _fixture.DbService.GetDbContext();
+            foreach (string statement in executableSql.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                await db.Database.ExecuteSqlRawAsync(statement);
+        }
+
         private static TwitchBroadcasterAuthorization CreateAuthorization(string suffix, ulong discordUserId)
         {
             var now = DateTime.UtcNow;
@@ -145,5 +241,21 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
 
         private static ulong NextUserId()
             => (ulong)Random.Shared.NextInt64(1, long.MaxValue);
+    }
+
+    public sealed class YoutubeMembershipSchemaContractTests
+    {
+        [Fact]
+        public void EntitiesExposeDurableTransitionState()
+        {
+            Assert.Equal(typeof(ulong?), typeof(GuildYoutubeMemberConfig)
+                .GetProperty("PreviousMemberCheckGrantRoleId")?.PropertyType);
+            Assert.Equal(typeof(bool), typeof(GuildYoutubeMemberConfig)
+                .GetProperty("DeletionPending")?.PropertyType);
+            Assert.Equal(typeof(bool), typeof(YoutubeMemberCheck)
+                .GetProperty("PendingRoleRemoval")?.PropertyType);
+            Assert.Equal(typeof(string), typeof(GoogleOAuthUnlinkIntent)
+                .GetProperty("ExpectedEncryptedToken")?.PropertyType);
+        }
     }
 }

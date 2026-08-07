@@ -76,6 +76,35 @@ namespace DiscordStreamNotifyBot
             }
         }
 
+        public async Task<bool> HasUnlinkIntentAsync(ulong discordUserId, CancellationToken cancellationToken)
+        {
+            using var db = _dbService.GetDbContext();
+            return await db.GoogleOAuthUnlinkIntent.AsNoTracking()
+                .AnyAsync(x => x.DiscordUserId == discordUserId, cancellationToken);
+        }
+
+        public async Task<bool> StoreRefreshIfCurrentAsync<T>(
+            ulong discordUserId,
+            string expectedEncryptedToken,
+            T value,
+            CancellationToken cancellationToken)
+        {
+            var encryptedValue = TokenManager.CreateToken(value, _key);
+            var dateAdded = DateTime.UtcNow;
+            using var db = _dbService.GetDbContext();
+            var updated = await db.Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE `youtube_member_access_token`
+                SET `encrypted_access_token` = {encryptedValue},
+                    `date_added` = {dateAdded}
+                WHERE `discord_user_id` = {discordUserId}
+                  AND BINARY `encrypted_access_token` = BINARY {expectedEncryptedToken}
+                  AND NOT EXISTS (
+                      SELECT 1 FROM `google_oauth_unlink_intent`
+                      WHERE `discord_user_id` = {discordUserId});
+                """, cancellationToken);
+            return updated == 1;
+        }
+
         public async Task DeleteAsync<T>(string key)
         {
             var userId = ulong.Parse(key);

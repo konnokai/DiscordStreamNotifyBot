@@ -8,5 +8,6 @@
         public string CheckYTChannelId { get; set; }
         public DateTime LastCheckTime { get; set; } = DateTime.Now;
         public bool IsChecked { get; set; } = false;
+        public bool PendingRoleRemoval { get; set; }
     }
 }

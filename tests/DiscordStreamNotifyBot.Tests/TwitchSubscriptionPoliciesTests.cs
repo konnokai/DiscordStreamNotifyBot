@@ -1,4 +1,5 @@
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.SharedService.Member;
 using DiscordStreamNotifyBot.SharedService.TwitchSubscription;
 
 namespace DiscordStreamNotifyBot.Tests
@@ -225,14 +226,14 @@ namespace DiscordStreamNotifyBot.Tests
         }
     }
 
-    public sealed class TwitchSubscriptionOperationCoordinatorTests
+    public sealed class MemberOperationCoordinatorTests
     {
         [Fact]
         public async Task SameUserOperationsAreSerialized()
         {
-            var coordinator = new TwitchSubscriptionOperationCoordinator();
+            var coordinator = new MemberOperationCoordinator();
             await using var first = await coordinator.LockUserAsync(42, CancellationToken.None);
-            Task<TwitchSubscriptionOperationCoordinator.Lease> second =
+            Task<MemberOperationCoordinator.Lease> second =
                 coordinator.LockUserAsync(42, CancellationToken.None);
 
             await Task.Delay(25);
@@ -245,9 +246,9 @@ namespace DiscordStreamNotifyBot.Tests
         [Fact]
         public async Task SameGuildOperationsAreSerialized()
         {
-            var coordinator = new TwitchSubscriptionOperationCoordinator();
+            var coordinator = new MemberOperationCoordinator();
             await using var first = await coordinator.LockGuildAsync(84, CancellationToken.None);
-            Task<TwitchSubscriptionOperationCoordinator.Lease> second =
+            Task<MemberOperationCoordinator.Lease> second =
                 coordinator.LockGuildAsync(84, CancellationToken.None);
 
             await Task.Delay(25);
@@ -255,6 +256,80 @@ namespace DiscordStreamNotifyBot.Tests
 
             await first.DisposeAsync();
             await using var secondLease = await second;
+        }
+
+        [Fact]
+        public async Task SameUserAndGuildOperationsAreSerializedInUserThenGuildOrder()
+        {
+            var coordinator = new MemberOperationCoordinator();
+            await using var firstUser = await coordinator.LockUserAsync(42, CancellationToken.None);
+            await using var firstGuild = await coordinator.LockGuildAsync(84, CancellationToken.None);
+            var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task second = Task.Run(async () =>
+            {
+                await using var user = await coordinator.LockUserAsync(42, CancellationToken.None);
+                await using var guild = await coordinator.LockGuildAsync(84, CancellationToken.None);
+                entered.SetResult();
+            });
+
+            await Task.Delay(25);
+            Assert.False(entered.Task.IsCompleted);
+
+            await firstGuild.DisposeAsync();
+            await firstUser.DisposeAsync();
+            await second.WaitAsync(TimeSpan.FromSeconds(1));
+        }
+    }
+
+    public sealed class MemberRoleOwnershipPolicyTests
+    {
+        [Fact]
+        public void YoutubeAndTwitchNewConfigurationRoleCollisionIsRejected()
+        {
+            ulong[] youtubeReferences = [100, 101];
+            ulong[] twitchReferences = [200, 201, 202, 203, 204];
+
+            Assert.True(MemberRoleOwnershipPolicy.HasRoleReference(100, youtubeReferences));
+            Assert.True(MemberRoleOwnershipPolicy.HasRoleReference(200, twitchReferences));
+            Assert.False(MemberRoleOwnershipPolicy.HasRoleReference(999, youtubeReferences));
+            Assert.False(MemberRoleOwnershipPolicy.HasRoleReference(0, twitchReferences));
+        }
+
+        [Fact]
+        public void LegacyCrossPlatformEntitlementPreservesRoleForOtherPlatform()
+        {
+            var entitlements = new[]
+            {
+                new MemberRoleEntitlement(MemberEntitlementProvider.Twitch, "broadcaster-a", 42, 500),
+                new MemberRoleEntitlement(MemberEntitlementProvider.Youtube, "channel-a", 42, 500)
+            };
+
+            Assert.True(MemberRoleOwnershipPolicy.HasOtherActiveEntitlement(
+                entitlements, 42, 500, MemberEntitlementProvider.Twitch, "broadcaster-a"));
+            Assert.False(MemberRoleOwnershipPolicy.HasOtherActiveEntitlement(
+                [new MemberRoleEntitlement(MemberEntitlementProvider.Youtube, "channel-a", 42, 500)],
+                42, 500, MemberEntitlementProvider.Youtube, "channel-a"));
+        }
+
+        [Fact]
+        public void TwitchTierRoleDeletionIsGuardedByYoutubeReferences()
+        {
+            Assert.False(MemberRoleOwnershipPolicy.CanDeleteTwitchTierRole(700, [700, 701]));
+            Assert.True(MemberRoleOwnershipPolicy.CanDeleteTwitchTierRole(702, [700, 701]));
+        }
+
+        [Fact]
+        public void SnapshotReusesEntitlementsAndRoleReferencesAcrossBatchOperations()
+        {
+            var snapshot = new MemberRoleOwnershipSnapshot(
+                [new MemberRoleEntitlement(MemberEntitlementProvider.Youtube, "UC1", 42, 500)],
+                [700],
+                []);
+
+            Assert.True(snapshot.HasOtherActiveEntitlement(
+                42, 500, MemberEntitlementProvider.Twitch, "broadcaster-a"));
+            Assert.False(snapshot.CanDeleteTwitchTierRole(700));
+            Assert.True(snapshot.CanDeleteTwitchTierRole(701));
         }
     }
 }

@@ -14,6 +14,8 @@
   <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>Send a message to the bot owner</value></data>
   <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>Set the channel for announcements from the bot owner</value></data>
   <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>The text or announcement channel that receives announcements</value></data>
+  <data name="utility.set-verification-log-channel.description" xml:space="preserve"><value>Set the YouTube membership and Twitch subscription verification log channel</value></data>
+  <data name="utility.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>The text channel for membership and subscription verification logs</value></data>
 
   <data name="help.description" xml:space="preserve"><value>Browse commands and usage information</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>Show every available command module</value></data>
@@ -112,28 +114,26 @@
   <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>List TwitCasting channels with warnings; may include creators' personal or former channels</value></data>
   <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>The page to display</value></data>
 
-  <data name="member.description" xml:space="preserve"><value>YouTube membership verification</value></data>
-  <data name="member.check.description" xml:space="preserve"><value>Confirm website linking and start membership verification</value></data>
-  <data name="member.cancel-member-check.description" xml:space="preserve"><value>Cancel verification in this server and remove membership roles</value></data>
-  <data name="member.unlink.description" xml:space="preserve"><value>Unlink Discord from Google and revoke authorization</value></data>
-  <data name="member.list-can-check-channel.description" xml:space="preserve"><value>List channels available for membership verification</value></data>
-  <data name="member.show-my-youtube-account.description" xml:space="preserve"><value>Show the currently linked YouTube account</value></data>
+  <data name="youtube-member.description" xml:space="preserve"><value>YouTube membership verification</value></data>
+  <data name="youtube-member.check.description" xml:space="preserve"><value>Confirm website linking and start membership verification</value></data>
+  <data name="youtube-member.cancel-member-check.description" xml:space="preserve"><value>Cancel verification in this server and remove membership roles</value></data>
+  <data name="youtube-member.unlink.description" xml:space="preserve"><value>Unlink Discord from Google and revoke authorization</value></data>
+  <data name="youtube-member.list-can-check-channel.description" xml:space="preserve"><value>List channels available for membership verification</value></data>
+  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>Show the currently linked YouTube account</value></data>
 
-  <data name="member-set.description" xml:space="preserve"><value>YouTube membership verification settings</value></data>
-  <data name="member-set.set-notice-member-status-channel.description" xml:space="preserve"><value>Set the membership verification status log channel</value></data>
-  <data name="member-set.set-notice-member-status-channel.log-channel.description" xml:space="preserve"><value>The text channel for verification status logs</value></data>
-  <data name="member-set.add-member-check.description" xml:space="preserve"><value>Add a membership channel and the role it grants</value></data>
-  <data name="member-set.add-member-check.channel-url.description" xml:space="preserve"><value>The YouTube channel whose memberships will be verified</value></data>
-  <data name="member-set.add-member-check.role.description" xml:space="preserve"><value>The role granted after successful verification</value></data>
-  <data name="member-set.remove-member-check.description" xml:space="preserve"><value>Remove a membership verification channel</value></data>
-  <data name="member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>The YouTube channel to remove from verification</value></data>
-  <data name="member-set.set-check-video.description" xml:space="preserve"><value>Manually select the members-only video used for verification</value></data>
-  <data name="member-set.set-check-video.channel.description" xml:space="preserve"><value>A YouTube channel configured for membership verification</value></data>
-  <data name="member-set.set-check-video.video.description" xml:space="preserve"><value>A members-only video URL or 11-character video ID</value></data>
-  <data name="member-set.clear-check-video.description" xml:space="preserve"><value>Return to automatic selection of the verification video</value></data>
-  <data name="member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>A YouTube channel configured for membership verification</value></data>
-  <data name="member-set.list-checked-member.description" xml:space="preserve"><value>List members who have completed verification</value></data>
-  <data name="member-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
+  <data name="youtube-member-set.description" xml:space="preserve"><value>YouTube membership verification settings</value></data>
+  <data name="youtube-member-set.add-member-check.description" xml:space="preserve"><value>Add a membership channel and the role it grants</value></data>
+  <data name="youtube-member-set.add-member-check.channel-url.description" xml:space="preserve"><value>The YouTube channel whose memberships will be verified</value></data>
+  <data name="youtube-member-set.add-member-check.role.description" xml:space="preserve"><value>The role granted after successful verification</value></data>
+  <data name="youtube-member-set.remove-member-check.description" xml:space="preserve"><value>Remove a membership verification channel</value></data>
+  <data name="youtube-member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>The YouTube channel to remove from verification</value></data>
+  <data name="youtube-member-set.set-check-video.description" xml:space="preserve"><value>Manually select the members-only video used for verification</value></data>
+  <data name="youtube-member-set.set-check-video.channel.description" xml:space="preserve"><value>A YouTube channel configured for membership verification</value></data>
+  <data name="youtube-member-set.set-check-video.video.description" xml:space="preserve"><value>A members-only video URL or 11-character video ID</value></data>
+  <data name="youtube-member-set.clear-check-video.description" xml:space="preserve"><value>Return to automatic selection of the verification video</value></data>
+  <data name="youtube-member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>A YouTube channel configured for membership verification</value></data>
+  <data name="youtube-member-set.list-checked-member.description" xml:space="preserve"><value>List members who have completed verification</value></data>
+  <data name="youtube-member-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
   <data name="twitch-member.description" xml:space="preserve"><value>Twitch subscription verification</value></data>
   <data name="twitch-member.check.description" xml:space="preserve"><value>Verify your Twitch subscription now</value></data>
   <data name="twitch-member.cancel-subscription-check.description" xml:space="preserve"><value>Cancel Twitch subscription verification in this server</value></data>

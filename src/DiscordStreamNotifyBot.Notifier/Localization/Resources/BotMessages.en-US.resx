@@ -107,10 +107,10 @@
   <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>Remove a Twitch channel spider.&#10;Only the server that added the spider can remove it.</value></data>
   <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>Add a TwitCasting channel spider.&#10;The server must have more than 500 members.&#10;Channel limits may change over time; contact the bot owner if you need assistance.</value></data>
   <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>Remove a TwitCasting channel spider.&#10;Only the server that added the spider can remove it.</value></data>
-  <data name="Help.CommandDetail.member-set.add-member-check" xml:space="preserve"><value>Add a membership verification channel, currently limited to five channels.&#10;Adding the same channel again changes the role it grants.&#10;The server must have more than 250 members; contact the bot owner if you need assistance.</value></data>
-  <data name="Help.CommandDetail.member-set.remove-member-check" xml:space="preserve"><value>Remove a membership verification channel.</value></data>
-  <data name="Help.CommandDetail.member-set.set-check-video" xml:space="preserve"><value>Manually choose the video used for membership verification.&#10;For channels with multiple membership tiers, choose a members-only video available to the lowest tier so valid lower-tier members are not rejected.&#10;Automatic discovery will not replace it. If the video becomes invalid, the notification channel will ask you to configure another one.</value></data>
-  <data name="Help.CommandDetail.member-set.clear-check-video" xml:space="preserve"><value>Return to automatic membership verification video selection and clear the manual choice.</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.add-member-check" xml:space="preserve"><value>Add a membership verification channel, currently limited to five channels.&#10;Adding the same channel again changes the role it grants.&#10;The server must have more than 250 members; contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.remove-member-check" xml:space="preserve"><value>Remove a membership verification channel.</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.set-check-video" xml:space="preserve"><value>Manually choose the video used for membership verification.&#10;For channels with multiple membership tiers, choose a members-only video available to the lowest tier so valid lower-tier members are not rejected.&#10;Automatic discovery will not replace it. If the video becomes invalid, the notification channel will ask you to configure another one.</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.clear-check-video" xml:space="preserve"><value>Return to automatic membership verification video selection and clear the manual choice.</value></data>
   <data name="Utility.Ping" xml:space="preserve"><value>:ping_pong: Latency: {0} ms</value></data>
   <data name="Utility.Invite" xml:space="preserve"><value>Invite link: &lt;{0}&gt;</value></data>
   <data name="Utility.Status.Title" xml:space="preserve"><value>Stream Assistant</value></data>
@@ -246,11 +246,13 @@
   <data name="Member.Errors.LoginRequired" xml:space="preserve"><value>Sign in to Discord and Google at {0}, then run this command again.</value></data>
   <data name="Member.CheckQueuedWithDmNotice" xml:space="preserve"><value>Your verification has been queued and may take up to {0} minutes. Enable direct messages from server members for this server so you can receive the result.</value></data>
   <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>Select channels</value></data>
-  <data name="Member.Select.Description" xml:space="preserve"><value>Select the channels to verify. Existing membership verification roles will be removed before verification runs again.</value></data>
+  <data name="Member.Select.Description" xml:space="preserve"><value>Select the channels to verify this time. If you previously selected a channel but leave it unselected this time, its related role will be removed. The bot will retry automatically if it cannot remove the role immediately.</value></data>
   <data name="Member.Select.SelectedCount" xml:space="preserve"><value>{0} channels selected</value></data>
   <data name="Member.Select.Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Member.Select.Expired" xml:space="preserve"><value>This membership verification menu has expired. Run `/youtube-member check` again.</value></data>
   <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>You have not started membership verification in this server.</value></data>
   <data name="Member.CheckCancelled" xml:space="preserve"><value>Your membership verification in this server and its related roles have been removed.</value></data>
+  <data name="Member.Errors.RoleCleanupPending" xml:space="preserve"><value>Membership verification was canceled, but some related roles have not been removed. The bot will retry automatically.</value></data>
   <data name="Member.Errors.SaveFailed" xml:space="preserve"><value>Failed to save the data. Contact {0}.</value></data>
   <data name="Member.UnlinkPrompt" xml:space="preserve"><value>Unlink Discord from Google? This also removes membership verification roles. You must link your account on the website again to restore them.</value></data>
   <data name="Member.Unlinked" xml:space="preserve"><value>Discord and Google have been unlinked.</value></data>
@@ -262,15 +264,21 @@
   <data name="Member.LinkedChannel" xml:space="preserve"><value>Linked YouTube channel: {0}</value></data>
   <data name="Member.Errors.LinkedChannelUnavailable" xml:space="preserve"><value>The linked YouTube channel could not be retrieved. Make sure website linking is complete and the Google account has a YouTube channel.</value></data>
   <data name="Member.Errors.LinkedChannelUnavailableWithOwner" xml:space="preserve"><value>The linked YouTube channel could not be retrieved. Make sure website linking is complete and the Google account has a YouTube channel. Contact {0} if you still need help.</value></data>
-  <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` is now the membership verification log channel.</value></data>
+  <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` is now the membership and subscription verification log channel.</value></data>
   <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>The bot needs the Manage Roles permission. Grant it and try again.</value></data>
   <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>The everyone role cannot be used as the membership verification role.</value></data>
   <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>Roles managed by an integration cannot be used as membership verification roles.</value></data>
+  <data name="MemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>This role is already used by Twitch subscription verification. YouTube and Twitch verification must use different roles.</value></data>
   <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>Role `{0}` is above the bot’s highest role. Move the bot role above it and try again.</value></data>
+  <data name="MemberSetting.Errors.DeletionPending" xml:space="preserve"><value>Membership verification and the related roles for this channel have not been fully removed, so you cannot configure it again yet. Make sure the bot has Manage Roles permission and the related roles are below the bot's highest role, then wait for the automatic retry to finish.</value></data>
+  <data name="MemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>The previous role change is incomplete. Run the same configuration again with the currently configured role. You can choose a different role after the update finishes.</value></data>
+  <data name="MemberSetting.Errors.RepairPending" xml:space="preserve"><value>The configuration was saved, but the bot has not finished updating roles for some verified members. Make sure the bot can manage both the old and new roles. If the permissions and role order are correct, wait a while, then run the same configuration again with the same role.</value></data>
+  <data name="MemberSetting.Errors.RemovePending" xml:space="preserve"><value>Some related roles have not been removed, so the membership verification configuration for this channel has not been fully removed. Make sure the bot can manage the related roles. The bot will retry automatically.</value></data>
+  <data name="MemberSetting.Errors.SaveFailed" xml:space="preserve"><value>Saving the membership verification configuration failed. Try again later.</value></data>
   <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>This server already uses {0} membership verification channels. Remove an unused channel first.</value></data>
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord select menus support at most {0} options. Remove unused membership verification channels first.</value></data>
-  <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>This server has no membership verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then use {0}. A log channel is required.</value></data>
-  <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>The configured membership verification log channel was deleted. Create a new channel, grant the required permissions, and use {0} again.</value></data>
+  <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>This server has no membership and subscription verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then use {0}. A log channel is required.</value></data>
+  <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>The configured membership and subscription verification log channel was deleted. Create a new channel, grant the required permissions, and use {0} again.</value></data>
   <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>`{0}` is now a membership verification channel. Verified members receive the `{1}` role. {2}</value></data>
   <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>Verification can start immediately.</value></data>
   <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>Wait about five minutes before starting verification.</value></data>
@@ -355,7 +363,7 @@
   <data name="Member.VideoLog.NoVideos" xml:space="preserve"><value>{0} currently has no members-only video with comments enabled that can be used for verification. Wait for the channel owner to publish an eligible video, then try membership verification again. Use {1} to inspect the playlist.</value></data>
   <data name="Member.VideoLog.NewProbeVideo" xml:space="preserve"><value>A new verification video was selected for membership channel `{0}`: `{1}`.</value></data>
   <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>The membership channel name changed: `{0}` → `{1}`.</value></data>
-  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>Also, `{0}` has no membership verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then configure it with {1}.</value></data>
+  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>Also, `{0}` has no membership and subscription verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then configure it with {1}.</value></data>
   <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>Also, the bot is missing View Channel, Send Messages, or Embed Links in `{1}` on `{0}`.</value></data>
   <data name="TwitchMember.Errors.NotConfigured" xml:space="preserve"><value>This server has no Twitch subscription verification channels.</value></data>
   <data name="TwitchMember.Errors.TooManyChannels" xml:space="preserve"><value>The number of channels exceeds Discord's menu limit. Contact a server administrator.</value></data>
@@ -393,6 +401,7 @@
   <data name="TwitchMemberSetting.Errors.MissingManageRoles" xml:space="preserve"><value>The bot does not have Manage Roles permission.</value></data>
   <data name="TwitchMemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>The @everyone role cannot be used.</value></data>
   <data name="TwitchMemberSetting.Errors.ManagedRole" xml:space="preserve"><value>Roles managed by an integration cannot be used.</value></data>
+  <data name="TwitchMemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>This role is already used by YouTube membership verification. YouTube and Twitch verification must use different roles.</value></data>
   <data name="TwitchMemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>The shared role must be below the bot's highest role.</value></data>
   <data name="TwitchMemberSetting.Errors.RepairPending" xml:space="preserve"><value>The configuration was saved, but Discord role synchronization is incomplete. Fix any permission issues, or wait for the temporary error to clear, then run the same configuration again to finish the repair.</value></data>
   <data name="TwitchMemberSetting.Errors.DeletionPending" xml:space="preserve"><value>This channel cannot be configured because its configuration and related roles have not been fully removed. The bot retries hourly. Fix the role permissions, then add it again after removal completes.</value></data>
@@ -401,7 +410,7 @@
   <data name="TwitchMemberSetting.Errors.NotConfigured" xml:space="preserve"><value>This Twitch channel has no subscription verification configuration.</value></data>
   <data name="TwitchMemberSetting.Errors.RemovePending" xml:space="preserve"><value>Some roles could not be removed, so the configuration and data needed for a later retry were retained.</value></data>
   <data name="TwitchMemberSetting.Errors.NoCheckedMembers" xml:space="preserve"><value>There are currently no verified Twitch subscribers.</value></data>
-  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; passed Twitch subscription verification for `{1}` (Tier `{2}`).</value></data>
+  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; passed Twitch subscription verification for `{1}` (`{2}`).</value></data>
   <data name="TwitchMember.StatusLog.Removed" xml:space="preserve"><value>&lt;@{0}&gt; is no longer subscribed to `{1}`. Related roles were removed.</value></data>
   <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; passed the Twitch subscription check for `{1}`, but Discord role synchronization failed and will be retried.</value></data>
   <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; no longer qualifies for `{1}`, but Discord role removal failed and will be retried.</value></data>

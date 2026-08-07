@@ -1,26 +1,38 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
+using DiscordStreamNotifyBot.SharedService.Member;
+using Google;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 {
     [RequireContext(ContextType.Guild)]
     [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
-    [Group("member-set", "YouTube 會限驗證設定")]
+    [Group("youtube-member-set", "YouTube 會限驗證設定")]
     public class YoutubeMemberSetting : TopLevelModule<YoutubeMemberService>
     {
         private readonly DiscordSocketClient _client;
         private readonly YoutubeStreamService _ytservice;
         private readonly MainDbService _dbService;
+        private readonly YoutubeMemberRoleService _roleService;
+        private readonly MemberOperationCoordinator _operationCoordinator;
 
-        public YoutubeMemberSetting(DiscordSocketClient client, YoutubeStreamService youtubeStreamService, MainDbService dbService)
+        public YoutubeMemberSetting(
+            DiscordSocketClient client,
+            YoutubeStreamService youtubeStreamService,
+            MainDbService dbService,
+            YoutubeMemberRoleService roleService,
+            MemberOperationCoordinator operationCoordinator)
         {
             _client = client;
             _ytservice = youtubeStreamService;
             _dbService = dbService;
+            _roleService = roleService;
+            _operationCoordinator = operationCoordinator;
         }
 
         public class GuildYoutubeMemberCheckChannelIdAutocompleteHandler : AutocompleteHandler
@@ -33,10 +45,23 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     if (!await db.GuildYoutubeMemberConfig.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
                         return AutocompletionResult.FromSuccess();
 
-                    var candidates = db.GuildYoutubeMemberConfig
+                    var configuredChannels = await db.GuildYoutubeMemberConfig
                         .AsNoTracking()
                         .Where((x) => x.GuildId == context.Guild.Id)
-                        .Select((x) => new AutocompleteCandidate(x.MemberCheckChannelTitle, x.MemberCheckChannelId));
+                        .Select(x => new { x.MemberCheckChannelTitle, x.MemberCheckChannelId })
+                        .ToListAsync();
+                    var duplicateTitles = configuredChannels
+                        .Where(x => !string.IsNullOrWhiteSpace(x.MemberCheckChannelTitle))
+                        .GroupBy(x => x.MemberCheckChannelTitle, StringComparer.OrdinalIgnoreCase)
+                        .Where(group => group.Count() > 1)
+                        .Select(group => group.Key)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var candidates = configuredChannels.Select(x => new AutocompleteCandidate(
+                        x.MemberCheckChannelTitle,
+                        string.IsNullOrWhiteSpace(x.MemberCheckChannelTitle) || duplicateTitles.Contains(x.MemberCheckChannelTitle)
+                            ? x.MemberCheckChannelId
+                            : x.MemberCheckChannelTitle,
+                        x.MemberCheckChannelId));
 
                     try
                     {
@@ -51,54 +76,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                         return AutocompletionResult.FromSuccess();
                     }
                 });
-            }
-        }
-
-        [SlashCommand("set-notice-member-status-channel", "設定會限驗證狀態紀錄頻道")]
-        public async Task SetNoticeMemberStatusChannel([Summary("log-channel", "紀錄頻道")] ITextChannel textChannel)
-        {
-            await DeferAsync(true);
-
-            if (!_service.IsEnable)
-            {
-                await SendLocalizedErrorAsync("Member.Errors.Disabled", true, true, Bot.ApplicatonOwner);
-                return;
-            }
-
-            using (var db = _dbService.GetDbContext())
-            {
-                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-                string locale = await GetLocaleAsync(true);
-                if (!permissions.ViewChannel || !permissions.SendMessages)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                            BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                            BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
-                    return;
-                }
-
-                if (!permissions.EmbedLinks)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
-                    return;
-                }
-
-                await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
-
-                var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
-                if (guildConfig == null)
-                {
-                    guildConfig = new DataBase.Table.GuildConfig() { GuildId = Context.Guild.Id };
-                    db.GuildConfig.Add(guildConfig);
-                }
-
-                guildConfig.LogMemberStatusChannelId = textChannel.Id;
-                db.GuildConfig.Update(guildConfig);
-                db.SaveChanges();
-
-                await SendLocalizedConfirmAsync("MemberSetting.LogChannelChanged", true, false, textChannel);
             }
         }
 
@@ -141,7 +118,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 try
                 {
                     await DeferAsync(true);
-
                     if (currentBotUser.Roles.Max(x => x.Position) < role.Position)
                     {
                         await SendLocalizedErrorAsync("MemberSetting.Errors.RoleTooHigh", true, true, role.Name);
@@ -175,14 +151,14 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     if (guildConfig.LogMemberStatusChannelId == 0)
                     {
                         string logLocale = await GetLocaleAsync(true);
-                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "member-set", "set-notice-member-status-channel");
+                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "utility", "set-verification-log-channel");
                         await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelRequired", true, true, setLogPath);
                         return;
                     }
                     else if (Context.Guild.GetTextChannel(guildConfig.LogMemberStatusChannelId) == null)
                     {
                         string logLocale = await GetLocaleAsync(true);
-                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "member-set", "set-notice-member-status-channel");
+                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "utility", "set-verification-log-channel");
                         await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelDeleted", true, true, setLogPath);
 
                         guildConfig.LogMemberStatusChannelId = 0;
@@ -192,27 +168,21 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     }
 
                     var channelId = await _ytservice.GetChannelIdAsync(url);
-                    bool channelDataExist = false;
-                    var guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
-                    if (guildYoutubeMemberConfig == null)
+                    var guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.AsNoTracking().FirstOrDefault(
+                        (x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
+                    bool isNewConfiguration = guildYoutubeMemberConfig == null;
+                    YoutubeMemberRoleConfigurationResult result = await _roleService.ConfigureRoleAsync(
+                        Context.Guild, channelId, role, GracefulShutdown.Token);
+                    if (!result.IsSuccess)
                     {
-                        guildYoutubeMemberConfig = new DataBase.Table.GuildYoutubeMemberConfig()
-                        {
-                            GuildId = Context.Guild.Id,
-                            MemberCheckChannelId = channelId,
-                            MemberCheckGrantRoleId = role.Id
-                        };
-
-                        var youtubeChannel = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.MemberCheckChannelId == channelId && !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
-                        if (youtubeChannel != null)
-                        {
-                            guildYoutubeMemberConfig.MemberCheckChannelTitle = youtubeChannel.MemberCheckChannelTitle;
-                            guildYoutubeMemberConfig.MemberCheckVideoId = youtubeChannel.MemberCheckVideoId;
-                            channelDataExist = true;
-                        }
-
-                        db.GuildYoutubeMemberConfig.Add(guildYoutubeMemberConfig);
-
+                        await SendLocalizedErrorAsync(result.Error ?? "MemberSetting.Errors.SaveFailed", true);
+                        return;
+                    }
+                    guildYoutubeMemberConfig = result.Config;
+                    bool channelDataExist = !string.IsNullOrEmpty(guildYoutubeMemberConfig.MemberCheckChannelTitle) &&
+                        guildYoutubeMemberConfig.MemberCheckVideoId != "-";
+                    if (isNewConfiguration)
+                    {
                         try
                         {
                             await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
@@ -224,17 +194,11 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                         }
                         catch (Exception ex) { Log.Error(ex.ToString()); }
                     }
-                    else
-                    {
-                        channelDataExist = true;
-                        guildYoutubeMemberConfig.MemberCheckGrantRoleId = role.Id;
-                        db.GuildYoutubeMemberConfig.Update(guildYoutubeMemberConfig);
-                    }
                     db.SaveChanges();
 
                     string locale = await GetLocaleAsync(true);
                     await SendLocalizedConfirmAsync("MemberSetting.ChannelConfigured", true, true,
-                        channelId, role.Name, BotLocalizer.Get(channelDataExist
+                        GetChannelDisplayName(guildYoutubeMemberConfig), role.Name, BotLocalizer.Get(channelDataExist
                             ? "MemberSetting.ReadyNow" : "MemberSetting.ReadyLater", locale));
                 }
                 catch (Exception ex)
@@ -256,8 +220,8 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             {
                 try
                 {
-                    var channelId = await _ytservice.GetChannelIdAsync(url);
-                    var guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
+                    var channelId = await ResolveConfiguredChannelIdAsync(url);
+                    var guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.AsNoTracking().FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
 
                     if (guildYoutubeMemberConfig == null)
                     {
@@ -265,8 +229,15 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     }
                     else
                     {
-                        db.GuildYoutubeMemberConfig.Remove(guildYoutubeMemberConfig);
-                        await SendLocalizedConfirmAsync("MemberSetting.ChannelRemoved", true, false, channelId);
+                        bool deleted = await _roleService.DeleteConfigurationAsync(guildYoutubeMemberConfig, GracefulShutdown.Token);
+                        if (deleted)
+                            await SendLocalizedConfirmAsync("MemberSetting.ChannelRemoved", true, false,
+                                GetChannelDisplayName(guildYoutubeMemberConfig));
+                        else
+                        {
+                            await SendLocalizedErrorAsync("MemberSetting.Errors.RemovePending", true);
+                            return;
+                        }
 
                         try
                         {
@@ -308,19 +279,9 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 return;
             }
 
-            using var db = _dbService.GetDbContext();
             try
             {
-                var channelId = await _ytservice.GetChannelIdAsync(url);
-                var config = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
-                if (config == null)
-                {
-                    string locale = await GetLocaleAsync(true);
-                    string addPath = CommandDisplayResolver.GetCommandPath(locale, "member-set", "add-member-check");
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.ConfigureFirst", true, true, addPath);
-                    return;
-                }
-
+                var channelId = await ResolveConfiguredChannelIdAsync(url);
                 // 驗證：用 bot 金鑰探測留言。member-only → 403/forbidden；公開影片 → 200（不可當探針，否則所有人都會通過驗證）
                 try
                 {
@@ -332,22 +293,41 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     await SendLocalizedErrorAsync("MemberSetting.Errors.VideoNotMembersOnly", true);
                     return;
                 }
-                catch (Exception ex)
+                catch (GoogleApiException ex) when (YoutubeMemberApiClient.IsDocumentedMembershipForbidden(ex))
                 {
-                    if (ex.Message.ToLower().Contains("disabled comments"))
-                    {
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.CommentsDisabled", true);
-                        return;
-                    }
-                    // 403 / forbidden / not properly authorized ＝ 會限影片，符合預期，往下設定
+                }
+                catch (GoogleApiException ex) when (YoutubeMemberApiClient.HasReason(ex, "commentsDisabled"))
+                {
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.CommentsDisabled", true);
+                    return;
+                }
+                catch (GoogleApiException)
+                {
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.InvalidVideoId", true);
+                    return;
+                }
+
+                // 設定 mutation 與背景 provider result 使用同一把 guild lock；拿鎖後必須重讀 config。
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(Context.Guild.Id, GracefulShutdown.Token);
+                using var db = _dbService.GetDbContext();
+                var config = await db.GuildYoutubeMemberConfig.SingleOrDefaultAsync(
+                    x => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId,
+                    GracefulShutdown.Token);
+                if (config == null || config.DeletionPending)
+                {
+                    string locale = await GetLocaleAsync(true);
+                    string addPath = CommandDisplayResolver.GetCommandPath(locale, "youtube-member-set", "add-member-check");
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.ConfigureFirst", true, true, addPath);
+                    return;
                 }
 
                 config.MemberCheckVideoId = videoId;
                 config.IsManualVideoId = true;
                 db.GuildYoutubeMemberConfig.Update(config);
-                db.SaveChanges();
+                await db.SaveChangesAsync(GracefulShutdown.Token);
 
-                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoChanged", true, false, channelId, videoId);
+                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoChanged", true, false,
+                    GetChannelDisplayName(config), videoId);
             }
             catch (Exception ex)
             {
@@ -364,11 +344,14 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
-            using var db = _dbService.GetDbContext();
             try
             {
-                var channelId = await _ytservice.GetChannelIdAsync(url);
-                var config = db.GuildYoutubeMemberConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
+                var channelId = await ResolveConfiguredChannelIdAsync(url);
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(Context.Guild.Id, GracefulShutdown.Token);
+                using var db = _dbService.GetDbContext();
+                var config = await db.GuildYoutubeMemberConfig.SingleOrDefaultAsync(
+                    x => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId,
+                    GracefulShutdown.Token);
                 if (config == null)
                 {
                     await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelNotConfigured", true);
@@ -378,9 +361,10 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 config.IsManualVideoId = false;
                 config.MemberCheckVideoId = "-";
                 db.GuildYoutubeMemberConfig.Update(config);
-                db.SaveChanges();
+                await db.SaveChangesAsync(GracefulShutdown.Token);
 
-                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoCleared", true, false, channelId, 5);
+                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoCleared", true, false,
+                    GetChannelDisplayName(config), 5);
             }
             catch (Exception ex)
             {
@@ -405,13 +389,46 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
         }
 
+        private async Task<string> ResolveConfiguredChannelIdAsync(string channel)
+        {
+            using var db = _dbService.GetDbContext();
+            List<string> channelIds = await db.GuildYoutubeMemberConfig.AsNoTracking()
+                .Where(x => x.GuildId == Context.Guild.Id &&
+                    (x.MemberCheckChannelTitle == channel || x.MemberCheckChannelId == channel))
+                .Select(x => x.MemberCheckChannelId)
+                .Distinct()
+                .Take(2)
+                .ToListAsync(GracefulShutdown.Token);
+            if (channelIds.Count == 1)
+                return channelIds[0];
+            if (channelIds.Count > 1)
+                throw new FormatException("有多個相同名稱的 YouTube 頻道，請從自動完成選單選擇頻道");
+            return await _ytservice.GetChannelIdAsync(channel);
+        }
+
+        private static string GetChannelDisplayName(DataBase.Table.GuildYoutubeMemberConfig config)
+            => string.IsNullOrWhiteSpace(config.MemberCheckChannelTitle)
+                ? config.MemberCheckChannelId
+                : config.MemberCheckChannelTitle;
+
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
         public async Task ListCheckedMemberAsync([Summary("page", "頁數")] int page = 1)
         {
             string locale = await GetLocaleAsync(true);
             using (var db = _dbService.GetDbContext())
             {
-                var youtubeMemberChecks = db.YoutubeMemberCheck.Where((x) => x.GuildId == Context.Guild.Id && x.IsChecked);
+                var youtubeMemberChecks = from check in db.YoutubeMemberCheck
+                                          join config in db.GuildYoutubeMemberConfig
+                                              on new { check.GuildId, ChannelId = check.CheckYTChannelId }
+                                              equals new { config.GuildId, ChannelId = config.MemberCheckChannelId }
+                                          where check.GuildId == Context.Guild.Id && check.IsChecked &&
+                                              !check.PendingRoleRemoval && !config.DeletionPending
+                                          select new
+                                          {
+                                              check.UserId,
+                                              config.MemberCheckChannelId,
+                                              config.MemberCheckChannelTitle
+                                          };
                 if (!youtubeMemberChecks.Any())
                 {
                     await SendLocalizedErrorAsync("MemberSetting.Errors.NoVerifiedMembers");
@@ -423,10 +440,14 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, (page) =>
                 {
                     return new EmbedBuilder().WithOkColor()
-                    .WithTitle(BotLocalizer.Get("MemberSetting.VerifiedListTitle", locale))
-                    .WithDescription(string.Join('\n',
-                        youtubeMemberChecks.Skip(page * 20).Take(20)
-                            .Select((x) => $"<@{x.UserId}>: {x.CheckYTChannelId}")));
+                        .WithTitle(BotLocalizer.Get("MemberSetting.VerifiedListTitle", locale))
+                        .WithDescription(string.Join('\n',
+                            youtubeMemberChecks.Skip(page * 20).Take(20)
+                                .AsEnumerable()
+                                .Select(x => $"<@{x.UserId}>: " +
+                                    (string.IsNullOrWhiteSpace(x.MemberCheckChannelTitle)
+                                        ? x.MemberCheckChannelId
+                                        : x.MemberCheckChannelTitle))));
                 }, youtubeMemberChecks.Count(), 20, true, true);
             }
         }

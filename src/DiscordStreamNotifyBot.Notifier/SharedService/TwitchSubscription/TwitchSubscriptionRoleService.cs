@@ -1,5 +1,6 @@
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.SharedService.Member;
 
 namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 {
@@ -15,18 +16,21 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         private readonly MainDbService _dbService;
         private readonly DiscordSocketClient _client;
         private readonly NotifierMetrics _metrics;
-        private readonly TwitchSubscriptionOperationCoordinator _operationCoordinator;
+        private readonly MemberOperationCoordinator _operationCoordinator;
+        private readonly MemberRoleOwnershipService _roleOwnershipService;
 
         public TwitchSubscriptionRoleService(
             MainDbService dbService,
             DiscordSocketClient client,
             NotifierMetrics metrics,
-            TwitchSubscriptionOperationCoordinator operationCoordinator)
+            MemberOperationCoordinator operationCoordinator,
+            MemberRoleOwnershipService roleOwnershipService)
         {
             _dbService = dbService;
             _client = client;
             _metrics = metrics;
             _operationCoordinator = operationCoordinator;
+            _roleOwnershipService = roleOwnershipService;
         }
 
         /// <summary>建立或修復 Twitch 驗證設定與 Tier 角色，先保存可重試 checkpoint，再同步既有成員。</summary>
@@ -59,6 +63,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             string validationError = ValidateSubscriberRole(guild, subscriberRole);
             if (validationError != null)
                 return new TwitchRoleConfigurationResult { Error = validationError };
+            if ((isNew || config.SubscriberRoleId != subscriberRole.Id) &&
+                await _roleOwnershipService.IsRoleReferencedByYoutubeConfigurationAsync(
+                    guild.Id, subscriberRole.Id, cancellationToken))
+            {
+                return new TwitchRoleConfigurationResult { Error = "TwitchMemberSetting.Errors.CrossPlatformRoleCollision" };
+            }
 
             validationError = TwitchSubscriptionConfigurationPolicy.ValidateCommonRole(
                 subscriberRole.Id,
@@ -133,9 +143,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     var checks = await db.TwitchSubscriptionCheck.AsNoTracking()
                         .Where(x => x.GuildId == guild.Id && x.BroadcasterId == broadcasterId && x.IsChecked)
                         .ToListAsync(cancellationToken);
+                    MemberRoleOwnershipSnapshot ownership = await _roleOwnershipService.LoadSnapshotAsync(
+                        guild.Id, cancellationToken);
                     foreach (var check in checks)
                     {
-                        if (!await SynchronizeSubscribedRolesAsync(config, check.DiscordUserId, check.Tier, cancellationToken))
+                        if (!await SynchronizeSubscribedRolesAsync(
+                            config, check.DiscordUserId, check.Tier, ownership, cancellationToken))
                             throw new InvalidOperationException("更新已驗證成員的 Twitch 訂閱身分組失敗。");
                     }
                     config.PreviousSubscriberRoleId = null;
@@ -170,11 +183,24 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
         }
 
-        /// <summary>冪等授予共用角色與目前 Tier，移除其他 Tier，並拒絕 deletion-pending 設定重新授權。</summary>
+        /// <summary>比對成員現有角色後授予共用角色與目前 Tier、移除其他 Tier，並拒絕 deletion-pending 設定重新授權。</summary>
         public async Task<bool> SynchronizeSubscribedRolesAsync(
             GuildTwitchSubscriptionConfig config,
             ulong discordUserId,
             string tier,
+            CancellationToken cancellationToken)
+        {
+            MemberRoleOwnershipSnapshot ownership = await _roleOwnershipService.LoadSnapshotAsync(
+                config.GuildId, cancellationToken);
+            return await SynchronizeSubscribedRolesAsync(
+                config, discordUserId, tier, ownership, cancellationToken);
+        }
+
+        internal async Task<bool> SynchronizeSubscribedRolesAsync(
+            GuildTwitchSubscriptionConfig config,
+            ulong discordUserId,
+            string tier,
+            MemberRoleOwnershipSnapshot ownership,
             CancellationToken cancellationToken)
         {
             if (config.DeletionPending)
@@ -192,15 +218,23 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var options = new RequestOptions { CancelToken = cancellationToken };
-                if (!CanManageRole(guild, config.SubscriberRoleId))
+                IGuildUser member = await ((IGuild)guild).GetUserAsync(
+                    discordUserId, CacheMode.AllowDownload, options);
+                if (member == null)
                     return false;
-                await _client.Rest.AddRoleAsync(guild.Id, discordUserId, config.SubscriberRoleId, options);
-                if (!CanManageRole(guild, tierRoleId))
-                    return false;
-                await _client.Rest.AddRoleAsync(guild.Id, discordUserId, tierRoleId, options);
-                foreach (ulong roleId in TwitchSubscriptionRolePolicy.GetOtherTierRoleIds(config, tier))
+                HashSet<ulong> currentRoleIds = member.RoleIds.ToHashSet();
+                var diff = TwitchSubscriptionRolePolicy.GetSynchronizationDiff(config, tier, currentRoleIds);
+                foreach (ulong roleId in diff.AddRoleIds)
+                    await _client.Rest.AddRoleAsync(guild.Id, discordUserId, roleId, options);
+                foreach (ulong roleId in diff.RemoveRoleIds)
                 {
                     if (guild.GetRole(roleId) == null)
+                        continue;
+                    if (ownership.HasOtherActiveEntitlement(
+                        discordUserId,
+                        roleId,
+                        MemberEntitlementProvider.Twitch,
+                        config.BroadcasterId))
                         continue;
                     if (!CanManageRole(guild, roleId))
                         return false;
@@ -208,11 +242,13 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 }
                 if (config.PreviousSubscriberRoleId is ulong previousRoleId &&
                     previousRoleId != config.SubscriberRoleId &&
+                    currentRoleIds.Contains(previousRoleId) &&
                     !await RemoveObsoleteSharedRoleAsync(
                         guild,
                         discordUserId,
                         previousRoleId,
                         config.BroadcasterId,
+                        ownership,
                         cancellationToken))
                 {
                     return false;
@@ -238,6 +274,17 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             ulong discordUserId,
             CancellationToken cancellationToken)
         {
+            MemberRoleOwnershipSnapshot ownership = await _roleOwnershipService.LoadSnapshotAsync(
+                config.GuildId, cancellationToken);
+            return await RemoveSubscriptionRolesAsync(config, discordUserId, ownership, cancellationToken);
+        }
+
+        internal async Task<bool> RemoveSubscriptionRolesAsync(
+            GuildTwitchSubscriptionConfig config,
+            ulong discordUserId,
+            MemberRoleOwnershipSnapshot ownership,
+            CancellationToken cancellationToken)
+        {
             SocketGuild guild = _client.GetGuild(config.GuildId);
             if (guild == null)
                 return Bot.ShouldDeleteMissingGuild(config.GuildId);
@@ -252,12 +299,22 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 {
                     if (guild.GetRole(roleId) == null)
                         continue;
+                    if (ownership.HasOtherActiveEntitlement(
+                        discordUserId,
+                        roleId,
+                        MemberEntitlementProvider.Twitch,
+                        config.BroadcasterId))
+                        continue;
                     if (!CanManageRole(guild, roleId))
                         return false;
                     await _client.Rest.RemoveRoleAsync(guild.Id, discordUserId, roleId, options);
                 }
 
-                if (!await HasOtherSharedRoleEntitlementAsync(config, discordUserId, cancellationToken) &&
+                if (!ownership.HasOtherActiveEntitlement(
+                        discordUserId,
+                        config.SubscriberRoleId,
+                        MemberEntitlementProvider.Twitch,
+                        config.BroadcasterId) &&
                     guild.GetRole(config.SubscriberRoleId) != null)
                 {
                     if (!CanManageRole(guild, config.SubscriberRoleId))
@@ -285,6 +342,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
         }
 
+        /// <summary>供 guild lock 內的批次同步與孤兒對帳共用同一份 ownership snapshot。</summary>
+        internal Task<MemberRoleOwnershipSnapshot> LoadOwnershipSnapshotAsync(
+            ulong guildId,
+            CancellationToken cancellationToken)
+            => _roleOwnershipService.LoadSnapshotAsync(guildId, cancellationToken);
+
         /// <summary>持久化刪除意圖後清理成員與系統 Tier 角色；任何 Discord 失敗皆保留設定供排程重試。</summary>
         public async Task<bool> DeleteConfigurationAsync(
             GuildTwitchSubscriptionConfig config,
@@ -310,10 +373,13 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             config.DeletionPending = true;
             await db.SaveChangesAsync(cancellationToken);
 
+            MemberRoleOwnershipSnapshot ownership = await _roleOwnershipService.LoadSnapshotAsync(
+                config.GuildId, cancellationToken);
             bool allRemoved = true;
             foreach (var check in checks)
             {
-                bool removed = await RemoveSubscriptionRolesAsync(config, check.DiscordUserId, cancellationToken);
+                bool removed = await RemoveSubscriptionRolesAsync(
+                    config, check.DiscordUserId, ownership, cancellationToken);
                 SocketGuild currentGuild = _client.GetGuild(config.GuildId);
                 if (removed && currentGuild != null && config.PreviousSubscriberRoleId is ulong previousRoleId)
                 {
@@ -322,6 +388,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         check.DiscordUserId,
                         previousRoleId,
                         config.BroadcasterId,
+                        ownership,
                         cancellationToken);
                 }
                 allRemoved &= removed;
@@ -338,11 +405,18 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         .Where(x => x.GuildId == config.GuildId && x.Id != config.Id)
                         .ToArrayAsync(cancellationToken);
                     HashSet<ulong> protectedRoles = protectedConfigs
-                        .SelectMany(x => new[] { x.SubscriberRoleId, x.Tier1RoleId, x.Tier2RoleId, x.Tier3RoleId })
+                        .SelectMany(x => new[]
+                        {
+                            x.SubscriberRoleId,
+                            x.PreviousSubscriberRoleId ?? 0,
+                            x.Tier1RoleId,
+                            x.Tier2RoleId,
+                            x.Tier3RoleId
+                        })
                         .ToHashSet();
                     foreach (ulong roleId in new[] { config.Tier1RoleId, config.Tier2RoleId, config.Tier3RoleId }.Where(x => x != 0).Distinct())
                     {
-                        if (protectedRoles.Contains(roleId))
+                        if (protectedRoles.Contains(roleId) || !ownership.CanDeleteTwitchTierRole(roleId))
                             continue;
                         IRole role = guild.GetRole(roleId);
                         if (role != null)
@@ -378,9 +452,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             SocketGuild guild,
             ulong discordUserId,
             ulong roleId,
+            MemberRoleOwnershipSnapshot ownership,
             CancellationToken cancellationToken)
         {
             if (guild.GetRole(roleId) == null)
+                return true;
+            if (ownership.HasOtherActiveEntitlement(discordUserId, roleId))
                 return true;
             if (!CanManageRole(guild, roleId))
                 return false;
@@ -471,50 +548,20 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             ], new RequestOptions { CancelToken = cancellationToken });
         }
 
-        /// <summary>確認同一 guild 內是否仍有其他有效 broadcaster 設定授予相同共用角色。</summary>
-        private async Task<bool> HasOtherSharedRoleEntitlementAsync(
-            GuildTwitchSubscriptionConfig currentConfig,
-            ulong discordUserId,
-            CancellationToken cancellationToken)
-        {
-            using var db = _dbService.GetDbContext();
-            string[] broadcasterIds = await db.TwitchSubscriptionCheck.AsNoTracking()
-                .Where(x => x.GuildId == currentConfig.GuildId &&
-                    x.DiscordUserId == discordUserId &&
-                    x.BroadcasterId != currentConfig.BroadcasterId &&
-                    x.IsChecked)
-                .Select(x => x.BroadcasterId)
-                .ToArrayAsync(cancellationToken);
-            if (broadcasterIds.Length == 0)
-                return false;
-            return await db.GuildTwitchSubscriptionConfig.AsNoTracking().AnyAsync(x =>
-                x.GuildId == currentConfig.GuildId &&
-                !x.DeletionPending &&
-                x.SubscriberRoleId == currentConfig.SubscriberRoleId &&
-                broadcasterIds.Contains(x.BroadcasterId), cancellationToken);
-        }
-
         /// <summary>在不存在其他 entitlement 時移除 repair checkpoint 指向的舊共用角色。</summary>
         private async Task<bool> RemoveObsoleteSharedRoleAsync(
             SocketGuild guild,
             ulong discordUserId,
             ulong oldSubscriberRoleId,
             string currentBroadcasterId,
+            MemberRoleOwnershipSnapshot ownership,
             CancellationToken cancellationToken)
         {
-            using var db = _dbService.GetDbContext();
-            string[] entitledBroadcasterIds = await db.TwitchSubscriptionCheck.AsNoTracking()
-                .Where(x => x.GuildId == guild.Id &&
-                    x.DiscordUserId == discordUserId &&
-                    x.BroadcasterId != currentBroadcasterId &&
-                    x.IsChecked)
-                .Select(x => x.BroadcasterId)
-                .ToArrayAsync(cancellationToken);
-            bool stillEntitled = await db.GuildTwitchSubscriptionConfig.AsNoTracking().AnyAsync(x =>
-                x.GuildId == guild.Id &&
-                !x.DeletionPending &&
-                x.SubscriberRoleId == oldSubscriberRoleId &&
-                entitledBroadcasterIds.Contains(x.BroadcasterId), cancellationToken);
+            bool stillEntitled = ownership.HasOtherActiveEntitlement(
+                discordUserId,
+                oldSubscriberRoleId,
+                MemberEntitlementProvider.Twitch,
+                currentBroadcasterId);
             if (stillEntitled || guild.GetRole(oldSubscriberRoleId) == null)
                 return true;
             if (!CanManageRole(guild, oldSubscriberRoleId))

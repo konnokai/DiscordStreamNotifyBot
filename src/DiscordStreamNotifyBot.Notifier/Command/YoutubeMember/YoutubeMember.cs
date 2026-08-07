@@ -1,5 +1,7 @@
 ﻿using Discord.Commands;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService.Member;
 
 namespace DiscordStreamNotifyBot.Command.YoutubeMember
 {
@@ -8,12 +10,15 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
         private readonly SharedService.Youtube.YoutubeStreamService _service;
         private readonly SharedService.YoutubeMember.YoutubeMemberService _ytMemberService;
         private readonly MainDbService _dbService;
+        private readonly MemberOperationCoordinator _operationCoordinator;
 
-        public YoutubeMember(SharedService.Youtube.YoutubeStreamService service, SharedService.YoutubeMember.YoutubeMemberService youtubeMemberService, MainDbService dbService)
+        public YoutubeMember(SharedService.Youtube.YoutubeStreamService service, SharedService.YoutubeMember.YoutubeMemberService youtubeMemberService,
+            MainDbService dbService, MemberOperationCoordinator operationCoordinator)
         {
             _service = service;
             _ytMemberService = youtubeMemberService;
             _dbService = dbService;
+            _operationCoordinator = operationCoordinator;
         }
 
         [Command("ListAllGuildCheckedMember")]
@@ -86,6 +91,15 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
 
             try
             {
+                ulong[] guildIds;
+                using (var readDb = _dbService.GetDbContext())
+                {
+                    guildIds = await readDb.GuildYoutubeMemberConfig.AsNoTracking()
+                        .Where(x => x.MemberCheckChannelId == channelId).Select(x => x.GuildId).Distinct()
+                        .OrderBy(x => x).ToArrayAsync();
+                }
+                await using var guildLocks = await _operationCoordinator.LockGuildsAsync(
+                    guildIds, GracefulShutdown.Token);
                 using (var db = _dbService.GetDbContext())
                 {
                     var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == channelId);

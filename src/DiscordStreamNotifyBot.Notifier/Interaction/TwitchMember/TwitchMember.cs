@@ -248,14 +248,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchMember
             await component.FollowupAsync(
                 embed: new EmbedBuilder().WithOkColor().WithDescription(string.Join('\n', messages)).Build(),
                 ephemeral: true);
-            try
-            {
-                await component.Message.ModifyAsync(x => x.Components = new ComponentBuilder().Build());
-            }
-            catch (Exception ex)
-            {
-                Log.Warn($"停用 Twitch 訂閱驗證選單失敗: {ex.GetType().Name}");
-            }
         }
     }
 }

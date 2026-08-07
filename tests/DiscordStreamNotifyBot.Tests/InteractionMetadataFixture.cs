@@ -2,6 +2,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;
 
@@ -58,6 +59,8 @@ namespace DiscordStreamNotifyBot.Tests
                 _services[typeof(IServiceScopeFactory)] = this;
                 _services[typeof(DiscordSocketClient)] = client;
                 _services[typeof(InteractionService)] = interactions;
+                _services[typeof(YoutubeMemberRoleService)] =
+                    RuntimeHelpers.GetUninitializedObject(typeof(YoutubeMemberRoleService));
             }
 
             public IServiceScope CreateScope()

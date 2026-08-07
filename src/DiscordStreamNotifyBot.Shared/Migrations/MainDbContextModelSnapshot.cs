@@ -53,6 +53,29 @@ namespace DiscordStreamNotifyBot.Migrations
                     b.ToTable("banner_change", (string)null);
                 });
 
+            modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.GoogleOAuthUnlinkIntent", b =>
+                {
+                    b.Property<ulong>("DiscordUserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("discord_user_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("DiscordUserId"));
+
+                    b.Property<DateTime>("DateAdded")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("date_added");
+
+                    b.Property<string>("ExpectedEncryptedToken")
+                        .HasColumnType("longtext")
+                        .HasColumnName("expected_encrypted_token");
+
+                    b.HasKey("DiscordUserId")
+                        .HasName("pk_google_oauth_unlink_intent");
+
+                    b.ToTable("google_oauth_unlink_intent", (string)null);
+                });
+
             modelBuilder.Entity("DiscordStreamNotifyBot.DataBase.Table.GuildConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -191,6 +214,10 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("date_added");
 
+                    b.Property<bool>("DeletionPending")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("deletion_pending");
+
                     b.Property<ulong>("GuildId")
                         .HasColumnType("bigint unsigned")
                         .HasColumnName("guild_id");
@@ -200,6 +227,7 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasColumnName("is_manual_video_id");
 
                     b.Property<string>("MemberCheckChannelId")
+                        .IsRequired()
                         .HasColumnType("longtext")
                         .HasColumnName("member_check_channel_id");
 
@@ -215,8 +243,20 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasColumnType("longtext")
                         .HasColumnName("member_check_video_id");
 
+                    b.Property<ulong?>("PreviousMemberCheckGrantRoleId")
+                        .HasColumnType("bigint unsigned")
+                        .HasColumnName("previous_member_check_grant_role_id");
+
                     b.HasKey("Id")
                         .HasName("pk_guild_youtube_member_config");
+
+                    b.HasIndex("DeletionPending", "GuildId")
+                        .HasDatabaseName("ix_guild_youtube_member_config_deletion_pending_guild_id");
+
+                    b.HasIndex("GuildId", "MemberCheckChannelId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_guild_youtube_member_config_guild_id_member_check_channel_id")
+                        .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 24 });
 
                     b.ToTable("guild_youtube_member_config", (string)null);
                 });
@@ -972,6 +1012,7 @@ namespace DiscordStreamNotifyBot.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CheckYTChannelId")
+                        .IsRequired()
                         .HasColumnType("longtext")
                         .HasColumnName("check_yt_channel_id");
 
@@ -996,12 +1037,27 @@ namespace DiscordStreamNotifyBot.Migrations
                         .HasColumnType("varchar(16)")
                         .HasColumnName("locale");
 
+                    b.Property<bool>("PendingRoleRemoval")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("pending_role_removal");
+
                     b.Property<ulong>("UserId")
                         .HasColumnType("bigint unsigned")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
                         .HasName("pk_youtube_member_check");
+
+                    b.HasIndex("PendingRoleRemoval", "GuildId")
+                        .HasDatabaseName("ix_youtube_member_check_pending_role_removal_guild_id");
+
+                    b.HasIndex("UserId", "PendingRoleRemoval")
+                        .HasDatabaseName("ix_youtube_member_check_user_id_pending_role_removal");
+
+                    b.HasIndex("GuildId", "UserId", "CheckYTChannelId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_youtube_member_check_guild_id_user_id_check_yt_channel_id")
+                        .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0, 24 });
 
                     b.ToTable("youtube_member_check", (string)null);
                 });

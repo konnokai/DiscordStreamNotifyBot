@@ -2,12 +2,9 @@
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService.Google;
 using DiscordStreamNotifyBot.SharedService.Youtube;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Auth.OAuth2.Flows;
-using Google.Apis.Auth.OAuth2.Responses;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
 using Polly;
 
 namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
@@ -16,9 +13,13 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
     {
         public bool IsEnable { get; private set; } = true;
 
-        Timer checkOldMemberStatus, checkNewMemberStatus;
-        Timer checkOrphanMemberRole; // 僅 EnableGuildMembersIntent 開啟時建立（孤兒會限身分組對帳）
-        private readonly GoogleAuthorizationCodeFlow flow;
+        private readonly CancellationTokenSource _lifecycleCancellation;
+        private readonly YoutubeMemberLifecycleTaskRegistry _eventTasks = new();
+        private Task _oldCheckTask;
+        private Task _newCheckTask;
+        private Task _orphanCheckTask;
+        private int _started;
+        private int _stopped;
         private readonly YoutubeStreamService _streamService;
         private readonly DiscordSocketClient _client;
         private readonly BotConfig _botConfig;
@@ -27,13 +28,22 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         private readonly CommandDisplayResolver _commandDisplayResolver;
         private readonly GuildLocaleService _guildLocaleService;
         private readonly LocaleResolver _localeResolver;
-        private readonly IServiceProvider _services;
         private readonly NotifierMetrics _metrics;
+        private readonly YoutubeMemberRoleService _roleService;
+        private readonly SharedService.Member.MemberOperationCoordinator _operationCoordinator;
+        private readonly YoutubeMemberApiClient _apiClient;
+        private readonly YoutubeMemberAuthorizationService _authorizationService;
+        private readonly GoogleOAuthOperationLock _googleOperationLock;
 
         public YoutubeMemberService(YoutubeStreamService streamService, DiscordSocketClient discordSocketClient,
             BotConfig botConfig, MainDbService dbService, BotLocalizer localizer,
             CommandDisplayResolver commandDisplayResolver, GuildLocaleService guildLocaleService,
-            LocaleResolver localeResolver, IServiceProvider services, NotifierMetrics metrics)
+            LocaleResolver localeResolver, NotifierMetrics metrics,
+            YoutubeMemberRoleService roleService,
+            SharedService.Member.MemberOperationCoordinator operationCoordinator,
+            YoutubeMemberApiClient apiClient,
+            YoutubeMemberAuthorizationService authorizationService,
+            GoogleOAuthOperationLock googleOperationLock)
         {
             _streamService = streamService;
             _client = discordSocketClient;
@@ -43,167 +53,115 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             _commandDisplayResolver = commandDisplayResolver;
             _guildLocaleService = guildLocaleService;
             _localeResolver = localeResolver;
-            _services = services;
             _metrics = metrics;
+            _roleService = roleService;
+            _operationCoordinator = operationCoordinator;
+            _apiClient = apiClient;
+            _authorizationService = authorizationService;
+            _googleOperationLock = googleOperationLock;
+            _lifecycleCancellation = CancellationTokenSource.CreateLinkedTokenSource(GracefulShutdown.Token);
 
-            if (string.IsNullOrEmpty(_botConfig.GoogleClientId) || string.IsNullOrEmpty(_botConfig.GoogleClientSecret))
+            if (!_authorizationService.IsConfigured)
             {
                 Log.Warn($"{nameof(BotConfig.GoogleClientId)} 或 {nameof(BotConfig.GoogleClientSecret)} 空白，無法使用會限驗證系統");
                 IsEnable = false;
-                return;
             }
 
-            flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
-            {
-                ClientSecrets = new ClientSecrets
-                {
-                    ClientId = _botConfig.GoogleClientId,
-                    ClientSecret = _botConfig.GoogleClientSecret
-                },
-                Scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"],
-                DataStore = new MySqlDataStore(_dbService, _botConfig.ProviderTokenEncryptionKey)
-            });
-
-            Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), async (channel, value) =>
-            {
-                // 收斂到 shard 0：RemoveMemberCheckFromDbAsync 做的是全域 DB 刪除 + REST 移除用戶組（REST 跨 shard 有效），
-                // 單一 shard 處理即完整；每個 shard 都做只是重複工作與 concurrency 例外。
-                // 取捨：shard 0 當下離線時該次 revoke 會漏收，但每日 CheckMemberShip 會偵測 token 消失並移除，屬自癒。
-                if (Bot.ShardId != 0)
-                    return;
-
-                try
-                {
-                    ulong userId = 0;
-                    if (!ulong.TryParse(value.ToString(), out userId))
-                        return;
-
-                    Log.Info($"接收到 Redis 的 Revoke 請求: {userId}");
-
-                    await RemoveMemberCheckFromDbAsync(userId);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"MemberRevokeTokenFromRedis: {ex}");
-                }
-            });
-
-            _client.SelectMenuExecuted += async (component) =>
-            {
-                if (component.HasResponded)
-                    return;
-
-                try
-                {
-                    if (!IsYoutubeMemberSelectMenu(component.Data.CustomId))
-                        return;
-
-                    string[] customId = component.Data.CustomId.Split(new char[] { ':' });
-                    string locale = await component.ResolveLocaleAsync(_services, true);
-                    if (customId.Length != 4 || customId[1] != "check")
-                    {
-                        await component.SendErrorAsync(_localizer, locale, "Components.Invalid", ephemeral: true);
-                        return;
-                    }
-
-                    using var db = _dbService.GetDbContext();
-                    if (customId[1] == "check" && customId.Length == 4)
-                    {
-                        await component.DeferAsync(true);
-
-                        if (!ulong.TryParse(customId[2], out ulong guildId))
-                        {
-                            await component.SendErrorAsync(_localizer, locale, "Errors.Unknown", true, true);
-                            Log.Error(JsonConvert.SerializeObject(component));
-                            return;
-                        }
-
-                        if (!ulong.TryParse(customId[3], out ulong userId))
-                        {
-                            await component.SendErrorAsync(_localizer, locale, "Errors.Unknown", true, true);
-                            Log.Error(JsonConvert.SerializeObject(component));
-                            return;
-                        }
-
-                        if (component.User.Id != userId)
-                        {
-                            await component.SendErrorAsync(_localizer, locale, "Components.NotAllowed", true, true);
-                            return;
-                        }
-
-                        var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId && x.GuildId == guildId).ToList();
-                        var guildYoutubeMemberConfigs = youtubeMembers.Count == 0
-                            ? []
-                            : db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guildId).ToList();
-
-                        db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
-                        db.SaveChanges();
-
-                        if (guildYoutubeMemberConfigs.Any())
-                        {
-                            foreach (var item in guildYoutubeMemberConfigs)
-                            {
-                                try { await _client.Rest.RemoveRoleAsync(item.GuildId, userId, item.MemberCheckGrantRoleId); }
-                                catch (Exception) { }
-                            }
-                        }
-
-                        foreach (var item in component.Data.Values)
-                        {
-                            db.YoutubeMemberCheck.Add(new YoutubeMemberCheck()
-                            {
-                                UserId = userId,
-                                GuildId = guildId,
-                                CheckYTChannelId = item,
-                                Locale = SupportedLocale.Normalize(component.UserLocale)
-                            });
-                        }
-                        db.SaveChanges();
-
-                        try { await component.Message.DeleteAsync(); }
-                        catch
-                        {
-                            await DisableSelectMenuAsync(component, locale,
-                                _localizer.Format("Member.Select.SelectedCount", locale, component.Data.Values.Count));
-                        }
-
-                        await component.SendConfirmAsync(_localizer, locale, "Member.CheckQueuedWithDmNotice", true, true, 5);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "處理會限驗證選單時失敗");
-                    string locale = await component.ResolveLocaleAsync(_services, true);
-                    await component.SendErrorAsync(_localizer, locale, "Errors.Unknown", true, true);
-                    return;
-                }
-            };
-
-            // 會限影片探索（CheckMemberShipOnlyVideoId）已搬至 Scraper（避免多 shard 重複燒配額），此處不再排程。
-            checkOldMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), true, TimeSpan.FromSeconds(Math.Round(Convert.ToDateTime($"{DateTime.Now.AddDays(1):yyyy/MM/dd 04:00:00}").Subtract(DateTime.Now).TotalSeconds)), TimeSpan.FromDays(1));
-            checkNewMemberStatus = new Timer(new TimerCallback(async (obj) => await CheckMemberShip(obj)), false, TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5));
-
-            // GuildMembers 特權 intent 開啟時才啟用：會員重加入即時回補身分組 + 孤兒身分組每日對帳回收。
-            // 旗標關（預設）＝完全不訂閱事件、不建對帳 timer，行為與現況一致，避免未取得特權時影響既有功能。
-            if (_botConfig.EnableGuildMembersIntent)
-            {
-                _client.UserJoined += OnUserJoinedRestoreMemberRoleAsync;
-                // 啟動 5 分鐘後（待 client Ready + 成員可下載）跑一次對帳，之後每日一次
-                checkOrphanMemberRole = new Timer(new TimerCallback(async (_) => await ReconcileMemberRolesAsync()), null, TimeSpan.FromMinutes(5), TimeSpan.FromDays(1));
-            }
-
-            // token 儲存已改走 MySQL（MySqlDataStore 為真實來源），不再需要啟動時 Redis→DB 備份。
-            // 一次性 backfill（切換前把 Redis TokenResponse:* 回填至 youtube_member_access_token）見 docs/MEMBER_TOKEN_STORE_MYSQL_PLAN.md 遷移章節。
-
-            _dbService = dbService;
         }
 
-        internal static bool IsYoutubeMemberSelectMenu(string customId)
-            => customId?.StartsWith("member:", StringComparison.Ordinal) == true;
+        /// <summary>在 Discord/Redis 已就緒後才訂閱事件並啟動可 await 的會限背景工作。</summary>
+        public void Start()
+        {
+            if (Interlocked.Exchange(ref _started, 1) != 0)
+                return;
+
+            CancellationToken cancellationToken = _lifecycleCancellation.Token;
+            Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal),
+                (_, value) => TrackEventTask(() => HandleRevokeTokenAsync(value, cancellationToken)));
+            _newCheckTask = PeriodicRunner.RunAsync("Youtube-member-new-check", TimeSpan.FromSeconds(15),
+                TimeSpan.FromMinutes(5), () => CheckMemberShipCore(false, cancellationToken), cancellationToken);
+            _oldCheckTask = PeriodicRunner.RunAsync("Youtube-member-old-check",
+                YoutubeMemberLifecyclePolicy.NextOldCheckDelay(DateTime.Now), TimeSpan.FromDays(1),
+                () => CheckMemberShipCore(true, cancellationToken), cancellationToken);
+
+            if (YoutubeMemberLifecyclePolicy.ShouldManageGuildMemberSubscription(_botConfig.EnableGuildMembersIntent))
+            {
+                _client.UserJoined += OnUserJoinedRestoreMemberRoleAsync;
+                _orphanCheckTask = PeriodicRunner.RunAsync("Youtube-member-orphan-role", TimeSpan.FromMinutes(5),
+                    TimeSpan.FromDays(1), () => ReconcileMemberRolesAsync(cancellationToken), cancellationToken);
+            }
+        }
+
+        /// <summary>先解除事件來源，再取消並等待所有週期與既有事件工作結束。</summary>
+        public async Task StopAsync()
+        {
+            if (Volatile.Read(ref _started) == 0 || Interlocked.Exchange(ref _stopped, 1) != 0)
+                return;
+
+            if (YoutubeMemberLifecyclePolicy.ShouldManageGuildMemberSubscription(_botConfig.EnableGuildMembersIntent))
+                _client.UserJoined -= OnUserJoinedRestoreMemberRoleAsync;
+            try
+            {
+                Bot.RedisSub.Unsubscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal));
+            }
+            catch (Exception ex) when (ex is RedisException or TimeoutException or InvalidOperationException)
+            {
+                Log.Warn($"關閉 YouTube 解除授權事件訂閱時 Redis 暫時失敗: {ex.GetType().Name}");
+            }
+
+            Task[] eventTasks = _eventTasks.StopAndSnapshot();
+            await _lifecycleCancellation.CancelAsync();
+            try
+            {
+                Task[] tasks = new[] { _newCheckTask, _oldCheckTask, _orphanCheckTask }
+                    .Where(task => task != null).Concat(eventTasks).ToArray();
+                await YoutubeMemberLifecyclePolicy.DrainAsync(tasks);
+            }
+            catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested)
+            {
+            }
+            _lifecycleCancellation.Dispose();
+        }
+
+        private Task TrackEventTask(Func<Task> action)
+        {
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!_eventTasks.TryRegister(completion.Task, out long taskId))
+                return Task.CompletedTask;
+
+            _ = RunTrackedEventAsync(taskId, action, completion);
+            return completion.Task;
+        }
+
+        private async Task RunTrackedEventAsync(
+            long taskId,
+            Func<Task> action,
+            TaskCompletionSource completion)
+        {
+            try { await action(); }
+            catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested) { }
+            catch (Exception ex) { Log.Error(ex.Demystify(), "處理 YouTube 會員生命週期事件失敗"); }
+            finally
+            {
+                _eventTasks.Complete(taskId);
+                completion.TrySetResult();
+            }
+        }
+
+        private async Task HandleRevokeTokenAsync(RedisValue value, CancellationToken cancellationToken)
+        {
+            // Redis 僅作 wake-up hint；週期清理的 MySQL pending state 才是 durable truth。
+            if (Bot.ShardId != 0 || !ulong.TryParse(value.ToString(), out ulong userId))
+                return;
+            Log.Info($"接收到 Redis 的 Revoke 請求: {userId}");
+            // Backend 已完成 revoke；延遲或重複 hint 絕不可重新把 active check 轉成 pending，
+            // 更不能碰可能已重新綁定的 token。它只喚醒既有 durable cleanup。
+            await _roleService.RetryPendingCleanupForUserAsync(userId, cancellationToken);
+        }
 
         public async Task<bool> IsExistUserTokenAsync(string discordUserId)
         {
-            return await ((ITokenDataStore)flow.DataStore).IsExistUserTokenAsync<TokenResponse>(discordUserId);
+            return await _authorizationService.IsExistUserTokenAsync(discordUserId);
         }
 
         public async Task RevokeUserGoogleCertAsync(string discordUserId = "")
@@ -213,64 +171,223 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 if (string.IsNullOrEmpty(discordUserId))
                     throw new NullReferenceException("userId");
 
-                var token = await flow.LoadTokenAsync(discordUserId, CancellationToken.None);
-                if (token == null)
-                    throw new NullReferenceException("token");
+                ulong userId = ulong.Parse(discordUserId);
+                GoogleOAuthOperationLockAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
+                    userId, CancellationToken.None);
+                if (lockResult.Status != GoogleOAuthOperationLockAcquireStatus.Acquired)
+                    throw new InvalidOperationException($"無法取得 Google OAuth 跨程序 lease: {lockResult.Status}");
+                await using var operationLease = lockResult.Lease;
 
-                string revokeToken = token.RefreshToken ?? token.AccessToken;
-                await flow.RevokeTokenAsync(discordUserId, revokeToken, CancellationToken.None);
+                YoutubeMemberTokenSnapshot? snapshot = await _authorizationService.GetTokenSnapshotAsync(
+                    discordUserId, CancellationToken.None);
+                if (snapshot == null || !await PrepareMemberCheckCleanupAsync(
+                        userId, snapshot.Value.EncryptedTokenPayload, CancellationToken.None,
+                        null, null))
+                {
+                    throw new InvalidOperationException("Google 憑證已被新的綁定取代，取消本次解除授權。");
+                }
 
+                // provider 結果不明時 RevokeAsync 會丟出並保留本機 token；pending intent 留下供安全重試。
+                if (await operationLease.EnsureOwnedAsync(CancellationToken.None) !=
+                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                {
+                    throw new InvalidOperationException("Google OAuth 跨程序 lease 已失效，取消 provider revoke。");
+                }
+                await _authorizationService.RevokeAsync(snapshot.Value, CancellationToken.None);
+                if (await operationLease.EnsureOwnedAsync(CancellationToken.None) !=
+                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                {
+                    throw new InvalidOperationException("Google OAuth 跨程序 lease 已失效，保留 durable unlink intent。");
+                }
+                if (!await CompleteMemberCheckCleanupAsync(
+                        userId, snapshot.Value.EncryptedTokenPayload, CancellationToken.None))
+                {
+                    throw new InvalidOperationException("Google 憑證已被新的綁定取代，保留新的憑證。");
+                }
                 Log.Info($"{discordUserId} 已解除 Google 憑證");
-                await RemoveMemberCheckFromDbAsync(ulong.Parse(discordUserId));
             }
             catch (Exception ex)
             {
-                await flow.DeleteTokenAsync(discordUserId, CancellationToken.None);
-                Log.Error(ex.Demystify(), "RevokeToken");
+                // provider 例外可能攜帶 OAuth response body，僅記錄型別避免意外輸出憑證資料。
+                Log.Error(YoutubeMemberSafeLogging.DescribeFailure("RevokeToken", ex));
                 throw;
             }
         }
 
-        public async Task RemoveMemberCheckFromDbAsync(ulong userId)
+        /// <summary>
+        /// 僅在 provider 已明確回傳 authorization invalid 時呼叫。expectedEncryptedToken 是 provider
+        /// 呼叫前讀到的原始密文，避免延遲結果刪掉其後重新綁定的憑證或 entitlement。
+        /// </summary>
+        private async Task<bool> RemoveMemberCheckFromDbAsync(ulong userId, string expectedEncryptedToken,
+            YoutubeMemberProbeConfigurationSnapshot configurationSnapshot,
+            YoutubeMemberCheckStateSnapshot checkSnapshot,
+            int checkId,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                using var db = _dbService.GetDbContext();
-
-                var youtubeMembers = db.YoutubeMemberCheck.Where((x) => x.UserId == userId).ToList();
-                var youtubeMemberAccessToken = db.YoutubeMemberAccessToken.FirstOrDefault((x) => x.DiscordUserId == userId);
-
-                // OAuth 資料清除與會限驗證資料解耦：只要任一存在就要清（有 token 無 member-check 的使用者 revoke 時也要刪 token）
-                if (youtubeMembers.Count == 0 && youtubeMemberAccessToken == null)
+                GoogleOAuthOperationLockAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
+                    userId, cancellationToken);
+                if (lockResult.Status != GoogleOAuthOperationLockAcquireStatus.Acquired)
+                    return false;
+                await using var operationLease = lockResult.Lease;
+                if (await operationLease.EnsureOwnedAsync(cancellationToken) !=
+                    GoogleOAuthOperationLockOwnershipStatus.Owned)
                 {
-                    Log.Warn($"找不到該使用者的會限驗證或 OAuth 資料，忽略: {userId}");
-                    return;
+                    return false;
                 }
-
-                Log.Info($"移除此使用者的會限驗證與 OAuth 資料: {userId}");
-
-                if (youtubeMembers.Count > 0)
-                {
-                    var guildIds = youtubeMembers.Select((x) => x.GuildId).Distinct().ToList();
-                    var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => guildIds.Contains(x.GuildId));
-                    foreach (var item in guildYoutubeMemberConfigs)
-                    {
-                        try { await _client.Rest.RemoveRoleAsync(item.GuildId, userId, item.MemberCheckGrantRoleId); }
-                        catch { }
-                    }
-                    db.YoutubeMemberCheck.RemoveRange(youtubeMembers);
-                }
-
-                if (youtubeMemberAccessToken != null)
-                    db.YoutubeMemberAccessToken.Remove(youtubeMemberAccessToken);
-
-                db.SaveChanges();
+                if (!await PrepareMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken,
+                        configurationSnapshot, (checkId, checkSnapshot)) ||
+                    await operationLease.EnsureOwnedAsync(cancellationToken) !=
+                        GoogleOAuthOperationLockOwnershipStatus.Owned ||
+                    !await CompleteMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken))
+                    return false;
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), "AfterRevokeUserCertAsync");
                 throw;
             }
+        }
+
+        /// <summary>在任何 provider revoke 或本機 token 刪除之前，先保存每筆角色移除 intent。</summary>
+        private async Task<bool> PrepareMemberCheckCleanupAsync(ulong userId, string expectedEncryptedToken,
+            CancellationToken cancellationToken,
+            YoutubeMemberProbeConfigurationSnapshot? providerConfigurationSnapshot,
+            (int CheckId, YoutubeMemberCheckStateSnapshot Snapshot)? providerCheckSnapshot)
+        {
+            await using var userLock = await _operationCoordinator.LockUserAsync(userId, cancellationToken);
+            ulong[] expectedGuildIds = await GetUserCheckGuildIdsAsync(userId, cancellationToken);
+            await using var guildLocks = await _operationCoordinator.LockGuildsAsync(expectedGuildIds, cancellationToken);
+            Log.Info($"標記此使用者的會限驗證待清理: {userId}");
+            using var intentDb = _dbService.GetDbContext();
+            await using var transaction = await intentDb.Database.BeginTransactionAsync(cancellationToken);
+            YoutubeMemberAccessToken token = await LockTokenAsync(intentDb, userId, cancellationToken);
+            if (!YoutubeMemberPolicies.IsCurrentTokenPayload(expectedEncryptedToken, token?.EncryptedAccessToken))
+            {
+                Log.Warn($"YouTube OAuth token 已更新，停止過期 cleanup: {userId}");
+                return false;
+            }
+            List<YoutubeMemberCheck> checks = await LockUserChecksAsync(intentDb, userId, cancellationToken);
+            ulong[] actualGuildIds = checks.Select(x => x.GuildId).Distinct().Order().ToArray();
+            if (!actualGuildIds.SequenceEqual(expectedGuildIds))
+            {
+                Log.Warn($"YouTube cleanup 期間的 guild 清單已變更，保留供下次重試: {userId}");
+                return false;
+            }
+            if (providerConfigurationSnapshot.HasValue || providerCheckSnapshot.HasValue)
+            {
+                if (!providerConfigurationSnapshot.HasValue || !providerCheckSnapshot.HasValue)
+                    return false;
+                YoutubeMemberCheck providerCheck = checks.SingleOrDefault(x => x.Id == providerCheckSnapshot.Value.CheckId);
+                GuildYoutubeMemberConfig providerConfiguration = await LockConfigurationAsync(intentDb,
+                    providerConfigurationSnapshot.Value.Id, cancellationToken);
+                if (!YoutubeMemberPolicies.CanApplyProviderResult(YoutubeMemberProbeResultKind.AuthorizationInvalid,
+                        expectedEncryptedToken, token.EncryptedAccessToken, providerCheckSnapshot.Value.Snapshot,
+                        providerCheck, providerConfigurationSnapshot.Value, providerConfiguration))
+                {
+                    Log.Warn($"YouTube OAuth token、check 或探測設定已更新，忽略過期 authorization invalid 結果: {userId}");
+                    return false;
+                }
+            }
+            GoogleOAuthUnlinkIntent intent = await intentDb.GoogleOAuthUnlinkIntent
+                .SingleOrDefaultAsync(x => x.DiscordUserId == userId, cancellationToken);
+            if (intent == null)
+            {
+                intentDb.GoogleOAuthUnlinkIntent.Add(new GoogleOAuthUnlinkIntent
+                {
+                    DiscordUserId = userId,
+                    ExpectedEncryptedToken = expectedEncryptedToken,
+                    DateAdded = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                intent.ExpectedEncryptedToken = expectedEncryptedToken;
+                intent.DateAdded = DateTime.UtcNow;
+            }
+            await LockGuildConfigurationsAsync(intentDb, actualGuildIds, cancellationToken);
+            foreach (YoutubeMemberCheck check in checks)
+                YoutubeMemberPolicies.QueueRoleRemoval(check);
+            await intentDb.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return true;
+        }
+
+        /// <summary>只刪除仍等於 provider call 前 payload 的 token，然後嘗試既有 pending role cleanup。</summary>
+        private async Task<bool> CompleteMemberCheckCleanupAsync(ulong userId, string expectedEncryptedToken,
+            CancellationToken cancellationToken)
+        {
+            await using var userLock = await _operationCoordinator.LockUserAsync(userId, cancellationToken);
+            ulong[] expectedGuildIds = await GetUserCheckGuildIdsAsync(userId, cancellationToken);
+            await using var guildLocks = await _operationCoordinator.LockGuildsAsync(expectedGuildIds, cancellationToken);
+            using (var tokenDb = _dbService.GetDbContext())
+            {
+                await using var transaction = await tokenDb.Database.BeginTransactionAsync(cancellationToken);
+                YoutubeMemberAccessToken token = await LockTokenAsync(tokenDb, userId, cancellationToken);
+                if (token != null && !YoutubeMemberPolicies.IsCurrentTokenPayload(expectedEncryptedToken, token.EncryptedAccessToken))
+                {
+                    Log.Warn($"YouTube OAuth token 已更新，保留新的憑證: {userId}");
+                    return false;
+                }
+                List<YoutubeMemberCheck> currentChecks = await LockUserChecksAsync(tokenDb, userId, cancellationToken);
+                ulong[] actualGuildIds = currentChecks.Select(x => x.GuildId).Distinct().Order().ToArray();
+                if (!actualGuildIds.SequenceEqual(expectedGuildIds))
+                {
+                    Log.Warn($"YouTube cleanup 完成前的 guild 清單已變更，保留 token: {userId}");
+                    return false;
+                }
+                await LockGuildConfigurationsAsync(tokenDb, actualGuildIds, cancellationToken);
+                if (token != null && !YoutubeMemberPolicies.CanDeleteLocalTokenAfterCleanupIntent(currentChecks))
+                {
+                    Log.Warn($"YouTube OAuth 清理 intent 尚未完整，保留 token: {userId}");
+                    return false;
+                }
+                if (token != null && await tokenDb.Database.ExecuteSqlInterpolatedAsync($"""
+                    DELETE FROM `youtube_member_access_token`
+                    WHERE `discord_user_id` = {userId}
+                      AND BINARY `encrypted_access_token` = BINARY {expectedEncryptedToken}
+                    """) != 1)
+                {
+                    Log.Warn($"YouTube OAuth token 已更新，保留新的憑證: {userId}");
+                    return false;
+                }
+                await tokenDb.GoogleOAuthUnlinkIntent
+                    .Where(x => x.DiscordUserId == userId)
+                    .ExecuteDeleteAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+
+            foreach (ulong guildId in expectedGuildIds)
+            {
+                await CleanupPendingUserChecksInGuildAsync(userId, guildId, cancellationToken);
+            }
+            return true;
+        }
+
+        private async Task CleanupPendingUserChecksInGuildAsync(ulong userId, ulong guildId, CancellationToken cancellationToken)
+        {
+            using var db = _dbService.GetDbContext();
+            var checks = await db.YoutubeMemberCheck.Where(x => x.UserId == userId && x.GuildId == guildId &&
+                    x.PendingRoleRemoval)
+                .ToListAsync(cancellationToken);
+            if (checks.Count == 0)
+                return;
+            var configs = await db.GuildYoutubeMemberConfig.AsNoTracking().Where(x => x.GuildId == guildId)
+                .ToDictionaryAsync(x => x.MemberCheckChannelId, cancellationToken);
+            foreach (YoutubeMemberCheck check in checks)
+            {
+                if (!configs.TryGetValue(check.CheckYTChannelId, out GuildYoutubeMemberConfig config))
+                {
+                    // 沒有設定時無法知道要移除哪個 role；保留 evidence 等管理員修復或設定刪除流程處理。
+                    Log.Warn($"YouTube pending cleanup 找不到設定，保留待清理列: {guildId} / {check.Id}");
+                    continue;
+                }
+                if (await _roleService.RemoveAsync(config, userId, cancellationToken))
+                    db.YoutubeMemberCheck.Remove(check);
+            }
+            await db.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<string> GetYoutubeDataAsync(string discordUserId)
@@ -280,31 +397,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 if (string.IsNullOrEmpty(discordUserId))
                     throw new NullReferenceException("userId");
 
-                var token = await flow.LoadTokenAsync(discordUserId, CancellationToken.None);
-                if (token == null)
-                    throw new NullReferenceException("token");
-
-                var userCert = await GetUserCredentialAsync(discordUserId, token);
-                if (userCert == null)
-                    throw new NullReferenceException("userCert");
-
-                var service = new YouTubeService(new BaseClientService.Initializer()
-                {
-                    HttpClientInitializer = userCert,
-                    ApplicationName = "Discord Youtube Member Check"
-                }).Channels.List("id,snippet");
-                service.Mine = true;
-
-                try
-                {
-                    var result = await service.ExecuteAsync();
-                    var channel = result.Items.FirstOrDefault();
-                    if (channel == null)
-                        throw new NullReferenceException("channel");
-
-                    return Format.Url(channel.Snippet.Title, $"https://www.youtube.com/channel/{channel.Id}");
-                }
-                catch { throw; }
+                return await _authorizationService.GetLinkedChannelAsync(discordUserId, CancellationToken.None);
 
             }
             catch { throw; }
@@ -359,19 +452,24 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         /// UserJoined 只在持有該 guild 的 shard 觸發 → 天然 shard-safe。憑既有記錄回補，不當場重打 YouTube API，
         /// 後續舊檢查會再校正（實際已失效者會被移除）。
         /// </summary>
-        private async Task OnUserJoinedRestoreMemberRoleAsync(SocketGuildUser user)
+        private Task OnUserJoinedRestoreMemberRoleAsync(SocketGuildUser user)
+            => TrackEventTask(() => RestoreMemberRoleOnUserJoinedCoreAsync(user));
+
+        private async Task RestoreMemberRoleOnUserJoinedCoreAsync(SocketGuildUser user)
         {
             try
             {
+                await using var userLock = await _operationCoordinator.LockUserAsync(user.Id, _lifecycleCancellation.Token);
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(user.Guild.Id, _lifecycleCancellation.Token);
                 using var db = _dbService.GetDbContext();
                 var checks = await db.YoutubeMemberCheck.AsNoTracking()
-                    .Where((x) => x.GuildId == user.Guild.Id && x.UserId == user.Id && x.IsChecked)
+                    .Where((x) => x.GuildId == user.Guild.Id && x.UserId == user.Id && x.IsChecked && !x.PendingRoleRemoval)
                     .ToListAsync();
                 if (checks.Count == 0)
                     return;
 
                 var configs = await db.GuildYoutubeMemberConfig.AsNoTracking()
-                    .Where((x) => x.GuildId == user.Guild.Id).ToListAsync();
+                    .Where((x) => x.GuildId == user.Guild.Id && !x.DeletionPending).ToListAsync();
 
                 foreach (var chk in checks)
                 {
@@ -379,11 +477,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     if (cfg == null || cfg.MemberCheckGrantRoleId == 0)
                         continue;
 
-                    var role = user.Guild.GetRole(cfg.MemberCheckGrantRoleId);
-                    if (role == null || role.IsManaged)
-                        continue;
-
-                    try { await _client.Rest.AddRoleAsync(cfg.GuildId, user.Id, cfg.MemberCheckGrantRoleId); } catch { }
+                    await _roleService.GrantAsync(cfg, user.Id, _lifecycleCancellation.Token);
                 }
 
                 Log.Info($"會員重加入自動回補會限身分組: {user.Guild.Id} / {user.Id}");
@@ -399,40 +493,44 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         /// 移除「持有身分組但 DB 無 IsChecked 記錄」者（曾驗證失敗但身分組沒拿掉、且 DB 已被清）。只查 DB，不打 YouTube API。
         /// GetGuild != null 天然只處理本 shard 的 guild。
         /// </summary>
-        private async Task ReconcileMemberRolesAsync()
+        private async Task ReconcileMemberRolesAsync(CancellationToken cancellationToken = default)
         {
             try
             {
                 using var db = _dbService.GetDbContext();
-                var configs = await db.GuildYoutubeMemberConfig.AsNoTracking()
-                    .Where((x) => x.MemberCheckGrantRoleId != 0).ToListAsync();
+                ulong[] candidateGuildIds = await db.GuildYoutubeMemberConfig.AsNoTracking()
+                    .Where(x => x.MemberCheckGrantRoleId != 0 && !x.DeletionPending)
+                    .Select(x => x.GuildId).Distinct().ToArrayAsync(cancellationToken);
 
-                foreach (var cfg in configs)
+                foreach (ulong guildId in candidateGuildIds)
                 {
-                    var guild = _client.GetGuild(cfg.GuildId);
+                    var guild = _client.GetGuild(guildId);
                     if (guild == null)
                         continue; // 非本 shard 持有 → 交給擁有的 shard
 
-                    var role = guild.GetRole(cfg.MemberCheckGrantRoleId);
-                    if (role == null || role.IsManaged)
-                        continue;
-
                     try { await guild.DownloadUsersAsync(); } catch { } // 需 GuildMembers intent 才有完整名單
 
-                    foreach (var user in role.Members.ToList())
+                    await using var guildLock = await _operationCoordinator.LockGuildAsync(guild.Id, cancellationToken);
+                    // config 可能在 DownloadUsersAsync 期間由管理員更新或刪除；鎖後重讀才是對帳真相。
+                    using var currentDb = _dbService.GetDbContext();
+                    var configs = await currentDb.GuildYoutubeMemberConfig.AsNoTracking()
+                        .Where(x => x.GuildId == guild.Id && x.MemberCheckGrantRoleId != 0 && !x.DeletionPending)
+                        .ToArrayAsync(cancellationToken);
+                    DiscordStreamNotifyBot.SharedService.Member.MemberRoleOwnershipSnapshot ownership = await _roleService.LoadOwnershipSnapshotAsync(
+                        guild.Id, cancellationToken);
+                    foreach (var roleGroup in configs.GroupBy(x => x.MemberCheckGrantRoleId))
                     {
-                        bool hasRecord = await db.YoutubeMemberCheck.AsNoTracking().AnyAsync((x) =>
-                            x.GuildId == cfg.GuildId && x.UserId == user.Id &&
-                            x.CheckYTChannelId == cfg.MemberCheckChannelId && x.IsChecked);
-                        if (hasRecord)
+                        SocketRole role = guild.GetRole(roleGroup.Key);
+                        if (role == null)
                             continue;
-
-                        try
+                        foreach (SocketGuildUser user in role.Members.ToList())
                         {
-                            await _client.Rest.RemoveRoleAsync(cfg.GuildId, user.Id, cfg.MemberCheckGrantRoleId);
-                            Log.Info($"孤兒會限身分組回收: {cfg.GuildId} / {user.Id}");
+                            if (ownership.HasOtherActiveEntitlement(user.Id, role.Id))
+                                continue;
+                            if (await _roleService.RemoveOrphanAsync(
+                                    guild, user.Id, role.Id, ownership, cancellationToken))
+                                Log.Info($"孤兒會限身分組回收: {guild.Id} / {user.Id}");
                         }
-                        catch { }
                     }
                 }
             }
@@ -462,7 +560,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             continue;
 
                         Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 不存在!");
-                        db.GuildYoutubeMemberConfig.Remove(item);
                         continue;
                     }
 
@@ -470,14 +567,13 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     string message = YoutubeMemberVideoLogMessageFormatter.Format(
                         dto, guildLocale, _localizer, _commandDisplayResolver);
                     string setLogChannelPath = _commandDisplayResolver.GetCommandPath(guildLocale,
-                        "member-set", "set-notice-member-status-channel");
+                        "utility", "set-verification-log-channel");
 
                     var guildConfig = await db.GuildConfig.FirstOrDefaultAsync((x) => x.GuildId == item.GuildId);
                     if (guildConfig == null)
                     {
                         Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 無 GuildConfig");
                         await db.GuildConfig.AddAsync(new GuildConfig { GuildId = guild.Id });
-                        db.GuildYoutubeMemberConfig.Remove(item);
 
                         message += "\n" + _localizer.Format("Member.VideoLog.LogChannelMissing", guildLocale,
                             guild.Name, setLogChannelPath);
@@ -527,7 +623,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         YoutubeMemberManualPinPolicy.DecideAutomaticMutation(item.IsManualVideoId) ==
                         YoutubeMemberAutomaticMutationAction.Apply)
                     {
-                        db.GuildYoutubeMemberConfig.Remove(item);
+                        if (!await _roleService.DeleteConfigurationAsync(item, GracefulShutdown.Token))
+                            Log.Warn($"YouTube 會限設定刪除待重試: {item.GuildId} / {item.MemberCheckChannelId}");
                     }
                 }
                 catch (Exception ex)
@@ -539,43 +636,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             await db.SaveChangesAsync();
         }
 
-        private async Task<UserCredential> GetUserCredentialAsync(string discordUserId, TokenResponse token)
-        {
-            if (string.IsNullOrEmpty(token.RefreshToken))
-                throw new NullReferenceException("RefreshToken 空白");
-
-            var credential = new UserCredential(flow, discordUserId, token);
-
-            try
-            {
-                if (token.IsStale)
-                {
-                    if (!await credential.RefreshTokenAsync(CancellationToken.None))
-                    {
-                        Log.Warn($"{discordUserId} AccessToken 無法刷新");
-                        await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
-                        credential = null;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.ToLower().Contains("token has been expired or revoked") ||
-                    ex.Message.ToLower().Contains("invalid_grant"))
-                {
-                    Log.Warn($"{discordUserId} AccessToken 已取消授權");
-                }
-                else
-                {
-                    Log.Error(ex.Demystify(), $"{discordUserId} AccessToken 發生未知錯誤");
-                }
-
-                await flow.DataStore.DeleteAsync<TokenResponse>(discordUserId);
-                credential = null;
-            }
-
-            return credential;
-        }
     }
 
     static class Ext

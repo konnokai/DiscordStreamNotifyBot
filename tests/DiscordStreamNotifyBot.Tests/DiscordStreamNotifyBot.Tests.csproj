@@ -31,6 +31,9 @@
 		<None Update="Snapshots\**\*.snap">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Include="..\..\docs\YOUTUBE_MEMBER_VERIFICATION_PREFLIGHT.sql"
+		      Link="Fixtures\YOUTUBE_MEMBER_VERIFICATION_PREFLIGHT.sql"
+		      CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

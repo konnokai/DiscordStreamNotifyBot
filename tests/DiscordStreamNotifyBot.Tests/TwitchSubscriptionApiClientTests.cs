@@ -20,7 +20,7 @@ namespace DiscordStreamNotifyBot.Tests
             {
                 captured = CloneRequest(request);
                 return Json(HttpStatusCode.OK,
-                    $$"""{"data":[{"broadcaster_id":"broadcaster-1","is_gift":{{isGift.ToString().ToLowerInvariant()}},"tier":"{{tier}}","user_id":"user-1"}]}""");
+                    $$"""{"data":[{"broadcaster_id":"broadcaster-1","broadcaster_name":"吧噗バブ","broadcaster_login":"babu_desu","is_gift":{{isGift.ToString().ToLowerInvariant()}},"tier":"{{tier}}"}]}""");
             });
 
             TwitchSubscriptionResult result = await client.CheckUserSubscriptionAsync(
@@ -68,7 +68,7 @@ namespace DiscordStreamNotifyBot.Tests
         {
             string payload = tier == null
                 ? "{\"data\":[]}"
-                : $$"""{"data":[{"broadcaster_id":"broadcaster-1","is_gift":false,"tier":"{{tier}}","user_id":"user-1"}]}""";
+                : $$"""{"data":[{"broadcaster_id":"broadcaster-1","is_gift":false,"tier":"{{tier}}"}]}""";
             var client = CreateClient(_ => Json(HttpStatusCode.OK, payload));
 
             TwitchSubscriptionResult result = await client.CheckUserSubscriptionAsync(
