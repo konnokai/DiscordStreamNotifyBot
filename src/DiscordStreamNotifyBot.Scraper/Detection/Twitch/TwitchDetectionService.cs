@@ -358,9 +358,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 var authorization = await db.TwitchBroadcasterAuthorization.AsNoTracking()
                     .SingleOrDefaultAsync(x => x.TwitchUserId == stream.UserId);
                 var twitchStream = TwitchStreamNotificationFactory.CreateState(streamFacts);
-                CancelOfflineReminder(stream.UserId);
+                bool resumedBeforeOfflineConfirmation = CancelOfflineReminder(stream.UserId);
                 bool databaseDuplicate = await db.TwitchStreams.AsNoTracking().AnyAsync(x => x.StreamId == stream.Id);
-                bool processDuplicate = _handledStreamIds.ContainsKey(stream.Id);
+                bool processDuplicate = resumedBeforeOfflineConfirmation || _handledStreamIds.ContainsKey(stream.Id);
                 bool redisDuplicate = !processDuplicate && await IsStreamNotificationPublishedAsync(stream.Id);
                 var startAction = TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
                     stream.Id, stream.UserId, HasSpider: true,
