@@ -1,7 +1,14 @@
 using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.AdminSettings;
+using DiscordStreamNotifyBot.SharedService.Cluster;
+using DiscordStreamNotifyBot.SharedService.Member;
+using Newtonsoft.Json.Linq;
 using Clip = TwitchLib.Api.Helix.Models.Clips.GetClips.Clip;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
 using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
@@ -10,7 +17,6 @@ using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
 using Polly;
 #endif
 
-using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
 namespace DiscordStreamNotifyBot.SharedService.Twitch
 {
@@ -42,10 +48,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
         private readonly NotifierMetrics _metrics;
+        private readonly MemberOperationCoordinator _operationCoordinator;
+        private readonly ClusterQueryService _clusterQuery;
 
         public TwitchService(DiscordSocketClient client, TwitchApiService apiService, BotConfig botConfig,
             EmojiService emojiService, MainDbService dbService, BotLocalizer localizer,
-            GuildLocaleService guildLocaleService, NotifierMetrics metrics)
+            GuildLocaleService guildLocaleService, NotifierMetrics metrics,
+            MemberOperationCoordinator operationCoordinator, ClusterQueryService clusterQuery)
         {
             _client = client;
             _apiService = apiService;
@@ -55,6 +64,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             _localizer = localizer;
             _guildLocaleService = guildLocaleService;
             _metrics = metrics;
+            _operationCoordinator = operationCoordinator;
+            _clusterQuery = clusterQuery;
             _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitchStreamChannel>(dbService, db => db.NoticeTwitchStreamChannels.AsNoTracking().ToList());
         }
 
@@ -83,6 +94,230 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         public Task<bool> DeleteEventSubSubscriptionAsync(string userId) => _apiService.DeleteEventSubSubscriptionAsync(userId);
 
         public void InvalidateNoticeCache() => _noticeCache.Invalidate();
+
+        public async Task<AdminSettingsMutationResult> AddCrawlerAsync(
+            SocketGuild guild,
+            ulong actorUserId,
+            string source,
+            CancellationToken cancellationToken,
+            bool addForBotOwner = false)
+        {
+            if (!_apiService.IsEnable)
+                return AdminSettingsMutationResult.Rejected("crawler.platform-disabled");
+            var user = ulong.TryParse(source, out _)
+                ? await GetUserAsync(twitchUserId: source)
+                : await GetUserAsync(twitchUserLogin: GetUserLoginByUrl(source.Trim()));
+            if (user == null)
+                return AdminSettingsMutationResult.Rejected("crawler.source-not-found");
+
+            using var db = _dbService.GetDbContext();
+            bool generallyEligible = CrawlerPolicy.HasGeneralEligibility(
+                actorUserId, Bot.ApplicatonOwner.Id, Utility.OfficialGuildContains(guild.Id), guild.MemberCount, 200);
+            bool oauthEligible = await db.TwitchBroadcasterAuthorization.AsNoTracking().AnyAsync(x =>
+                x.RevokedAt == null && x.ClientId == _botConfig.TwitchClientId &&
+                x.DiscordUserId == actorUserId && x.TwitchUserId == user.Id, cancellationToken);
+            if (!generallyEligible && !oauthEligible)
+                return AdminSettingsMutationResult.Rejected("crawler.oauth-eligibility-required", new JObject
+                {
+                    ["requiredMemberCount"] = 200,
+                    ["memberCount"] = guild.MemberCount
+                });
+
+            int limit = await GetTwitchCrawlerLimitAsync(db, guild.Id, cancellationToken);
+            bool limitReached = !Utility.OfficialGuildContains(guild.Id) &&
+                await db.TwitchSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit;
+            var existing = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == user.Id, cancellationToken);
+            if (existing != null)
+            {
+                if (existing.GuildId == guild.Id || addForBotOwner && existing.GuildId == 0)
+                    return AdminSettingsMutationResult.Rejected("crawler.already-exists");
+                if (existing.GuildId == 0 || addForBotOwner)
+                    return AdminSettingsMutationResult.Rejected("crawler.source-owned");
+                var guilds = await _clusterQuery.GetGuildNameMapAsync();
+                if (guilds.ContainsKey(existing.GuildId))
+                    return AdminSettingsMutationResult.Rejected("crawler.source-owned");
+                if (limitReached)
+                    return LimitReached(limit);
+                existing.GuildId = guild.Id;
+                await db.SaveChangesAsync(cancellationToken);
+                await PublishReconcileRequestedAsync(existing.UserId, "spider_owner_changed");
+                return Added(existing.UserId, existing.UserName);
+            }
+            if (limitReached)
+                return LimitReached(limit);
+
+            db.TwitchSpider.Add(new DataBase.Table.TwitchSpider
+            {
+                GuildId = addForBotOwner ? 0 : guild.Id,
+                UserId = user.Id,
+                UserLogin = user.Login,
+                UserName = user.DisplayName,
+                ProfileImageUrl = user.ProfileImageUrl,
+                OfflineImageUrl = user.OfflineImageUrl
+            });
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                using var reloadDb = _dbService.GetDbContext();
+                var current = await reloadDb.TwitchSpider.AsNoTracking().SingleOrDefaultAsync(
+                    x => x.UserId == user.Id, cancellationToken);
+                return current?.GuildId == guild.Id
+                    ? AdminSettingsMutationResult.Rejected("crawler.already-exists")
+                    : AdminSettingsMutationResult.Rejected("crawler.source-owned");
+            }
+            await PublishReconcileRequestedAsync(user.Id, generallyEligible ? "spider_added" : "oauth_bypass_addition");
+            Log.Info($"已新增 Twitch 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {user.Id}");
+            return Added(user.Id, user.DisplayName);
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveCrawlerAsync(
+            ulong guildId,
+            string sourceId,
+            CancellationToken cancellationToken,
+            bool botOwner = false)
+        {
+            using var db = _dbService.GetDbContext();
+            var crawler = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == sourceId, cancellationToken);
+            if (crawler == null)
+                return AdminSettingsMutationResult.Rejected("crawler.not-configured");
+            if (!CrawlerPolicy.CanRemove(crawler.GuildId, guildId, botOwner))
+                return AdminSettingsMutationResult.Rejected("crawler.not-owned");
+            db.TwitchSpider.Remove(crawler);
+            await db.SaveChangesAsync(cancellationToken);
+            await PublishReconcileRequestedAsync(sourceId, "spider_removed");
+            Log.Info($"已移除 Twitch 頻道爬蟲 | Guild: {guildId} | Source: {sourceId}");
+            return AdminSettingsMutationResult.Applied("crawler.removed", new JObject { ["sourceId"] = sourceId });
+        }
+
+        internal static async Task<int> GetTwitchCrawlerLimitAsync(
+            MainDbContext db,
+            ulong guildId,
+            CancellationToken cancellationToken)
+            => CrawlerPolicy.ResolveLimit(await db.GuildConfig.AsNoTracking()
+                .Where(x => x.GuildId == guildId && x.MaxTwitchSpiderCount > 0)
+                .Select(x => (uint?)x.MaxTwitchSpiderCount)
+                .SingleOrDefaultAsync(cancellationToken), 3);
+
+        private static Task PublishReconcileRequestedAsync(string twitchUserId, string reason)
+            => Bot.RedisSub.PublishAsync(
+                new RedisChannel(RedisChannels.Twitch.ReconcileRequested, RedisChannel.PatternMode.Literal),
+                JsonConvert.SerializeObject(new { TwitchUserId = twitchUserId, Reason = reason }));
+
+        private static AdminSettingsMutationResult Added(string sourceId, string sourceName)
+            => AdminSettingsMutationResult.Applied("crawler.added", new JObject
+            {
+                ["sourceId"] = sourceId,
+                ["sourceName"] = sourceName
+            });
+
+        private static AdminSettingsMutationResult LimitReached(int limit)
+            => AdminSettingsMutationResult.Rejected("crawler.limit-reached", new JObject { ["limit"] = limit });
+
+        public async Task<AdminSettingsMutationResult> UpsertNotificationAsync(
+            SocketGuild guild,
+            string source,
+            ulong channelId,
+            AdminSettingsTwitchMessages messages,
+            CancellationToken cancellationToken)
+        {
+            if (!_apiService.IsEnable)
+                return AdminSettingsMutationResult.Rejected("settings.feature-disabled");
+            if (string.IsNullOrWhiteSpace(source))
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+            cancellationToken.ThrowIfCancellationRequested();
+            var user = ulong.TryParse(source, out _)
+                ? await GetUserAsync(twitchUserId: source)
+                : await GetUserAsync(twitchUserLogin: GetUserLoginByUrl(source.Trim()));
+            if (user == null)
+                return AdminSettingsMutationResult.Rejected("settings.source-not-found");
+
+            var rejected = AdminSettingsChannelValidator.Validate(_client, guild, channelId);
+            if (rejected != null)
+                return rejected;
+
+            try
+            {
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(guild.Id, cancellationToken);
+                using var db = _dbService.GetDbContext();
+                var notice = await db.NoticeTwitchStreamChannels.FirstOrDefaultAsync(
+                    x => x.GuildId == guild.Id && x.NoticeTwitchUserId == user.Id,
+                    cancellationToken);
+                if (notice == null)
+                {
+                    notice = new NoticeTwitchStreamChannel { GuildId = guild.Id, NoticeTwitchUserId = user.Id };
+                    db.NoticeTwitchStreamChannels.Add(notice);
+                }
+
+                notice.DiscordChannelId = channelId;
+                notice.StartStreamMessage = messages.Start;
+                notice.EndStreamMessage = messages.End;
+                notice.ChangeStreamDataMessage = messages.Change;
+                await db.SaveChangesAsync(cancellationToken);
+                _noticeCache.Invalidate();
+                return AdminSettingsMutationResult.Applied(arguments: new JObject
+                {
+                    ["sourceId"] = user.Id,
+                    ["sourceName"] = user.DisplayName
+                });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "網頁管理設定 Twitch 通知更新失敗");
+                return AdminSettingsMutationResult.Rejected("settings.operation-failed");
+            }
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveNotificationAsync(
+            ulong guildId,
+            string source,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+            try
+            {
+                using var db = _dbService.GetDbContext();
+                string sourceId = source.Trim();
+                bool resolvedId = ulong.TryParse(sourceId, out _) || await db.NoticeTwitchStreamChannels.AsNoTracking()
+                    .AnyAsync(x => x.GuildId == guildId && x.NoticeTwitchUserId == sourceId, cancellationToken);
+                if (!resolvedId)
+                {
+                    if (!_apiService.IsEnable)
+                        return AdminSettingsMutationResult.Rejected("settings.feature-disabled");
+                    var user = ulong.TryParse(sourceId, out _)
+                        ? await GetUserAsync(twitchUserId: sourceId)
+                        : await GetUserAsync(twitchUserLogin: GetUserLoginByUrl(sourceId));
+                    if (user == null)
+                        return AdminSettingsMutationResult.Rejected("settings.source-not-found");
+                    sourceId = user.Id;
+                }
+
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
+                await db.NoticeTwitchStreamChannels
+                    .Where(x => x.GuildId == guildId && x.NoticeTwitchUserId == sourceId)
+                    .ExecuteDeleteAsync(cancellationToken);
+                _noticeCache.Invalidate();
+                return AdminSettingsMutationResult.Applied("settings.removed", new JObject { ["sourceId"] = sourceId });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "網頁管理設定 Twitch 通知移除失敗");
+                return AdminSettingsMutationResult.Rejected("settings.operation-failed");
+            }
+        }
         #endregion
 
         /// <summary>

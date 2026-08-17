@@ -294,6 +294,7 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionService>()
                 .AddSingleton<SharedService.Youtube.YoutubeStreamService>()
                 .AddSingleton<SharedService.YoutubeMember.YoutubeMemberService>()
+                .AddSingleton<SharedService.AdminSettings.AdminSettingsService>()
                 .AddSingleton(client)
                 .AddSingleton(_botConfig)
                 .AddSingleton(new InteractionService(client, new InteractionServiceConfig()
@@ -336,6 +337,7 @@ namespace DiscordStreamNotifyBot
                 .GetRequiredService<SharedService.TwitchSubscription.TwitchSubscriptionService>();
             twitchSubscriptionService.Start();
             serviceProvider.GetRequiredService<SharedService.YoutubeMember.YoutubeMemberService>().Start();
+            serviceProvider.GetRequiredService<SharedService.AdminSettings.AdminSettingsService>().Start();
             #endregion
 
             #region 通知匯流排消費（Notifier 的通知一律來自 bot:notify Redis Stream；消費啟動失敗 = 無法服務，直接結束交由重啟）

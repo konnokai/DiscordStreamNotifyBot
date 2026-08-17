@@ -2,10 +2,9 @@
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService.Member;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
-using DiscordStreamNotifyBot.SharedService.Member;
-using Google;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 {
@@ -88,125 +87,10 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         [SlashCommand("add-member-check", "新增會限驗證頻道")]
         public async Task AddMemberCheckAsync([Summary("channel-url", "頻道連結")] string url, [Summary("role", "用戶組Id")] IRole role)
         {
-            if (!_service.IsEnable)
-            {
-                await SendLocalizedErrorAsync("Member.Errors.Disabled", false, true, Bot.ApplicatonOwner);
-                return;
-            }
-
-            var currentBotUser = Context.Guild.GetUser(_client.CurrentUser.Id);
-            if (!currentBotUser.GuildPermissions.ManageRoles)
-            {
-                await SendLocalizedErrorAsync("MemberSetting.Errors.ManageRolesRequired");
-                return;
-            }
-
-            if (role == Context.Guild.EveryoneRole)
-            {
-                await SendLocalizedErrorAsync("MemberSetting.Errors.EveryoneRole");
-                return;
-            }
-
-            if (role.IsManaged)
-            {
-                await SendLocalizedErrorAsync("MemberSetting.Errors.ManagedRole");
-                return;
-            }
-
-            using (var db = _dbService.GetDbContext())
-            {
-                try
-                {
-                    await DeferAsync(true);
-                    if (currentBotUser.Roles.Max(x => x.Position) < role.Position)
-                    {
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.RoleTooHigh", true, true, role.Name);
-                        return;
-                    }
-
-                    var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
-                    if (guildConfig == null)
-                    {
-                        guildConfig = new DataBase.Table.GuildConfig() { GuildId = Context.Guild.Id };
-                        db.GuildConfig.Add(guildConfig);
-                    }
-
-                    int maxCount = 5;
-                    if (guildConfig != null && guildConfig.MaxYouTubeMemberCheckCount > 0)
-                        maxCount = (int)guildConfig.MaxYouTubeMemberCheckCount;
-
-                    if (!DiscordStreamNotifyBot.Utility.OfficialGuildContains(Context.Guild.Id) && db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) >= maxCount)
-                    {
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelLimit", true, true, maxCount);
-                        return;
-                    }
-
-                    // 因 Discord 的 SelectMenu 最多只能有 25 個選項，故暫時先做限制避免遇到選單跑不出來的問題
-                    if (db.GuildYoutubeMemberConfig.Count((x) => x.GuildId == Context.Guild.Id) > 25)
-                    {
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.SelectLimit", true, true, 25);
-                        return;
-                    }
-
-                    if (guildConfig.VerificationLogChannelId == 0)
-                    {
-                        string logLocale = await GetLocaleAsync(true);
-                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "utility", "set-verification-log-channel");
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelRequired", true, true, setLogPath);
-                        return;
-                    }
-                    else if (Context.Guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
-                    {
-                        string logLocale = await GetLocaleAsync(true);
-                        string setLogPath = CommandDisplayResolver.GetCommandPath(logLocale, "utility", "set-verification-log-channel");
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelDeleted", true, true, setLogPath);
-
-                        guildConfig.VerificationLogChannelId = 0;
-                        db.GuildConfig.Update(guildConfig);
-                        db.SaveChanges();
-                        return;
-                    }
-
-                    var channelId = await _ytservice.GetChannelIdAsync(url);
-                    var guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.AsNoTracking().FirstOrDefault(
-                        (x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
-                    bool isNewConfiguration = guildYoutubeMemberConfig == null;
-                    YoutubeMemberRoleConfigurationResult result = await _roleService.ConfigureRoleAsync(
-                        Context.Guild, channelId, role, GracefulShutdown.Token);
-                    if (!result.IsSuccess)
-                    {
-                        await SendLocalizedErrorAsync(result.Error ?? "MemberSetting.Errors.SaveFailed", true);
-                        return;
-                    }
-                    guildYoutubeMemberConfig = result.Config;
-                    bool channelDataExist = !string.IsNullOrEmpty(guildYoutubeMemberConfig.MemberCheckChannelTitle) &&
-                        guildYoutubeMemberConfig.MemberCheckVideoId != "-";
-                    if (isNewConfiguration)
-                    {
-                        try
-                        {
-                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
-                                .WithOkColor()
-                                .WithTitle("已新增會限驗證頻道")
-                                .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
-                                .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
-                                .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
-                        }
-                        catch (Exception ex) { Log.Error(ex.ToString()); }
-                    }
-                    db.SaveChanges();
-
-                    string locale = await GetLocaleAsync(true);
-                    await SendLocalizedConfirmAsync("MemberSetting.ChannelConfigured", true, true,
-                        GetChannelDisplayName(guildYoutubeMemberConfig), role.Name, BotLocalizer.Get(channelDataExist
-                            ? "MemberSetting.ReadyNow" : "MemberSetting.ReadyLater", locale));
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "新增會限驗證頻道時失敗");
-                    await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true);
-                }
-            }
+            await DeferAsync(true);
+            var result = await _service.ConfigureAsync(
+                Context.Guild, Context.User.Id, url, role.Id, GracefulShutdown.Token);
+            await SendVerificationResultAsync(result, url, roleName: role.Name);
         }
 
         [CommandSummary("移除會限驗證頻道")]
@@ -215,49 +99,17 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         public async Task RemoveMemberCheckAsync([Summary("channel-url", "頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {
             await DeferAsync(true);
-
-            using (var db = _dbService.GetDbContext())
+            try
             {
-                try
-                {
-                    var channelId = await ResolveConfiguredChannelIdAsync(url);
-                    var guildYoutubeMemberConfig = db.GuildYoutubeMemberConfig.AsNoTracking().FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId);
-
-                    if (guildYoutubeMemberConfig == null)
-                    {
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelNotConfigured", true);
-                    }
-                    else
-                    {
-                        bool deleted = await _roleService.DeleteConfigurationAsync(guildYoutubeMemberConfig, GracefulShutdown.Token);
-                        if (deleted)
-                            await SendLocalizedConfirmAsync("MemberSetting.ChannelRemoved", true, false,
-                                GetChannelDisplayName(guildYoutubeMemberConfig));
-                        else
-                        {
-                            await SendLocalizedErrorAsync("MemberSetting.Errors.RemovePending", true);
-                            return;
-                        }
-
-                        try
-                        {
-                            await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
-                                .WithOkColor()
-                                .WithTitle("已移除會限驗證頻道")
-                                .AddField("頻道", Format.Url(channelId, $"https://www.youtube.com/channel/{channelId}"), false)
-                                .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
-                                .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
-                        }
-                        catch (Exception ex) { Log.Error(ex.ToString()); }
-                    }
-
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    await SendLocalizedErrorAsync("Errors.SaveFailed", true);
-                    Log.Error(ex.ToString());
-                }
+                string sourceId = await ResolveConfiguredChannelIdAsync(url);
+                var result = await _service.RemoveConfigurationAsync(
+                    Context.Guild.Id, sourceId, GracefulShutdown.Token);
+                await SendVerificationResultAsync(result, url);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "移除 YouTube 會員驗證設定失敗");
+                await SendLocalizedErrorAsync("Errors.SaveFailed", true);
             }
         }
 
@@ -272,62 +124,12 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         {
             await DeferAsync(true);
 
-            string videoId = ExtractVideoId(videoUrlOrId);
-            if (string.IsNullOrEmpty(videoId))
-            {
-                await SendLocalizedErrorAsync("MemberSetting.Errors.InvalidVideoId", true);
-                return;
-            }
-
             try
             {
                 var channelId = await ResolveConfiguredChannelIdAsync(url);
-                // 驗證：用 bot 金鑰探測留言。member-only → 403/forbidden；公開影片 → 200（不可當探針，否則所有人都會通過驗證）
-                try
-                {
-                    var ct = _ytservice.YouTubeService.CommentThreads.List("id");
-                    ct.VideoId = videoId;
-                    await ct.ExecuteAsync();
-
-                    // 可讀留言 ＝ 非會限影片
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.VideoNotMembersOnly", true);
-                    return;
-                }
-                catch (GoogleApiException ex) when (YoutubeMemberApiClient.IsDocumentedMembershipForbidden(ex))
-                {
-                }
-                catch (GoogleApiException ex) when (YoutubeMemberApiClient.HasReason(ex, "commentsDisabled"))
-                {
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.CommentsDisabled", true);
-                    return;
-                }
-                catch (GoogleApiException)
-                {
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.InvalidVideoId", true);
-                    return;
-                }
-
-                // 設定 mutation 與背景 provider result 使用同一把 guild lock；拿鎖後必須重讀 config。
-                await using var guildLock = await _operationCoordinator.LockGuildAsync(Context.Guild.Id, GracefulShutdown.Token);
-                using var db = _dbService.GetDbContext();
-                var config = await db.GuildYoutubeMemberConfig.SingleOrDefaultAsync(
-                    x => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId,
-                    GracefulShutdown.Token);
-                if (config == null || config.DeletionPending)
-                {
-                    string locale = await GetLocaleAsync(true);
-                    string addPath = CommandDisplayResolver.GetCommandPath(locale, "youtube-member-set", "add-member-check");
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.ConfigureFirst", true, true, addPath);
-                    return;
-                }
-
-                config.MemberCheckVideoId = videoId;
-                config.IsManualVideoId = true;
-                db.GuildYoutubeMemberConfig.Update(config);
-                await db.SaveChangesAsync(GracefulShutdown.Token);
-
-                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoChanged", true, false,
-                    GetChannelDisplayName(config), videoId);
+                var result = await _service.SetProbeVideoAsync(
+                    Context.Guild.Id, channelId, videoUrlOrId, GracefulShutdown.Token);
+                await SendVerificationResultAsync(result, url);
             }
             catch (Exception ex)
             {
@@ -347,24 +149,9 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             try
             {
                 var channelId = await ResolveConfiguredChannelIdAsync(url);
-                await using var guildLock = await _operationCoordinator.LockGuildAsync(Context.Guild.Id, GracefulShutdown.Token);
-                using var db = _dbService.GetDbContext();
-                var config = await db.GuildYoutubeMemberConfig.SingleOrDefaultAsync(
-                    x => x.GuildId == Context.Guild.Id && x.MemberCheckChannelId == channelId,
-                    GracefulShutdown.Token);
-                if (config == null)
-                {
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelNotConfigured", true);
-                    return;
-                }
-
-                config.IsManualVideoId = false;
-                config.MemberCheckVideoId = "-";
-                db.GuildYoutubeMemberConfig.Update(config);
-                await db.SaveChangesAsync(GracefulShutdown.Token);
-
-                await SendLocalizedConfirmAsync("MemberSetting.CheckVideoCleared", true, false,
-                    GetChannelDisplayName(config), 5);
+                var result = await _service.UseAutomaticProbeAsync(
+                    Context.Guild.Id, channelId, GracefulShutdown.Token);
+                await SendVerificationResultAsync(result, url);
             }
             catch (Exception ex)
             {

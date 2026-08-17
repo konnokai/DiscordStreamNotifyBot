@@ -122,6 +122,16 @@ namespace DiscordStreamNotifyBot.Shared
             public static string QueryReply(string correlationId) => $"cluster:query:reply:{correlationId}";
         }
 
+        /// <summary>網頁管理設定 request/reply 頻道（與 Backend 共用契約）。</summary>
+        public static class AdminSettings
+        {
+            public const string SnapshotRequest = "cluster:admin-settings:snapshot:request";
+            public const string CommandRequest = "cluster:admin-settings:command:request";
+
+            public static string Reply(string correlationId)
+                => $"cluster:admin-settings:reply:{correlationId}";
+        }
+
         /// <summary>Provider OAuth token 協調鍵。</summary>
         public static class OAuth
         {

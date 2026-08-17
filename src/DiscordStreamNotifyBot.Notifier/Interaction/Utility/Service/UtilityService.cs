@@ -1,4 +1,10 @@
-﻿using DiscordStreamNotifyBot.Localization;
+﻿using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.AdminSettings;
+using DiscordStreamNotifyBot.SharedService.Member;
+using Newtonsoft.Json.Linq;
 
 namespace DiscordStreamNotifyBot.Interaction.Utility.Service
 {
@@ -6,11 +12,21 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
     {
         private readonly BotLocalizer _localizer;
         private readonly IServiceProvider _services;
+        private readonly DiscordSocketClient _client;
+        private readonly MainDbService _dbService;
+        private readonly GuildLocaleService _guildLocaleService;
+        private readonly MemberOperationCoordinator _operationCoordinator;
 
-        public UtilityService(DiscordSocketClient client, BotLocalizer localizer, IServiceProvider services)
+        public UtilityService(DiscordSocketClient client, BotLocalizer localizer, IServiceProvider services,
+            MainDbService dbService, GuildLocaleService guildLocaleService,
+            MemberOperationCoordinator operationCoordinator)
         {
+            _client = client;
             _localizer = localizer;
             _services = services;
+            _dbService = dbService;
+            _guildLocaleService = guildLocaleService;
+            _operationCoordinator = operationCoordinator;
             client.ModalSubmitted += async modal =>
             {
                 string modalRoute = modal.Data.CustomId.Split(':')[0];
@@ -127,6 +143,71 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
 
                 await button.RespondWithModalAsync(modalBuilder.Build());
             };
+        }
+
+        public async Task<AdminSettingsMutationResult> SetLocaleAsync(
+            ulong guildId,
+            string locale,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
+                string normalized = await _guildLocaleService.SetAsync(guildId, locale, cancellationToken);
+                return AdminSettingsMutationResult.Applied(arguments: new JObject { ["locale"] = normalized });
+            }
+            catch (ArgumentException)
+            {
+                return AdminSettingsMutationResult.Rejected("settings.invalid-locale");
+            }
+        }
+
+        public Task<AdminSettingsMutationResult> SetGlobalNoticeChannelAsync(
+            SocketGuild guild,
+            ulong channelId,
+            CancellationToken cancellationToken)
+            => SetChannelAsync(guild, channelId, false, cancellationToken);
+
+        public Task<AdminSettingsMutationResult> SetVerificationLogChannelAsync(
+            SocketGuild guild,
+            ulong channelId,
+            CancellationToken cancellationToken)
+            => SetChannelAsync(guild, channelId, true, cancellationToken);
+
+        private async Task<AdminSettingsMutationResult> SetChannelAsync(
+            SocketGuild guild,
+            ulong channelId,
+            bool verificationLog,
+            CancellationToken cancellationToken)
+        {
+            if (channelId != 0)
+            {
+                var rejected = AdminSettingsChannelValidator.Validate(_client, guild, channelId);
+                if (rejected != null)
+                    return rejected;
+            }
+
+            await using var guildLock = await _operationCoordinator.LockGuildAsync(guild.Id, cancellationToken);
+            using var db = _dbService.GetDbContext();
+            var config = await db.GuildConfig.FirstOrDefaultAsync(x => x.GuildId == guild.Id, cancellationToken);
+            if (config == null)
+            {
+                config = new GuildConfig { GuildId = guild.Id };
+                db.GuildConfig.Add(config);
+            }
+
+            if (verificationLog)
+                config.VerificationLogChannelId = channelId;
+            else
+                config.NoticeChannelId = channelId;
+
+            await db.SaveChangesAsync(cancellationToken);
+            return AdminSettingsMutationResult.Applied(arguments: new JObject
+            {
+                ["channelId"] = channelId == 0
+                    ? ""
+                    : channelId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            });
         }
     }
 }

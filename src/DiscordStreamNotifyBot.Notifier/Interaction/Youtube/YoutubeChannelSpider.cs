@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Interaction.Youtube
@@ -66,134 +67,11 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         public async Task AddChannelSpider([Summary("channel", "頻道網址")] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
-
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException)
-            {
-                await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true).ConfigureAwait(false);
-                return;
-            }
-            catch (ArgumentNullException)
-            {
-                await SendLocalizedErrorAsync("Errors.UrlRequired", true).ConfigureAwait(false);
-                return;
-            }
-
-            using (var db = _dbService.GetDbContext())
-            {
-                bool isTwoBox = false;
-                if (db.HoloVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
-                else if (db.NijisanjiVideos.Any((x) => x.ChannelId == channelId)) { isTwoBox = true; }
-
-                if (isTwoBox && !db.YoutubeChannelOwnedType.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                {
-                    await SendLocalizedErrorAsync("YoutubeSpider.ManagedChannelRejected", true).ConfigureAwait(false);
-                    return;
-                }
-
-                // 取得最大數量設定
-                var guildConfig = db.GuildConfig.AsNoTracking().FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
-                int maxCount = 3;
-                if (guildConfig != null && guildConfig.MaxYouTubeSpiderCount > 0)
-                    maxCount = (int)guildConfig.MaxYouTubeSpiderCount;
-
-                if (!DiscordStreamNotifyBot.Utility.OfficialGuildContains(Context.Guild.Id) && db.YoutubeChannelSpider.AsNoTracking().Count((x) => x.GuildId == Context.Guild.Id) >= maxCount)
-                {
-                    string locale = await GetLocaleAsync(true);
-                    string contactPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "send-message-to-bot-owner");
-                    await SendLocalizedErrorAsync("Spider.LimitReached", true, true, maxCount, "YouTube", contactPath).ConfigureAwait(false);
-                    return;
-                }
-
-                if (db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                {
-                    var item = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId);
-                    bool isGuildExist = true;
-                    string guild = "";
-                    string existingResponseLocale = await GetLocaleAsync(false);
-
-                    // 跨 shard：用合併快照（B1）判定原持有伺服器是否仍在叢集，避免把別 shard 持有的伺服器誤判為已退出而搶走爬蟲
-                    if (item.GuildId == 0)
-                    {
-                        guild = BotLocalizer.Get("Common.BotOwner", existingResponseLocale);
-                    }
-                    else
-                    {
-                        var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                        if (guildMap.TryGetValue(item.GuildId, out var ownerName))
-                        {
-                            guild = ownerName;
-                        }
-                        else
-                        {
-                            isGuildExist = false;
-
-                            try
-                            {
-                                await (await Bot.ApplicatonOwner.CreateDMChannelAsync())
-                                    .SendMessageAsync(embed: new EmbedBuilder()
-                                        .WithOkColor()
-                                        .WithTitle("已更新 Youtube 爬蟲的持有伺服器")
-                                        .AddField("頻道", Format.Url(item.ChannelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
-                                        .AddField("原伺服器", item.GuildId, false)
-                                        .AddField("新伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false).Build());
-                            }
-                            catch (Exception ex) { Log.Error(ex.ToString()); }
-
-                            item.GuildId = Context.Guild.Id;
-                            db.YoutubeChannelSpider.Update(item);
-                            db.SaveChanges();
-                        }
-                    }
-
-                    string addPath = CommandDisplayResolver.GetCommandPath(existingResponseLocale, "youtube", "add");
-                    await SendLocalizedConfirmAsync("Spider.AlreadyExists", true, false,
-                        channelId, addPath, channelId,
-                        isGuildExist ? BotLocalizer.Format("Spider.OwnerHint", existingResponseLocale, guild) : "").ConfigureAwait(false);
-                    return;
-                }
-
-                string channelTitle = await _service.GetChannelTitle(channelId);
-                if (channelTitle == "")
-                {
-                    await SendLocalizedErrorAsync("Errors.ChannelNotFound", true, true, channelId).ConfigureAwait(false);
-                    return;
-                }
-
-                var spider = new DataBase.Table.YoutubeChannelSpider() { GuildId = Context.Guild.Id, ChannelId = channelId, ChannelTitle = channelTitle };
-                if (Context.User.Id == Bot.ApplicatonOwner.Id && !await PromptUserConfirmAsync("Spider.UseForCurrentGuildPrompt"))
-                    spider.GuildId = 0;
-
-                db.YoutubeChannelSpider.Add(spider);
-                db.SaveChanges();
-
-                string responseLocale = await GetLocaleAsync(true);
-                string notificationPath = CommandDisplayResolver.GetCommandPath(responseLocale, "youtube", "add");
-                await SendLocalizedConfirmAsync("Spider.Added", true, true,
-                    channelTitle, notificationPath, channelId).ConfigureAwait(false);
-
-                try
-                {
-                    await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("已新增 YouTube 頻道爬蟲")
-                            .AddField("頻道", Format.Url(channelTitle, $"https://www.youtube.com/channel/{channelId}"), false)
-                            .AddField("伺服器", spider.GuildId != 0 ? $"{Context.Guild.Name} ({Context.Guild.Id})" : "擁有者", false)
-                            .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false)
-                            .AddField("認可頻道", "否", true)
-                            .AddField("錄影頻道", "否", true).Build(),
-                        components: new ComponentBuilder()
-                            .WithButton("加入認可頻道", $"spider_youtube:trusted:{channelId}", ButtonStyle.Success)
-                            .WithButton("移除認可頻道", $"spider_youtube:untrusted:{channelId}", ButtonStyle.Danger)
-                            .WithButton("加入錄影頻道", $"spider_youtube:record:{channelId}", ButtonStyle.Success, row: 1)
-                            .WithButton("移除錄影頻道", $"spider_youtube:unrecord:{channelId}", ButtonStyle.Danger, row: 1).Build());
-                }
-                catch (Exception ex) { Log.Error(ex.ToString()); }
-            }
+            bool addForBotOwner = Context.User.Id == Bot.ApplicatonOwner.Id &&
+                !await PromptUserConfirmAsync("Spider.UseForCurrentGuildPrompt");
+            var result = await _service.AddCrawlerAsync(
+                Context.Guild, Context.User.Id, channelUrl, GracefulShutdown.Token, addForBotOwner);
+            await SendCrawlerResultAsync(result, channelUrl, "youtube");
         }
 
         [CommandSummary("移除非兩大箱的頻道檢測爬蟲\n" +
@@ -204,11 +82,12 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         public async Task RemoveChannelSpider([Summary("channel", "頻道網址"), Autocomplete(typeof(GuildYoutubeChannelSpiderAutocompleteHandler))] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
-
-            string channelId = "";
             try
             {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+                string channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+                var result = await _service.RemoveCrawlerAsync(
+                    Context.Guild.Id, channelId, GracefulShutdown.Token, Context.User.Id == Bot.ApplicatonOwner.Id);
+                await SendCrawlerResultAsync(result, channelId, "youtube");
             }
             catch (FormatException)
             {
@@ -221,37 +100,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                 return;
             }
 
-            using (var db = _dbService.GetDbContext())
-            {
-                if (!db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
-                {
-                    await SendLocalizedErrorAsync("Spider.NotConfigured", true, true, channelId).ConfigureAwait(false);
-                    return;
-                }
-
-                if (Context.Interaction.User.Id != Bot.ApplicatonOwner.Id && !db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId && x.GuildId == Context.Guild.Id))
-                {
-                    await SendLocalizedErrorAsync("Spider.NotOwnedByGuild", true).ConfigureAwait(false);
-                    return;
-                }
-
-                db.YoutubeChannelSpider.Remove(db.YoutubeChannelSpider.First((x) => x.ChannelId == channelId));
-                db.SaveChanges();
-            }
-            await SendLocalizedConfirmAsync("Spider.Removed", true, false, channelId).ConfigureAwait(false);
-
-            try
-            {
-                await (await Bot.ApplicatonOwner.CreateDMChannelAsync()).SendMessageAsync(embed: new EmbedBuilder()
-                    .WithErrorColor()
-                    .WithTitle("已移除 YouTube 頻道爬蟲")
-                    .AddField("頻道", $"https://www.youtube.com/channel/{channelId}", false)
-                    .AddField("伺服器", $"{Context.Guild.Name} ({Context.Guild.Id})", false)
-                    .AddField("執行者", $"{Context.User.Username} ({Context.User.Id})", false).Build());
-
-                await _service.PostSubscribeRequestAsync(channelId, false);
-            }
-            catch (Exception ex) { Log.Error(ex.ToString()); }
         }
 
         [SlashCommand("list", "顯示已加入的爬蟲頻道")]

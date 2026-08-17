@@ -1,6 +1,6 @@
-using System.Collections.Concurrent;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
+using System.Collections.Concurrent;
 
 namespace DiscordStreamNotifyBot.Localization
 {
@@ -135,15 +135,16 @@ namespace DiscordStreamNotifyBot.Localization
                 pair => _localeResolver.ResolvePublic(configuredLocales.GetValueOrDefault(pair.Key), pair.Value.PreferredLocale));
         }
 
-        public async Task<string> SetAsync(ulong guildId, string locale)
+        public async Task<string> SetAsync(ulong guildId, string locale, CancellationToken cancellationToken = default)
         {
             string normalized = SupportedLocale.Normalize(locale)
                 ?? throw new ArgumentException("不支援的語系", nameof(locale));
 
             SemaphoreSlim guildLock = GetGuildLock(guildId);
-            await guildLock.WaitAsync().ConfigureAwait(false);
+            await guildLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 await _saveConfiguredLocaleAsync(guildId, normalized).ConfigureAwait(false);
                 Cache(guildId, normalized);
                 return normalized;

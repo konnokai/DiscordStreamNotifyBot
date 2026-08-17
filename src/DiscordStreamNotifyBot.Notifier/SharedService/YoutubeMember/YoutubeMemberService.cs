@@ -3,8 +3,10 @@ using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.Google;
 using DiscordStreamNotifyBot.SharedService.Youtube;
+using Newtonsoft.Json.Linq;
 using Polly;
 
 namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
@@ -402,6 +404,147 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
             catch { throw; }
         }
+
+        public async Task<AdminSettingsMutationResult> ConfigureAsync(
+            SocketGuild guild,
+            ulong actorUserId,
+            string source,
+            ulong roleId,
+            CancellationToken cancellationToken)
+        {
+            if (!IsEnable)
+                return AdminSettingsMutationResult.Rejected("verification.platform-disabled");
+            SocketRole role = guild.GetRole(roleId);
+            if (role == null)
+                return AdminSettingsMutationResult.Rejected("verification.role-invalid");
+            if (actorUserId != Bot.ApplicatonOwner.Id && guild.MemberCount < 250 && !Utility.OfficialGuildContains(guild.Id))
+                return AdminSettingsMutationResult.Rejected("verification.guild-member-requirement", new JObject
+                {
+                    ["requiredMemberCount"] = 250,
+                    ["memberCount"] = guild.MemberCount
+                });
+
+            try
+            {
+                using var db = _dbService.GetDbContext();
+                var guildConfig = await db.GuildConfig.SingleOrDefaultAsync(
+                    x => x.GuildId == guild.Id, cancellationToken);
+                if (guildConfig?.VerificationLogChannelId is not > 0)
+                    return AdminSettingsMutationResult.Rejected("verification.log-channel-required");
+                if (guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
+                    return AdminSettingsMutationResult.Rejected("verification.log-channel-missing");
+                int limit = guildConfig.MaxYouTubeMemberCheckCount > 0
+                    ? (int)guildConfig.MaxYouTubeMemberCheckCount
+                    : 5;
+                string sourceId = await _streamService.GetChannelIdAsync(source);
+                bool exists = await db.GuildYoutubeMemberConfig.AsNoTracking().AnyAsync(
+                    x => x.GuildId == guild.Id && x.MemberCheckChannelId == sourceId, cancellationToken);
+                if (!exists && !Utility.OfficialGuildContains(guild.Id) &&
+                    await db.GuildYoutubeMemberConfig.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
+                    return AdminSettingsMutationResult.Rejected("verification.limit-reached", new JObject { ["limit"] = limit });
+
+                YoutubeMemberRoleConfigurationResult result = await _roleService.ConfigureRoleAsync(
+                    guild, sourceId, role, cancellationToken);
+                return MapRoleResult(result.Error, sourceId);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception ex) when (ex is FormatException or ArgumentException or UriFormatException)
+            {
+                return AdminSettingsMutationResult.Rejected("verification.source-not-found");
+            }
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveConfigurationAsync(
+            ulong guildId,
+            string sourceId,
+            CancellationToken cancellationToken)
+        {
+            using var db = _dbService.GetDbContext();
+            var config = await db.GuildYoutubeMemberConfig.AsNoTracking().SingleOrDefaultAsync(
+                x => x.GuildId == guildId && x.MemberCheckChannelId == sourceId, cancellationToken);
+            if (config == null)
+                return AdminSettingsMutationResult.Rejected("verification.not-configured");
+            bool removed = await _roleService.DeleteConfigurationAsync(config, cancellationToken);
+            return removed
+                ? AdminSettingsMutationResult.Applied("verification.removed")
+                : AdminSettingsMutationResult.Pending("verification.cleanup-pending");
+        }
+
+        public async Task<AdminSettingsMutationResult> SetProbeVideoAsync(
+            ulong guildId,
+            string sourceId,
+            string video,
+            CancellationToken cancellationToken)
+        {
+            string videoId;
+            try { videoId = _streamService.GetVideoId(video); }
+            catch (Exception ex) when (ex is ArgumentException or UriFormatException)
+            {
+                return AdminSettingsMutationResult.Rejected("verification.probe-video-invalid");
+            }
+            if (string.IsNullOrWhiteSpace(videoId))
+                return AdminSettingsMutationResult.Rejected("verification.probe-video-invalid");
+
+            try
+            {
+                var request = _streamService.YouTubeService.CommentThreads.List("id");
+                request.VideoId = videoId;
+                await request.ExecuteAsync(cancellationToken);
+                return AdminSettingsMutationResult.Rejected("verification.probe-video-invalid");
+            }
+            catch (global::Google.GoogleApiException ex) when (YoutubeMemberApiClient.IsDocumentedMembershipForbidden(ex)) { }
+            catch (global::Google.GoogleApiException)
+            {
+                return AdminSettingsMutationResult.Rejected("verification.probe-video-invalid");
+            }
+
+            await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
+            using var db = _dbService.GetDbContext();
+            var config = await db.GuildYoutubeMemberConfig.SingleOrDefaultAsync(
+                x => x.GuildId == guildId && x.MemberCheckChannelId == sourceId, cancellationToken);
+            if (config == null)
+                return AdminSettingsMutationResult.Rejected("verification.not-configured");
+            if (config.DeletionPending)
+                return AdminSettingsMutationResult.Rejected("verification.deletion-pending");
+            config.MemberCheckVideoId = videoId;
+            config.IsManualVideoId = true;
+            await db.SaveChangesAsync(cancellationToken);
+            return AdminSettingsMutationResult.Applied("verification.probe-video-set", new JObject
+            {
+                ["videoId"] = videoId
+            });
+        }
+
+        public async Task<AdminSettingsMutationResult> UseAutomaticProbeAsync(
+            ulong guildId,
+            string sourceId,
+            CancellationToken cancellationToken)
+        {
+            await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
+            using var db = _dbService.GetDbContext();
+            var config = await db.GuildYoutubeMemberConfig.SingleOrDefaultAsync(
+                x => x.GuildId == guildId && x.MemberCheckChannelId == sourceId, cancellationToken);
+            if (config == null)
+                return AdminSettingsMutationResult.Rejected("verification.not-configured");
+            if (config.DeletionPending)
+                return AdminSettingsMutationResult.Rejected("verification.deletion-pending");
+            config.MemberCheckVideoId = "-";
+            config.IsManualVideoId = false;
+            await db.SaveChangesAsync(cancellationToken);
+            return AdminSettingsMutationResult.Applied("verification.probe-automatic");
+        }
+
+        private static AdminSettingsMutationResult MapRoleResult(string error, string sourceId)
+            => error switch
+            {
+                null => AdminSettingsMutationResult.Applied("verification.configured", new JObject { ["sourceId"] = sourceId }),
+                "MemberSetting.Errors.ManageRolesRequired" => AdminSettingsMutationResult.Rejected("verification.manage-roles-required"),
+                "MemberSetting.Errors.RoleTooHigh" => AdminSettingsMutationResult.Rejected("verification.role-too-high"),
+                "MemberSetting.Errors.CrossPlatformRoleCollision" => AdminSettingsMutationResult.Rejected("verification.role-collision"),
+                "MemberSetting.Errors.RepairPending" => AdminSettingsMutationResult.Pending("verification.cleanup-pending"),
+                "MemberSetting.Errors.ConfigurationDeletionPending" => AdminSettingsMutationResult.Rejected("verification.deletion-pending"),
+                _ => AdminSettingsMutationResult.Rejected("verification.role-invalid")
+            };
 
         private async Task DisableSelectMenuAsync(SocketMessageComponent component, string locale, string placeholder = "")
         {

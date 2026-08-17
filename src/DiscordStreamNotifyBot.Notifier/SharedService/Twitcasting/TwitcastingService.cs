@@ -3,12 +3,16 @@ using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.AdminSettings;
+using DiscordStreamNotifyBot.SharedService.Cluster;
+using DiscordStreamNotifyBot.SharedService.Member;
+using Newtonsoft.Json.Linq;
 
 #if !DEBUG
 using Polly;
 #endif
 
-using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
 namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 {
@@ -29,19 +33,17 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
         private readonly NotifierMetrics _metrics;
+        private readonly MemberOperationCoordinator _operationCoordinator;
+        private readonly ClusterQueryService _clusterQuery;
 
         public TwitcastingService(DiscordSocketClient client, TwitcastingClient twitcastingClient,
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
-            BotLocalizer localizer, GuildLocaleService guildLocaleService, NotifierMetrics metrics)
+            BotLocalizer localizer, GuildLocaleService guildLocaleService, NotifierMetrics metrics,
+            MemberOperationCoordinator operationCoordinator, ClusterQueryService clusterQuery)
         {
             _metrics = metrics;
-            if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
-            {
-                Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 遺失，無法運行 TwitCasting 類功能");
-                IsEnable = false;
-                return;
-            }
-
+            _operationCoordinator = operationCoordinator;
+            _clusterQuery = clusterQuery;
             _client = client;
             _twitcastingClient = twitcastingClient;
             _emojiService = emojiService;
@@ -50,6 +52,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             _localizer = localizer;
             _guildLocaleService = guildLocaleService;
             _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel>(dbService, db => db.NoticeTwitcastingStreamChannels.AsNoTracking().ToList());
+
+            if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
+            {
+                Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 遺失，無法運行 TwitCasting 類功能");
+                IsEnable = false;
+                return;
+            }
         }
 
 #nullable enable
@@ -89,6 +98,202 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         }
 
         public void InvalidateNoticeCache() => _noticeCache?.Invalidate();
+
+        public async Task<AdminSettingsMutationResult> AddCrawlerAsync(
+            SocketGuild guild,
+            ulong actorUserId,
+            string source,
+            CancellationToken cancellationToken,
+            bool addForBotOwner = false)
+        {
+            if (!IsEnable)
+                return AdminSettingsMutationResult.Rejected("crawler.platform-disabled");
+            if (!CrawlerPolicy.HasGeneralEligibility(
+                actorUserId, Bot.ApplicatonOwner.Id, Utility.OfficialGuildContains(guild.Id), guild.MemberCount, 500))
+                return AdminSettingsMutationResult.Rejected("crawler.guild-member-requirement", new JObject
+                {
+                    ["requiredMemberCount"] = 500,
+                    ["memberCount"] = guild.MemberCount
+                });
+            var broadcaster = await GetChannelNameAndTitleAsync(source.Trim());
+            if (broadcaster == null)
+                return AdminSettingsMutationResult.Rejected("crawler.source-not-found");
+
+            using var db = _dbService.GetDbContext();
+            int limit = await GetTwitcastingCrawlerLimitAsync(db, guild.Id, cancellationToken);
+            var existing = await db.TwitcastingSpider.SingleOrDefaultAsync(
+                x => x.ScreenId == broadcaster.ScreenId, cancellationToken);
+            if (existing != null)
+            {
+                if (existing.GuildId == guild.Id || addForBotOwner && existing.GuildId == 0)
+                    return AdminSettingsMutationResult.Rejected("crawler.already-exists");
+                if (existing.GuildId == 0 || addForBotOwner)
+                    return AdminSettingsMutationResult.Rejected("crawler.source-owned");
+                var guilds = await _clusterQuery.GetGuildNameMapAsync();
+                if (guilds.ContainsKey(existing.GuildId))
+                    return AdminSettingsMutationResult.Rejected("crawler.source-owned");
+                if (!Utility.OfficialGuildContains(guild.Id) &&
+                    await db.TwitcastingSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
+                    return LimitReached(limit);
+                existing.GuildId = guild.Id;
+                await db.SaveChangesAsync(cancellationToken);
+                return Added(existing.ScreenId, existing.ChannelTitle);
+            }
+            if (!Utility.OfficialGuildContains(guild.Id) &&
+                await db.TwitcastingSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
+                return LimitReached(limit);
+
+            db.TwitcastingSpider.Add(new DataBase.Table.TwitcastingSpider
+            {
+                GuildId = addForBotOwner ? 0 : guild.Id,
+                ChannelId = broadcaster.Id,
+                ScreenId = broadcaster.ScreenId,
+                ChannelTitle = broadcaster.Name
+            });
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                using var reloadDb = _dbService.GetDbContext();
+                var current = await reloadDb.TwitcastingSpider.AsNoTracking().SingleOrDefaultAsync(
+                    x => x.ScreenId == broadcaster.ScreenId, cancellationToken);
+                return current?.GuildId == guild.Id
+                    ? AdminSettingsMutationResult.Rejected("crawler.already-exists")
+                    : AdminSettingsMutationResult.Rejected("crawler.source-owned");
+            }
+            Log.Info($"已新增 TwitCasting 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {broadcaster.ScreenId}");
+            return Added(broadcaster.ScreenId, broadcaster.Name);
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveCrawlerAsync(
+            ulong guildId,
+            string sourceId,
+            CancellationToken cancellationToken,
+            bool botOwner = false)
+        {
+            using var db = _dbService.GetDbContext();
+            var crawler = await db.TwitcastingSpider.SingleOrDefaultAsync(
+                x => x.ScreenId == sourceId, cancellationToken);
+            if (crawler == null)
+                return AdminSettingsMutationResult.Rejected("crawler.not-configured");
+            if (!CrawlerPolicy.CanRemove(crawler.GuildId, guildId, botOwner))
+                return AdminSettingsMutationResult.Rejected("crawler.not-owned");
+            db.TwitcastingSpider.Remove(crawler);
+            await db.SaveChangesAsync(cancellationToken);
+            Log.Info($"已移除 TwitCasting 頻道爬蟲 | Guild: {guildId} | Source: {sourceId}");
+            return AdminSettingsMutationResult.Applied("crawler.removed", new JObject { ["sourceId"] = sourceId });
+        }
+
+        internal static async Task<int> GetTwitcastingCrawlerLimitAsync(
+            MainDbContext db,
+            ulong guildId,
+            CancellationToken cancellationToken)
+            => CrawlerPolicy.ResolveLimit(await db.GuildConfig.AsNoTracking()
+                .Where(x => x.GuildId == guildId && x.MaxTwitcastingSpiderCount > 0)
+                .Select(x => (uint?)x.MaxTwitcastingSpiderCount)
+                .SingleOrDefaultAsync(cancellationToken), 2);
+
+        private static AdminSettingsMutationResult Added(string sourceId, string sourceName)
+            => AdminSettingsMutationResult.Applied("crawler.added", new JObject
+            {
+                ["sourceId"] = sourceId,
+                ["sourceName"] = sourceName
+            });
+
+        private static AdminSettingsMutationResult LimitReached(int limit)
+            => AdminSettingsMutationResult.Rejected("crawler.limit-reached", new JObject { ["limit"] = limit });
+
+        public async Task<AdminSettingsMutationResult> UpsertNotificationAsync(
+            SocketGuild guild,
+            string source,
+            ulong channelId,
+            string startMessage,
+            CancellationToken cancellationToken)
+        {
+            if (!IsEnable)
+                return AdminSettingsMutationResult.Rejected("settings.feature-disabled");
+            if (string.IsNullOrWhiteSpace(source))
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+            cancellationToken.ThrowIfCancellationRequested();
+            var broadcaster = await GetChannelNameAndTitleAsync(source.Trim());
+            if (broadcaster == null)
+                return AdminSettingsMutationResult.Rejected("settings.source-not-found");
+
+            var rejected = AdminSettingsChannelValidator.Validate(_client, guild, channelId);
+            if (rejected != null)
+                return rejected;
+
+            try
+            {
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(guild.Id, cancellationToken);
+                using var db = _dbService.GetDbContext();
+                var notice = await db.NoticeTwitcastingStreamChannels.FirstOrDefaultAsync(
+                    x => x.GuildId == guild.Id && x.ScreenId == broadcaster.ScreenId,
+                    cancellationToken);
+                if (notice == null)
+                {
+                    notice = new NoticeTwitcastingStreamChannel { GuildId = guild.Id, ScreenId = broadcaster.ScreenId };
+                    db.NoticeTwitcastingStreamChannels.Add(notice);
+                }
+
+                notice.DiscordChannelId = channelId;
+                notice.StartStreamMessage = startMessage;
+                await db.SaveChangesAsync(cancellationToken);
+                _noticeCache.Invalidate();
+                return AdminSettingsMutationResult.Applied(arguments: new JObject
+                {
+                    ["sourceId"] = broadcaster.ScreenId,
+                    ["sourceName"] = broadcaster.Name
+                });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "網頁管理設定 TwitCasting 通知更新失敗");
+                return AdminSettingsMutationResult.Rejected("settings.operation-failed");
+            }
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveNotificationAsync(
+            ulong guildId,
+            string source,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+            try
+            {
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
+                using var db = _dbService.GetDbContext();
+                string sourceId = source.Trim().Split('?')[0]
+                    .Replace("https://twitcasting.tv/", "", StringComparison.OrdinalIgnoreCase)
+                    .Split('/')[0];
+                if (string.IsNullOrWhiteSpace(sourceId))
+                    return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+                await db.NoticeTwitcastingStreamChannels
+                    .Where(x => x.GuildId == guildId && x.ScreenId == sourceId)
+                    .ExecuteDeleteAsync(cancellationToken);
+                _noticeCache.Invalidate();
+                return AdminSettingsMutationResult.Applied("settings.removed", new JObject { ["sourceId"] = sourceId });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "網頁管理設定 TwitCasting 通知移除失敗");
+                return AdminSettingsMutationResult.Rejected("settings.operation-failed");
+            }
+        }
 
 #nullable disable
 

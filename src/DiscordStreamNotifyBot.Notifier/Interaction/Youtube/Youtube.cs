@@ -2,6 +2,8 @@
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using Video = Google.Apis.YouTube.v3.Data.Video;
 
@@ -432,37 +434,49 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                     var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId);
                     if (noticeYoutubeStreamChannel != null)
                     {
-                        if (await PromptUserConfirmAsync("Notifications.OverwritePrompt", channelId).ConfigureAwait(false))
+                        if (!await PromptUserConfirmAsync("Notifications.OverwritePrompt", channelId).ConfigureAwait(false))
+                            return;
+                    }
+
+                    var messages = noticeYoutubeStreamChannel == null
+                        ? new AdminSettingsYoutubeMessages()
+                        : new AdminSettingsYoutubeMessages
                         {
-                            noticeYoutubeStreamChannel.DiscordNoticeStreamChannelId = textChannel.Id;
-                            db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
-                            db.SaveChanges();
-                            _service.InvalidateNoticeCache();
-                            await SendLocalizedConfirmAsync("Youtube.Notifications.StreamChannelChanged", true, true,
-                                channelId, textChannel).ConfigureAwait(false);
-                        }
+                            NewStream = noticeYoutubeStreamChannel.NewStreamMessage,
+                            NewVideo = noticeYoutubeStreamChannel.NewVideoMessage,
+                            Start = noticeYoutubeStreamChannel.StratMessage,
+                            End = noticeYoutubeStreamChannel.EndMessage,
+                            ChangeTime = noticeYoutubeStreamChannel.ChangeTimeMessage,
+                            Delete = noticeYoutubeStreamChannel.DeleteMessage
+                        };
+                    var result = await _service.UpsertNotificationAsync(
+                        Context.Guild,
+                        channelId,
+                        textChannel.Id,
+                        noticeYoutubeStreamChannel?.DiscordNoticeVideoChannelId ?? textChannel.Id,
+                        noticeYoutubeStreamChannel?.IsCreateEventForNewStream ?? false,
+                        messages,
+                        GracefulShutdown.Token);
+                    if (result.State != "applied")
+                    {
+                        await SendLocalizedErrorAsync("Errors.OperationFailed", true);
+                        return;
+                    }
+
+                    if (noticeYoutubeStreamChannel != null)
+                    {
+                        await SendLocalizedConfirmAsync("Youtube.Notifications.StreamChannelChanged", true, true,
+                            channelId, textChannel).ConfigureAwait(false);
                         return;
                     }
 
                     if (channelId == "holo" || channelId == "2434" || channelId == "other")
                     {
-                        db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel()
-                        {
-                            GuildId = Context.Guild.Id,
-                            DiscordNoticeStreamChannelId = textChannel.Id,
-                            DiscordNoticeVideoChannelId = textChannel.Id,
-                            YouTubeChannelId = channelId
-                        });
                         await SendLocalizedConfirmAsync("Youtube.Notifications.Added", true, true, channelId).ConfigureAwait(false);
                     }
                     else
                     {
-                        string channelTitle = await _service.GetChannelTitle(channelId);
-                        if (channelTitle == "")
-                        {
-                            await SendLocalizedErrorAsync("Errors.ChannelNotFound", true, true, channelId).ConfigureAwait(false);
-                            return;
-                        }
+                        string channelTitle = result.Arguments.Value<string>("sourceName");
 
                         string videoNoticePath = CommandDisplayResolver.GetCommandPath(locale, "youtube", "set-video-notice-channel");
                         string addString = BotLocalizer.Format("Youtube.Notifications.VideoChannelHint", locale, videoNoticePath);
@@ -472,19 +486,9 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                             addString += BotLocalizer.Format("Notifications.SpiderWarning", locale, spiderPath);
                         }
 
-                        db.NoticeYoutubeStreamChannel.Add(new NoticeYoutubeStreamChannel()
-                        {
-                            GuildId = Context.Guild.Id,
-                            DiscordNoticeStreamChannelId = textChannel.Id,
-                            DiscordNoticeVideoChannelId = textChannel.Id,
-                            YouTubeChannelId = channelId
-                        });
                         await SendLocalizedConfirmAsync("Youtube.Notifications.AddedWithHint", true, true,
                             channelTitle, addString).ConfigureAwait(false);
                     }
-
-                    db.SaveChanges();
-                    _service.InvalidateNoticeCache();
                 }
             }
             catch (Exception ex)
@@ -536,10 +540,13 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                 {
                     if (await PromptUserConfirmAsync("Youtube.Notifications.RemoveAllPrompt").ConfigureAwait(false))
                     {
-                        db.NoticeYoutubeStreamChannel.RemoveRange(Queryable.Where(db.NoticeYoutubeStreamChannel, (x) => x.GuildId == Context.Guild.Id));
+                        var result = await _service.RemoveAllNotificationsAsync(Context.Guild.Id, GracefulShutdown.Token);
+                        if (result.State != "applied")
+                        {
+                            await SendLocalizedErrorAsync("Errors.OperationFailed", true);
+                            return;
+                        }
                         await SendLocalizedConfirmAsync("Notifications.AllRemoved", true, true).ConfigureAwait(false);
-                        db.SaveChanges();
-                        _service.InvalidateNoticeCache();
                         return;
                     }
                     else return;
@@ -551,11 +558,16 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                 }
                 else
                 {
-                    db.NoticeYoutubeStreamChannel.Remove(db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId));
+                    var result = await _service.RemoveNotificationAsync(
+                        Context.Guild.Id,
+                        channelId,
+                        GracefulShutdown.Token);
+                    if (result.State != "applied")
+                    {
+                        await SendLocalizedErrorAsync("Errors.OperationFailed", true);
+                        return;
+                    }
                     await SendLocalizedConfirmAsync("Notifications.Removed", true, true, channelId).ConfigureAwait(false);
-
-                    db.SaveChanges();
-                    _service.InvalidateNoticeCache();
                 }
             }
         }

@@ -1,7 +1,8 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
-using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 
 namespace DiscordStreamNotifyBot.Interaction.Twitch
@@ -103,31 +104,45 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                     var noticeTwitchStreamChannel = db.NoticeTwitchStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.NoticeTwitchUserId == userData.Id);
                     if (noticeTwitchStreamChannel != null)
                     {
-                        if (await PromptUserConfirmAsync("Notifications.OverwritePrompt", userData.DisplayName).ConfigureAwait(false))
-                        {
-                            noticeTwitchStreamChannel.DiscordChannelId = textChannel.Id;
-                            db.NoticeTwitchStreamChannels.Update(noticeTwitchStreamChannel);
-                            await SendLocalizedConfirmAsync("Notifications.ChannelChanged", true, true,
-                                userData.DisplayName, textChannel).ConfigureAwait(false);
-                        }
-                        else return;
+                        if (!await PromptUserConfirmAsync("Notifications.OverwritePrompt", userData.DisplayName).ConfigureAwait(false))
+                            return;
                     }
-                    else
+
+                    var messages = noticeTwitchStreamChannel == null
+                        ? new AdminSettingsTwitchMessages()
+                        : new AdminSettingsTwitchMessages
+                        {
+                            Start = noticeTwitchStreamChannel.StartStreamMessage,
+                            End = noticeTwitchStreamChannel.EndStreamMessage,
+                            Change = noticeTwitchStreamChannel.ChangeStreamDataMessage
+                        };
+                    var result = await _service.UpsertNotificationAsync(
+                        Context.Guild,
+                        userData.Id,
+                        textChannel.Id,
+                        messages,
+                        GracefulShutdown.Token);
+                    if (result.State != "applied")
                     {
-                        string addString = "";
-                        if (!db.TwitchSpider.Any((x) => x.UserId == userData.Id))
-                        {
-                            string spiderPath = CommandDisplayResolver.GetCommandPath(locale, "twitch-spider", "add");
-                            addString = BotLocalizer.Format("Notifications.SpiderWarning", locale, spiderPath);
-                        }
-
-                        db.NoticeTwitchStreamChannels.Add(new NoticeTwitchStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, NoticeTwitchUserId = userData.Id });
-                        await SendLocalizedConfirmAsync("Twitch.Notifications.Added", true, true,
-                            userData.DisplayName, addString).ConfigureAwait(false);
+                        await SendLocalizedErrorAsync("Errors.OperationFailed", true);
+                        return;
                     }
 
-                    db.SaveChanges();
-                    _service.InvalidateNoticeCache();
+                    if (noticeTwitchStreamChannel != null)
+                    {
+                        await SendLocalizedConfirmAsync("Notifications.ChannelChanged", true, true,
+                            userData.DisplayName, textChannel).ConfigureAwait(false);
+                        return;
+                    }
+
+                    string addString = "";
+                    if (!db.TwitchSpider.Any((x) => x.UserId == userData.Id))
+                    {
+                        string spiderPath = CommandDisplayResolver.GetCommandPath(locale, "twitch-spider", "add");
+                        addString = BotLocalizer.Format("Notifications.SpiderWarning", locale, spiderPath);
+                    }
+                    await SendLocalizedConfirmAsync("Twitch.Notifications.Added", true, true,
+                        userData.DisplayName, addString).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -151,12 +166,19 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                 }
                 else
                 {
-                    db.NoticeTwitchStreamChannels.Remove(noticeTwitchStreamChannel);
-                    db.SaveChanges();
-                    _service.InvalidateNoticeCache();
+                    string userName = db.GetTwitchUserNameByUserId(twitchId);
+                    var result = await _service.RemoveNotificationAsync(
+                        Context.Guild.Id,
+                        twitchId,
+                        GracefulShutdown.Token);
+                    if (result.State != "applied")
+                    {
+                        await SendLocalizedErrorAsync("Errors.OperationFailed", false, true);
+                        return;
+                    }
 
                     await SendLocalizedConfirmAsync("Notifications.Removed", false, true,
-                        db.GetTwitchUserNameByUserId(twitchId)).ConfigureAwait(false);
+                        userName).ConfigureAwait(false);
                 }
             }
         }

@@ -13,6 +13,8 @@
 - 自動化測試第一至四批已完成，第五批 Redis／MySQL component tests 已實跑通過；多 shard guild ownership 與外部 API request contract 待完成。細節見 [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)。
 - Twitch 訂閱驗證 Bot 端已實作：共用 MySQL OAuth token、provider secret 金鑰、跨程序 refresh lock、rotation 關閉 drain、Helix 訂閱查詢、可重試的設定刪除、Tier 角色、三語 Slash 指令及每小時複驗；正式 Twitch／Discord 行為仍需依計畫手動驗收。
 - YouTube 會員驗證已重構為 `/youtube-member`／`/youtube-member-set`、durable pending cleanup、role migration/deletion checkpoint、typed provider result 與可 drain 的 `PeriodicRunner`；Google callback/refresh/revoke 以 Redis DB1 per-user lease 加 MySQL unlink intent fence 跨 Bot/Backend 協調，SDK 不直接寫刪 authoritative token；YouTube/Twitch 共用 operation coordinator 與跨平台 role ownership 保護。Backend/Frontend 已同步 cleanup-pending contract，正式 MySQL migration 與 Discord acceptance 尚待維護窗口人工執行。
+- 網頁管理設定 Bot 端首版已實作：Notifier owning shard 透過固定 Redis request/reply 契約提供 guild/common/三平台通知快照，並由既有 Utility/YouTube/Twitch/TwitCasting 服務執行明確 desired-state mutation；跨專案契約與後續驗證設定擴充見 [docs/WEB_ADMIN_SETTINGS_PLAN.md](docs/WEB_ADMIN_SETTINGS_PLAN.md)。
+- 網頁管理設定的三平台爬蟲與 YouTube／Twitch 驗證已接上共用 domain service、expanded snapshot 與 Web 表單；正式 Discord／Redis／MySQL／多 shard 驗收仍依 [docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md](docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md) 執行。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run
@@ -56,7 +58,7 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 
 ## 架構要點（現行樹）
 
-- Notifier 進入點 `Program.cs` → `Bot.cs`：init 設定/DB/Redis → DiscordSocketClient（手動 shard 參數）→ 指令註冊 → 啟動 `NotificationBusConsumer`（消費 `bot:notify`）→ 阻塞至關閉。Scraper 進入點 `Program.cs` → `ScraperService`（搶 leader 鎖）→ `DetectionHost`（`Detection/` 偵測、publish DTO，不連 Discord）。
+- Notifier 進入點 `Program.cs` → `Bot.cs`：init 設定/DB/Redis → DiscordSocketClient（手動 shard 參數）→ DI 後明確啟動 `AdminSettingsService` 與驗證服務 → 指令註冊 → 啟動 `NotificationBusConsumer`（消費 `bot:notify`）→ 阻塞至關閉。Scraper 進入點 `Program.cs` → `ScraperService`（搶 leader 鎖）→ `DetectionHost`（`Detection/` 偵測、publish DTO，不連 Discord）。
 - 全域靜態狀態在 Shared 的 `BotState`（`Redis/RedisSub/RedisDb`、`DbService`、`IsConnect`、`ShardId/TotalShardCount`、`IsServerOnThisShard`/`ShouldDeleteMissingGuild`）；Notifier 的 `Bot` 靜態成員委派至此。
 - **雙指令系統**（目錄結構對稱）：`Command/` = `s!` 前綴（擁有者/管理用）；`Interaction/` = Slash（一般使用者）。
 - **DI 反射自動載入**：實作 `IInteractionService` / `ICommandService` 的類別自動註冊 Singleton（`Interaction|Command/Extensions.cs`），新增服務不需手動登記。

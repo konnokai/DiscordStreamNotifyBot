@@ -3,8 +3,10 @@ using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.Member;
 using DiscordStreamNotifyBot.SharedService.Twitch;
+using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 
 namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
@@ -187,6 +189,82 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
             await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
             return await ApplyResultCoreAsync(guildId, discordUserId, broadcasterId, lookup, cancellationToken);
+        }
+
+        public async Task<AdminSettingsMutationResult> ConfigureAsync(
+            SocketGuild guild,
+            string source,
+            ulong roleId,
+            CancellationToken cancellationToken)
+        {
+            if (!_twitchApiService.IsEnable)
+                return AdminSettingsMutationResult.Rejected("verification.platform-disabled");
+            SocketRole role = guild.GetRole(roleId);
+            if (role == null)
+                return AdminSettingsMutationResult.Rejected("verification.role-invalid");
+            using (var db = _dbService.GetDbContext())
+            {
+                var guildConfig = await db.GuildConfig.SingleOrDefaultAsync(
+                    x => x.GuildId == guild.Id, cancellationToken);
+                if (guildConfig?.VerificationLogChannelId is not > 0)
+                    return AdminSettingsMutationResult.Rejected("verification.log-channel-required");
+                if (guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
+                    return AdminSettingsMutationResult.Rejected("verification.log-channel-missing");
+            }
+
+            TwitchLib.Api.Helix.Models.Users.GetUsers.User user;
+            try
+            {
+                user = ulong.TryParse(source, out _)
+                    ? await _twitchApiService.GetUserAsync(twitchUserId: source)
+                    : await _twitchApiService.GetUserAsync(
+                        twitchUserLogin: _twitchApiService.GetUserLoginByUrl(source));
+            }
+            catch (Exception ex) when (ex is FormatException or ArgumentException or UriFormatException)
+            {
+                return AdminSettingsMutationResult.Rejected("verification.source-not-found");
+            }
+            if (user == null)
+                return AdminSettingsMutationResult.Rejected("verification.source-not-found");
+            if (!string.Equals(user.BroadcasterType, "affiliate", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(user.BroadcasterType, "partner", StringComparison.OrdinalIgnoreCase))
+                return AdminSettingsMutationResult.Rejected("verification.source-ineligible");
+
+            TwitchRoleConfigurationResult result = await _roleService.CreateOrRepairConfigurationAsync(
+                guild, user.Id, user.Login, user.DisplayName, role, cancellationToken);
+            return result.Error switch
+            {
+                null => AdminSettingsMutationResult.Applied("verification.configured", new JObject
+                {
+                    ["sourceId"] = user.Id,
+                    ["sourceName"] = user.DisplayName
+                }),
+                "TwitchMemberSetting.Errors.TooManyChannels" => AdminSettingsMutationResult.Rejected("verification.limit-reached"),
+                "TwitchMemberSetting.Errors.CrossPlatformRoleCollision" => AdminSettingsMutationResult.Rejected("verification.role-collision"),
+                "TwitchMemberSetting.Errors.RepairPending" => AdminSettingsMutationResult.Pending("verification.cleanup-pending"),
+                "TwitchMemberSetting.Errors.ConfigurationDeletionPending" => AdminSettingsMutationResult.Rejected("verification.deletion-pending"),
+                "MemberSetting.Errors.ManageRolesRequired" or
+                "TwitchMemberSetting.Errors.MissingManageRoles" => AdminSettingsMutationResult.Rejected("verification.manage-roles-required"),
+                "MemberSetting.Errors.RoleTooHigh" or
+                "TwitchMemberSetting.Errors.RoleTooHigh" => AdminSettingsMutationResult.Rejected("verification.role-too-high"),
+                _ => AdminSettingsMutationResult.Rejected("verification.role-invalid")
+            };
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveConfigurationAsync(
+            ulong guildId,
+            string sourceId,
+            CancellationToken cancellationToken)
+        {
+            using var db = _dbService.GetDbContext();
+            var config = await db.GuildTwitchSubscriptionConfig.AsNoTracking().SingleOrDefaultAsync(
+                x => x.GuildId == guildId && x.BroadcasterId == sourceId, cancellationToken);
+            if (config == null)
+                return AdminSettingsMutationResult.Rejected("verification.not-configured");
+            bool removed = await _roleService.DeleteConfigurationAsync(config, cancellationToken);
+            return removed
+                ? AdminSettingsMutationResult.Applied("verification.removed")
+                : AdminSettingsMutationResult.Pending("verification.cleanup-pending");
         }
 
         /// <summary>將使用者所有 Twitch 驗證標記待清理，移除角色並保留失敗項目供排程重試。</summary>
@@ -540,7 +618,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 if (synchronized && (!wasChecked || previousTier != result.Tier))
                     await LogStatusAsync(guildId, "TwitchMember.StatusLog.Verified", cancellationToken,
                         discordUserId, config.BroadcasterDisplayName,
-                        Interaction.TwitchSubscription.TwitchSubscription.FormatTier(result.Tier));
+                        Interaction.TwitchSubscription.TwitchSubscription.FormatTier(result.Tier, check.Locale));
                 else if (!synchronized)
                     await LogStatusAsync(guildId, "TwitchMember.StatusLog.RoleFailed", cancellationToken,
                         discordUserId, config.BroadcasterDisplayName);

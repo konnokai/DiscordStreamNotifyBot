@@ -1,7 +1,6 @@
 using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Shared;
-using DiscordStreamNotifyBot.SharedService.Twitch;
 using DiscordStreamNotifyBot.SharedService.TwitchSubscription;
 
 namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
@@ -13,17 +12,14 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
     public sealed class TwitchSubscriptionSetting : TopLevelModule
     {
         private readonly MainDbService _dbService;
-        private readonly TwitchApiService _twitchApiService;
-        private readonly TwitchSubscriptionRoleService _roleService;
+        private readonly TwitchSubscriptionService _subscriptionService;
 
         public TwitchSubscriptionSetting(
             MainDbService dbService,
-            TwitchApiService twitchApiService,
-            TwitchSubscriptionRoleService roleService)
+            TwitchSubscriptionService subscriptionService)
         {
             _dbService = dbService;
-            _twitchApiService = twitchApiService;
-            _roleService = roleService;
+            _subscriptionService = subscriptionService;
         }
 
         public sealed class ConfiguredBroadcasterAutocompleteHandler : AutocompleteHandler
@@ -54,66 +50,12 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task AddSubscriptionCheckAsync(
             [Summary("channel-url", "Twitch 頻道網址")] string channel,
-            [Summary("role", "驗證成功後給予的身分組 (額外給予各 Tier 等級身分組)")] IRole role)
+            [Summary("role", "驗證成功後給予的身分組 (額外給予各層級身分組)")] IRole role)
         {
-            if (!_twitchApiService.IsEnable)
-            {
-                await SendLocalizedErrorAsync("Errors.FeatureDisabled");
-                return;
-            }
-
-            using (var db = _dbService.GetDbContext())
-            {
-                var guildConfig = await db.GuildConfig
-                    .SingleOrDefaultAsync(x => x.GuildId == Context.Guild.Id);
-                string locale = await GetLocaleAsync(true);
-                string setLogPath = CommandDisplayResolver.GetCommandPath(
-                    locale, "utility", "set-verification-log-channel");
-                if (guildConfig == null || guildConfig.VerificationLogChannelId == 0)
-                {
-                    await SendLocalizedErrorAsync(
-                        "MemberSetting.Errors.LogChannelRequired", false, true, setLogPath);
-                    return;
-                }
-                if (Context.Guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
-                {
-                    guildConfig.VerificationLogChannelId = 0;
-                    await db.SaveChangesAsync(GracefulShutdown.Token);
-                    await SendLocalizedErrorAsync(
-                        "MemberSetting.Errors.LogChannelDeleted", false, true, setLogPath);
-                    return;
-                }
-            }
-
             await DeferAsync(true);
-            string login = _twitchApiService.GetUserLoginByUrl(channel);
-            var user = await _twitchApiService.GetUserAsync(twitchUserLogin: login);
-            if (user == null)
-            {
-                await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.ChannelNotFound", true);
-                return;
-            }
-            if (!IsEligibleBroadcaster(user.BroadcasterType))
-            {
-                await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.IneligibleBroadcaster", true);
-                return;
-            }
-
-            TwitchRoleConfigurationResult result = await _roleService.CreateOrRepairConfigurationAsync(
-                (SocketGuild)Context.Guild,
-                user.Id,
-                user.Login,
-                user.DisplayName,
-                role,
-                GracefulShutdown.Token);
-            if (!result.IsSuccess)
-            {
-                await SendLocalizedErrorAsync(result.Error, true);
-                return;
-            }
-
-            await SendLocalizedConfirmAsync(
-                "TwitchMemberSetting.Configured", true, true, user.DisplayName, role.Name);
+            var result = await _subscriptionService.ConfigureAsync(
+                Context.Guild, channel, role.Id, GracefulShutdown.Token);
+            await SendVerificationResultAsync(result, channel, true, role.Name);
         }
 
         [SlashCommand("remove-subscription-check", "移除 Twitch 訂閱驗證頻道")]
@@ -133,13 +75,9 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
             }
             if (!await PromptUserConfirmAsync("TwitchMemberSetting.RemovePrompt", config.BroadcasterDisplayName))
                 return;
-
-            bool removed = await _roleService.DeleteConfigurationAsync(config, GracefulShutdown.Token);
-            if (removed)
-                await SendLocalizedConfirmAsync(
-                    "TwitchMemberSetting.Removed", true, true, config.BroadcasterDisplayName);
-            else
-                await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.RemovePending", true);
+            var result = await _subscriptionService.RemoveConfigurationAsync(
+                Context.Guild.Id, config.BroadcasterId, GracefulShutdown.Token);
+            await SendVerificationResultAsync(result, config.BroadcasterDisplayName, true);
         }
 
         [SlashCommand("list-checked-member", "列出已驗證的 Twitch 訂閱者")]
@@ -148,9 +86,9 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
         {
             using var db = _dbService.GetDbContext();
             var checks = from check in db.TwitchSubscriptionCheck.AsNoTracking()
-                          join config in db.GuildTwitchSubscriptionConfig.AsNoTracking()
-                              on new { check.GuildId, check.BroadcasterId } equals new { config.GuildId, config.BroadcasterId }
-                          where check.GuildId == Context.Guild.Id && check.IsChecked && !config.DeletionPending
+                         join config in db.GuildTwitchSubscriptionConfig.AsNoTracking()
+                             on new { check.GuildId, check.BroadcasterId } equals new { config.GuildId, config.BroadcasterId }
+                         where check.GuildId == Context.Guild.Id && check.IsChecked && !config.DeletionPending
                          orderby check.DiscordUserId, config.BroadcasterDisplayName
                          select new { check.DiscordUserId, check.Tier, config.BroadcasterDisplayName };
             int count = await checks.CountAsync();
@@ -166,7 +104,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
                 .WithTitle(BotLocalizer.Get("TwitchMemberSetting.CheckedMembersTitle", locale))
                 .WithDescription(string.Join('\n', checks.Skip(currentPage * 20).Take(20)
                     .AsEnumerable()
-                    .Select(x => $"<@{x.DiscordUserId}>: `{x.BroadcasterDisplayName}` / {TwitchSubscription.FormatTier(x.Tier)}"))),
+                    .Select(x => $"<@{x.DiscordUserId}>: `{x.BroadcasterDisplayName}` / {TwitchSubscription.FormatTier(x.Tier, locale)}"))),
                 count, 20, true, true);
         }
 

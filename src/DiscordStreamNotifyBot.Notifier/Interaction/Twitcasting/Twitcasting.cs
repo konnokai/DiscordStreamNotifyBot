@@ -1,7 +1,7 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
-using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction.Attribute;
+using DiscordStreamNotifyBot.Shared;
 
 namespace DiscordStreamNotifyBot.Interaction.TwitCasting
 {
@@ -99,30 +99,37 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                 var noticeTwitCastingStreamChannel = db.NoticeTwitcastingStreamChannels.FirstOrDefault((x) => x.GuildId == Context.Guild.Id && x.ScreenId == channelData.ScreenId);
                 if (noticeTwitCastingStreamChannel != null)
                 {
-                    if (await PromptUserConfirmAsync("Notifications.OverwritePrompt", channelData.Name).ConfigureAwait(false))
-                    {
-                        noticeTwitCastingStreamChannel.DiscordChannelId = textChannel.Id;
-                        db.NoticeTwitcastingStreamChannels.Update(noticeTwitCastingStreamChannel);
-                        await SendLocalizedConfirmAsync("Notifications.ChannelChanged", true, true,
-                            channelData.Name, textChannel).ConfigureAwait(false);
-                    }
-                    else return;
-                }
-                else
-                {
-                    string addString = "";
-                    if (!db.TwitcastingSpider.Any((x) => x.ScreenId == channelData.ScreenId))
-                    {
-                        string spiderPath = CommandDisplayResolver.GetCommandPath(locale, "twitcasting-spider", "add");
-                        addString = BotLocalizer.Format("Notifications.SpiderWarning", locale, spiderPath);
-                    }
-                    db.NoticeTwitcastingStreamChannels.Add(new NoticeTwitcastingStreamChannel() { GuildId = Context.Guild.Id, DiscordChannelId = textChannel.Id, ScreenId = channelData.ScreenId });
-                    await SendLocalizedConfirmAsync("Twitcasting.Notifications.Added", true, true,
-                        channelData.Name, addString).ConfigureAwait(false);
+                    if (!await PromptUserConfirmAsync("Notifications.OverwritePrompt", channelData.Name).ConfigureAwait(false))
+                        return;
                 }
 
-                db.SaveChanges();
-                _service.InvalidateNoticeCache();
+                var result = await _service.UpsertNotificationAsync(
+                    Context.Guild,
+                    channelData.ScreenId,
+                    textChannel.Id,
+                    noticeTwitCastingStreamChannel?.StartStreamMessage ?? "",
+                    GracefulShutdown.Token);
+                if (result.State != "applied")
+                {
+                    await SendLocalizedErrorAsync("Errors.OperationFailed", true);
+                    return;
+                }
+
+                if (noticeTwitCastingStreamChannel != null)
+                {
+                    await SendLocalizedConfirmAsync("Notifications.ChannelChanged", true, true,
+                        channelData.Name, textChannel).ConfigureAwait(false);
+                    return;
+                }
+
+                string addString = "";
+                if (!db.TwitcastingSpider.Any((x) => x.ScreenId == channelData.ScreenId))
+                {
+                    string spiderPath = CommandDisplayResolver.GetCommandPath(locale, "twitcasting-spider", "add");
+                    addString = BotLocalizer.Format("Notifications.SpiderWarning", locale, spiderPath);
+                }
+                await SendLocalizedConfirmAsync("Twitcasting.Notifications.Added", true, true,
+                    channelData.Name, addString).ConfigureAwait(false);
             }
         }
 
@@ -154,9 +161,15 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                 }
                 else
                 {
-                    db.NoticeTwitcastingStreamChannels.Remove(db.NoticeTwitcastingStreamChannels.First((x) => x.GuildId == Context.Guild.Id && x.ScreenId == channelData.ScreenId));
-                    db.SaveChanges();
-                    _service.InvalidateNoticeCache();
+                    var result = await _service.RemoveNotificationAsync(
+                        Context.Guild.Id,
+                        channelData.ScreenId,
+                        GracefulShutdown.Token);
+                    if (result.State != "applied")
+                    {
+                        await SendLocalizedErrorAsync("Errors.OperationFailed", true, true);
+                        return;
+                    }
                     await SendLocalizedConfirmAsync("Notifications.Removed", true, true, channelData.Name).ConfigureAwait(false);
                 }
             }

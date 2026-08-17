@@ -15,7 +15,6 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
         private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         private readonly MainDbService _dbService;
         private readonly ClusterQueryService _clusterQuery;
-        private readonly GuildLocaleService _guildLocaleService;
         private readonly BotLocalizer _botLocalizer;
 
         public Utility(
@@ -23,14 +22,12 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
             HttpClients.DiscordWebhookClient discordWebhookClient,
             MainDbService dbService,
             ClusterQueryService clusterQuery,
-            GuildLocaleService guildLocaleService,
             BotLocalizer botLocalizer)
         {
             _client = client;
             _discordWebhookClient = discordWebhookClient;
             _dbService = dbService;
             _clusterQuery = clusterQuery;
-            _guildLocaleService = guildLocaleService;
             _botLocalizer = botLocalizer;
         }
 
@@ -108,7 +105,13 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
             [Choice("English", SupportedLocale.English)]
             [Choice("Japanese", SupportedLocale.Japanese)] string locale)
         {
-            string selectedLocale = await _guildLocaleService.SetAsync(Context.Guild.Id, locale);
+            var result = await _service.SetLocaleAsync(Context.Guild.Id, locale, GracefulShutdown.Token);
+            if (result.State != "applied")
+            {
+                await SendLocalizedErrorAsync("Errors.OperationFailed", false, true);
+                return;
+            }
+            string selectedLocale = result.Arguments.Value<string>("locale");
             string responseLocale = await GetLocaleAsync(true);
             string displayLanguage = _botLocalizer.GetLocaleDisplayName(selectedLocale, responseLocale);
             await Context.Interaction.SendConfirmAsync(_botLocalizer, responseLocale, "Utility.LanguageChanged",
@@ -145,15 +148,15 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
 
             await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
 
-            var guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == Context.Guild.Id);
-            if (guildConfig == null)
+            var result = await _service.SetVerificationLogChannelAsync(
+                Context.Guild,
+                textChannel.Id,
+                GracefulShutdown.Token);
+            if (result.State != "applied")
             {
-                guildConfig = new DataBase.Table.GuildConfig { GuildId = Context.Guild.Id };
-                db.GuildConfig.Add(guildConfig);
+                await SendLocalizedErrorAsync("Errors.OperationFailed", true, true);
+                return;
             }
-
-            guildConfig.VerificationLogChannelId = textChannel.Id;
-            await db.SaveChangesAsync(GracefulShutdown.Token);
 
             await SendLocalizedConfirmAsync("MemberSetting.LogChannelChanged", true, false, textChannel);
         }
@@ -185,15 +188,15 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
                     return;
                 }
 
-                using var db = _dbService.GetDbContext();
-                var guildConfig = db.GuildConfig.FirstOrDefault((x) => x.GuildId == Context.Guild.Id);
-                if (guildConfig == null)
+                var result = await _service.SetGlobalNoticeChannelAsync(
+                    Context.Guild,
+                    channel.Id,
+                    GracefulShutdown.Token);
+                if (result.State != "applied")
                 {
-                    guildConfig = new DataBase.Table.GuildConfig { GuildId = Context.Guild.Id };
-                    db.GuildConfig.Add(guildConfig);
+                    await SendLocalizedErrorAsync("Utility.GlobalNoticeChannelFailed");
+                    return;
                 }
-                guildConfig.NoticeChannelId = channel.Id;
-                db.SaveChanges();
 
                 await SendLocalizedConfirmAsync("Utility.GlobalNoticeChannelChanged", false, true, channel);
             }

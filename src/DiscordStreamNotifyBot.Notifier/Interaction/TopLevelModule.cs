@@ -1,6 +1,7 @@
 ﻿using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared.Messages;
 
 namespace DiscordStreamNotifyBot.Interaction
 {
@@ -37,6 +38,165 @@ namespace DiscordStreamNotifyBot.Interaction
         {
             string locale = await GetLocaleAsync(ephemeral);
             await Context.Interaction.SendErrorAsync(BotLocalizer, locale, resourceKey, isFollowup, ephemeral, arguments);
+        }
+
+        protected async Task SendCrawlerResultAsync(
+            AdminSettingsMutationResult result,
+            string source,
+            string platform)
+        {
+            string locale = await GetLocaleAsync(true);
+            string addPath = CommandDisplayResolver.GetCommandPath(locale, platform, "add");
+            string contactPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "send-message-to-bot-owner");
+            switch (result.Code)
+            {
+                case "crawler.added":
+                    await SendLocalizedConfirmAsync("Spider.Added", true, true,
+                        result.Arguments.Value<string>("sourceName") ?? source,
+                        addPath,
+                        result.Arguments.Value<string>("sourceId") ?? source);
+                    break;
+                case "crawler.removed":
+                    await SendLocalizedConfirmAsync("Spider.Removed", true, false, source);
+                    break;
+                case "crawler.already-exists":
+                    await SendLocalizedErrorAsync("Spider.AlreadyExists", true, true,
+                        source, addPath, source, "");
+                    break;
+                case "crawler.not-configured":
+                    await SendLocalizedErrorAsync("Spider.NotConfigured", true, true, source);
+                    break;
+                case "crawler.not-owned":
+                case "crawler.source-owned":
+                    await SendLocalizedErrorAsync("Spider.NotOwnedByGuild", true);
+                    break;
+                case "crawler.limit-reached":
+                    await SendLocalizedErrorAsync("Spider.LimitReachedShort", true, true,
+                        result.Arguments.Value<int?>("limit") ?? 0, platform);
+                    break;
+                case "crawler.platform-disabled":
+                    await SendLocalizedErrorAsync("Errors.FeatureDisabled", true);
+                    break;
+                case "crawler.guild-member-requirement":
+                    await SendLocalizedErrorAsync("Preconditions.GuildMemberCount", true, true,
+                        result.Arguments.Value<int?>("requiredMemberCount") ?? 0,
+                        result.Arguments.Value<int?>("memberCount") ?? Context.Guild.MemberCount,
+                        contactPath);
+                    break;
+                case "crawler.oauth-eligibility-required":
+                    await SendLocalizedErrorAsync("TwitchSpider.MemberRequirement", true, true,
+                        result.Arguments.Value<int?>("requiredMemberCount") ?? 0,
+                        result.Arguments.Value<int?>("memberCount") ?? Context.Guild.MemberCount,
+                        contactPath);
+                    break;
+                case "crawler.source-ineligible":
+                    await SendLocalizedErrorAsync("YoutubeSpider.ManagedChannelRejected", true);
+                    break;
+                default:
+                    await SendLocalizedErrorAsync("Errors.SaveFailed", true);
+                    break;
+            }
+        }
+
+        protected async Task SendVerificationResultAsync(
+            AdminSettingsMutationResult result,
+            string source,
+            bool twitch = false,
+            string roleName = "")
+        {
+            string locale = await GetLocaleAsync(true);
+            string setLogPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "set-verification-log-channel");
+            string contactPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "send-message-to-bot-owner");
+            switch (result.Code)
+            {
+                case "verification.configured":
+                    await SendLocalizedConfirmAsync(
+                        twitch ? "TwitchMemberSetting.Configured" : "MemberSetting.ChannelConfigured",
+                        true,
+                        true,
+                        result.Arguments.Value<string>("sourceName") ?? source,
+                        roleName,
+                        BotLocalizer.Get("MemberSetting.ReadyLater", locale));
+                    break;
+                case "verification.removed":
+                    await SendLocalizedConfirmAsync(
+                        twitch ? "TwitchMemberSetting.Removed" : "MemberSetting.ChannelRemoved",
+                        true, false, source);
+                    break;
+                case "verification.cleanup-pending":
+                    await SendLocalizedErrorAsync(
+                        twitch ? "TwitchMemberSetting.Errors.RemovePending" : "MemberSetting.Errors.RemovePending",
+                        true);
+                    break;
+                case "verification.not-configured":
+                    await SendLocalizedErrorAsync(
+                        twitch ? "TwitchMemberSetting.Errors.NotConfigured" : "MemberSetting.Errors.ChannelNotConfigured",
+                        true);
+                    break;
+                case "verification.log-channel-required":
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelRequired", true, true, setLogPath);
+                    break;
+                case "verification.log-channel-missing":
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelDeleted", true, true, setLogPath);
+                    break;
+                case "verification.manage-roles-required":
+                    await SendLocalizedErrorAsync(
+                        twitch ? "TwitchMemberSetting.Errors.MissingManageRoles" : "MemberSetting.Errors.ManageRolesRequired",
+                        true);
+                    break;
+                case "verification.role-too-high":
+                    await SendLocalizedErrorAsync(
+                        twitch ? "TwitchMemberSetting.Errors.RoleTooHigh" : "MemberSetting.Errors.RoleTooHigh",
+                        true, true, roleName);
+                    break;
+                case "verification.role-collision":
+                    await SendLocalizedErrorAsync(
+                        twitch ? "TwitchMemberSetting.Errors.CrossPlatformRoleCollision" : "MemberSetting.Errors.CrossPlatformRoleCollision",
+                        true);
+                    break;
+                case "verification.limit-reached":
+                    if (twitch)
+                        await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.TooManyChannels", true);
+                    else
+                        await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelLimit", true, true,
+                            result.Arguments.Value<int?>("limit") ?? 0);
+                    break;
+                case "verification.guild-member-requirement":
+                    await SendLocalizedErrorAsync("Preconditions.GuildMemberCount", true, true,
+                        result.Arguments.Value<int?>("requiredMemberCount") ?? 0,
+                        result.Arguments.Value<int?>("memberCount") ?? Context.Guild.MemberCount,
+                        contactPath);
+                    break;
+                case "verification.source-not-found":
+                    await SendLocalizedErrorAsync(
+                        twitch ? "TwitchMemberSetting.Errors.ChannelNotFound" : "Errors.InvalidYoutubeChannel",
+                        true);
+                    break;
+                case "verification.source-ineligible":
+                    await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.IneligibleBroadcaster", true);
+                    break;
+                case "verification.deletion-pending":
+                    await SendLocalizedErrorAsync(
+                        twitch ? "TwitchMemberSetting.Errors.RepairPending" : "MemberSetting.Errors.RepairPending",
+                        true);
+                    break;
+                case "verification.probe-video-set":
+                    await SendLocalizedConfirmAsync("MemberSetting.CheckVideoChanged", true, false,
+                        source, result.Arguments.Value<string>("videoId") ?? "");
+                    break;
+                case "verification.probe-automatic":
+                    await SendLocalizedConfirmAsync("MemberSetting.CheckVideoCleared", true, false, source, 5);
+                    break;
+                case "verification.probe-video-invalid":
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.InvalidVideoId", true);
+                    break;
+                case "verification.platform-disabled":
+                    await SendLocalizedErrorAsync("Errors.FeatureDisabled", true);
+                    break;
+                default:
+                    await SendLocalizedErrorAsync("Errors.SaveFailed", true);
+                    break;
+            }
         }
 
         public async Task<bool> PromptUserConfirmAsync(string resourceKey, params object[] arguments)

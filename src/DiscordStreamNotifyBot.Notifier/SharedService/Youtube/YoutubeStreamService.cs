@@ -4,13 +4,15 @@ using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared.Messages;
-using HtmlAgilityPack;
-using Polly;
+using DiscordStreamNotifyBot.SharedService.AdminSettings;
+using DiscordStreamNotifyBot.SharedService.Cluster;
+using DiscordStreamNotifyBot.SharedService.Member;
 using Google.Apis.YouTube.v3;
+using HtmlAgilityPack;
+using Newtonsoft.Json.Linq;
+using Polly;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
-
-using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
 namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
@@ -64,12 +66,15 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly CommandDisplayResolver _commandDisplayResolver;
         private readonly EmojiService _emojiService;
         private readonly NotifierMetrics _metrics;
+        private readonly MemberOperationCoordinator _operationCoordinator;
+        private readonly ClusterQueryService _clusterQuery;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory,
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
             Shared.YoutubeApiService apiService, BotLocalizer localizer,
             GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver,
-            NotifierMetrics metrics)
+            NotifierMetrics metrics, MemberOperationCoordinator operationCoordinator,
+            ClusterQueryService clusterQuery)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
@@ -81,6 +86,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _commandDisplayResolver = commandDisplayResolver;
             _emojiService = emojiService;
             _metrics = metrics;
+            _operationCoordinator = operationCoordinator;
+            _clusterQuery = clusterQuery;
             _noticeCache = new NoticeCache<NoticeYoutubeStreamChannel>(dbService, db => db.NoticeYoutubeStreamChannel.AsNoTracking().ToList());
         }
 
@@ -98,6 +105,242 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         public Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true) => _apiService.PostSubscribeRequestAsync(channelId, subscribe);
 
         public void InvalidateNoticeCache() => _noticeCache.Invalidate();
+
+        public async Task<AdminSettingsMutationResult> AddCrawlerAsync(
+            SocketGuild guild,
+            ulong actorUserId,
+            string source,
+            CancellationToken cancellationToken,
+            bool addForBotOwner = false)
+        {
+            string sourceId = "";
+            try
+            {
+                sourceId = await GetChannelIdAsync(source);
+                using var db = _dbService.GetDbContext();
+                bool managed = await db.HoloVideos.AsNoTracking().AnyAsync(x => x.ChannelId == sourceId, cancellationToken) ||
+                    await db.NijisanjiVideos.AsNoTracking().AnyAsync(x => x.ChannelId == sourceId, cancellationToken);
+                if (managed && !await db.YoutubeChannelOwnedType.AsNoTracking()
+                    .AnyAsync(x => x.ChannelId == sourceId, cancellationToken))
+                    return AdminSettingsMutationResult.Rejected("crawler.source-ineligible");
+
+                int limit = await GetYoutubeCrawlerLimitAsync(db, guild.Id, cancellationToken);
+                var existing = await db.YoutubeChannelSpider.SingleOrDefaultAsync(
+                    x => x.ChannelId == sourceId, cancellationToken);
+                if (existing != null)
+                {
+                    if (existing.GuildId == guild.Id || addForBotOwner && existing.GuildId == 0)
+                        return AdminSettingsMutationResult.Rejected("crawler.already-exists");
+                    if (existing.GuildId == 0 || addForBotOwner)
+                        return AdminSettingsMutationResult.Rejected("crawler.source-owned");
+                    var guilds = await _clusterQuery.GetGuildNameMapAsync();
+                    if (guilds.ContainsKey(existing.GuildId))
+                        return AdminSettingsMutationResult.Rejected("crawler.source-owned");
+                    if (!Utility.OfficialGuildContains(guild.Id) &&
+                        await db.YoutubeChannelSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
+                        return LimitReached(limit);
+                    existing.GuildId = guild.Id;
+                    await db.SaveChangesAsync(cancellationToken);
+                    return Added(sourceId, existing.ChannelTitle);
+                }
+
+                if (!Utility.OfficialGuildContains(guild.Id) &&
+                    await db.YoutubeChannelSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
+                    return LimitReached(limit);
+                string sourceName = await GetChannelTitle(sourceId);
+                if (string.IsNullOrWhiteSpace(sourceName))
+                    return AdminSettingsMutationResult.Rejected("crawler.source-not-found");
+                db.YoutubeChannelSpider.Add(new DataBase.Table.YoutubeChannelSpider
+                {
+                    GuildId = addForBotOwner ? 0 : guild.Id,
+                    ChannelId = sourceId,
+                    ChannelTitle = sourceName
+                });
+                await db.SaveChangesAsync(cancellationToken);
+                Log.Info($"已新增 YouTube 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {sourceId}");
+                return Added(sourceId, sourceName);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception ex) when (ex is FormatException or ArgumentException or UriFormatException)
+            {
+                return AdminSettingsMutationResult.Rejected("crawler.source-not-found");
+            }
+            catch (DbUpdateException)
+            {
+                using var db = _dbService.GetDbContext();
+                var existing = await db.YoutubeChannelSpider.AsNoTracking().SingleOrDefaultAsync(
+                    x => x.ChannelId == sourceId, cancellationToken);
+                return existing?.GuildId == guild.Id
+                    ? AdminSettingsMutationResult.Rejected("crawler.already-exists")
+                    : AdminSettingsMutationResult.Rejected("crawler.source-owned");
+            }
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveCrawlerAsync(
+            ulong guildId,
+            string sourceId,
+            CancellationToken cancellationToken,
+            bool botOwner = false)
+        {
+            using var db = _dbService.GetDbContext();
+            var crawler = await db.YoutubeChannelSpider.SingleOrDefaultAsync(
+                x => x.ChannelId == sourceId, cancellationToken);
+            if (crawler == null)
+                return AdminSettingsMutationResult.Rejected("crawler.not-configured");
+            if (!CrawlerPolicy.CanRemove(crawler.GuildId, guildId, botOwner))
+                return AdminSettingsMutationResult.Rejected("crawler.not-owned");
+            db.YoutubeChannelSpider.Remove(crawler);
+            await db.SaveChangesAsync(cancellationToken);
+            try { await PostSubscribeRequestAsync(sourceId, false); }
+            catch (Exception ex) { Log.Warn($"移除 YouTube 爬蟲後取消 PubSub 失敗: {sourceId} / {ex.GetType().Name}"); }
+            Log.Info($"已移除 YouTube 頻道爬蟲 | Guild: {guildId} | Source: {sourceId}");
+            return AdminSettingsMutationResult.Applied("crawler.removed", new JObject { ["sourceId"] = sourceId });
+        }
+
+        internal static async Task<int> GetYoutubeCrawlerLimitAsync(
+            MainDbContext db,
+            ulong guildId,
+            CancellationToken cancellationToken)
+            => CrawlerPolicy.ResolveLimit(await db.GuildConfig.AsNoTracking()
+                .Where(x => x.GuildId == guildId && x.MaxYouTubeSpiderCount > 0)
+                .Select(x => (uint?)x.MaxYouTubeSpiderCount)
+                .SingleOrDefaultAsync(cancellationToken), 3);
+
+        private static AdminSettingsMutationResult Added(string sourceId, string sourceName)
+            => AdminSettingsMutationResult.Applied("crawler.added", new JObject
+            {
+                ["sourceId"] = sourceId,
+                ["sourceName"] = sourceName
+            });
+
+        private static AdminSettingsMutationResult LimitReached(int limit)
+            => AdminSettingsMutationResult.Rejected("crawler.limit-reached", new JObject { ["limit"] = limit });
+
+        public async Task<AdminSettingsMutationResult> UpsertNotificationAsync(
+            SocketGuild guild,
+            string source,
+            ulong streamChannelId,
+            ulong videoChannelId,
+            bool createEvent,
+            AdminSettingsYoutubeMessages messages,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string sourceId = await GetChannelIdAsync(source);
+                if (sourceId == "all")
+                    return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+                string sourceName = sourceId switch
+                {
+                    "holo" => "Hololive",
+                    "2434" => "Nijisanji",
+                    "other" => "Other",
+                    _ => await GetChannelTitle(sourceId)
+                };
+                if (string.IsNullOrEmpty(sourceName))
+                    return AdminSettingsMutationResult.Rejected("settings.source-not-found");
+
+                var rejected = AdminSettingsChannelValidator.Validate(_client, guild, streamChannelId, createEvent)
+                    ?? AdminSettingsChannelValidator.Validate(_client, guild, videoChannelId);
+                if (rejected != null)
+                    return rejected;
+
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(guild.Id, cancellationToken);
+                using var db = _dbService.GetDbContext();
+                var notice = await db.NoticeYoutubeStreamChannel.FirstOrDefaultAsync(
+                    x => x.GuildId == guild.Id && x.YouTubeChannelId == sourceId,
+                    cancellationToken);
+                if (notice == null)
+                {
+                    notice = new NoticeYoutubeStreamChannel { GuildId = guild.Id, YouTubeChannelId = sourceId };
+                    db.NoticeYoutubeStreamChannel.Add(notice);
+                }
+
+                notice.DiscordNoticeStreamChannelId = streamChannelId;
+                notice.DiscordNoticeVideoChannelId = videoChannelId;
+                notice.IsCreateEventForNewStream = createEvent;
+                notice.NewStreamMessage = messages.NewStream;
+                notice.NewVideoMessage = messages.NewVideo;
+                notice.StratMessage = messages.Start;
+                notice.EndMessage = messages.End;
+                notice.ChangeTimeMessage = messages.ChangeTime;
+                notice.DeleteMessage = messages.Delete;
+                await db.SaveChangesAsync(cancellationToken);
+                _noticeCache.Invalidate();
+
+                return AdminSettingsMutationResult.Applied(arguments: new JObject
+                {
+                    ["sourceId"] = sourceId,
+                    ["sourceName"] = sourceName
+                });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is FormatException or ArgumentException or UriFormatException)
+            {
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "網頁管理設定 YouTube 通知更新失敗");
+                return AdminSettingsMutationResult.Rejected("settings.operation-failed");
+            }
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveNotificationAsync(
+            ulong guildId,
+            string source,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+            try
+            {
+                string sourceId = await GetChannelIdAsync(source);
+                if (sourceId == "all")
+                    return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+
+                await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
+                using var db = _dbService.GetDbContext();
+                await db.NoticeYoutubeStreamChannel
+                    .Where(x => x.GuildId == guildId && x.YouTubeChannelId == sourceId)
+                    .ExecuteDeleteAsync(cancellationToken);
+                _noticeCache.Invalidate();
+                return AdminSettingsMutationResult.Applied("settings.removed", new JObject { ["sourceId"] = sourceId });
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is FormatException or ArgumentException or UriFormatException)
+            {
+                return AdminSettingsMutationResult.Rejected("settings.invalid-source");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "網頁管理設定 YouTube 通知移除失敗");
+                return AdminSettingsMutationResult.Rejected("settings.operation-failed");
+            }
+        }
+
+        public async Task<AdminSettingsMutationResult> RemoveAllNotificationsAsync(
+            ulong guildId,
+            CancellationToken cancellationToken)
+        {
+            await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
+            using var db = _dbService.GetDbContext();
+            await db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guildId).ExecuteDeleteAsync(cancellationToken);
+            _noticeCache.Invalidate();
+            return AdminSettingsMutationResult.Applied("settings.removed");
+        }
         #endregion
 
         public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host, string locale)
