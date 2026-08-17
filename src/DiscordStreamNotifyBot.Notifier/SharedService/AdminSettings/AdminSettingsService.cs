@@ -456,6 +456,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             SocketGuild guild,
             CancellationToken cancellationToken)
         {
+            var stopwatch = Stopwatch.StartNew();
             using var db = _dbService.GetDbContext();
             var config = await db.GuildConfig.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.GuildId == guild.Id, cancellationToken);
@@ -582,7 +583,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     role.IsManaged, role.Position, botTopRolePosition)
             }).ToList();
 
-            return new AdminSettingsSnapshot
+            var snapshot = new AdminSettingsSnapshot
             {
                 Capabilities = [.. Capabilities],
                 Guild = new AdminSettingsGuild { Id = Id(guild.Id), Name = guild.Name, MemberCount = guild.MemberCount },
@@ -684,6 +685,10 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     }).ToList()
                 }
             };
+            stopwatch.Stop();
+            Log.Info("網頁管理設定快照處理完成 | Guild: {GuildId} | ElapsedMs: {ElapsedMs}",
+                guild.Id, stopwatch.ElapsedMilliseconds);
+            return snapshot;
         }
 
         private static AdminSettingsCrawlerPlatform CrawlerPlatform(
