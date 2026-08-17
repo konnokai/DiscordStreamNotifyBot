@@ -149,7 +149,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
             {
                 case TwitchSubscriptionStatus.Subscribed:
                     await Context.Interaction.SendConfirmAsync(BotLocalizer, locale, "TwitchMember.Verified",
-                        isFollowup, true, config.BroadcasterDisplayName, FormatTier(result.Tier), result.IsGift
+                        isFollowup, true, config.BroadcasterDisplayName, FormatTier(result.Tier, locale), result.IsGift
                             ? BotLocalizer.Get("TwitchMember.Gift", locale)
                             : "");
                     break;
@@ -176,13 +176,30 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
             }
         }
 
-        internal static string FormatTier(string tier) => tier switch
+        internal static string FormatTier(string tier, string locale)
         {
-            "1000" => "Tier 1",
-            "2000" => "Tier 2",
-            "3000" => "Tier 3",
-            _ => "Unknown"
-        };
+            string level = tier switch
+            {
+                "1000" => "1",
+                "2000" => "2",
+                "3000" => "3",
+                _ => null
+            };
+            if (level == null)
+                return locale switch
+                {
+                    "en-US" => "Unknown",
+                    "ja" => "不明",
+                    _ => "未知"
+                };
+
+            return locale switch
+            {
+                "en-US" => $"Tier {level}",
+                "ja" => $"ティア {level}",
+                _ => $"層級 {level}"
+            };
+        }
     }
 
     public sealed class TwitchSubscriptionComponent : TopLevelModule
@@ -241,7 +258,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
                     locale,
                     config.BroadcasterDisplayName,
                     result.Status == TwitchSubscriptionStatus.Subscribed
-                        ? TwitchSubscription.FormatTier(result.Tier)
+                        ? TwitchSubscription.FormatTier(result.Tier, locale)
                         : BotLocalizer.Get($"TwitchMember.Status.{result.Status}", locale)));
             }
 

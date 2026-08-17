@@ -71,24 +71,26 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Theory]
-        [InlineData("1000", "Tier 1")]
-        [InlineData("2000", "Tier 2")]
-        [InlineData("3000", "Tier 3")]
-        public void TierDisplayDoesNotExposeProviderCodes(string tier, string expected)
+        [InlineData("1000", "zh-TW", "層級 1")]
+        [InlineData("2000", "zh-TW", "層級 2")]
+        [InlineData("3000", "zh-TW", "層級 3")]
+        [InlineData("1000", "en-US", "Tier 1")]
+        [InlineData("1000", "ja", "ティア 1")]
+        public void TierDisplayDoesNotExposeProviderCodes(string tier, string locale, string expected)
         {
-            Assert.Equal(expected, TwitchSubscription.FormatTier(tier));
+            Assert.Equal(expected, TwitchSubscription.FormatTier(tier, locale));
         }
 
         [Theory]
-        [InlineData("zh-TW")]
-        [InlineData("en-US")]
-        [InlineData("ja")]
-        public void VerifiedStatusLogUsesReadableTierName(string locale)
+        [InlineData("zh-TW", "層級 1")]
+        [InlineData("en-US", "Tier 1")]
+        [InlineData("ja", "ティア 1")]
+        public void VerifiedStatusLogUsesReadableTierName(string locale, string expected)
         {
             string message = new BotLocalizer().Format(
-                "TwitchMember.StatusLog.Verified", locale, 123UL, "broadcaster", TwitchSubscription.FormatTier("1000"));
+                "TwitchMember.StatusLog.Verified", locale, 123UL, "broadcaster", TwitchSubscription.FormatTier("1000", locale));
 
-            Assert.Contains("`Tier 1`", message, StringComparison.Ordinal);
+            Assert.Contains($"`{expected}`", message, StringComparison.Ordinal);
             Assert.DoesNotContain("1000", message, StringComparison.Ordinal);
         }
 
