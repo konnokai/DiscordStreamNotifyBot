@@ -1,5 +1,4 @@
 using DiscordStreamNotifyBot.DataBase;
-using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Google;
 using Google;
 using Google.Apis.Auth.OAuth2;

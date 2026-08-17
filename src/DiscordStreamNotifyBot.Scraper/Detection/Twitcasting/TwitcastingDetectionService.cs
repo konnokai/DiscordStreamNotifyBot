@@ -1,5 +1,4 @@
 using DiscordStreamNotifyBot.DataBase;
-using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
 using DiscordStreamNotifyBot.Shared;

@@ -1,4 +1,3 @@
-using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Shared;
 
@@ -126,9 +125,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         {
                             probeExecution = new(authorization.Status switch
                             {
-                            YoutubeMemberAuthorizationStatus.AuthorizationInvalid => new(YoutubeMemberProbeResultKind.AuthorizationInvalid),
-                            YoutubeMemberAuthorizationStatus.TemporaryFailure => new(YoutubeMemberProbeResultKind.TemporaryFailure),
-                            _ => new(YoutubeMemberProbeResultKind.LocalContractFailure)
+                                YoutubeMemberAuthorizationStatus.AuthorizationInvalid => new(YoutubeMemberProbeResultKind.AuthorizationInvalid),
+                                YoutubeMemberAuthorizationStatus.TemporaryFailure => new(YoutubeMemberProbeResultKind.TemporaryFailure),
+                                _ => new(YoutubeMemberProbeResultKind.LocalContractFailure)
                             }, authorization.EncryptedTokenPayload);
                         }
                         probeResults[key] = probeExecution;

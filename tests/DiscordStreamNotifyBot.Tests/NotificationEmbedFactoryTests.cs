@@ -2,8 +2,8 @@ using Discord;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared.Messages;
-using DiscordStreamNotifyBot.SharedService.Twitch;
 using DiscordStreamNotifyBot.SharedService.Twitcasting;
+using DiscordStreamNotifyBot.SharedService.Twitch;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YoutubeEmbedBuilderFactory = DiscordStreamNotifyBot.SharedService.Youtube.EmbedBuilderFactory;
 

@@ -1,13 +1,11 @@
 using DiscordStreamNotifyBot.DataBase;
-using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
 using Google;
 using Polly;
 using System.Collections.Concurrent;
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
-
-using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
 namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 {

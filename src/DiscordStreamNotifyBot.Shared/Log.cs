@@ -1,10 +1,10 @@
-using System.Net;
 using Serilog;
 using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Sinks.Grafana.Loki;
+using System.Net;
 
 public static class Log
 {

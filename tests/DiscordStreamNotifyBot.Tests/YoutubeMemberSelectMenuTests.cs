@@ -1,5 +1,5 @@
-using DiscordStreamNotifyBot.Interaction.YoutubeMember;
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Interaction.YoutubeMember;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 
 namespace DiscordStreamNotifyBot.Tests
@@ -44,7 +44,10 @@ namespace DiscordStreamNotifyBot.Tests
             var removed = new YoutubeMemberCheck { Id = 2, CheckYTChannelId = "UC2", IsChecked = true };
             var reselectedPending = new YoutubeMemberCheck
             {
-                Id = 3, CheckYTChannelId = "UC3", IsChecked = false, PendingRoleRemoval = true
+                Id = 3,
+                CheckYTChannelId = "UC3",
+                IsChecked = false,
+                PendingRoleRemoval = true
             };
 
             IReadOnlyList<YoutubeMemberSelectionTransition> transition = YoutubeMemberPolicies.BuildSelectionTransition(
@@ -126,7 +129,8 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal(YoutubeMemberSingleConfigurationQueueAction.RequeuePendingRoleRemoval,
                 YoutubeMemberPolicies.DecideSingleConfigurationQueue(new YoutubeMemberCheck
                 {
-                    IsChecked = false, PendingRoleRemoval = true
+                    IsChecked = false,
+                    PendingRoleRemoval = true
                 }));
             Assert.Equal(YoutubeMemberSingleConfigurationQueueAction.PreserveQueued,
                 YoutubeMemberPolicies.DecideSingleConfigurationQueue(new YoutubeMemberCheck()));

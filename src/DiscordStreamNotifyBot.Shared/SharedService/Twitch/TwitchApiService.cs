@@ -1,16 +1,15 @@
+using DiscordStreamNotifyBot.Shared;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using DiscordStreamNotifyBot.Shared;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
 using TwitchLib.Api.Core.Exceptions;
 using TwitchLib.Api.Helix.Models.EventSub;
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
 using Clip = TwitchLib.Api.Helix.Models.Clips.GetClips.Clip;
 using Stream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
 using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
-
-using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
 namespace DiscordStreamNotifyBot.SharedService.Twitch
 {

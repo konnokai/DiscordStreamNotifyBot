@@ -1,4 +1,3 @@
-using DiscordStreamNotifyBot.Shared;
 using StackExchange.Redis;
 
 namespace DiscordStreamNotifyBot.Coordinator

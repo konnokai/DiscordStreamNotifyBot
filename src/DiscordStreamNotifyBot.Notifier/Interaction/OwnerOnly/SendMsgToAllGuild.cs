@@ -28,7 +28,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly
                 .WithCustomId("send_message")
                 .AddRadioGroup("發送類型", radioGroupBuilder)
                 .AddTextInput("訊息", "message", TextInputStyle.Paragraph, "內容...", required: true)
-                .AddFileUpload("圖片", "image_attachment", isRequired: false,maxValues: 1);
+                .AddFileUpload("圖片", "image_attachment", isRequired: false, maxValues: 1);
 
             await Context.Interaction.RespondWithModalAsync(mb.Build());
         }

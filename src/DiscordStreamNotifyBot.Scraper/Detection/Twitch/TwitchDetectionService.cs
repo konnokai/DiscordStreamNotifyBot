@@ -5,10 +5,9 @@ using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using System.Collections.Concurrent;
+using Bot = DiscordStreamNotifyBot.Shared.BotState;
 using EventSubSubscription = TwitchLib.Api.Helix.Models.EventSub.EventSubSubscription;
 using HelixStream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
-
-using Bot = DiscordStreamNotifyBot.Shared.BotState;
 
 namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 {
@@ -989,9 +988,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             _metrics.UpdateEventSubCosts(subscriptions.TotalCost, subscriptions.MaxTotalCost);
 
             foreach (TwitchEventSubMetricType type in Enum.GetValues<TwitchEventSubMetricType>())
-            foreach (TwitchSpiderMetricMode mode in Enum.GetValues<TwitchSpiderMetricMode>())
-            foreach (TwitchEventSubMetricStatus status in Enum.GetValues<TwitchEventSubMetricStatus>())
-                _metrics.SetEventSubSubscriptionCount(type, mode, status, 0);
+                foreach (TwitchSpiderMetricMode mode in Enum.GetValues<TwitchSpiderMetricMode>())
+                    foreach (TwitchEventSubMetricStatus status in Enum.GetValues<TwitchEventSubMetricStatus>())
+                        _metrics.SetEventSubSubscriptionCount(type, mode, status, 0);
 
             var spiderById = spiders.ToDictionary(x => x.UserId, StringComparer.Ordinal);
             var counts = new Dictionary<(TwitchEventSubMetricType, TwitchSpiderMetricMode, TwitchEventSubMetricStatus), int>();
