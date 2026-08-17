@@ -193,6 +193,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
         public async Task<AdminSettingsMutationResult> ConfigureAsync(
             SocketGuild guild,
+            ulong actorUserId,
             string source,
             ulong roleId,
             CancellationToken cancellationToken)
@@ -232,6 +233,27 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
             TwitchRoleConfigurationResult result = await _roleService.CreateOrRepairConfigurationAsync(
                 guild, user.Id, user.Login, user.DisplayName, role, cancellationToken);
+            if (result.IsSuccess && result.IsNew)
+            {
+                try
+                {
+                    SocketGuildUser actor = guild.GetUser(actorUserId);
+                    string actorText = actor == null
+                        ? actorUserId.ToString()
+                        : $"{actor.GlobalName ?? actor.Username} ({actor} / {actorUserId})";
+                    await Bot.ApplicatonOwner.SendMessageAsync(embed: new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("已新增 Twitch 訂閱驗證頻道")
+                        .AddField("頻道", Format.Url(user.DisplayName, $"https://twitch.tv/{user.Login}"), false)
+                        .AddField("伺服器", $"{guild.Name} ({guild.Id})", false)
+                        .AddField("執行者", actorText, false)
+                        .Build());
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), "發送 Twitch 訂閱驗證新增通知給 Bot 擁有者時失敗");
+                }
+            }
             return result.Error switch
             {
                 null => AdminSettingsMutationResult.Applied("verification.configured", new JObject

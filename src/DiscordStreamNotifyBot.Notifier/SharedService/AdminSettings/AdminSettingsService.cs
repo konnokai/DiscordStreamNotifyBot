@@ -425,7 +425,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                         return InvalidPayload();
                     return action == AdminSettingsContract.YoutubeVerificationUpsertAction
                         ? await _youtubeMemberService.ConfigureAsync(guild, actorUserId, verification.Source, roleId, cancellationToken)
-                        : await _twitchSubscriptionService.ConfigureAsync(guild, verification.Source, roleId, cancellationToken);
+                        : await _twitchSubscriptionService.ConfigureAsync(guild, actorUserId, verification.Source, roleId, cancellationToken);
 
                 case AdminSettingsContract.YoutubeVerificationRemoveAction:
                 case AdminSettingsContract.TwitchVerificationRemoveAction:

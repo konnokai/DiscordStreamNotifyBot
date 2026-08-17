@@ -7,6 +7,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
     public sealed class TwitchRoleConfigurationResult
     {
         public bool IsSuccess { get; init; }
+        public bool IsNew { get; init; }
         public string Error { get; init; }
         public GuildTwitchSubscriptionConfig Config { get; init; }
     }
@@ -154,7 +155,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     config.PreviousSubscriberRoleId = null;
                     await db.SaveChangesAsync(cancellationToken);
                 }
-                return new TwitchRoleConfigurationResult { IsSuccess = true, Config = config };
+                return new TwitchRoleConfigurationResult { IsSuccess = true, IsNew = isNew, Config = config };
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

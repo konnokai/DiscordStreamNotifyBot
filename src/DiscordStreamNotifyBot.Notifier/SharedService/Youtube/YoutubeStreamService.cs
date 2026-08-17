@@ -157,6 +157,9 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     ChannelTitle = sourceName
                 });
                 await db.SaveChangesAsync(cancellationToken);
+                await CrawlerOwnerNotifier.NotifyAddedAsync(
+                    CrawlerPlatform.Youtube, guild, actorUserId, sourceId, sourceName,
+                    sourceId, addForBotOwner);
                 Log.Info($"已新增 YouTube 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {sourceId}");
                 return Added(sourceId, sourceName);
             }

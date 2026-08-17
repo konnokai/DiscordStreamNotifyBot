@@ -445,6 +445,27 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
                 YoutubeMemberRoleConfigurationResult result = await _roleService.ConfigureRoleAsync(
                     guild, sourceId, role, cancellationToken);
+                if (!exists && result.IsSuccess)
+                {
+                    try
+                    {
+                        SocketGuildUser actor = guild.GetUser(actorUserId);
+                        string actorText = actor == null
+                            ? actorUserId.ToString()
+                            : $"{actor.GlobalName ?? actor.Username} ({actor} / {actorUserId})";
+                        await Bot.ApplicatonOwner.SendMessageAsync(embed: new EmbedBuilder()
+                            .WithOkColor()
+                            .WithTitle("已新增會限驗證頻道")
+                            .AddField("頻道", Format.Url(sourceId, $"https://www.youtube.com/channel/{sourceId}"), false)
+                            .AddField("伺服器", $"{guild.Name} ({guild.Id})", false)
+                            .AddField("執行者", actorText, false)
+                            .Build());
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), "發送 YouTube 會限驗證新增通知給 Bot 擁有者時失敗");
+                    }
+                }
                 return MapRoleResult(result.Error, sourceId);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }

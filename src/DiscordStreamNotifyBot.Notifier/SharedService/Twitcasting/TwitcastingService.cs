@@ -163,6 +163,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                     ? AdminSettingsMutationResult.Rejected("crawler.already-exists")
                     : AdminSettingsMutationResult.Rejected("crawler.source-owned");
             }
+            await CrawlerOwnerNotifier.NotifyAddedAsync(
+                CrawlerPlatform.Twitcasting, guild, actorUserId, broadcaster.ScreenId,
+                broadcaster.Name, broadcaster.ScreenId, addForBotOwner);
             Log.Info($"已新增 TwitCasting 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {broadcaster.ScreenId}");
             return Added(broadcaster.ScreenId, broadcaster.Name);
         }

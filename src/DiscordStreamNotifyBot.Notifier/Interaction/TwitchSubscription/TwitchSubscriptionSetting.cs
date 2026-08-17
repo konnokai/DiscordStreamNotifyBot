@@ -54,7 +54,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
         {
             await DeferAsync(true);
             var result = await _subscriptionService.ConfigureAsync(
-                Context.Guild, channel, role.Id, GracefulShutdown.Token);
+                Context.Guild, Context.User.Id, channel, role.Id, GracefulShutdown.Token);
             await SendVerificationResultAsync(result, channel, true, role.Name);
         }
 

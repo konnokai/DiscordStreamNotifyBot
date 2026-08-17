@@ -1,3 +1,4 @@
+using Discord;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.AdminSettings;
@@ -194,6 +195,36 @@ namespace DiscordStreamNotifyBot.Tests
         public void CrawlerRemovalRequiresOwningGuildUnlessBotOwner(
             ulong ownerGuild, ulong guild, bool botOwner, bool expected)
             => Assert.Equal(expected, CrawlerPolicy.CanRemove(ownerGuild, guild, botOwner));
+
+        [Fact]
+        public void CrawlerOwnerNotificationsKeepPlatformManagementRoutes()
+        {
+            var youtube = CrawlerOwnerNotifier.BuildAddedMessage(
+                CrawlerPlatform.Youtube, "source", "Channel", "source", "Guild", "Actor");
+            var twitch = CrawlerOwnerNotifier.BuildAddedMessage(
+                CrawlerPlatform.Twitch, "source", "Channel", "source", "Guild", "Actor");
+            var twitcasting = CrawlerOwnerNotifier.BuildAddedMessage(
+                CrawlerPlatform.Twitcasting, "source", "Channel", "source", "Guild", "Actor");
+            Assert.Equal("已新增 YouTube 頻道爬蟲", youtube.Embed.Title);
+            Assert.Contains(youtube.Embed.Fields, field => field.Name == "認可頻道");
+            Assert.Equal(
+                ["spider_youtube:trusted:source", "spider_youtube:untrusted:source",
+                    "spider_youtube:record:source", "spider_youtube:unrecord:source"],
+                ButtonIds(youtube.Components));
+            Assert.Equal(
+                ["spider_twitch:warning:source", "spider_twitch:record:source"],
+                ButtonIds(twitch.Components));
+            Assert.Equal(
+                ["spider_tc:warning:source", "spider_tc:record:source"],
+                ButtonIds(twitcasting.Components));
+        }
+
+        private static string[] ButtonIds(MessageComponent components)
+            => components.Components.OfType<ActionRowComponent>()
+                .SelectMany(row => row.Components)
+                .OfType<ButtonComponent>()
+                .Select(button => button.CustomId)
+                .ToArray();
 
         [Theory]
         [InlineData("youtube-crawler.add", "{\"source\":\"UC1\"}", true)]

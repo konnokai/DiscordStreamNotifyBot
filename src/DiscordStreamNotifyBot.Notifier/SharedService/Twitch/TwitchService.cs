@@ -122,6 +122,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     ["requiredMemberCount"] = 200,
                     ["memberCount"] = guild.MemberCount
                 });
+            bool usedOAuthBypass = !generallyEligible && oauthEligible;
 
             int limit = await GetTwitchCrawlerLimitAsync(db, guild.Id, cancellationToken);
             bool limitReached = !Utility.OfficialGuildContains(guild.Id) &&
@@ -168,7 +169,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     ? AdminSettingsMutationResult.Rejected("crawler.already-exists")
                     : AdminSettingsMutationResult.Rejected("crawler.source-owned");
             }
-            await PublishReconcileRequestedAsync(user.Id, generallyEligible ? "spider_added" : "oauth_bypass_addition");
+            await PublishReconcileRequestedAsync(user.Id, usedOAuthBypass ? "oauth_bypass_addition" : "spider_added");
+            await CrawlerOwnerNotifier.NotifyAddedAsync(
+                CrawlerPlatform.Twitch, guild, actorUserId, user.Id, user.DisplayName,
+                user.Login, addForBotOwner, usedOAuthBypass);
             Log.Info($"已新增 Twitch 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {user.Id}");
             return Added(user.Id, user.DisplayName);
         }
