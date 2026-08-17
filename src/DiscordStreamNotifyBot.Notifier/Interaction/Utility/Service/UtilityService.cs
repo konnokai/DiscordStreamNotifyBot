@@ -46,11 +46,11 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
                                 .WithTitle("新的使用者訊息")
                                 .WithAuthor(modal.User)
                                 .AddField("訊息", message)
-                                .AddField("聯繫方式", contactMethod)
-                                .AddField("伺服器 Id", modal.GuildId ?? 0);
+                                .AddField("聯絡方式", contactMethod)
+                                .AddField("伺服器 ID", modal.GuildId ?? 0);
 
                             var componentBuilder = new ComponentBuilder()
-                                .WithButton("發送回覆", $"send-reply-to-user:{modal.User.Id}:{locale}", ButtonStyle.Success);
+                                .WithButton("傳送回覆", $"send-reply-to-user:{modal.User.Id}:{locale}", ButtonStyle.Success);
 
                             await Bot.ApplicatonOwner.SendMessageAsync(embed: embedBuilder.Build(), components: componentBuilder.Build());
 
@@ -58,7 +58,7 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
                             {
                                 foreach (var attachment in modal.Data.Attachments)
                                 {
-                                    await Bot.ApplicatonOwner.SendMessageAsync($"附加檔案: {attachment.Url}");
+                                    await Bot.ApplicatonOwner.SendMessageAsync($"附加檔案：{attachment.Url}");
                                 }
                             }
 

@@ -55,7 +55,7 @@ namespace DiscordStreamNotifyBot
             OfficialGuildList = members.Select((x) => ulong.Parse(x.ToString())).ToHashSet();
         }
 
-        /// <summary>將目前的官方伺服器白名單全量寫回 Redis（DEL + SADD，transaction）。</summary>
+        /// <summary>將目前的官方伺服器白名單完整寫回 Redis（DEL + SADD，transaction）。</summary>
         public static async Task<bool> SaveOfficialGuildListToRedisAsync()
         {
             try
@@ -70,7 +70,7 @@ namespace DiscordStreamNotifyBot
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "SaveOfficialGuildListToRedis Error");
+                Log.Error(ex.Demystify(), "SaveOfficialGuildListToRedis 失敗");
                 return false;
             }
         }

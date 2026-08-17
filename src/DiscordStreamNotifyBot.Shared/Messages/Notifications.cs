@@ -5,8 +5,8 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     /// <para>
     /// 註：會限身分組的<b>逐使用者驗證</b>（member role 檢查）<b>不走匯流排</b> —— 經 shard 守衛後天然按 shard 分區
     /// （各 shard 只檢查自己持有伺服器的成員，OAuth quota 自動分攤），role 操作為 REST 不綁 gateway。
-    /// 但「會限影片探索」（頻道層級、bot 金鑰、無逐使用者 token）改由 Scraper 偵測，其需寫入 guild log channel
-    /// 的結果走 <see cref="YoutubeMemberVideoLogNotification"/>（<see cref="YoutubeMemberVideoLog"/>）。
+    /// 但「會限影片探索」由 Scraper 偵測，並透過 <see cref="YoutubeMemberVideoLogNotification"/>
+    /// 將結果寫入對應的紀錄頻道（<see cref="YoutubeMemberVideoLog"/>）。
     /// </para>
     /// </summary>
     public static class NotifyType
@@ -101,13 +101,13 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         /// <summary>語言中立的最多觀看 Clip 清單（EndStream 用）。</summary>
         public List<TwitchClipInfo> Clips { get; set; }
 
-        /// <summary>最多觀看 Clip 清單的舊版繁中字串，供舊 payload / 舊 Notifier fallback。</summary>
+        /// <summary>最多觀看 Clip 清單的舊版繁中字串，供舊版 payload 或舊版 Notifier 回退時使用。</summary>
         public string ClipsValue { get; set; }
 
         /// <summary>語言中立的直播資料更新清單（ChangeStreamData 用，去抖動後合併）。</summary>
         public List<TwitchChannelUpdateInfo> Updates { get; set; }
 
-        /// <summary>直播資料更新的舊版繁中字串，供舊 payload / 舊 Notifier fallback。</summary>
+        /// <summary>直播資料更新的舊版繁中字串，供舊版 payload 或舊版 Notifier 回退時使用。</summary>
         public string Description { get; set; }
     }
 
@@ -151,15 +151,15 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     }
 
     /// <summary>
-    /// 跨層：會限影片探索（Scraper）需要寫入某會限頻道 log channel 的事件（notifier 端消費後依 shard 守衛發送）。
-    /// 對應原 <c>YoutubeMemberService.SendMsgToLogChannelAsync</c> 的參數。
+    /// 跨層：Scraper 探索會限影片後，通知 Notifier 將結果寫入對應紀錄頻道的事件。
+    /// Notifier 消費後依 shard 守衛發送，對應原 <c>YoutubeMemberService.SendMsgToLogChannelAsync</c> 的參數。
     /// </summary>
     public class YoutubeMemberVideoLogNotification
     {
         /// <summary>會限頻道 Id（= SendMsgToLogChannelAsync 的 checkChannelId，用來反查各 guild 的 log channel）。</summary>
         public string CheckChannelId { get; set; }
 
-        /// <summary>要送到 guild log channel / guild owner 的訊息。</summary>
+        /// <summary>要傳送給伺服器紀錄頻道或伺服器擁有者的訊息。</summary>
         public string Message { get; set; }
 
         /// <summary>可由 Notifier 依 guild locale 排版的穩定訊息代碼；舊 payload 可為空。</summary>

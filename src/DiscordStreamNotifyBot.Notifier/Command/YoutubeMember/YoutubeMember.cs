@@ -35,7 +35,7 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
                     .Where((x) => !string.IsNullOrEmpty(x.MemberCheckChannelTitle) && x.MemberCheckVideoId != "-");
                 if (!guildYoutubeMemberConfigs.Any())
                 {
-                    await Context.Channel.SendErrorAsync($"清單為空");
+                    await Context.Channel.SendErrorAsync("清單沒有項目");
                     return;
                 }
 
@@ -49,7 +49,7 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
                         continue;
 
                     string guildName = (await Context.Client.GetGuildAsync(item.GuildId)).Name;
-                    string formatStr = $"{Format.Url(item.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{item.MemberCheckChannelId}")}: {checkedMemberCount}人";
+                    string formatStr = $"{Format.Url(item.MemberCheckChannelTitle, $"https://www.youtube.com/channel/{item.MemberCheckChannelId}")}：{checkedMemberCount} 人";
 
                     if (dic.TryGetValue(guildName, out List<string> value)) value.Add(formatStr);
                     else dic.Add(guildName, new List<string>() { formatStr });
@@ -67,7 +67,7 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
         }
 
         [Command("SetMemberCheckVideoId")]
-        [Summary("設定指定頻道的會限影片Id")]
+        [Summary("設定指定頻道的會員限定影片 ID")]
         [Alias("smcvi")]
         [RequireContext(ContextType.DM)]
         [RequireOwner]
@@ -105,7 +105,7 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
                     var guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where((x) => x.MemberCheckChannelId == channelId);
                     if (!guildYoutubeMemberConfigs.Any())
                     {
-                        await Context.Channel.SendErrorAsync($"{channelId} 不存在資料");
+                        await Context.Channel.SendErrorAsync($"找不到 {channelId} 的資料");
                         return;
                     }
 
@@ -117,7 +117,7 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
                     }
 
                     await db.SaveChangesAsync();
-                    await Context.Channel.SendConfirmAsync($"已將 `{guildYoutubeMemberConfigs.First().MemberCheckChannelTitle}` 的會限檢測影片更改為 `{guildYoutubeMemberConfigs.First().MemberCheckVideoId}`");
+                    await Context.Channel.SendConfirmAsync($"已將 `{guildYoutubeMemberConfigs.First().MemberCheckChannelTitle}` 的會員限定驗證影片改為 `{guildYoutubeMemberConfigs.First().MemberCheckVideoId}`");
                 }
             }
             catch (Exception ex)
@@ -128,7 +128,7 @@ namespace DiscordStreamNotifyBot.Command.YoutubeMember
         }
 
         [Command("StartNewMemberCheck")]
-        [Summary("開始新會員的會限驗證")]
+        [Summary("開始驗證新會員資格")]
         [Alias("snmc")]
         [RequireContext(ContextType.DM)]
         [RequireOwner]

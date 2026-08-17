@@ -5,7 +5,7 @@ namespace DiscordStreamNotifyBot.DataBase
     /// <summary>
     /// EF Core 設計階段（<c>dotnet ef</c>）用的 DbContext 工廠。
     /// <para>
-    /// 讓 <c>dotnet ef migrations add</c> / <c>database update</c> 可直接以本 Shared 專案為目標執行，
+    /// 讓 <c>dotnet ef migrations add</c> 與 <c>database update</c> 可直接以本 Shared 專案為目標執行，
     /// 不需指定 startup project。連線字串依序取自：環境變數 <c>MYSQL_CONNECTION_STRING</c>
     /// → 同目錄 <c>bot_config.json</c> 的 <c>MySqlConnectionString</c> → localhost 預設值。
     /// </para>

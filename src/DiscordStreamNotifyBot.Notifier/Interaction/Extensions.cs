@@ -71,7 +71,7 @@ namespace DiscordStreamNotifyBot.Interaction
             return null;
         }
 
-        // 照開始直播時間排序好像會遇到聊天用待機室的問題，函數先保留起來可能之後會用到?
+        // 依直播開始時間排序可能無法正確處理聊天用待機室，暫時保留此函式供後續評估。
         public static DataBase.Table.Video GetLastStreamVideoByChannelId(string channelId)
         {
             channelId = channelId.Trim();
@@ -346,7 +346,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 }
                 catch (Exception ex)
                 {
-                    Log.Warn($"分頁切換已取消: {ex.GetType().Name}");
+                    Log.Warn($"分頁切換已取消：{ex.GetType().Name}");
                 }
             }
 
@@ -375,8 +375,8 @@ namespace DiscordStreamNotifyBot.Interaction
             if (addPaginatedFooter)
                 embed.AddPaginatedFooter(currentPage, lastPage);
 
-            if (isFollowup) await ctx.Interaction.FollowupAsync(ephemeral ? "私人回應，無法換頁\n如需換頁請直接使用指令換頁" : null, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
-            else await ctx.Interaction.RespondAsync(ephemeral ? "私人回應，無法換頁\n如需換頁請直接使用指令換頁" : null, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
+            if (isFollowup) await ctx.Interaction.FollowupAsync(ephemeral ? "這是僅自己可見的回覆，無法換頁。\n如需換頁，請直接使用指令。" : null, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
+            else await ctx.Interaction.RespondAsync(ephemeral ? "這是僅自己可見的回覆，無法換頁。\n如需換頁，請直接使用指令。" : null, embed: embed.Build(), ephemeral: ephemeral).ConfigureAwait(false);
 
             if (ephemeral)
                 return;
@@ -393,7 +393,7 @@ namespace DiscordStreamNotifyBot.Interaction
             }
             catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
             {
-                await ctx.Interaction.ModifyOriginalResponseAsync((act) => act.Content = "無法換頁，如需換頁請直接使用指令換頁");
+                await ctx.Interaction.ModifyOriginalResponseAsync((act) => act.Content = "無法換頁。如需換頁，請直接使用指令。");
                 return;
             }
 
@@ -433,7 +433,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 }
                 catch (Exception)
                 {
-                    Console.WriteLine("被取消了");
+                    Console.WriteLine("作業已取消");
                     //ignored
                 }
             }

@@ -17,11 +17,11 @@
   <data name="Locale.TraditionalChinese" xml:space="preserve"><value>繁體中文</value></data>
   <data name="Locale.English" xml:space="preserve"><value>English</value></data>
   <data name="Locale.Japanese" xml:space="preserve"><value>日本語</value></data>
-  <data name="Locale.Unsupported" xml:space="preserve"><value>不支援語系「{0}」，已改用繁體中文。</value></data>
+  <data name="Locale.Unsupported" xml:space="preserve"><value>不支援「{0}」語系，已改用繁體中文。</value></data>
   <data name="Utility.LanguageChanged" xml:space="preserve"><value>伺服器語系已變更為 {0}，後續公開內容與背景通知將使用此語系。</value></data>
   <data name="Utility.LanguageCurrent" xml:space="preserve"><value>目前伺服器語系為 {0}。</value></data>
-  <data name="Onboarding.FirstNotificationSetup" xml:space="preserve"><value>這是本伺服器第一次設定通知。&#10;小幫手偶爾會發送贊助內容或功能更新公告。你可以使用 {0} 指定公告頻道；贊助內容仍會送到這次設定的通知頻道。&#10;已認可的官方伺服器不會收到贊助內容。如需申請認可或聯繫 Bot 擁有者，請使用 {1}。</value></data>
-  <data name="Onboarding.CurrentLanguage" xml:space="preserve"><value>目前選用的伺服器語系：{0}</value></data>
+  <data name="Onboarding.FirstNotificationSetup" xml:space="preserve"><value>這是本伺服器第一次設定通知。&#10;小幫手偶爾會傳送贊助內容或功能更新公告。你可以使用 {0} 指定公告頻道；贊助內容仍會送到這次設定的通知頻道。&#10;已認可的官方伺服器不會收到贊助內容。如需申請認可或聯絡 Bot 擁有者，請使用 {1}。</value></data>
+  <data name="Onboarding.CurrentLanguage" xml:space="preserve"><value>目前伺服器使用的語言：{0}</value></data>
   <data name="Onboarding.ChangeLanguageHint" xml:space="preserve"><value>可使用 {0} 變更伺服器語系。</value></data>
   <data name="Youtube.StreamStatus.Live" xml:space="preserve"><value>直播中</value></data>
   <data name="Youtube.StreamStatus.Upcoming" xml:space="preserve"><value>即將直播</value></data>
@@ -33,13 +33,13 @@
   <data name="Twitcasting.PrivateStream.Yes" xml:space="preserve"><value>是</value></data>
   <data name="Twitcasting.PrivateStream.No" xml:space="preserve"><value>否</value></data>
   <data name="Twitcasting.Recording.Available" xml:space="preserve"><value>可觀看錄影</value></data>
-  <data name="Member.CheckQueued" xml:space="preserve"><value>已加入驗證佇列，最久約需 {0} 分鐘。</value></data>
-  <data name="Member.CheckSucceeded" xml:space="preserve"><value>會限資格驗證成功。</value></data>
-  <data name="Member.CheckFailed" xml:space="preserve"><value>會限資格驗證失敗。</value></data>
+  <data name="Member.CheckQueued" xml:space="preserve"><value>驗證已加入佇列，最長約需 {0} 分鐘。</value></data>
+  <data name="Member.CheckSucceeded" xml:space="preserve"><value>會員資格驗證成功。</value></data>
+  <data name="Member.CheckFailed" xml:space="preserve"><value>會員資格驗證失敗。</value></data>
   <data name="Notifications.StartedAt" xml:space="preserve"><value>開始時間：{0}</value></data>
   <data name="Notifications.EndedAt" xml:space="preserve"><value>結束時間：{0}</value></data>
   <data name="Notifications.Duration" xml:space="preserve"><value>持續時間：{0}</value></data>
-  <data name="Errors.OperationFailed" xml:space="preserve"><value>操作失敗，請稍後再試；若問題持續發生，請聯繫 Bot 擁有者。</value></data>
+  <data name="Errors.OperationFailed" xml:space="preserve"><value>操作失敗，請稍後再試；若問題持續發生，請聯絡 Bot 擁有者。</value></data>
   <data name="Errors.SaveFailed" xml:space="preserve"><value>資料儲存失敗，請稍後再試。</value></data>
   <data name="Errors.InvalidYoutubeChannel" xml:space="preserve"><value>找不到這個 YouTube 頻道，請確認網址或頻道 ID 是否正確。</value></data>
   <data name="Errors.InvalidYoutubeInput" xml:space="preserve"><value>無法辨識輸入的 YouTube 網址或 ID，請確認後再試。</value></data>
@@ -51,7 +51,7 @@
   <data name="Permissions.UserRequirement" xml:space="preserve"><value>使用者需要「{0}」權限</value></data>
   <data name="Permissions.BotRequirement" xml:space="preserve"><value>Bot 需要「{0}」權限</value></data>
   <data name="Permissions.Name.ViewChannel" xml:space="preserve"><value>查看頻道</value></data>
-  <data name="Permissions.Name.SendMessages" xml:space="preserve"><value>發送訊息</value></data>
+  <data name="Permissions.Name.SendMessages" xml:space="preserve"><value>傳送訊息</value></data>
   <data name="Permissions.Name.EmbedLinks" xml:space="preserve"><value>嵌入連結</value></data>
   <data name="Permissions.Name.Administrator" xml:space="preserve"><value>管理員</value></data>
   <data name="Permissions.Name.ManageMessages" xml:space="preserve"><value>管理訊息</value></data>
@@ -62,7 +62,7 @@
   <data name="Preconditions.GuildOnly" xml:space="preserve"><value>此指令只能在伺服器中使用。</value></data>
   <data name="Preconditions.GuildUnavailable" xml:space="preserve"><value>此伺服器無法使用此指令。</value></data>
   <data name="Preconditions.GuildOwnerOnly" xml:space="preserve"><value>只有伺服器擁有者可以使用此指令。</value></data>
-  <data name="Preconditions.GuildMemberCount" xml:space="preserve"><value>此指令只能在至少有 `{0}` 位成員的伺服器使用，目前 Bot 讀到 `{1}` 位。成員數可能受快取影響；如需協助，請使用 {2} 聯繫 Bot 擁有者。</value></data>
+  <data name="Preconditions.GuildMemberCount" xml:space="preserve"><value>此指令只能在至少有 `{0}` 位成員的伺服器使用，目前 Bot 讀到 `{1}` 位。成員數可能受快取影響；如需協助，請使用 {2} 聯絡 Bot 擁有者。</value></data>
   <data name="Preconditions.Unmet" xml:space="preserve"><value>目前無法使用此指令。請確認使用情境與所需權限後再試。</value></data>
   <data name="Common.Yes" xml:space="preserve"><value>是</value></data>
   <data name="Common.No" xml:space="preserve"><value>否</value></data>
@@ -85,7 +85,7 @@
   <data name="Help.Commands.Title" xml:space="preserve"><value>「{0}」模組中的指令</value></data>
   <data name="Help.Commands.Footer" xml:space="preserve"><value>使用 {0} 選擇指令並查看詳細說明。</value></data>
   <data name="Help.Overview.Title" xml:space="preserve"><value>直播小幫手｜建置版本 {0}</value></data>
-  <data name="Help.Overview.Description" xml:space="preserve"><value>由孤之界（konnokai）製作。&#10;&#10;直播小幫手提供 YouTube、Twitch、TwitCasting 直播通知，也能驗證 YouTube 會員資格並自動授予身分組。&#10;&#10;使用 {0} 查看目前直播中的成員，使用 {1} 查看錄影頻道。伺服器達到 Boost Lv2 後，還能使用 {2}，以指定頻道的直播縮圖更新伺服器橫幅。若要查看指令參數，請使用 {3}。&#10;&#10;邀請 Bot 後，建議建立專用通知頻道，並開放查看頻道、發送訊息及嵌入連結權限。完整設定說明請參閱：https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37&#10;&#10;你可以透過 {4} 或 {5} 贊助直播小幫手。</value></data>
+  <data name="Help.Overview.Description" xml:space="preserve"><value>由孤之界（konnokai）製作。&#10;&#10;直播小幫手提供 YouTube、Twitch、TwitCasting 直播通知，也能驗證 YouTube 會員資格並自動授予身分組。&#10;&#10;使用 {0} 查看目前直播中的成員，使用 {1} 查看錄影頻道。伺服器達到 Boost Lv2 後，還能使用 {2}，以指定頻道的直播縮圖更新伺服器橫幅。若要查看指令參數，請使用 {3}。&#10;&#10;邀請 Bot 後，建議建立專用通知頻道，並開放查看頻道、傳送訊息及嵌入連結權限。完整設定說明請參閱：https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37&#10;&#10;你可以透過 {4} 或 {5} 贊助直播小幫手。</value></data>
   <data name="Help.Overview.Footer" xml:space="preserve"><value>使用 {0} 查看所有模組。</value></data>
   <data name="Help.Errors.ModuleRequired" xml:space="preserve"><value>請選擇模組。</value></data>
   <data name="Help.Errors.ModuleNotFound" xml:space="preserve"><value>找不到模組 `{0}`，或你沒有其中任何指令的使用權限。</value></data>
@@ -96,21 +96,21 @@
   <data name="Help.Command.Examples" xml:space="preserve"><value>範例</value></data>
   <data name="Help.Command.ModuleFooter" xml:space="preserve"><value>模組：{0}</value></data>
   <data name="Help.CommandDetail.youtube.set-banner-change" xml:space="preserve"><value>使用指定頻道最新直播的縮圖更新伺服器橫幅。&#10;未輸入頻道網址時會關閉這項功能。&#10;&#10;Bot 必須有「管理伺服器」權限，且伺服器須達到 Boost Lv2。&#10;此功能依賴直播通知，請確保設定的頻道在兩大箱或爬蟲清單內。</value></data>
-  <data name="Help.CommandDetail.youtube.add" xml:space="preserve"><value>新增 YouTube 直播通知。&#10;輸入 `holo` 通知全部 Holo 成員的直播。&#10;輸入 `2434` 通知全部彩虹社成員的直播（僅 JP、EN 與 VR 成員；其他成員建議先設定頻道爬蟲）。&#10;輸入 `other` 通知部分非兩大箱頻道的直播，可使用頻道爬蟲清單查詢可用頻道。</value></data>
-  <data name="Help.CommandDetail.youtube.remove" xml:space="preserve"><value>移除 YouTube 直播通知。&#10;輸入 `holo` 移除全部 Holo 成員的直播通知。&#10;輸入 `2434` 移除全部彩虹社成員的直播通知。&#10;輸入 `other` 移除部分非兩大箱直播通知。&#10;輸入 `all` 移除全部直播通知。</value></data>
+  <data name="Help.CommandDetail.youtube.add" xml:space="preserve"><value>新增 YouTube 直播通知。&#10;輸入 `holo` 通知全部 Holo 成員的直播。&#10;輸入 `2434` 通知全部彩虹社成員的直播（僅 JP、EN 與 VR 成員；其他成員建議先設定頻道爬蟲）。&#10;輸入 `other` 可為部分非兩大箱頻道新增直播通知，可使用頻道爬蟲清單查詢可用頻道。</value></data>
+  <data name="Help.CommandDetail.youtube.remove" xml:space="preserve"><value>移除 YouTube 直播通知。&#10;輸入 `holo` 移除全部 Holo 成員的直播通知。&#10;輸入 `2434` 移除全部彩虹社成員的直播通知。&#10;輸入 `other` 移除部分非兩大箱頻道的直播通知。&#10;輸入 `all` 移除全部直播通知。</value></data>
   <data name="Help.CommandDetail.youtube.set-message" xml:space="preserve"><value>設定通知訊息。&#10;不輸入通知訊息會清除自訂訊息；輸入 `-` 可關閉該通知類型。&#10;需先新增直播通知後才可設定。&#10;&#10;若通知訊息需要提及特定身分組，Bot 必須有「提及 everyone、here 與所有身分組」權限。</value></data>
   <data name="Help.CommandDetail.twitch.set-message" xml:space="preserve"><value>設定通知訊息。&#10;不輸入通知訊息會清除自訂訊息；輸入 `-` 可關閉該通知類型。&#10;需先新增直播通知後才可設定。&#10;&#10;若通知訊息需要提及特定身分組，Bot 必須有「提及 everyone、here 與所有身分組」權限。</value></data>
   <data name="Help.CommandDetail.twitcasting.set-message" xml:space="preserve"><value>設定通知訊息。&#10;不輸入通知訊息會清除自訂訊息。&#10;需先新增直播通知後才可設定。&#10;&#10;若通知訊息需要提及特定身分組，Bot 必須有「提及 everyone、here 與所有身分組」權限。</value></data>
-  <data name="Help.CommandDetail.youtube-spider.add" xml:space="preserve"><value>新增非兩大箱的 YouTube 頻道監測。&#10;如需協助，請聯繫 Bot 擁有者。</value></data>
-  <data name="Help.CommandDetail.youtube-spider.remove" xml:space="preserve"><value>移除非兩大箱的頻道檢測爬蟲。&#10;爬蟲必須由本伺服器新增才可移除。</value></data>
-  <data name="Help.CommandDetail.twitch-spider.add" xml:space="preserve"><value>新增 Twitch 頻道監測。&#10;伺服器成員須超過 200 人才能使用。&#10;可新增的頻道數量上限可能視情況調整；如需協助，請聯繫 Bot 擁有者。</value></data>
-  <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>移除 Twitch 頻道檢測爬蟲。&#10;爬蟲必須由本伺服器新增才可移除。</value></data>
-  <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>新增 TwitCasting 頻道監測。&#10;伺服器成員須超過 500 人才能使用。&#10;可新增的頻道數量上限可能視情況調整；如需協助，請聯繫 Bot 擁有者。</value></data>
-  <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>移除 TwitCasting 頻道檢測爬蟲。&#10;爬蟲必須由本伺服器新增才可移除。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.add-member-check" xml:space="preserve"><value>新增會限驗證頻道，目前上限為 5 個頻道。&#10;重複新增同一頻道可變更要授予的身分組。&#10;伺服器成員須超過 250 人才能使用；如需協助，請聯繫 Bot 擁有者。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.remove-member-check" xml:space="preserve"><value>移除會限驗證頻道。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.set-check-video" xml:space="preserve"><value>手動指定會限驗證使用的影片。&#10;若頻道有多個會員等級，請指定最低等級的會限影片，避免有效的低階會員被誤判為驗證失敗。&#10;手動指定後，自動探索不會覆寫這部影片；影片失效時，Bot 會在通知頻道提醒你重新設定。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.clear-check-video" xml:space="preserve"><value>取消手動指定，改回自動挑選會限驗證影片。</value></data>
+  <data name="Help.CommandDetail.youtube-spider.add" xml:space="preserve"><value>新增非兩大箱的 YouTube 頻道監測。&#10;如需協助，請聯絡 Bot 擁有者。</value></data>
+  <data name="Help.CommandDetail.youtube-spider.remove" xml:space="preserve"><value>移除非兩大箱的頻道監測爬蟲。&#10;爬蟲必須由本伺服器新增才可移除。</value></data>
+  <data name="Help.CommandDetail.twitch-spider.add" xml:space="preserve"><value>新增 Twitch 頻道監測。&#10;伺服器成員至少 200 人才能使用。&#10;可新增的頻道數量上限可能視情況調整；如需協助，請聯絡 Bot 擁有者。</value></data>
+  <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>移除 Twitch 頻道監測爬蟲。&#10;爬蟲必須由本伺服器新增才可移除。</value></data>
+  <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>新增 TwitCasting 頻道監測。&#10;伺服器成員至少 500 人才能使用。&#10;可新增的頻道數量上限可能視情況調整；如需協助，請聯絡 Bot 擁有者。</value></data>
+  <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>移除 TwitCasting 頻道監測爬蟲。&#10;爬蟲必須由本伺服器新增才可移除。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.add-member-check" xml:space="preserve"><value>新增會員驗證頻道，目前上限為 5 個頻道。&#10;重複新增同一頻道可變更要授予的身分組。&#10;伺服器成員至少 250 人才能使用；如需協助，請聯絡 Bot 擁有者。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.remove-member-check" xml:space="preserve"><value>移除會員驗證頻道。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.set-check-video" xml:space="preserve"><value>手動指定會員驗證使用的影片。&#10;若頻道有多個會員等級，請指定最低等級的會員限定影片，避免有效的低階會員被誤判為驗證失敗。&#10;手動指定後，自動探索不會覆寫這部影片；影片失效時，Bot 會在通知頻道提醒你重新設定。</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.clear-check-video" xml:space="preserve"><value>取消手動指定，改回自動挑選會員驗證影片。</value></data>
   <data name="Utility.Ping" xml:space="preserve"><value>:ping_pong: 延遲：{0} ms</value></data>
   <data name="Utility.Invite" xml:space="preserve"><value>邀請連結：&lt;{0}&gt;</value></data>
   <data name="Utility.Status.Title" xml:space="preserve"><value>直播小幫手</value></data>
@@ -123,26 +123,26 @@
   <data name="Utility.Status.StreamCount" xml:space="preserve"><value>看過的直播數量</value></data>
   <data name="Utility.Status.Uptime" xml:space="preserve"><value>上線時間</value></data>
   <data name="Utility.Status.UptimeValue" xml:space="preserve"><value>{0} 天 {1}</value></data>
-  <data name="Utility.Contact.Title" xml:space="preserve"><value>聯繫 Bot 擁有者</value></data>
+  <data name="Utility.Contact.Title" xml:space="preserve"><value>聯絡 Bot 擁有者</value></data>
   <data name="Utility.Contact.MessageLabel" xml:space="preserve"><value>訊息</value></data>
-  <data name="Utility.Contact.MessagePlaceholder" xml:space="preserve"><value>請輸入你要發送的訊息</value></data>
+  <data name="Utility.Contact.MessagePlaceholder" xml:space="preserve"><value>請輸入你要傳送的訊息</value></data>
   <data name="Utility.Contact.AttachmentsLabel" xml:space="preserve"><value>相關截圖</value></data>
   <data name="Utility.Contact.AttachmentsDescription" xml:space="preserve"><value>如有相關截圖，可在此上傳（非必要）。</value></data>
-  <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>聯繫方式</value></data>
-  <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>請留下可聯絡到你的方式，例如 X、Discord 或 Facebook。</value></data>
-  <data name="Utility.Contact.Received" xml:space="preserve"><value>訊息已送出。請確認聯絡資訊正確，並開啟共同伺服器成員的私人訊息。Bot 擁有者通常會優先透過 Bot 回覆你。</value></data>
+  <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>聯絡方式</value></data>
+  <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>請留下聯絡方式</value></data>
+  <data name="Utility.Contact.Received" xml:space="preserve"><value>訊息已送出。請確認聯絡資訊正確，並開啟「允許來自伺服器成員的私人訊息」。Bot 擁有者通常會優先透過 Bot 回覆。</value></data>
   <data name="Utility.Contact.AttachmentCount" xml:space="preserve"><value>已附加的檔案數量</value></data>
-  <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>無法發送回覆，請查看 Log 取得詳細資訊。</value></data>
+  <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>無法傳送回覆，請查看 Log 取得詳細資訊。</value></data>
   <data name="Utility.Contact.OwnerReplyTitle" xml:space="preserve"><value>來自 Bot 擁有者的回覆</value></data>
   <data name="Utility.Contact.ReplyAttachment" xml:space="preserve"><value>附加檔案：{0}</value></data>
   <data name="Utility.Contact.ReplyModalTitle" xml:space="preserve"><value>回覆訊息給使用者</value></data>
   <data name="Utility.Contact.ReplyUserIdLabel" xml:space="preserve"><value>使用者 ID</value></data>
-  <data name="Utility.Contact.ReplyMessagePlaceholder" xml:space="preserve"><value>請輸入你要發送的訊息</value></data>
+  <data name="Utility.Contact.ReplyMessagePlaceholder" xml:space="preserve"><value>請輸入你要傳送的訊息</value></data>
   <data name="Utility.Contact.ReplyAttachmentsLabel" xml:space="preserve"><value>相關截圖或檔案</value></data>
-  <data name="Utility.Contact.ReplySent" xml:space="preserve"><value>發送成功，回覆訊息：&#10;{0}&#10;（{1} 個附加檔案）</value></data>
-  <data name="Utility.Contact.UserDmClosed" xml:space="preserve"><value>無法發送訊息，該使用者未開放私人訊息。</value></data>
-  <data name="Utility.GlobalNoticeChannelChanged" xml:space="preserve"><value>已將全球通知頻道設定為 {0}。</value></data>
-  <data name="Utility.GlobalNoticeChannelFailed" xml:space="preserve"><value>設定全球通知頻道失敗，請稍後再試或聯繫 Bot 擁有者。</value></data>
+  <data name="Utility.Contact.ReplySent" xml:space="preserve"><value>傳送成功，回覆訊息：&#10;{0}&#10;（{1} 個附加檔案）</value></data>
+  <data name="Utility.Contact.UserDmClosed" xml:space="preserve"><value>無法傳送訊息，該使用者未開放私人訊息。</value></data>
+  <data name="Utility.GlobalNoticeChannelChanged" xml:space="preserve"><value>已將全域通知頻道設定為 {0}。</value></data>
+  <data name="Utility.GlobalNoticeChannelFailed" xml:space="preserve"><value>設定全域通知頻道失敗，請稍後再試或聯絡 Bot 擁有者。</value></data>
   <data name="Notifications.OverwritePrompt" xml:space="preserve"><value>`{0}` 已在通知清單內，是否覆蓋原有設定？</value></data>
   <data name="Notifications.ChannelChanged" xml:space="preserve"><value>已將 `{0}` 的通知頻道變更為 {1}。</value></data>
   <data name="Notifications.Removed" xml:space="preserve"><value>已移除 `{0}`。</value></data>
@@ -155,7 +155,7 @@
   <data name="Notifications.MessageClearedSimple" xml:space="preserve"><value>已清除 `{0}` 的直播通知訊息。</value></data>
   <data name="Notifications.TypeDisabled" xml:space="preserve"><value>已關閉 `{0}` 的「{1}」通知。</value></data>
   <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>（已關閉此類通知）</value></data>
-  <data name="Notifications.MessageListDescription" xml:space="preserve"><value>留空表示尚未設定訊息。嵌入訊息（Embed）內顯示的身分組文字不會實際提及該身分組。</value></data>
+  <data name="Notifications.MessageListDescription" xml:space="preserve"><value>留空表示尚未設定訊息。Embed 中的文字不會觸發提及。</value></data>
   <data name="Youtube.RecordList.Title" xml:space="preserve"><value>直播錄影頻道清單</value></data>
   <data name="Youtube.RecordList.Empty" xml:space="preserve"><value>直播錄影清單中沒有任何頻道。</value></data>
   <data name="Youtube.NowStreaming.Title" xml:space="preserve"><value>目前直播中</value></data>
@@ -163,7 +163,7 @@
   <data name="Youtube.Upcoming.Title" xml:space="preserve"><value>接下來的直播</value></data>
   <data name="Youtube.Upcoming.Entry" xml:space="preserve"><value>{0}&#10;{1}&#10;直播時間：{2}&#10;已加入錄影清單：{3}</value></data>
   <data name="Youtube.MemberPlaylist" xml:space="preserve"><value>會員限定播放清單：&lt;{0}&gt;</value></data>
-  <data name="Youtube.Events.Enabled" xml:space="preserve"><value>`{0}` 有新直播時，將在 Discord 建立活動。</value></data>
+  <data name="Youtube.Events.Enabled" xml:space="preserve"><value>當 `{0}` 排定新直播時，Bot 會建立 Discord 活動。</value></data>
   <data name="Youtube.Events.Disabled" xml:space="preserve"><value>已關閉 `{0}` 的自動建立活動功能。</value></data>
   <data name="Youtube.Events.DisableNewStreamPrompt" xml:space="preserve"><value>要關閉「新待機所」的頻道通知，改成只顯示 Discord 活動嗎？其他通知（例如開始直播）仍會送到原本的通知頻道。</value></data>
   <data name="Youtube.Events.EnableReplacementPrompt" xml:space="preserve"><value>要使用 Discord 活動取代「新待機所」通知嗎？</value></data>
@@ -203,7 +203,7 @@
   <data name="YoutubeSpider.RecordRemoved" xml:space="preserve"><value>已從錄影清單移除。</value></data>
   <data name="YoutubeSpider.ListTitle" xml:space="preserve"><value>YouTube 爬蟲清單</value></data>
   <data name="YoutubeSpider.UntrustedListTitle" xml:space="preserve"><value>未認可的 YouTube 爬蟲清單</value></data>
-  <data name="Spider.LimitReached" xml:space="preserve"><value>此伺服器已設定 {0} 個 {1} 爬蟲，請先移除不需要的爬蟲。如有特殊需求，請使用 {2} 聯繫 Bot 擁有者。</value></data>
+  <data name="Spider.LimitReached" xml:space="preserve"><value>此伺服器已設定 {0} 個 {1} 爬蟲，請先移除不需要的爬蟲。如有特殊需求，請使用 {2} 聯絡 Bot 擁有者。</value></data>
   <data name="Spider.LimitReachedShort" xml:space="preserve"><value>此伺服器的 {1} 爬蟲已達 {0} 個上限，無法新增。</value></data>
   <data name="Spider.AlreadyExists" xml:space="preserve"><value>`{0}` 已在爬蟲清單內。可在通知頻道使用 `{1} {2}` 開啟通知。{3}</value></data>
   <data name="Spider.OwnerHint" xml:space="preserve"><value>&#10;設定來源：`{0}`</value></data>
@@ -229,7 +229,7 @@
   <data name="Twitch.NoticeType.Change" xml:space="preserve"><value>變更直播資料</value></data>
   <data name="Twitch.Messages.ListValue" xml:space="preserve"><value>開始直播：{0}&#10;結束直播：{1}&#10;變更直播資料：{2}</value></data>
   <data name="Twitch.Messages.ListTitle" xml:space="preserve"><value>Twitch 直播通知訊息清單</value></data>
-  <data name="TwitchSpider.MemberRequirement" xml:space="preserve"><value>此指令只能在至少有 `{0}` 位成員的伺服器使用，目前 Bot 讀到 `{1}` 位。若已連結 Twitch，授權者新增自己的頻道時不受此限制。成員數可能受快取影響；如需協助，請使用 {2}。</value></data>
+  <data name="TwitchSpider.MemberRequirement" xml:space="preserve"><value>此指令只能在至少有 `{0}` 位成員的伺服器使用，目前 Bot 讀到 `{1}` 位。已連結 Twitch 的使用者新增自己的頻道時不受此限制。成員數可能受快取影響；如需協助，請使用 {2}。</value></data>
   <data name="TwitchSpider.ListTitle" xml:space="preserve"><value>Twitch 直播爬蟲清單</value></data>
   <data name="Twitcasting.Errors.UserNotFound" xml:space="preserve"><value>找不到 TwitCasting 使用者，請確認輸入的是正確的 TwitCasting 頻道網址或名稱。</value></data>
   <data name="Twitcasting.Notifications.Added" xml:space="preserve"><value>已將 `{0}` 加入 TwitCasting 通知清單。{1}</value></data>
@@ -240,70 +240,70 @@
   <data name="Twitcasting.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>尚未設定 TwitCasting 直播通知。請先使用 {0} 新增通知。</value></data>
   <data name="Twitcasting.Messages.ListTitle" xml:space="preserve"><value>TwitCasting 直播通知訊息清單</value></data>
   <data name="TwitcastingSpider.ListTitle" xml:space="preserve"><value>TwitCasting 直播爬蟲清單</value></data>
-  <data name="Member.Errors.Disabled" xml:space="preserve"><value>此 Bot 未啟用會限驗證系統，請向 {0} 確認。</value></data>
-  <data name="Member.Errors.NotConfigured" xml:space="preserve"><value>此伺服器尚未設定會限驗證功能，請向伺服器管理員確認。</value></data>
+  <data name="Member.Errors.Disabled" xml:space="preserve"><value>此 Bot 未啟用會員驗證系統，請向 {0} 確認。</value></data>
+  <data name="Member.Errors.NotConfigured" xml:space="preserve"><value>此伺服器尚未設定會員驗證功能，請向伺服器管理員確認。</value></data>
   <data name="Member.Errors.Initializing" xml:space="preserve"><value>部分頻道仍在初始化，請約五分鐘後再試。</value></data>
   <data name="Member.Errors.LoginRequired" xml:space="preserve"><value>請先到 {0} 登入 Discord 與 Google，完成後再執行此指令。</value></data>
-  <data name="Member.CheckQueuedWithDmNotice" xml:space="preserve"><value>已加入驗證佇列，最久約需 {0} 分鐘。請開啟本伺服器的「允許來自伺服器成員的私人訊息」，以免收不到驗證結果。</value></data>
+  <data name="Member.CheckQueuedWithDmNotice" xml:space="preserve"><value>驗證已加入佇列，最長約需 {0} 分鐘。請開啟本伺服器的「允許來自伺服器成員的私人訊息」，以免收不到驗證結果。</value></data>
   <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>選擇頻道</value></data>
   <data name="Member.Select.Description" xml:space="preserve"><value>請選擇這次要驗證的頻道。先前選過但這次未選擇的頻道，會移除相關身分組；若無法立即移除，Bot 會自動重試。</value></data>
   <data name="Member.Select.SelectedCount" xml:space="preserve"><value>已選擇 {0} 個頻道</value></data>
   <data name="Member.Select.Selected" xml:space="preserve"><value>已選擇</value></data>
-  <data name="Member.Select.Expired" xml:space="preserve"><value>此會限驗證選單已過期，請重新執行 `/youtube-member check`。</value></data>
-  <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>你尚未在此伺服器執行會限驗證。</value></data>
-  <data name="Member.CheckCancelled" xml:space="preserve"><value>已取消你在此伺服器的會限驗證，並移除相關身分組。</value></data>
-  <data name="Member.Errors.RoleCleanupPending" xml:space="preserve"><value>已取消會限驗證，但部分相關身分組尚未移除。Bot 會自動重試。</value></data>
+  <data name="Member.Select.Expired" xml:space="preserve"><value>此會員驗證選單已過期，請重新執行 `/youtube-member check`。</value></data>
+  <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>你尚未在此伺服器執行會員驗證。</value></data>
+  <data name="Member.CheckCancelled" xml:space="preserve"><value>已取消你在此伺服器的會員驗證，並移除相關身分組。</value></data>
+  <data name="Member.Errors.RoleCleanupPending" xml:space="preserve"><value>已取消會員驗證，但部分相關身分組尚未移除。Bot 會自動重試。</value></data>
   <data name="Member.Errors.SaveFailed" xml:space="preserve"><value>資料儲存失敗，請向 {0} 確認。</value></data>
-  <data name="Member.UnlinkPrompt" xml:space="preserve"><value>確定要解除 Discord 與 Google 綁定嗎？解除後，會限驗證身分組也會一併移除。若要重新取得，需再次到網站完成綁定。</value></data>
+  <data name="Member.UnlinkPrompt" xml:space="preserve"><value>確定要解除 Discord 與 Google 綁定嗎？解除後，會員驗證身分組也會一併移除。若要重新取得，需再次到網站完成綁定。</value></data>
   <data name="Member.Unlinked" xml:space="preserve"><value>已解除 Discord 與 Google 綁定。</value></data>
-  <data name="Member.Errors.GoogleRevokeFailed" xml:space="preserve"><value>已解除直播小幫手的綁定，但無法撤銷 Google 授權。請到 {0} 移除「直播小幫手會限確認」的應用程式存取權。</value></data>
+  <data name="Member.Errors.GoogleRevokeFailed" xml:space="preserve"><value>已解除與直播小幫手的綁定，但無法撤銷 Google 授權。請到 {0} 移除「直播小幫手會限確認」的應用程式存取權。</value></data>
   <data name="Member.Errors.UnlinkFailed" xml:space="preserve"><value>解除綁定失敗，請向 {0} 確認。</value></data>
   <data name="Member.Errors.NothingToUnlink" xml:space="preserve"><value>沒有可解除的綁定資料。</value></data>
-  <data name="Member.Errors.ChannelListEmpty" xml:space="preserve"><value>目前沒有可供驗證的會限頻道。</value></data>
-  <data name="Member.ChannelList" xml:space="preserve"><value>目前可供驗證的會限頻道：&#10;{0}</value></data>
+  <data name="Member.Errors.ChannelListEmpty" xml:space="preserve"><value>目前沒有可供驗證的會員限定頻道。</value></data>
+  <data name="Member.ChannelList" xml:space="preserve"><value>目前可供驗證的會員限定頻道：&#10;{0}</value></data>
   <data name="Member.LinkedChannel" xml:space="preserve"><value>目前綁定的 YouTube 頻道：{0}</value></data>
   <data name="Member.Errors.LinkedChannelUnavailable" xml:space="preserve"><value>無法取得綁定的 YouTube 頻道。請確認已在網站完成綁定，且該 Google 帳號已建立 YouTube 頻道。</value></data>
   <data name="Member.Errors.LinkedChannelUnavailableWithOwner" xml:space="preserve"><value>無法取得綁定的 YouTube 頻道。請確認已完成網站綁定且 Google 帳號有 YouTube 頻道；如仍有疑問，請向 {0} 詢問。</value></data>
   <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>已將 `{0}` 設定為會員與訂閱驗證紀錄頻道。</value></data>
   <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>Bot 缺少「管理身分組」權限，請授予後再試。</value></data>
-  <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>不能將「everyone」身分組設為會限驗證身分組。</value></data>
-  <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>由整合服務管理的身分組不能用於會限驗證。</value></data>
+  <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>不能將「everyone」身分組設為會員驗證身分組。</value></data>
+  <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>由整合服務管理的身分組不能用於會員驗證。</value></data>
   <data name="MemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>此身分組已被 Twitch 訂閱驗證設定使用。YouTube 與 Twitch 驗證必須使用不同身分組。</value></data>
   <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>身分組 `{0}` 排在 Bot 的最高身分組之上，請先調整順序。</value></data>
-  <data name="MemberSetting.Errors.DeletionPending" xml:space="preserve"><value>此頻道的會限驗證設定與相關身分組尚未完全移除，因此暫時無法重新設定。請確認 Bot 有「管理身分組」權限，且相關身分組位於 Bot 的最高身分組下方，再等待自動重試完成。</value></data>
+  <data name="MemberSetting.Errors.DeletionPending" xml:space="preserve"><value>此頻道的會員驗證設定與相關身分組尚未完全移除，因此暫時無法重新設定。請確認 Bot 有「管理身分組」權限，且相關身分組位於 Bot 的最高身分組下方，再等待自動重試完成。</value></data>
   <data name="MemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>上次變更身分組尚未完成。請使用目前設定的身分組再執行一次相同設定；更新完成後才能改用其他身分組。</value></data>
   <data name="MemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定已儲存，但 Bot 尚未完成部分已驗證成員的身分組變更。請確認 Bot 能管理新舊身分組；若權限與順序都正確，請稍後使用相同身分組再執行一次設定。</value></data>
-  <data name="MemberSetting.Errors.RemovePending" xml:space="preserve"><value>部分相關身分組尚未移除，因此此頻道的會限驗證設定還沒刪除完成。請確認 Bot 能管理相關身分組，Bot 會自動重試。</value></data>
-  <data name="MemberSetting.Errors.SaveFailed" xml:space="preserve"><value>儲存會限驗證設定時發生錯誤，請稍後再試。</value></data>
-  <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>此伺服器已設定 {0} 個會限驗證頻道，請先移除不再使用的頻道。</value></data>
-  <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord 選單最多支援 {0} 個選項，請先移除未使用的會限驗證頻道。</value></data>
+  <data name="MemberSetting.Errors.RemovePending" xml:space="preserve"><value>部分相關身分組尚未移除，因此此頻道的會員驗證設定還沒刪除完成。請確認 Bot 能管理相關身分組，Bot 會自動重試。</value></data>
+  <data name="MemberSetting.Errors.SaveFailed" xml:space="preserve"><value>儲存會員驗證設定時發生錯誤，請稍後再試。</value></data>
+  <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>此伺服器已設定 {0} 個會員驗證頻道，請先移除不再使用的頻道。</value></data>
+  <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord 選單最多支援 {0} 個選項，請先移除未使用的會員驗證頻道。</value></data>
   <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>此伺服器尚未設定會員與訂閱驗證紀錄頻道。請先建立頻道，授予 Bot 查看頻道、傳送訊息與嵌入連結權限，再使用 {0} 完成設定。驗證功能必須先有紀錄頻道才能使用。</value></data>
   <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>原本設定的會員與訂閱驗證紀錄頻道已被刪除。請建立新頻道，授予 Bot 所需權限，再使用 {0} 重新設定。</value></data>
-  <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>已使用 `{0}` 作為會限驗證頻道；驗證成功的成員會取得 `{1}` 身分組。{2}</value></data>
+  <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>已使用 `{0}` 作為會員驗證頻道；驗證成功的成員會取得 `{1}` 身分組。{2}</value></data>
   <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>現在即可開始驗證。</value></data>
   <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>請等待約五分鐘後再開始驗證。</value></data>
-  <data name="MemberSetting.Errors.ChannelNotConfigured" xml:space="preserve"><value>尚未設定此頻道的會限驗證。</value></data>
-  <data name="MemberSetting.ChannelRemoved" xml:space="preserve"><value>已移除 `{0}` 的會限驗證設定。</value></data>
+  <data name="MemberSetting.Errors.ChannelNotConfigured" xml:space="preserve"><value>尚未設定此頻道的會員驗證。</value></data>
+  <data name="MemberSetting.ChannelRemoved" xml:space="preserve"><value>已移除 `{0}` 的會員驗證設定。</value></data>
   <data name="MemberSetting.Errors.InvalidVideoId" xml:space="preserve"><value>無法解析影片 ID，請提供正確的 YouTube 影片網址或 11 碼影片 ID。</value></data>
-  <data name="MemberSetting.Errors.ConfigureFirst" xml:space="preserve"><value>尚未設定此頻道的會限驗證，請先使用 {0} 新增。</value></data>
+  <data name="MemberSetting.Errors.ConfigureFirst" xml:space="preserve"><value>尚未設定此頻道的會員驗證，請先使用 {0} 新增。</value></data>
   <data name="MemberSetting.Errors.VideoNotMembersOnly" xml:space="preserve"><value>此影片不是會員限定影片；若作為偵測影片，所有人都會通過驗證。請指定會員限定影片。</value></data>
-  <data name="MemberSetting.Errors.CommentsDisabled" xml:space="preserve"><value>這部影片已關閉留言，不能用於會限驗證。請改用其他會員限定影片。</value></data>
-  <data name="MemberSetting.CheckVideoChanged" xml:space="preserve"><value>已將 `{0}` 的會限驗證影片手動設為 `{1}`。自動探索不會覆寫這部影片；影片失效時會提醒你重新設定。</value></data>
-  <data name="MemberSetting.CheckVideoCleared" xml:space="preserve"><value>已將 `{0}` 改回自動挑選會限驗證影片，約 {1} 分鐘後生效。</value></data>
+  <data name="MemberSetting.Errors.CommentsDisabled" xml:space="preserve"><value>這部影片已關閉留言，不能用於會員驗證。請改用其他會員限定影片。</value></data>
+  <data name="MemberSetting.CheckVideoChanged" xml:space="preserve"><value>已將 `{0}` 的會員驗證影片手動設為 `{1}`。自動探索不會覆寫這部影片；影片失效時會提醒你重新設定。</value></data>
+  <data name="MemberSetting.CheckVideoCleared" xml:space="preserve"><value>已將 `{0}` 改回自動挑選會員驗證影片，約 {1} 分鐘後生效。</value></data>
   <data name="MemberSetting.Errors.NoVerifiedMembers" xml:space="preserve"><value>目前尚無驗證成功的成員。</value></data>
-  <data name="MemberSetting.VerifiedListTitle" xml:space="preserve"><value>已通過會限驗證的成員</value></data>
+  <data name="MemberSetting.VerifiedListTitle" xml:space="preserve"><value>已通過會員驗證的成員</value></data>
   <data name="Member.Status.Channel" xml:space="preserve"><value>驗證頻道</value></data>
   <data name="Member.Status.State" xml:space="preserve"><value>狀態</value></data>
   <data name="Member.Status.DmUnavailable" xml:space="preserve"><value>無法傳送訊息至 &lt;@{0}&gt;。請提醒該使用者開啟「允許來自伺服器成員的私人訊息」。</value></data>
-  <data name="Member.Status.RoleMissing" xml:space="preserve"><value>{0} 的會限驗證身分組不存在，請重新設定。</value></data>
-  <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>Bot 缺少「管理身分組」權限，無法處理會限驗證身分組。請授予權限後再試。</value></data>
-  <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>不可將 everyone 身分組設為會限驗證身分組，請重新設定。</value></data>
-  <data name="Member.Status.ManagedRoleInvalid" xml:space="preserve"><value>這個身分組由整合服務管理，不能用於會限驗證。已移除此設定，請重新設定。</value></data>
+  <data name="Member.Status.RoleMissing" xml:space="preserve"><value>{0} 的會員驗證身分組不存在，請重新設定。</value></data>
+  <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>Bot 缺少「管理身分組」權限，無法處理會員驗證身分組。請授予權限後再試。</value></data>
+  <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>不可將 everyone 身分組設為會員驗證身分組，請重新設定。</value></data>
+  <data name="Member.Status.ManagedRoleInvalid" xml:space="preserve"><value>這個身分組由整合服務管理，不能用於會員驗證。已移除此設定，請重新設定。</value></data>
   <data name="Member.Status.NotLoggedIn" xml:space="preserve"><value>尚未登入</value></data>
   <data name="Member.Status.RefreshFailed" xml:space="preserve"><value>無法重新整理授權</value></data>
   <data name="Member.Status.CredentialExpired" xml:space="preserve"><value>Google 授權已失效</value></data>
-  <data name="Member.Status.ManualVideoCommentsDisabled" xml:space="preserve"><value>手動指定的會限驗證影片 `{0}` 因留言已關閉而無法繼續使用，請使用 {1} 重新指定最低等級的會限影片。</value></data>
-  <data name="Member.Status.ManualVideoDeleted" xml:space="preserve"><value>手動指定的會限驗證影片 `{0}` 因影片已刪除而無法繼續使用，請使用 {1} 重新指定最低等級的會限影片。</value></data>
+  <data name="Member.Status.ManualVideoCommentsDisabled" xml:space="preserve"><value>手動指定的會員驗證影片 `{0}` 因留言已關閉而無法繼續使用，請使用 {1} 重新指定最低等級的會員限定影片。</value></data>
+  <data name="Member.Status.ManualVideoDeleted" xml:space="preserve"><value>手動指定的會員驗證影片 `{0}` 因影片已刪除而無法繼續使用，請使用 {1} 重新指定最低等級的會員限定影片。</value></data>
   <data name="Member.Status.RemoveRolePermissionMissing" xml:space="preserve"><value>Bot 缺少「管理身分組」權限，無法移除身分組。請由管理員手動移除身分組，再授予 Bot 所需權限。</value></data>
   <data name="Member.Status.MembershipExpired" xml:space="preserve"><value>會員資格已過期</value></data>
   <data name="Member.Status.NotMember" xml:space="preserve"><value>無法確認會員資格</value></data>
@@ -363,8 +363,8 @@
   <data name="Member.VideoLog.NoVideos" xml:space="preserve"><value>目前找不到 {0} 可用於驗證且已開放留言的會員限定影片。請等頻道主發布符合條件的新影片後，再進行會員驗證。你可以使用 {1} 查看播放清單。</value></data>
   <data name="Member.VideoLog.NewProbeVideo" xml:space="preserve"><value>已為會員頻道 `{0}` 選用新的驗證影片：`{1}`。</value></data>
   <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>會員頻道名稱已變更：`{0}` → `{1}`。</value></data>
-  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>另外，`{0}` 尚未設定會員與訂閱驗證紀錄頻道。請建立頻道、授予 Bot 查看頻道、發送訊息與嵌入連結權限，再使用 {1} 設定。</value></data>
-  <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>另外，Bot 在 `{0}` 的 `{1}` 缺少紀錄所需的查看頻道、發送訊息或嵌入連結權限。</value></data>
+  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>另外，`{0}` 尚未設定會員與訂閱驗證紀錄頻道。請建立頻道、授予 Bot 查看頻道、傳送訊息與嵌入連結權限，再使用 {1} 設定。</value></data>
+  <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>另外，Bot 在 `{0}` 的 `{1}` 缺少紀錄所需的查看頻道、傳送訊息或嵌入連結權限。</value></data>
   <data name="TwitchMember.Errors.NotConfigured" xml:space="preserve"><value>此伺服器尚未設定 Twitch 訂閱驗證頻道。</value></data>
   <data name="TwitchMember.Errors.TooManyChannels" xml:space="preserve"><value>可驗證的頻道數量已超過 Discord 選單上限，請聯絡伺服器管理員。</value></data>
   <data name="TwitchMember.Errors.NoActiveCheck" xml:space="preserve"><value>此伺服器找不到你的 Twitch 訂閱驗證紀錄。</value></data>
@@ -387,26 +387,26 @@
   <data name="TwitchMember.Status.AuthorizationInvalid" xml:space="preserve"><value>Twitch 授權失效</value></data>
   <data name="TwitchMember.Status.BroadcasterUnavailable" xml:space="preserve"><value>頻道無法驗證</value></data>
   <data name="TwitchMember.Status.TemporaryFailure" xml:space="preserve"><value>暫時失敗</value></data>
-  <data name="TwitchMemberSetting.RemovePrompt" xml:space="preserve"><value>確定要移除 `{0}` 的 Twitch 訂閱驗證設定、成員身上的相關身分組，並刪除三個 Tier 身分組嗎？</value></data>
-  <data name="TwitchMemberSetting.Configured" xml:space="preserve"><value>已設定 `{0}` 的 Twitch 訂閱驗證。有效訂閱者會取得 `{1}` 和對應的 Tier 身分組。</value></data>
-  <data name="TwitchMemberSetting.Removed" xml:space="preserve"><value>已移除 `{0}` 的訂閱驗證設定與 Tier 身分組。</value></data>
+  <data name="TwitchMemberSetting.RemovePrompt" xml:space="preserve"><value>確定要移除 `{0}` 的 Twitch 訂閱驗證設定、成員身上的相關身分組，並刪除三個層級身分組嗎？</value></data>
+  <data name="TwitchMemberSetting.Configured" xml:space="preserve"><value>已設定 `{0}` 的 Twitch 訂閱驗證。有效訂閱者會取得 `{1}` 和對應的層級身分組。</value></data>
+  <data name="TwitchMemberSetting.Removed" xml:space="preserve"><value>已移除 `{0}` 的訂閱驗證設定與層級身分組。</value></data>
   <data name="TwitchMemberSetting.CheckedMembersTitle" xml:space="preserve"><value>Twitch 訂閱驗證名單</value></data>
   <data name="TwitchMemberSetting.Errors.ChannelNotFound" xml:space="preserve"><value>找不到 Twitch 頻道。</value></data>
   <data name="TwitchMemberSetting.Errors.IneligibleBroadcaster" xml:space="preserve"><value>這個 Twitch 頻道不是實況盟友（Affiliate）或實況夥伴（Partner），無法使用訂閱驗證。</value></data>
   <data name="TwitchMemberSetting.Errors.TooManyChannels" xml:space="preserve"><value>單一伺服器最多可設定 25 個 Twitch 訂閱驗證頻道。</value></data>
   <data name="TwitchMemberSetting.Errors.InvalidCommonRole" xml:space="preserve"><value>共用身分組 ID 無效。</value></data>
-  <data name="TwitchMemberSetting.Errors.CommonRoleOverlapsTier" xml:space="preserve"><value>共用身分組不能與任何 Twitch Tier 身分組相同。</value></data>
-  <data name="TwitchMemberSetting.Errors.RolesMustBeDistinct" xml:space="preserve"><value>共用身分組和三個 Twitch Tier 身分組必須各不相同。</value></data>
-  <data name="TwitchMemberSetting.Errors.TierRoleOverlap" xml:space="preserve"><value>Twitch Tier 身分組不可與其他驗證設定的身分組重疊。</value></data>
+  <data name="TwitchMemberSetting.Errors.CommonRoleOverlapsTier" xml:space="preserve"><value>共用身分組不能與任何 Twitch 層級身分組相同。</value></data>
+  <data name="TwitchMemberSetting.Errors.RolesMustBeDistinct" xml:space="preserve"><value>共用身分組和三個 Twitch 層級身分組必須各不相同。</value></data>
+  <data name="TwitchMemberSetting.Errors.TierRoleOverlap" xml:space="preserve"><value>Twitch 層級身分組不可與其他驗證設定的身分組重疊。</value></data>
   <data name="TwitchMemberSetting.Errors.MissingManageRoles" xml:space="preserve"><value>Bot 缺少「管理身分組」權限。</value></data>
   <data name="TwitchMemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>不可使用 @everyone。</value></data>
   <data name="TwitchMemberSetting.Errors.ManagedRole" xml:space="preserve"><value>不可使用由整合服務管理的身分組。</value></data>
-  <data name="TwitchMemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>此身分組已被 YouTube 會限驗證設定使用。YouTube 與 Twitch 驗證必須使用不同身分組。</value></data>
+  <data name="TwitchMemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>此身分組已被 YouTube 會員驗證設定使用。YouTube 與 Twitch 驗證必須使用不同身分組。</value></data>
   <data name="TwitchMemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>共用身分組必須低於 Bot 的最高身分組。</value></data>
   <data name="TwitchMemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定已儲存，但 Discord 身分組尚未完全同步。請先修正權限問題，或等暫時性錯誤排除後，再執行一次相同設定完成修復。</value></data>
   <data name="TwitchMemberSetting.Errors.DeletionPending" xml:space="preserve"><value>此頻道的設定和相關身分組尚未移除完成，因此無法重新設定。Bot 每小時會重試一次。請先修正身分組權限，等移除完成後再新增。</value></data>
   <data name="TwitchMemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>上次更新共用身分組時尚未完全同步。請用目前已儲存的共用身分組重新執行設定；修復完成後，才能改用其他身分組。</value></data>
-  <data name="TwitchMemberSetting.Errors.SaveFailed" xml:space="preserve"><value>建立 Tier 身分組或儲存設定時發生錯誤，資料庫中的設定未變更。</value></data>
+  <data name="TwitchMemberSetting.Errors.SaveFailed" xml:space="preserve"><value>建立層級身分組或儲存設定時發生錯誤，資料庫中的設定未變更。</value></data>
   <data name="TwitchMemberSetting.Errors.NotConfigured" xml:space="preserve"><value>此 Twitch 頻道尚未設定訂閱驗證。</value></data>
   <data name="TwitchMemberSetting.Errors.RemovePending" xml:space="preserve"><value>部分身分組移除失敗，因此已保留設定和稍後重試所需的資料。</value></data>
   <data name="TwitchMemberSetting.Errors.NoCheckedMembers" xml:space="preserve"><value>目前沒有通過驗證的 Twitch 訂閱者。</value></data>

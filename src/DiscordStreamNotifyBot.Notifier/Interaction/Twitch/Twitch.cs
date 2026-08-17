@@ -183,7 +183,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             }
         }
 
-        [SlashCommand("list", "顯示現在已加入通知清單的 Twitch 直播頻道")]
+        [SlashCommand("list", "顯示已加入通知清單的 Twitch 直播頻道")]
         public async Task ListChannel([Summary("page", "頁數")] int page = 0)
         {
             string locale = await GetLocaleAsync(false);
@@ -207,10 +207,10 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
 
         [RequireBotPermission(GuildPermission.MentionEveryone)]
         [CommandSummary("設定通知訊息\n" +
-            "不輸入通知訊息的話則會關閉通知訊息\n" +
-            "若輸入 `-` 則可以關閉該通知類型\n" +
-            "需先新增直播通知後才可設定通知訊息(`/help get-command-help twitch add`)\n\n" +
-            "(考慮到有伺服器需 Ping 特定用戶組的情況，故 Bot 需提及所有身分組權限)")]
+            "未輸入通知訊息時，會清除自訂通知訊息\n" +
+            "輸入 `-` 可關閉該通知類型\n" +
+            "請先新增直播通知，再設定通知訊息（`/help get-command-help twitch add`）\n\n" +
+            "（若通知訊息要提及特定身分組，Bot 必須具備提及所有身分組權限）")]
         [CommandExample("998rrr 開台啦", "https://twitch.tv/998rrr 開始直播 開台啦")]
         [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("channel", "頻道名稱"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId,

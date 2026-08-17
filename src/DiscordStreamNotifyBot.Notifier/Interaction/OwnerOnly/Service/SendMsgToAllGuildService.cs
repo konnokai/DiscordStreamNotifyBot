@@ -98,7 +98,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                     .WithButton("是", $"{guid}-yes", ButtonStyle.Success)
                     .WithButton("否", $"{guid}-no", ButtonStyle.Danger);
 
-                await modal.FollowupAsync(text: $"本次發送的類型為: {GetNoticeTypeDisplayName(noticeType)}", embed: BuildEmbed(payload), components: component.Build(), ephemeral: true);
+                await modal.FollowupAsync(text: $"本次傳送類型：{GetNoticeTypeDisplayName(noticeType)}", embed: BuildEmbed(payload), components: component.Build(), ephemeral: true);
                 checkData = new ButtonCheckData(modal.User.Id, modal.ChannelId.Value, guid, payload);
             };
 
@@ -115,7 +115,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                     userMsg.User.Id != checkData.UserId ||
                     userMsg.Channel.Id != checkData.ChannelId)
                 {
-                    await button.SendErrorAsync("你無法使用本功能", true);
+                    await button.SendErrorAsync("你沒有權限使用本功能", true);
                     return;
                 }
 
@@ -134,7 +134,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         new RedisChannel(RedisChannels.Notifier.SendMessageToAll, RedisChannel.PatternMode.Literal),
                         JsonConvert.SerializeObject(checkData.Payload));
 
-                    await button.FollowupAsync("已廣播至所有 shard，各 shard 將對自己持有的伺服器發送（進度請見各 shard log）", ephemeral: true);
+                    await button.FollowupAsync("已廣播至所有分片。每個分片會向其持有的伺服器傳送訊息；請查看各分片日誌。", ephemeral: true);
                     checkData = null;
                 }
                 else
@@ -149,10 +149,10 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
         {
             var eb = new EmbedBuilder().WithOkColor()
                 .WithUrl("https://konnokai.me/")
-                .WithTitle("來自開發者消息")
+                .WithTitle("來自開發者的訊息")
                 .WithDescription(payload.Message)
                 .WithImageUrl(payload.ImageUrl)
-                .WithFooter("管理員可以透過 `/utility set-global-notice-channel` 來設定由哪個頻道來接收小幫手相關的通知");
+                .WithFooter("管理員可透過 `/utility set-global-notice-channel` 設定接收小幫手通知的頻道");
 
             if (!string.IsNullOrEmpty(payload.AuthorName))
                 eb.WithAuthor(payload.AuthorName, payload.AuthorIconUrl);
@@ -190,7 +190,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                             var guild = _client.GetGuild(item.Key);
                             if (guild == null)
                             {
-                                Log.Warn($"伺服器不存在: {item.Key}");
+                                Log.Warn($"伺服器不存在：{item.Key}");
                                 try
                                 {
                                     db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == item.Key));
@@ -205,7 +205,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                             var textChannel = guild.GetTextChannel(item.Value);
                             if (textChannel == null)
                             {
-                                Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
+                                Log.Warn($"頻道不存在：{guild.Name} / {item.Value}");
                                 try
                                 {
                                     db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.NoticeChannelId == item.Value));
@@ -225,7 +225,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                     .WaitAndRetryAsync(3, (retryAttempt) =>
                                     {
                                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                        Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                        Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次）");
                                         return timeSpan;
                                     })
                                     .ExecuteAsync(async () =>
@@ -237,7 +237,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                             catch (Discord.Net.HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode == DiscordErrorCode.MissingPermissions ||
                                 ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
                             {
-                                Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
+                                Log.Warn($"缺少權限導致無法傳送訊息至：{guild.Name} / {textChannel.Name}");
                                 db.GuildConfig.Single((x) => x.GuildId == guild.Id).NoticeChannelId = 0;
                             }
                             catch (Exception ex)
@@ -265,7 +265,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         isSendMessageGuildId.Add(item);
                     }
 
-                    Log.Info($"工商訊息已忽略的官方伺服器數: {isSendMessageGuildId.Count}");
+                    Log.Info($"工商訊息已忽略的官方伺服器數：{isSendMessageGuildId.Count}");
                 }
 
                 try
@@ -284,7 +284,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         var guild = _client.GetGuild(item.Key);
                         if (guild == null)
                         {
-                            Log.Warn($"伺服器不存在: {item.Key}");
+                            Log.Warn($"伺服器不存在：{item.Key}");
                             try
                             {
                                 db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.Key));
@@ -299,7 +299,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         var textChannel = guild.GetTextChannel(item.Value);
                         if (textChannel == null)
                         {
-                            Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
+                            Log.Warn($"頻道不存在：{guild.Name} / {item.Value}");
                             try
                             {
                                 db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.Value));
@@ -319,7 +319,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                 .WaitAndRetryAsync(3, (retryAttempt) =>
                                 {
                                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                    Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                    Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次）");
                                     return timeSpan;
                                 })
                                 .ExecuteAsync(async () =>
@@ -331,7 +331,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         catch (Discord.Net.HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode == DiscordErrorCode.MissingPermissions ||
                             ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
                         {
-                            Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
+                            Log.Warn($"缺少權限導致無法傳送訊息至：{guild.Name} / {textChannel.Name}");
                             db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.Value));
                         }
                         catch (Exception ex)
@@ -350,7 +350,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 }
 
                 db.SaveChanges();
-                Log.Info("已於 YT 通知頻道發送完成");
+                Log.Info("已於 YouTube 通知頻道傳送完成");
 
                 try
                 {
@@ -368,7 +368,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         var guild = _client.GetGuild(item.Key);
                         if (guild == null)
                         {
-                            Log.Warn($"伺服器不存在: {item.Key}");
+                            Log.Warn($"伺服器不存在：{item.Key}");
                             try
                             {
                                 db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == item.Key));
@@ -383,7 +383,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         var textChannel = guild.GetTextChannel(item.Value);
                         if (textChannel == null)
                         {
-                            Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
+                            Log.Warn($"頻道不存在：{guild.Name} / {item.Value}");
                             try
                             {
                                 db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.Value));
@@ -403,7 +403,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                 .WaitAndRetryAsync(3, (retryAttempt) =>
                                 {
                                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                    Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                    Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次）");
                                     return timeSpan;
                                 })
                                 .ExecuteAsync(async () =>
@@ -415,7 +415,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         catch (Discord.Net.HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode == DiscordErrorCode.MissingPermissions ||
                             ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
                         {
-                            Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
+                            Log.Warn($"缺少權限導致無法傳送訊息至：{guild.Name} / {textChannel.Name}");
                             db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.Value));
                         }
                         catch (Exception ex)
@@ -452,7 +452,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         var guild = _client.GetGuild(item.Key);
                         if (guild == null)
                         {
-                            Log.Warn($"伺服器不存在: {item.Key}");
+                            Log.Warn($"伺服器不存在：{item.Key}");
                             try
                             {
                                 db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == item.Key));
@@ -468,7 +468,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         var textChannel = guild.GetTextChannel(item.Value);
                         if (textChannel == null)
                         {
-                            Log.Warn($"頻道不存在: {guild.Name} / {item.Value}");
+                            Log.Warn($"頻道不存在：{guild.Name} / {item.Value}");
                             try
                             {
                                 db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == item.Key));
@@ -489,7 +489,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                                 .WaitAndRetryAsync(3, (retryAttempt) =>
                                 {
                                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                    Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                    Log.Warn($"全球訊息通知 | {guild.Name} / {textChannel.Name} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次）");
                                     return timeSpan;
                                 })
                                 .ExecuteAsync(async () =>
@@ -501,7 +501,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                         catch (Discord.Net.HttpException ex) when (ex.DiscordCode.HasValue && ex.DiscordCode == DiscordErrorCode.MissingPermissions ||
                             ex.DiscordCode == DiscordErrorCode.InsufficientPermissions)
                         {
-                            Log.Warn($"缺少權限導致無法傳送訊息至: {guild.Name} / {textChannel.Name}");
+                            Log.Warn($"缺少權限導致無法傳送訊息至：{guild.Name} / {textChannel.Name}");
                             db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == item.Key));
                             db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == item.Key));
                         }
@@ -517,11 +517,11 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), "Send Message To YouTube Memeber Notice Channel Error");
+                    Log.Error(ex.Demystify(), "YouTube 會員驗證通知頻道傳送失敗");
                 }
 
                 db.SaveChanges();
-                Log.Info("已於會限驗證紀錄頻道發送完成");
+                Log.Info("已於 YouTube 會員驗證紀錄頻道傳送完成");
 
                 isSending = false;
             }

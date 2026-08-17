@@ -11,7 +11,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
     [RequireContext(ContextType.Guild)]
     [RequireUserPermission(GuildPermission.Administrator)]
     [DefaultMemberPermissions(GuildPermission.Administrator)]
-    [Group("youtube-member-set", "YouTube 會限驗證設定")]
+    [Group("youtube-member-set", "YouTube 會員驗證設定")]
     public class YoutubeMemberSetting : TopLevelModule<YoutubeMemberService>
     {
         private readonly DiscordSocketClient _client;
@@ -79,13 +79,13 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         }
 
         [RequireGuildMemberCount(250)]
-        [CommandSummary("新增會限驗證頻道，目前可上限為 5 個頻道\n" +
-           "如新增同個頻道則可變更要授予的用戶組\n" +
-           "伺服器需大於 250 人才可使用\n" +
-           "如有任何需要請向擁有者詢問")]
+        [CommandSummary("新增會員驗證頻道，目前最多可設定 5 個頻道\n" +
+           "新增相同頻道可變更授予的身分組\n" +
+           "伺服器人數至少 250 人才可使用\n" +
+           "如有需求，請聯絡擁有者")]
         [CommandExample("https://www.youtube.com/@998rrr @玖桃")]
-        [SlashCommand("add-member-check", "新增會限驗證頻道")]
-        public async Task AddMemberCheckAsync([Summary("channel-url", "頻道連結")] string url, [Summary("role", "用戶組Id")] IRole role)
+        [SlashCommand("add-member-check", "新增會員驗證頻道")]
+        public async Task AddMemberCheckAsync([Summary("channel-url", "頻道連結")] string url, [Summary("role", "身分組 ID")] IRole role)
         {
             await DeferAsync(true);
             var result = await _service.ConfigureAsync(
@@ -93,9 +93,9 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             await SendVerificationResultAsync(result, url, roleName: role.Name);
         }
 
-        [CommandSummary("移除會限驗證頻道")]
+        [CommandSummary("移除會員驗證頻道")]
         [CommandExample("https://www.youtube.com/@998rrr")]
-        [SlashCommand("remove-member-check", "移除會限驗證頻道")]
+        [SlashCommand("remove-member-check", "移除會員驗證頻道")]
         public async Task RemoveMemberCheckAsync([Summary("channel-url", "頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {
             await DeferAsync(true);
@@ -113,14 +113,14 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
         }
 
-        [CommandSummary("手動指定會限驗證用的偵測影片\n" +
-            "用於頻道有多階會員時，指定「最低階」的會限影片，避免低階但合法的會員被誤判失敗\n" +
+        [CommandSummary("手動指定會員驗證用的偵測影片\n" +
+            "用於頻道有多階會員時，指定「最低階」的會員限定影片，避免低階但合法的會員被誤判失敗\n" +
             "指定後自動探索不會再覆寫此影片；該影片失效時會發送通知到通知頻道提醒需重設")]
         [CommandExample("頻道名稱 https://youtu.be/xxxxxxxxxxx")]
-        [SlashCommand("set-check-video", "手動指定會限驗證探測影片")]
+        [SlashCommand("set-check-video", "手動指定會員驗證探測影片")]
         public async Task SetCheckVideoAsync(
             [Summary("channel", "頻道名稱"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url,
-            [Summary("video", "會限影片連結或ID")] string videoUrlOrId)
+            [Summary("video", "會員限定影片連結或 ID")] string videoUrlOrId)
         {
             await DeferAsync(true);
 
@@ -133,14 +133,14 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "手動指定會限驗證影片時失敗");
+                Log.Error(ex.Demystify(), "手動指定會員驗證影片時失敗");
                 await SendLocalizedErrorAsync("Errors.InvalidYoutubeInput", true);
             }
         }
 
-        [CommandSummary("改回自動挑選會限驗證偵測影片（取消手動指定）")]
+        [CommandSummary("改回自動挑選會員驗證偵測影片（取消手動指定）")]
         [CommandExample("https://www.youtube.com/@998rrr")]
-        [SlashCommand("clear-check-video", "改回自動挑選會限驗證偵測影片")]
+        [SlashCommand("clear-check-video", "改回自動挑選會員驗證偵測影片")]
         public async Task ClearCheckVideoAsync(
             [Summary("channel-url", "頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {
@@ -155,7 +155,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "恢復自動挑選會限驗證影片時失敗");
+                Log.Error(ex.Demystify(), "恢復自動挑選會員驗證影片時失敗");
                 await SendLocalizedErrorAsync("Errors.InvalidYoutubeInput", true);
             }
         }
@@ -189,7 +189,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             if (channelIds.Count == 1)
                 return channelIds[0];
             if (channelIds.Count > 1)
-                throw new FormatException("有多個相同名稱的 YouTube 頻道，請從自動完成選單選擇頻道");
+                throw new FormatException("找到多個同名 YouTube 頻道，請從自動完成選單選擇頻道");
             return await _ytservice.GetChannelIdAsync(channel);
         }
 

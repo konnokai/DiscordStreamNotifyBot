@@ -507,21 +507,21 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             {
                 try
                 {
-                    // 有設定該頻道的通知就不用過濾，他們肯定是要這頻道的通知
+                    // 已指定此頻道的通知設定不需依頻道類型篩選。
                     noticeYoutubeStreamChannels.AddRange(allNotice.Where((x) => x.YouTubeChannelId == streamVideo.ChannelId));
                 }
                 catch (Exception ex)
                 {
-                    // 原則上不會有錯，我也不知道加這幹嘛
+                    // 防禦性處理：快取查詢失敗時記錄錯誤，並繼續處理其他通知類型。
                     Log.Error(ex.Demystify(), $"SendStreamMessageAsyncChannel: {streamVideo.VideoId}");
                 }
 
-                //類型檢查，其他類型的頻道要特別檢查，確保必須是認可的頻道才可被添加到其他類型通知
+                // 類型檢查：其他類型頻道必須未列入爬蟲清單，或已通過認可，才能加入類型通知。
                 try
                 {
-                    if (type != "other" || //如果不是其他類的頻道，直接添加到對應的類型通知即可
-                        !db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || //若該頻道非在爬蟲清單內，那也沒有認不認可的問題
-                        db.YoutubeChannelSpider.AsNoTracking().First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) //最後該爬蟲必須是已認可的頻道，才可添加至其他類型的通知
+                    if (type != "other" || // 非其他類型的頻道可直接加入對應類型通知。
+                        !db.YoutubeChannelSpider.AsNoTracking().Any((x) => x.ChannelId == streamVideo.ChannelId) || // 未列入爬蟲清單的頻道不受認可限制。
+                        db.YoutubeChannelSpider.AsNoTracking().First((x) => x.ChannelId == streamVideo.ChannelId).IsTrustedChannel) // 列入爬蟲清單的其他類型頻道必須已通過認可。
                     {
                         noticeYoutubeStreamChannels.AddRange(allNotice.Where((x) => x.YouTubeChannelId == type));
                     }
@@ -788,7 +788,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.Discord5xx;
-                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 50X 錯誤: {httpEx.HttpCode}");
+                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 5xx 錯誤：{httpEx.HttpCode}");
                         }
                         else
                         {
@@ -803,7 +803,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                         deliveryResult = primaryMessageSent
                             ? NotificationDeliveryResult.Sent
                             : NotificationDeliveryResult.Timeout;
-                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Timeout");
+                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 逾時");
                     }
                     catch (Exception ex)
                     {

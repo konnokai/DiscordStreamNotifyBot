@@ -52,7 +52,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
         {
             try
             {
-                Log.Info($"{_twitchUserLogin} 發送頻道更新通知 (Debouncer 觸發數量: {e.Count})");
+                Log.Info($"{_twitchUserLogin} 發送頻道更新通知（Debouncer 觸發數量：{e.Count}）");
 
                 // publish DTO 至匯流排，由消費端（Notifier）重建 embed 發送
                 var updates = e.TriggerData.ToArray();

@@ -28,7 +28,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         {
             if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
-                Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 遺失，無法運行 TwitCasting 偵測");
+                Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 未設定，無法執行 TwitCasting 偵測");
                 IsEnable = false;
                 return;
             }
@@ -37,7 +37,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             _botConfig = botConfig;
             _dbService = dbService;
 
-            // 偵測排程（計畫 §12.1）：PeriodicTimer 背景輪詢，await 友善、無重入、吃 CancellationToken
+            // 偵測排程（計畫 §12.1）：PeriodicRunner 以背景輪詢執行，支援 await、避免重入，並使用 CancellationToken。
             var token = GracefulShutdown.Token;
             PeriodicRunner.RunAsync("TwitCasting-categories", TimeSpan.FromSeconds(3), TimeSpan.FromMinutes(30), async () =>
             {
@@ -77,7 +77,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
 
                 if (plan.Action == TwitcastingLiveStartAction.IgnoreDuplicate)
                 {
-                    Log.Warn($"TwitCasting 重複開台通知: {startEvent.StreamId} - {startEvent.StreamTitle}");
+                    Log.Warn($"TwitCasting 重複開台通知：{startEvent.StreamId} - {startEvent.StreamTitle}");
                     return;
                 }
 
@@ -104,7 +104,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             return;
 #endif
 
-            // PeriodicTimer 保證單一迴圈不重疊，無需 isRuning 重入旗標（§12.1）
+            // PeriodicTimer 保證單一迴圈不重疊，不需要額外的執行中旗標（§12.1）
             using var db = _dbService.GetDbContext();
             var spiderList = db.TwitcastingSpider.AsNoTracking().ToList();
 
@@ -114,7 +114,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                 var registeredWebhooks = await _twitcastingClient.GetAllRegistedWebHookAsync();
                 if (registeredWebhooks == null)
                 {
-                    Log.Error("TwitCastingService-Timer: 無法獲取已註冊的 Webhook 列表，請檢查 TwitCasting API 設定是否正確。");
+                    Log.Error("TwitCastingService-Timer：無法取得已註冊的 Webhook 清單，請確認 TwitCasting API 設定。");
                     return;
                 }
                 var plan = TwitcastingWebhookRegistrationPlanner.Plan(
@@ -125,12 +125,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                     if (action.Kind == TwitcastingWebhookActionKind.RegisterLiveStart)
                     {
                         await _twitcastingClient.RegisterWebHookAsync(action.UserId);
-                        Log.Info($"註冊 TwitCasting Webhook: {action.UserId}");
+                        Log.Info($"註冊 TwitCasting Webhook：{action.UserId}");
                     }
                     else
                     {
                         await _twitcastingClient.RemoveWebHookAsync(action.UserId);
-                        Log.Info($"移除 TwitCasting Webhook: {action.UserId}");
+                        Log.Info($"移除 TwitCasting Webhook：{action.UserId}");
                     }
                 }
             }
@@ -143,7 +143,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         private async Task<bool> PublishStartLiveAsync(TwitcastingNotification notification)
         {
 #if DEBUG
-            Log.New($"TwitCasting 開台通知: {notification.ChannelTitle} - {notification.StreamTitle} (isPrivate: {notification.IsPrivate})");
+            Log.New($"TwitCasting 開台通知：{notification.ChannelTitle} - {notification.StreamTitle} (isPrivate: {notification.IsPrivate})");
             return true;
 #else
             try
@@ -189,7 +189,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
 
         /// <summary>
         /// 錄影委派：比照 Twitch，publish <see cref="RedisChannels.Twitcasting.Record"/> 給錄影工具執行，
-        /// 不再於 Scraper 進程內本機 streamlink 錄影。回傳 subscriber 數判斷錄影端是否在線。
+        /// 不再於 Scraper 程序內以本機 streamlink 錄影。以訂閱者數判斷錄影端是否在線。
         /// </summary>
         private async Task<bool> RecordTwitCastingAsync(TwitcastingStreamData stream)
         {
@@ -217,16 +217,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                     [RedisChannels.Twitcasting.Record, stream.ChannelId, (long)TimeSpan.FromDays(30).TotalSeconds]);
                 if ((long)result != 0)
                 {
-                    Log.Info($"已發送 TwitCasting 錄影請求: {stream.ChannelId}");
+                    Log.Info($"已發送 TwitCasting 錄影請求：{stream.ChannelId}");
                     return true;
                 }
 
-                Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {stream.ChannelId}");
+                Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具：{stream.ChannelId}");
                 return false;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"TwitCasting 錄影請求失敗: {stream.ChannelId} / {stream.StreamId}");
+                Log.Error(ex.Demystify(), $"TwitCasting 錄影請求失敗：{stream.ChannelId} / {stream.StreamId}");
                 return false;
             }
         }

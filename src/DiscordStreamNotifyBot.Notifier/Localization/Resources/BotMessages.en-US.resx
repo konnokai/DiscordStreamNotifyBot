@@ -96,18 +96,18 @@
   <data name="Help.Command.Examples" xml:space="preserve"><value>Examples</value></data>
   <data name="Help.Command.ModuleFooter" xml:space="preserve"><value>Module: {0}</value></data>
   <data name="Help.CommandDetail.youtube.set-banner-change" xml:space="preserve"><value>Use the latest video or stream thumbnail from a channel as the server banner.&#10;Leave the channel URL empty to disable this setting.&#10;&#10;The bot needs Manage Server, and the server must be Boost Level 2.&#10;This feature depends on stream notifications, so the channel must be covered by a built-in source or the spider list.</value></data>
-  <data name="Help.CommandDetail.youtube.add" xml:space="preserve"><value>Add a channel for stream notifications.&#10;Use `holo` for all Holo members.&#10;Use `2434` for Nijisanji JP, EN, and VR members; configure a channel spider first for other members.&#10;Use `other` for selected channels outside those groups. Check the channel spider list for available channels.</value></data>
-  <data name="Help.CommandDetail.youtube.remove" xml:space="preserve"><value>Remove notification channels.&#10;Use `holo` to remove all Holo notifications.&#10;Use `2434` to remove all Nijisanji notifications.&#10;Use `other` to remove selected channels outside those groups.&#10;Use `all` to remove every YouTube stream notification.</value></data>
+  <data name="Help.CommandDetail.youtube.add" xml:space="preserve"><value>Add YouTube stream notifications.&#10;Use `holo` for all Holo members.&#10;Use `2434` for Nijisanji JP, EN, and VR members; configure a channel spider first for other members.&#10;Use `other` to add stream notifications for selected channels outside those groups. Check the channel spider list for available channels.</value></data>
+  <data name="Help.CommandDetail.youtube.remove" xml:space="preserve"><value>Remove YouTube stream notifications.&#10;Use `holo` to remove all Holo notifications.&#10;Use `2434` to remove all Nijisanji notifications.&#10;Use `other` to remove notifications for selected channels outside those groups.&#10;Use `all` to remove every YouTube stream notification.</value></data>
   <data name="Help.CommandDetail.youtube.set-message" xml:space="preserve"><value>Set a notification message.&#10;Leave the message empty to clear custom text, or enter `-` to disable that notification type.&#10;Stream notifications must be configured first.&#10;&#10;The bot needs Mention @everyone, @here, and All Roles because servers may ping a specific role.</value></data>
   <data name="Help.CommandDetail.twitch.set-message" xml:space="preserve"><value>Set a notification message.&#10;Leave the message empty to clear custom text, or enter `-` to disable that notification type.&#10;Stream notifications must be configured first.&#10;&#10;The bot needs Mention @everyone, @here, and All Roles because servers may ping a specific role.</value></data>
   <data name="Help.CommandDetail.twitcasting.set-message" xml:space="preserve"><value>Set a notification message.&#10;Leave the message empty to clear custom text.&#10;Stream notifications must be configured first.&#10;&#10;The bot needs Mention @everyone, @here, and All Roles because servers may ping a specific role.</value></data>
   <data name="Help.CommandDetail.youtube-spider.add" xml:space="preserve"><value>Add a channel spider for creators outside the built-in groups.&#10;Contact the bot owner if you need assistance.</value></data>
   <data name="Help.CommandDetail.youtube-spider.remove" xml:space="preserve"><value>Remove a channel spider for creators outside the built-in groups.&#10;Only the server that added the spider can remove it.</value></data>
-  <data name="Help.CommandDetail.twitch-spider.add" xml:space="preserve"><value>Add a Twitch channel spider.&#10;The server must have more than 200 members.&#10;Channel limits may change over time; contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.twitch-spider.add" xml:space="preserve"><value>Add a Twitch channel spider.&#10;The server must have at least 200 members.&#10;Channel limits may change over time; contact the bot owner if you need assistance.</value></data>
   <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>Remove a Twitch channel spider.&#10;Only the server that added the spider can remove it.</value></data>
-  <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>Add a TwitCasting channel spider.&#10;The server must have more than 500 members.&#10;Channel limits may change over time; contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>Add a TwitCasting channel spider.&#10;The server must have at least 500 members.&#10;Channel limits may change over time; contact the bot owner if you need assistance.</value></data>
   <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>Remove a TwitCasting channel spider.&#10;Only the server that added the spider can remove it.</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.add-member-check" xml:space="preserve"><value>Add a membership verification channel, currently limited to five channels.&#10;Adding the same channel again changes the role it grants.&#10;The server must have more than 250 members; contact the bot owner if you need assistance.</value></data>
+  <data name="Help.CommandDetail.youtube-member-set.add-member-check" xml:space="preserve"><value>Add a membership verification channel, currently limited to five channels.&#10;Adding the same channel again changes the role it grants.&#10;The server must have at least 250 members; contact the bot owner if you need assistance.</value></data>
   <data name="Help.CommandDetail.youtube-member-set.remove-member-check" xml:space="preserve"><value>Remove a membership verification channel.</value></data>
   <data name="Help.CommandDetail.youtube-member-set.set-check-video" xml:space="preserve"><value>Manually choose the video used for membership verification.&#10;For channels with multiple membership tiers, choose a members-only video available to the lowest tier so valid lower-tier members are not rejected.&#10;Automatic discovery will not replace it. If the video becomes invalid, the notification channel will ask you to configure another one.</value></data>
   <data name="Help.CommandDetail.youtube-member-set.clear-check-video" xml:space="preserve"><value>Return to automatic membership verification video selection and clear the manual choice.</value></data>
@@ -129,8 +129,8 @@
   <data name="Utility.Contact.AttachmentsLabel" xml:space="preserve"><value>Related screenshots</value></data>
   <data name="Utility.Contact.AttachmentsDescription" xml:space="preserve"><value>Optionally upload screenshots related to your message.</value></data>
   <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>Contact details</value></data>
-  <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>Enter a way to contact you, such as X, Discord, or Facebook.</value></data>
-  <data name="Utility.Contact.Received" xml:space="preserve"><value>Your message has been received. Make sure your contact details are valid. The bot owner usually replies through the bot, so enable direct messages from members of mutual servers.</value></data>
+  <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>Provide your contact details</value></data>
+  <data name="Utility.Contact.Received" xml:space="preserve"><value>Your message has been received. Make sure your contact details are correct and enable direct messages from server members. The bot owner usually replies through the bot.</value></data>
   <data name="Utility.Contact.AttachmentCount" xml:space="preserve"><value>Attached files</value></data>
   <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>The reply could not be sent. Check the logs for details.</value></data>
   <data name="Utility.Contact.OwnerReplyTitle" xml:space="preserve"><value>Reply from the bot owner</value></data>
@@ -155,7 +155,7 @@
   <data name="Notifications.MessageClearedSimple" xml:space="preserve"><value>The stream notification message for `{0}` has been cleared.</value></data>
   <data name="Notifications.TypeDisabled" xml:space="preserve"><value>“{1}” notifications for `{0}` have been disabled.</value></data>
   <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>(this notification type is disabled)</value></data>
-  <data name="Notifications.MessageListDescription" xml:space="preserve"><value>A blank value means no message is configured. Role text shown in embeds does not trigger mentions.</value></data>
+  <data name="Notifications.MessageListDescription" xml:space="preserve"><value>A blank value means no message is configured. Text in embeds does not trigger mentions.</value></data>
   <data name="Youtube.RecordList.Title" xml:space="preserve"><value>Stream Recording Channels</value></data>
   <data name="Youtube.RecordList.Empty" xml:space="preserve"><value>There are no channels in the stream recording list.</value></data>
   <data name="Youtube.NowStreaming.Title" xml:space="preserve"><value>Currently Live</value></data>
@@ -163,7 +163,7 @@
   <data name="Youtube.Upcoming.Title" xml:space="preserve"><value>Upcoming Streams</value></data>
   <data name="Youtube.Upcoming.Entry" xml:space="preserve"><value>{0}&#10;{1}&#10;Stream time: {2}&#10;In recording list: {3}</value></data>
   <data name="Youtube.MemberPlaylist" xml:space="preserve"><value>Members-only playlist: &lt;{0}&gt;</value></data>
-  <data name="Youtube.Events.Enabled" xml:space="preserve"><value>A Discord event will be created when `{0}` schedules a new stream.</value></data>
+  <data name="Youtube.Events.Enabled" xml:space="preserve"><value>When `{0}` schedules a new stream, the bot will create a Discord event.</value></data>
   <data name="Youtube.Events.Disabled" xml:space="preserve"><value>Automatic event creation for `{0}` has been disabled.</value></data>
   <data name="Youtube.Events.DisableNewStreamPrompt" xml:space="preserve"><value>Disable new waiting-room channel notifications and show them only as Discord events? Other notifications, including stream starts, will still use the configured channel.</value></data>
   <data name="Youtube.Events.EnableReplacementPrompt" xml:space="preserve"><value>Automatic Discord events can replace new waiting-room notifications. Enable this feature?</value></data>
@@ -256,7 +256,7 @@
   <data name="Member.Errors.SaveFailed" xml:space="preserve"><value>Failed to save the data. Contact {0}.</value></data>
   <data name="Member.UnlinkPrompt" xml:space="preserve"><value>Unlink Discord from Google? This also removes membership verification roles. You must link your account on the website again to restore them.</value></data>
   <data name="Member.Unlinked" xml:space="preserve"><value>Discord and Google have been unlinked.</value></data>
-  <data name="Member.Errors.GoogleRevokeFailed" xml:space="preserve"><value>The bot-side link was removed, but Google authorization could not be revoked. Open {0} and remove access for “直播小幫手會限確認”.</value></data>
+  <data name="Member.Errors.GoogleRevokeFailed" xml:space="preserve"><value>Your link to Stream Assistant was removed, but Google authorization could not be revoked. Open {0} and remove access for “直播小幫手會限確認”.</value></data>
   <data name="Member.Errors.UnlinkFailed" xml:space="preserve"><value>Failed to unlink the account. Contact {0}.</value></data>
   <data name="Member.Errors.NothingToUnlink" xml:space="preserve"><value>There is no linked account data to remove.</value></data>
   <data name="Member.Errors.ChannelListEmpty" xml:space="preserve"><value>No membership channels are currently available for verification.</value></data>

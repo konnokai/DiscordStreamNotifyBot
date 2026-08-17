@@ -79,7 +79,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
                 var embed = new EmbedBuilder()
                     .WithOkColor()
-                    .WithTitle("已新增YouTube頻道爬蟲")
+                    .WithTitle("已新增 YouTube 頻道爬蟲")
                     .AddField("頻道", Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"), false)
                     .AddField("伺服器", guild, false)
                     .AddField("執行者", user, false)

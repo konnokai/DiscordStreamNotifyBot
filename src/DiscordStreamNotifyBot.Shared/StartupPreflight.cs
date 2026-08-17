@@ -4,8 +4,8 @@ namespace DiscordStreamNotifyBot.Shared
 {
     /// <summary>
     /// 啟動連線檢查（Preflight，計畫 §5.3）。任何角色在進入主邏輯之前，先依角色檢查所需外部服務可連線；
-    /// 每項以指數退避重試，逾時仍失敗則拋出帶診斷訊息的例外，交由呼叫端印出後 <c>Environment.Exit(非0)</c>，
-    /// 再由 Docker <c>restart: unless-stopped</c> 重來，避免無限卡死在啟動。
+    /// 每項以指數退避重試，逾時仍失敗則拋出帶診斷訊息的例外，由呼叫端輸出後以非 0 結束碼結束程序，
+    /// 再由 Docker <c>restart: unless-stopped</c> 重新啟動，避免啟動時無限卡住。
     /// </summary>
     public static class StartupPreflight
     {
@@ -24,13 +24,13 @@ namespace DiscordStreamNotifyBot.Shared
             // Redis：全角色需要（控制平面 / 錄影 IPC / 匯流排）
             checks.Add(("Redis", () => ProbeRedisAsync(cfg.RedisOption)));
 
-            // TODO 階段 3：scraper 對 bot:notify XADD test、notifier XGROUP CREATE 的 Redis Streams preflight（§4.4）
+            // TODO 階段 3：新增 scraper 對 bot:notify 的 XADD 測試，以及 notifier 的 XGROUP CREATE Redis Streams 啟動前檢查（§4.4）
             // Discord 由 notifier 既有登入流程驗證，不在此處理
 
             foreach (var (name, probe) in checks)
                 await RetryWithBackoffAsync(name, probe, timeout, TimeProvider.System);
 
-            Log.Info($"啟動連線檢查通過（角色: {role}）");
+            Log.Info($"啟動連線檢查通過（角色：{role}）");
         }
 
         private static async Task ProbeMySqlAsync(string connectionString)

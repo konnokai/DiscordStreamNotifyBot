@@ -58,7 +58,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     var tempData = videoData.ToString().Split(':');
                     if (tempData.Length != 2)
                     {
-                        Log.Info($"{channel} - {videoData}: 資料數量不正確");
+                        Log.Info($"{channel} - {videoData}: 資料欄位數不正確");
                         videoId = videoData.ToString().Substring(0, 11);
                     }
                     else
@@ -72,7 +72,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     var item = await GetVideoAsync(videoId).ConfigureAwait(false);
                     if (item == null)
                     {
-                        Log.Warn($"{videoId} Delete");
+                        Log.Warn($"找不到影片，發布刪除事件：{videoId}");
                         await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                         return;
                     }
@@ -101,7 +101,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     var item = await GetVideoAsync(videoId.ToString()).ConfigureAwait(false);
                     if (item == null)
                     {
-                        Log.Warn($"{videoId} Delete");
+                        Log.Warn($"找不到影片，發布刪除事件：{videoId}");
                         await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                         return;
                     }
@@ -136,7 +136,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                         if (item == null)
                         {
-                            Log.Warn($"{videoId} Delete");
+                            Log.Warn($"找不到影片，發布刪除事件：{videoId}");
                             await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
                             return;
                         }
@@ -218,7 +218,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.addstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
             {
                 videoId = GetVideoId(videoId);
-                Log.Info($"{channel} - (手動新增) {videoId}");
+                Log.Info($"{channel} - （手動新增） {videoId}");
 
                 try
                 {
@@ -227,7 +227,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         var item = await GetVideoAsync(videoId).ConfigureAwait(false);
                         if (item == null)
                         {
-                            Log.Warn($"{videoId} Delete");
+                            Log.Warn($"找不到影片：{videoId}");
                             return;
                         }
 
@@ -261,7 +261,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     {
                         if (!addNewStreamVideo.ContainsKey(youtubePubSubNotification.VideoId) && !SharedExtensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
                         {
-                            Log.Info($"{channel} - (新影片) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
+                            Log.Info($"{channel} - （新影片） {youtubePubSubNotification.ChannelId}：{youtubePubSubNotification.VideoId}");
 
                             DataBase.Table.Video streamVideo;
                             var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
@@ -273,7 +273,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
                                 if (item == null)
                                 {
-                                    Log.Warn($"{youtubePubSubNotification.VideoId} Delete");
+                                    Log.Warn($"找不到影片：{youtubePubSubNotification.VideoId}");
                                     return;
                                 }
 
@@ -294,7 +294,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                     var isCommentDisabled = await GetCommentThreadsIsDisabledAsync(youtubePubSubNotification.VideoId);
                                     if (isCommentDisabled)
                                     {
-                                        Log.Error($"(新偽裝貼文) | {db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId)} ({youtubePubSubNotification.VideoId})");
+                                        Log.Error($"（新偽裝貼文） | {db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId)} ({youtubePubSubNotification.VideoId})");
                                         return;
                                     }
                                 }
@@ -309,13 +309,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                     ChannelType = DataBase.Table.Video.YTChannelType.NonApproved
                                 };
 
-                                Log.New($"(非已認可的新影片) | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                                Log.New($"（非已認可的新影片） | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
                                     await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false);
                             }
                         }
-                        else Log.Info($"{channel} - (編輯或關台) {youtubePubSubNotification.ChannelId}: {youtubePubSubNotification.VideoId}");
+                        else Log.Info($"{channel} - （編輯或關台） {youtubePubSubNotification.ChannelId}：{youtubePubSubNotification.VideoId}");
                     }
                 }
                 catch (Exception ex)
@@ -357,7 +357,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                         if (await PostSubscribeRequestAsync(channelId.ToString()))
                         {
-                            Log.Info($"已重新註冊 YT PubSub: {youtubeChannelSpider.ChannelTitle} ({channelId})");
+                            Log.Info($"已重新註冊 YT PubSub：{youtubeChannelSpider.ChannelTitle} ({channelId})");
                             youtubeChannelSpider.LastSubscribeTime = DateTime.Now;
                             db.Update(youtubeChannelSpider);
                             db.SaveChanges();
@@ -365,14 +365,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     }
                     else
                     {
-                        Log.Error($"後端通知須重新註冊但資料庫無該 ChannelId 的資料: {channelId}");
+                        Log.Error($"後端要求重新註冊，但資料庫中沒有 ChannelId 為 {channelId} 的資料。");
                     }
                 }
             });
 
             Log.Info("已建立 Redis 訂閱");
 
-            // owner 控制（取代原 Notifier 指令）：切換錄影 / 強制重新訂閱 PubSub
+            // 由 Bot 擁有者控制（取代原本的 Notifier 指令）：切換錄影 / 強制重新訂閱 PubSub
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.control.toggleRecord", RedisChannel.PatternMode.Literal), (channel, _) =>
             {
                 IsRecord = !IsRecord;
@@ -411,7 +411,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
             });
 
-            // 偵測排程（計畫 §12.1）：PeriodicTimer 背景輪詢，await 友善、無重入、吃 CancellationToken
+            // 偵測排程（計畫 §12.1）：PeriodicRunner 以背景輪詢執行，支援 await、避免重入，並使用 CancellationToken。
             var token = GracefulShutdown.Token;
             PeriodicRunner.RunAsync("YT-reSchedule", TimeSpan.FromSeconds(5), TimeSpan.FromDays(1), () => { ReScheduleReminder(); return Task.CompletedTask; }, token);
             PeriodicRunner.RunAsync("YT-holo", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5), HoloScheduleAsync, token);
@@ -468,7 +468,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         () => NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Youtube, dto)).ConfigureAwait(false);
                     if (decision.Action == YoutubeTerminalEventAction.IgnoreDuplicate)
                     {
-                        Log.Warn($"YouTube 終止事件重複通知，略過: {streamVideo.VideoId} / {terminalKind}，已處理 {decision.ClaimedKind}");
+                        Log.Warn($"YouTube 終止事件重複通知，略過：{streamVideo.VideoId} / {terminalKind}，已處理 {decision.ClaimedKind}");
                     }
                     return;
                 }
@@ -530,7 +530,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             await PublishYoutubeNotificationAsync(streamVideo, noticeType, actualStart, actualEnd, isMemberOnly).ConfigureAwait(false);
         }
 
-        /// <summary>偵測端：publish 伺服器橫幅變更事件（由 Notifier 消費後執行 GetGuild + 換 banner）。</summary>
+        /// <summary>偵測端：publish 伺服器橫幅變更事件（由 Notifier 消費後呼叫 GetGuild 並更新伺服器橫幅）。</summary>
         private async Task PublishBannerAsync(string channelId, string videoId)
         {
             try
@@ -585,18 +585,18 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         i++;
                         if (await PostSubscribeRequestAsync(item.ChannelId))
                         {
-                            Log.Info($"已註冊 YT PubSub: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
+                            Log.Info($"已註冊 YT PubSub：{item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
                         }
                         else
                         {
-                            Log.Warn($"註冊 YT PubSub 失敗: {item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
+                            Log.Warn($"註冊 YT PubSub 失敗：{item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "SubscribePubSubAsync Error");
+                Log.Error(ex.Demystify(), "SubscribePubSubAsync 發生錯誤");
             }
             finally
             {
@@ -642,14 +642,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 }
                                 else
                                 {
-                                    Log.Warn($"YouTube API 查無此頻道或回傳異常: {channelId}");
+                                    Log.Warn($"YouTube API 查無此頻道或回傳異常：{channelId}");
                                 }
                             }
                             db.SaveChanges();
                         }
                         catch (Exception ex)
                         {
-                            Log.Warn($"YouTube API 批次查詢失敗: {ex.Message}");
+                            Log.Warn($"YouTube API 批次查詢失敗：{ex.Message}");
                         }
                     }
                 }
@@ -692,7 +692,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 {
                     NijisanjiLiverContents.Add(item);
                 }
-                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation} 已刷新");
+                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation} 已更新");
             }
             catch (Exception ex)
             {

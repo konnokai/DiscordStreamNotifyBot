@@ -404,7 +404,7 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
 
         #endregion
 
-        /// <summary>叢集 shard 總數：以 Coordinator 公告的 <see cref="RedisChannels.Cluster.TotalShards"/> 為準，fallback 本機。</summary>
+        /// <summary>叢集 shard 總數：以 Coordinator 公告的 <see cref="RedisChannels.Cluster.TotalShards"/> 為準；否則使用本機值。</summary>
         private static int GetExpectedShardCount()
         {
             try

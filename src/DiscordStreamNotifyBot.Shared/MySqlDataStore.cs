@@ -16,7 +16,7 @@ namespace DiscordStreamNotifyBot
         {
             _dbService = dbService;
             if (string.IsNullOrWhiteSpace(providerTokenEncryptionKey) || providerTokenEncryptionKey.Length < 64)
-                throw new ArgumentException("Provider token 加密金鑰不得為空且至少需要 64 字元", nameof(providerTokenEncryptionKey));
+                throw new ArgumentException("Provider token 加密金鑰不得為空，且長度至少為 64 字元", nameof(providerTokenEncryptionKey));
             _key = providerTokenEncryptionKey;
         }
 
@@ -32,7 +32,7 @@ namespace DiscordStreamNotifyBot
             var dateAdded = DateTime.UtcNow;
 
             using var db = _dbService.GetDbContext();
-            // 同一使用者可能由多個 shard 同時刷新 token，使用單一 upsert 避免 read-then-insert 競爭。
+            // 同一使用者的 token 可能由多個 shard 同時更新，使用單一 upsert 避免讀取後插入的競爭條件。
             await db.Database.ExecuteSqlInterpolatedAsync($"""
                 INSERT INTO `youtube_member_access_token`
                     (`discord_user_id`, `encrypted_access_token`, `date_added`)
@@ -62,7 +62,7 @@ namespace DiscordStreamNotifyBot
             }
             catch (Exception ex)
             {
-                Log.Warn($"MySqlDataStore-GetAsync ({key}): 解密失敗，也許還沒加密? {ex}");
+                Log.Warn($"MySqlDataStore-GetAsync ({key}): 解密失敗，資料可能尚未加密。 {ex}");
 
                 try
                 {
@@ -70,7 +70,7 @@ namespace DiscordStreamNotifyBot
                 }
                 catch (Exception ex2)
                 {
-                    Log.Error($"MySqlDataStore-GetAsync ({key}): JsonDes失敗 {ex2}");
+                    Log.Error($"MySqlDataStore-GetAsync ({key}): JSON 反序列化失敗 {ex2}");
                     return default(T);
                 }
             }

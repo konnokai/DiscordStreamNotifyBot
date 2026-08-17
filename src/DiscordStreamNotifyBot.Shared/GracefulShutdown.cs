@@ -6,7 +6,7 @@ namespace DiscordStreamNotifyBot.Shared
     /// 統一的優雅關閉訊號處理（計畫 §11-1）。
     /// <para>
     /// 同時攔截 SIGINT（Ctrl+C）與 <b>SIGTERM</b>（<c>docker stop</c> 預設送出），
-    /// 取消回傳的 <see cref="Token"/>，讓主迴圈得以執行清理後結束；
+    /// 取消回傳的 <see cref="Token"/>，讓主迴圈完成清理後結束；
     /// 取代僅攔 SIGINT 的 <c>Console.CancelKeyPress</c> 寫法。
     /// </para>
     /// </summary>

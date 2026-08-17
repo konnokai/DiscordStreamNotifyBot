@@ -30,7 +30,7 @@ namespace DiscordStreamNotifyBot.Command.Help
             if (reqs.Any()) em.AddField("指令執行者權限要求", string.Join("\n", reqs));
 
             var botReqs = GetBotCommandRequirements(com);
-            if (botReqs.Any()) em.AddField("Bot權限要求", string.Join("\n", botReqs));
+            if (botReqs.Any()) em.AddField("Bot 權限要求", string.Join("\n", botReqs));
 
             var exp = GetCommandExampleString(com);
             if (!string.IsNullOrEmpty(exp)) em.AddField("例子", exp);
@@ -48,7 +48,7 @@ namespace DiscordStreamNotifyBot.Command.Help
                   {
                       if (ca is RequireOwnerAttribute)
                       {
-                          return "Bot擁有者限定";
+                          return "僅限 Bot 擁有者";
                       }
 
                       var cau = (RequireUserPermissionAttribute)ca;

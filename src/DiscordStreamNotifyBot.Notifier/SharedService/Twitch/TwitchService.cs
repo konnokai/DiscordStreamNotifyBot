@@ -540,7 +540,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.Discord5xx;
-                            Log.Warn($"Twitch 通知 ({dto.UserId}) | Discord 50X 錯誤: {httpEx.HttpCode}");
+                            Log.Warn($"Twitch 通知 ({dto.UserId}) | Discord 5xx 錯誤：{httpEx.HttpCode}");
                         }
                         else
                         {
@@ -555,7 +555,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         deliveryResult = primaryMessageSent
                             ? NotificationDeliveryResult.Sent
                             : NotificationDeliveryResult.Timeout;
-                        Log.Warn($"Twitch 通知 ({dto.UserId}) | Timeout {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Warn($"Twitch 通知 ({dto.UserId}) | Discord 逾時 {item.GuildId} / {item.DiscordChannelId}");
                     }
                     catch (Exception ex)
                     {

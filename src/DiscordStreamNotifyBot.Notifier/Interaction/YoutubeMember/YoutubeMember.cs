@@ -7,7 +7,7 @@ using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 {
-    [Group("youtube-member", "YouTube 會限驗證相關指令")]
+    [Group("youtube-member", "YouTube 會員驗證相關指令")]
     public class YoutubeMember : TopLevelModule<YoutubeMemberService>
     {
         private readonly MainDbService _dbService;
@@ -25,7 +25,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("check", "確認是否已到網站登入綁定")]
+        [SlashCommand("check", "確認是否已在網站完成登入與綁定")]
         public async Task CheckAsync()
         {
             await DeferAsync(true);
@@ -105,7 +105,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
         }
 
-        /// <summary>單一設定也要使用與選單相同的 user→guild 鎖與 fresh read，跨 instance 唯一鍵競爭時重讀後安全 requeue。</summary>
+        /// <summary>單一設定也使用與選單相同的使用者至伺服器鎖定與最新資料讀取；跨執行個體發生唯一鍵競爭時，重讀後安全地重新排入佇列。</summary>
         private async Task<bool> QueueSingleConfigurationCheckAsync(string channelId)
         {
             string locale = SupportedLocale.Normalize(Context.Interaction.UserLocale);
@@ -140,7 +140,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
             catch (DbUpdateException)
             {
-                // 其他 Notifier instance 剛插入相同自然鍵時，重新讀取並將它轉回待驗證而非回傳 500。
+                // 其他 Notifier 執行個體剛插入相同自然鍵時，重新讀取並將其轉回待驗證，而非回傳 500 錯誤。
                 using var retryDb = _dbService.GetDbContext();
                 var existing = await retryDb.YoutubeMemberCheck.SingleOrDefaultAsync(x =>
                     x.UserId == Context.User.Id && x.GuildId == Context.Guild.Id && x.CheckYTChannelId == channelId,
@@ -155,7 +155,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
         private static void ApplySingleConfigurationQueue(DataBase.Table.YoutubeMemberCheck check, string locale)
         {
-            // 必須與 YoutubeMemberComponent 的 selection diff 保持一致；重試同樣不可降級 verified row。
+            // 必須與 YoutubeMemberComponent 的選取差異邏輯保持一致；重試時也不可將已驗證資料列降級。
             if (YoutubeMemberPolicies.DecideSingleConfigurationQueue(check) ==
                 YoutubeMemberSingleConfigurationQueueAction.RequeuePendingRoleRemoval)
             {
@@ -165,7 +165,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("cancel-member-check", "取消本伺服器的會限驗證，會一併移除會限驗證用戶組")]
+        [SlashCommand("cancel-member-check", "取消本伺服器的會員驗證，並一併移除會員驗證身分組")]
         public async Task CancelMemberCheckAsync()
         {
             await DeferAsync(true);
@@ -241,7 +241,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                     try
                     {
                         await _service.RevokeUserGoogleCertAsync(Context.User.Id.ToString());
-                        // 本 shard 已保存 cleanup intent 並刪除本機 token，其他 shard 僅用此 hint 補做 Discord cleanup。
+                        // 本 shard 已儲存清理意圖並刪除本機 token，其他 shard 僅根據此提示補做 Discord 清理。
                         await Bot.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
                         await SendLocalizedConfirmAsync("Member.Unlinked", true, true);
                     }
@@ -265,7 +265,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         }
 
         [RequireContext(ContextType.Guild)]
-        [SlashCommand("list-can-check-channel", "顯示現在可供驗證的會限頻道清單")]
+        [SlashCommand("list-can-check-channel", "顯示可驗證的會員限定頻道清單")]
         public async Task ListCheckChannel()
         {
             using (var db = _dbService.GetDbContext())
@@ -290,7 +290,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
         }
 
-        [SlashCommand("show-my-youtube-account", "顯示現在綁定的 Youtube 帳號")]
+        [SlashCommand("show-my-youtube-account", "顯示綁定的 YouTube 帳號")]
         public async Task ShowYoutubeAccountAsync()
         {
             await DeferAsync(true);

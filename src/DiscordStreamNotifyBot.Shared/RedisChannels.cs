@@ -1,13 +1,13 @@
 namespace DiscordStreamNotifyBot.Shared
 {
     /// <summary>
-    /// 集中管理 Redis Pub/Sub 頻道與控制平面鍵字串。
+    /// 集中管理 Redis Pub/Sub 頻道與控制平面鍵。
     /// <para>
     /// 錄影 IPC 頻道（<see cref="Youtube"/> / <see cref="Twitch"/> / <see cref="Twitcasting"/> / <see cref="Member"/>）
     /// 為與外部錄影工具 <c>YoutubeStreamRecord</c> 的既有契約，<b>不可單方面更改字串</b>。
     /// </para>
     /// <para>
-    /// 控制平面鍵（<see cref="Cluster"/>）為水平擴展新增（心跳 / leader 鎖 / shard 租約），詳見計畫 §4.2。
+    /// 控制平面鍵（<see cref="Cluster"/>）是為水平擴展新增的鍵（心跳 / leader 鎖 / shard 租約），詳見計畫 §4.2。
     /// </para>
     /// </summary>
     public static class RedisChannels
@@ -77,7 +77,7 @@ namespace DiscordStreamNotifyBot.Shared
             /// <summary>各 shard 伺服器數（HASH，field = shardId）。狀態列彙總顯示用。</summary>
             public const string GuildCountHash = "cluster:stats:guild_count";
 
-            /// <summary>各 shard 服務成員數（HASH，field = shardId）。狀態列彙總顯示用。</summary>
+            /// <summary>各 shard 所屬伺服器的成員數（HASH，field = shardId）。狀態列彙總顯示用。</summary>
             public const string MemberCountHash = "cluster:stats:member_count";
 
             /// <summary>各 shard 持有的伺服器快照（HASH，field = shardId，value = JSON guild 清單）。跨 shard 讀取彙總用。</summary>
@@ -87,16 +87,16 @@ namespace DiscordStreamNotifyBot.Shared
         /// <summary>Notifier 控制平面頻道（指令觸發，廣播至所有 shard）。</summary>
         public static class Notifier
         {
-            /// <summary>關閉所有 Notifier shard（die 指令廣播，各 shard 收到後設 <c>Bot.IsDisconnect = true</c>）。</summary>
+            /// <summary>關閉所有 Notifier shard（廣播 <c>die</c> 指令；各 shard 收到後設 <c>Bot.IsDisconnect = true</c>）。</summary>
             public const string Shutdown = "notifier.control.shutdown";
 
             /// <summary>離開指定伺服器（payload = guildId；僅持有該伺服器的 shard 會實際離開）。</summary>
             public const string LeaveGuild = "notifier.control.leaveGuild";
 
-            /// <summary>離開未設定通知的伺服器（payload = correlationId；各 shard 離開自己的並回報數量）。</summary>
+            /// <summary>離開未設定通知的伺服器（payload = correlationId；各 shard 離開自己持有的伺服器，並回報數量）。</summary>
             public const string LeaveNoNotifyGuild = "notifier.control.leaveNoNotify";
 
-            /// <summary>全球訊息發送（payload = JSON SendAllPayload；各 shard 對自己持有的伺服器發送）。</summary>
+            /// <summary>全伺服器訊息發送（payload = JSON SendAllPayload；各 shard 對自己持有的伺服器發送）。</summary>
             public const string SendMessageToAll = "notifier.control.sendMessageToAll";
         }
 

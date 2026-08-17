@@ -6,7 +6,7 @@ namespace DiscordStreamNotifyBot.Scraper
     /// 爬蟲層核心邏輯（計畫 §2.2 / §5.2）。
     /// <para>
     /// 啟動時取得 scraper leader 鎖（叢集單例保證），取得後以 <see cref="DetectionHost"/>
-    /// 啟動偵測服務（事件發布至通知匯流排），定期續租並寫心跳；關閉時保存狀態並釋放鎖。
+    /// 啟動偵測服務（事件發布至通知匯流排），定期續租並寫心跳；關閉時儲存狀態並釋放鎖。
     /// </para>
     /// <para>
     /// 失去 leader（續租失敗）視為致命錯誤立即結束程序 —— 偵測 Timer 啟動後無法收回，

@@ -41,13 +41,13 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 }
                 else
                 {
-                    await Context.Channel.SendConfirmAsync("Regex 驗證失敗，請確認是否輸入正確的網址").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync("網址格式驗證失敗，請確認網址是否正確").ConfigureAwait(false);
                     return;
                 }
 
                 if (videoId.Length != 11)
                 {
-                    await Context.Channel.SendConfirmAsync("VideoId 錯誤錯誤，需為 11 字數").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync("Video ID 格式錯誤，必須為 11 個字元").ConfigureAwait(false);
                     return;
                 }
             }
@@ -55,7 +55,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             var nowRecordStreamList = Utility.GetNowRecordStreamList();
 
             if (nowRecordStreamList.Contains(videoId) &&
-                !await PromptUserConfirmAsync(new EmbedBuilder().WithErrorColor().WithDescription("已經在錄影了，確定繼續?")))
+                !await PromptUserConfirmAsync(new EmbedBuilder().WithErrorColor().WithDescription("正在錄影，確定要繼續嗎？")))
                 return;
 
             Google.Apis.YouTube.v3.Data.Video video;
@@ -88,13 +88,13 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 {
                     if (await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), videoId) != 0)
                     {
-                        Log.Info($"已發送錄影請求: {videoId}");
+                        Log.Info($"已發送錄影請求：{videoId}");
                         await Context.Channel.SendConfirmAsync("已開始錄影", description).ConfigureAwait(false);
                     }
                     else
                     {
-                        Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {videoId}");
-                        await Context.Channel.SendErrorAsync("Redis Sub 頻道不存在，請開啟錄影工具", description).ConfigureAwait(false);
+                        Log.Warn($"Redis 訂閱頻道不存在，請啟動錄影工具：{videoId}");
+                        await Context.Channel.SendErrorAsync("Redis 訂閱頻道不存在，請啟動錄影工具", description).ConfigureAwait(false);
                     }
                 }
             }
@@ -124,13 +124,13 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 }
                 else
                 {
-                    await Context.Channel.SendConfirmAsync("Regex 驗證失敗，請確認是否輸入正確的網址").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync("網址格式驗證失敗，請確認網址是否正確").ConfigureAwait(false);
                     return;
                 }
 
                 if (videoId.Length != 11)
                 {
-                    await Context.Channel.SendConfirmAsync("VideoId 錯誤錯誤，需為 11 字數").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync("Video ID 格式錯誤，必須為 11 個字元").ConfigureAwait(false);
                     return;
                 }
             }
@@ -156,7 +156,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             {
                 // 新增影片資料由 Scraper 偵測器負責；發送 addVideo 控制訊息
                 await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.addVideo", RedisChannel.PatternMode.Literal), videoId);
-                await Context.Channel.SendConfirmAsync($"已要求偵測器添加資料: {video.Snippet.ChannelTitle} - {video.Snippet.Title}");
+                await Context.Channel.SendConfirmAsync($"已要求偵測器新增資料：{video.Snippet.ChannelTitle} - {video.Snippet.Title}");
             }
             else
             {
@@ -166,7 +166,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
         [RequireContext(ContextType.DM)]
         [Command("ForceReSubscribeSpider")]
-        [Summary("強制重新註冊爬蟲 (all or channelUrl)")]
+        [Summary("強制重新註冊爬蟲（all 或 channelUrl）")]
         [Alias("frss")]
         [CommandExample("all", "998rrr", "UCs5FNYPHeZz5f7N1BDExxfg")]
         [RequireOwner]
@@ -194,7 +194,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             if (channelId == "all")
             {
-                if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("是否要重新註冊全部的爬蟲?")))
+                if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("要重新註冊所有爬蟲嗎？")))
                 {
                     foreach (var item in db.YoutubeChannelSpider)
                     {
@@ -218,7 +218,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             await db.SaveChangesAsync();
 
-            await Context.Channel.SendConfirmAsync("已變更，等待爬蟲註冊中...");
+            await Context.Channel.SendConfirmAsync("已更新設定，等待爬蟲重新註冊…");
             // PubSub 重新註冊由 Scraper 偵測器負責；發送控制訊息觸發
             await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), "");
         }
@@ -420,7 +420,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             if (string.IsNullOrWhiteSpace(videoId))
             {
-                await ReplyAsync("VideoId 空白").ConfigureAwait(false);
+                await ReplyAsync("Video ID 不可為空").ConfigureAwait(false);
                 return;
             }
 
@@ -429,7 +429,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             var video = SharedExtensions.GetStreamVideoByVideoId(videoId);
             if (video == null)
             {
-                await ReplyAsync($"不存在 {videoId} 的影片").ConfigureAwait(false);
+                await ReplyAsync($"找不到影片 {videoId}").ConfigureAwait(false);
                 return;
             }
 
@@ -471,14 +471,14 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             if (string.IsNullOrWhiteSpace(channelId))
             {
-                await Context.Channel.SendErrorAsync("ChannelId空白").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync("Channel ID 不可為空").ConfigureAwait(false);
                 return;
             }
 
             var title = await GetChannelTitle(channelId);
             if (string.IsNullOrWhiteSpace(title))
             {
-                await Context.Channel.SendErrorAsync($"{channelId} 不存在頻道").ConfigureAwait(false);
+                await Context.Channel.SendErrorAsync($"找不到頻道 {channelId}").ConfigureAwait(false);
                 return;
             }
 

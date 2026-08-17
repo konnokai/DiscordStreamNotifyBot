@@ -9,7 +9,7 @@ namespace DiscordStreamNotifyBot.Coordinator
         private const string Prefix = "discord_stream_notify_";
 
         private readonly Gauge _coordinatorUp = Metrics.CreateGauge(
-            Prefix + "coordinator_up", "Coordinator 程序是否已啟動並提供監控服務。");
+            Prefix + "coordinator_up", "Coordinator 處理程序是否已啟動並提供監控服務。");
         private readonly Counter _monitorCycles = Metrics.CreateCounter(
             Prefix + "coordinator_monitor_cycles_total", "Coordinator 監控迴圈執行次數。",
             new CounterConfiguration { LabelNames = ["result"] });
@@ -18,7 +18,7 @@ namespace DiscordStreamNotifyBot.Coordinator
         private readonly Gauge _totalShards = Metrics.CreateGauge(
             Prefix + "cluster_total_shards", "Coordinator 公告的 Discord shard 總數。");
         private readonly Gauge _aliveInstances = Metrics.CreateGauge(
-            Prefix + "cluster_alive_instances", "各角色目前存在心跳的 instance 數。",
+            Prefix + "cluster_alive_instances", "各角色目前具有心跳的執行個體數。",
             new GaugeConfiguration { LabelNames = ["role"] });
         private readonly Gauge _scraperLeaderPresent = Metrics.CreateGauge(
             Prefix + "scraper_leader_present", "目前是否存在 Scraper leader。1 代表存在。");

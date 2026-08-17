@@ -12,7 +12,7 @@ using HelixStream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 {
     /// <summary>
-    /// Twitch 偵測服務（Scraper 專用）：EventSub callback、雙頻率補償輪詢、subscription reconcile、錄影，
+    /// Twitch 偵測服務（Scraper 專用）：EventSub callback、雙頻率補償輪詢、訂閱同步、錄影，
     /// 偵測到事件後 publish <see cref="TwitchNotification"/> 至通知匯流排。
     /// </summary>
     public class TwitchDetectionService
@@ -36,7 +36,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         private readonly ConcurrentDictionary<string, byte> _pendingCleanup = new(StringComparer.Ordinal);
         // 延後清理原因只供 metrics 分類；是否待重試以 _pendingCleanup 為準。
         private readonly ConcurrentDictionary<string, TwitchEventSubCleanupDeferredMetricReason> _deferredCleanup = new(StringComparer.Ordinal);
-        // 防止高低頻輪詢或兩次全量 reconcile 彼此重入。
+        // 防止高、低頻輪詢或兩次完整同步彼此重入。
         private readonly SemaphoreSlim _pollLock = new(1, 1);
         private readonly SemaphoreSlim _fullReconcileLock = new(1, 1);
 
@@ -97,7 +97,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 var stream = streams.Streams.FirstOrDefault(x => x.UserId == payload.BroadcasterUserId);
                 if (stream == null)
                 {
-                    Log.Warn($"收到 Twitch stream_online，但 Helix 尚未查到直播: {payload.BroadcasterUserId}");
+                    Log.Warn($"收到 Twitch stream_online，但 Helix 尚未查到直播：{payload.BroadcasterUserId}");
                     return;
                 }
 
@@ -143,7 +143,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 if (string.Equals(payload.Reason, "oauth_bypass_addition", StringComparison.OrdinalIgnoreCase))
                     _metrics.RecordOAuthBypassAddition();
 
-                Log.Info($"收到 Twitch 單頻道 reconcile: {payload.TwitchUserId}（{payload.Reason ?? "未提供原因"}）");
+                Log.Info($"收到 Twitch 單頻道同步：{payload.TwitchUserId}（{payload.Reason ?? "未提供原因"}）");
                 await ReconcileUserAsync(payload.TwitchUserId, recordMetric: true, refreshMetrics: true);
             }
             catch (Exception ex)
@@ -164,7 +164,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     return;
                 }
 
-                Log.Info($"Twitch 直播離線: {payload.BroadcasterUserLogin} ({payload.BroadcasterUserId})，等待三分鐘後確認");
+                Log.Info($"Twitch 直播離線：{payload.BroadcasterUserLogin} ({payload.BroadcasterUserId})，等待三分鐘後確認");
                 ScheduleOfflineCleanup(payload.BroadcasterUserId, payload.BroadcasterUserLogin,
                     payload.BroadcasterUserName, replaceExisting: true, publishEndNotification: true);
             }
@@ -186,11 +186,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 await userLock.WaitAsync();
                 try
                 {
-                    Log.Info($"Twitch 頻道更新: {data.BroadcasterUserName} - {data.Title} ({data.CategoryName})");
+                    Log.Info($"Twitch 頻道更新：{data.BroadcasterUserName} - {data.Title} ({data.CategoryName})");
                     var twitchStream = await GetStreamStateAsync(data.BroadcasterUserId);
                     if (twitchStream == null)
                     {
-                        Log.Warn($"Redis 找不到 Twitch 頻道資料，忽略: {data.BroadcasterUserName}");
+                        Log.Warn($"Redis 找不到 Twitch 頻道資料，忽略：{data.BroadcasterUserName}");
                         return;
                     }
 
@@ -209,7 +209,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                             DateTime.UtcNow));
                     if (decision.Action == TwitchChannelUpdateAction.Ignore)
                     {
-                        Log.Warn($"Twitch 頻道更新資料相同，忽略: {data.BroadcasterUserName}");
+                        Log.Warn($"Twitch 頻道更新資料相同，忽略：{data.BroadcasterUserName}");
                         return;
                     }
 
@@ -350,7 +350,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                         stream.Id, stream.UserId, HasSpider: false,
                         ProcessDuplicate: false, RedisDuplicate: false, DatabaseDuplicate: false)) ==
                         TwitchStreamStartAction.IgnoreMissingSpider)
-                        Log.Warn($"Twitch 開台事件沒有對應 spider，交由 reconcile 清理: {stream.UserId}");
+                        Log.Warn($"Twitch 開台事件沒有對應 spider，交由同步程序清理：{stream.UserId}");
                     return;
                 }
 
@@ -367,7 +367,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
                 if (startAction == TwitchStreamStartAction.RefreshStateOnly)
                 {
-                    // 重複開台事件仍要刷新直播快取與 EventSub，但不可再次發布通知或啟動錄影。
+                    // 重複開台事件仍要更新直播快取與 EventSub，但不可再次發布通知或啟動錄影。
                     await SetStreamStateAsync(twitchStream);
                     await MaintainLiveSubscriptionsAsync(spider, authorization, stream.StartedAt);
                     return;
@@ -397,7 +397,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"處理 Twitch 開台失敗: {stream.UserId}");
+                Log.Error(ex.Demystify(), $"處理 Twitch 開台失敗：{stream.UserId}");
             }
             finally
             {
@@ -490,7 +490,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             catch (Exception ex)
             {
                 success = false;
-                Log.Error(ex.Demystify(), "Twitch 全量 reconcile 失敗");
+                Log.Error(ex.Demystify(), "Twitch 完整同步失敗");
             }
             finally
             {
@@ -513,7 +513,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"Twitch 單頻道 reconcile 失敗: {userId}");
+                Log.Error(ex.Demystify(), $"Twitch 單頻道同步失敗：{userId}");
             }
             finally
             {
@@ -723,7 +723,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             await db.SaveChangesAsync();
             _metrics.RecordSpiderRemoval(reason);
             ClearPending(expectedSpider.UserId);
-            Log.Warn($"已移除授權失效且 guild 不符合資格的 Twitch spider: {expectedSpider.UserId}（{reason}）");
+            Log.Warn($"已移除授權失效且 guild 不符合資格的 Twitch spider：{expectedSpider.UserId}（{reason}）");
             return true;
         }
 
@@ -772,7 +772,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Demystify(), $"Twitch 關台去抖動處理失敗: {userId}");
+                    Log.Error(ex.Demystify(), $"Twitch 關台去抖動處理失敗：{userId}");
                 }
                 finally
                 {
@@ -860,7 +860,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             var video = await _apiService.GetLatestVODAsync(userId);
             if (video == null)
             {
-                Log.Warn($"找不到對應的 Vod 紀錄資料: {userLogin} ({userId})");
+                Log.Warn($"找不到對應的 VOD 紀錄資料：{userLogin} ({userId})");
             }
             else
             {
@@ -879,7 +879,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                         })
                         .ToList();
                     clipsValue = string.Join('\n', clipItems.Select((x, index) =>
-                        $"{index}. [{x.Title}]({x.Url}) By `{x.CreatorName}` (`{x.ViewCount}` 次觀看)"));
+                        $"{index}. [{x.Title}]({x.Url}) 剪輯者：`{x.CreatorName}` (`{x.ViewCount}` 次觀看)"));
                 }
             }
 
@@ -917,11 +917,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"發布 Twitch 關台通知失敗: {userId}");
+                Log.Error(ex.Demystify(), $"發布 Twitch 關台通知失敗：{userId}");
             }
         }
 
-        /// <summary>已確認離線時的精簡 reconcile；仍沿用 ClientId、授權與 guild 資格安全條件。</summary>
+        /// <summary>已確認離線時的精簡同步；仍沿用 ClientId、授權與 guild 資格安全條件。</summary>
         private async Task<bool> ReconcileOfflineStateCoreAsync(TwitchUserState state)
         {
             string userId = state.UserId;
@@ -1014,7 +1014,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
         private void SetPending(string userId, TwitchEventSubCleanupDeferredMetricReason? reason)
         {
-            // 不持久化此集合；服務重啟後全量 reconcile 會從 DB 與現有 EventSub 重新建立待處理項目。
+            // 不持久化此集合；服務重啟後完整同步會從 DB 與現有 EventSub 重新建立待處理項目。
             _pendingCleanup[userId] = 0;
             if (reason.HasValue)
                 _deferredCleanup[userId] = reason.Value;
@@ -1057,7 +1057,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"讀取 Twitch Redis 直播狀態失敗: {userId}");
+                Log.Error(ex.Demystify(), $"讀取 Twitch Redis 直播狀態失敗：{userId}");
                 return null;
             }
         }
@@ -1071,7 +1071,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"寫入 Twitch Redis 直播狀態失敗: {twitchStream.UserId}");
+                Log.Error(ex.Demystify(), $"寫入 Twitch Redis 直播狀態失敗：{twitchStream.UserId}");
             }
         }
 
@@ -1083,7 +1083,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"讀取 Twitch 開台通知去重狀態失敗: {streamId}");
+                Log.Error(ex.Demystify(), $"讀取 Twitch 開台通知去重狀態失敗：{streamId}");
                 return false;
             }
         }
@@ -1098,7 +1098,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"寫入 Twitch 開台通知去重狀態失敗，可能造成重複通知: {streamId}");
+                Log.Error(ex.Demystify(), $"寫入 Twitch 開台通知去重狀態失敗，可能造成重複通知：{streamId}");
             }
         }
 
@@ -1229,7 +1229,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"發布 Twitch 頻道更新通知失敗: {userId}");
+                Log.Error(ex.Demystify(), $"發布 Twitch 頻道更新通知失敗：{userId}");
             }
         }
 
@@ -1240,11 +1240,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             if (Bot.Redis != null && await Bot.RedisSub.PublishAsync(
                 new RedisChannel(RedisChannels.Twitch.Record, RedisChannel.PatternMode.Literal), twitchStream.UserLogin) != 0)
             {
-                Log.Info($"已發送 Twitch 錄影請求: {twitchStream.UserLogin}");
+                Log.Info($"已發送 Twitch 錄影請求：{twitchStream.UserLogin}");
                 return true;
             }
 
-            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {twitchStream.UserLogin}");
+            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具：{twitchStream.UserLogin}");
             return false;
         }
 

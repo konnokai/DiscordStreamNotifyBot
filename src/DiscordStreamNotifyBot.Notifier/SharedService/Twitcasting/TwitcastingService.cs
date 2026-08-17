@@ -55,7 +55,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 
             if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
-                Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 遺失，無法運行 TwitCasting 類功能");
+                Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 遺失，無法使用 TwitCasting 相關功能");
                 IsEnable = false;
                 return;
             }
@@ -437,7 +437,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.Discord5xx;
-                            Log.Warn($"TwitCasting 通知 - Discord 50X 錯誤: {httpEx.HttpCode}");
+                            Log.Warn($"TwitCasting 通知 - Discord 5xx 錯誤：{httpEx.HttpCode}");
                         }
                         else
                         {
@@ -452,7 +452,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                         deliveryResult = primaryMessageSent
                             ? NotificationDeliveryResult.Sent
                             : NotificationDeliveryResult.Timeout;
-                        Log.Warn($"TwitCasting 通知 - Timeout {item.GuildId} / {item.DiscordChannelId}");
+                        Log.Warn($"TwitCasting 通知 - Discord 逾時 {item.GuildId} / {item.DiscordChannelId}");
                     }
                     catch (Exception ex)
                     {

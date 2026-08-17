@@ -119,7 +119,7 @@
   <data name="youtube-member.cancel-member-check.description" xml:space="preserve"><value>Cancel verification in this server and remove membership roles</value></data>
   <data name="youtube-member.unlink.description" xml:space="preserve"><value>Unlink Discord from Google and revoke authorization</value></data>
   <data name="youtube-member.list-can-check-channel.description" xml:space="preserve"><value>List channels available for membership verification</value></data>
-  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>Show the currently linked YouTube account</value></data>
+  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>Show the currently linked YouTube channel</value></data>
 
   <data name="youtube-member-set.description" xml:space="preserve"><value>YouTube membership verification settings</value></data>
   <data name="youtube-member-set.add-member-check.description" xml:space="preserve"><value>Add a membership channel and the role it grants</value></data>

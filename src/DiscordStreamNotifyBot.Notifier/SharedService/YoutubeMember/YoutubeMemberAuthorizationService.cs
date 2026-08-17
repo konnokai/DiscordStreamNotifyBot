@@ -167,7 +167,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
             catch (Exception ex)
             {
-                Log.Warn(YoutubeMemberSafeLogging.DescribeFailure("刷新 YouTube 憑證暫時失敗，保留既有 entitlement", ex));
+                Log.Warn(YoutubeMemberSafeLogging.DescribeFailure("更新 YouTube 憑證時暫時失敗，保留既有 entitlement", ex));
                 return new(YoutubeMemberAuthorizationStatus.TemporaryFailure, null, encryptedTokenPayload);
             }
         }

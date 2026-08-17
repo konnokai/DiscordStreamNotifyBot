@@ -80,9 +80,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                             if (action == YoutubeMemberCandidateAction.SelectMemberOnlyVideo)
                             {
-                                Log.Info($"新會限影片 - ({item.ChannelId}): {videoId}");
+                                Log.Info($"新會限影片（{item.ChannelId}）：{videoId}");
                                 await PublishMemberVideoLogAsync(item.ChannelId,
-                                    $"新會限檢測影片 - ({item.ChannelId}): {videoId}",
+                                    $"新會限檢測影片（{item.ChannelId}）：{videoId}",
                                     isNeedRemove: false, isNeedSendToOwner: false,
                                     messageCode: "NewProbeVideo", messageArguments: [item.ChannelId, videoId]);
 
@@ -141,10 +141,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             .Select((x) => x.MemberCheckChannelTitle)
                             .FirstOrDefaultAsync();
 
-                        Log.Info($"會限頻道名稱已變更 - ({item.ChannelId}): `" +
+                        Log.Info($"會限頻道名稱已變更（{item.ChannelId}）：`" +
                             (string.IsNullOrEmpty(previousTitle) ? "無" : previousTitle) + $"` -> `{channel.Snippet.Title}`");
                         await PublishMemberVideoLogAsync(item.ChannelId,
-                            $"會限頻道名稱已變更: `" +
+                            $"會限頻道名稱已變更：`" +
                             (string.IsNullOrEmpty(previousTitle) ? "無" : previousTitle) + $"` -> `{channel.Snippet.Title}`",
                             isNeedRemove: false, isNeedSendToOwner: false,
                             messageCode: "ChannelTitleChanged",
@@ -174,7 +174,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片",
                 messageCode: "NoVideos",
                 messageArguments: [channelId],
-                botOwnerMessage: notifyBotOwner ? $"{channelId} 無任何可檢測的會限影片!" : null);
+                botOwnerMessage: notifyBotOwner ? $"{channelId} 無任何可檢測的會限影片！" : null);
 
         private static Task PublishMemberVideoLogAsync(string checkChannelId, string message,
             bool isNeedRemove = true, bool isNeedSendToOwner = true, string botOwnerMessage = null,

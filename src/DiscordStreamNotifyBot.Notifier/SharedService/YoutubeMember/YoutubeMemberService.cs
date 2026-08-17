@@ -155,7 +155,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             // Redis 僅作 wake-up hint；週期清理的 MySQL pending state 才是 durable truth。
             if (Bot.ShardId != 0 || !ulong.TryParse(value.ToString(), out ulong userId))
                 return;
-            Log.Info($"接收到 Redis 的 Revoke 請求: {userId}");
+            Log.Info($"收到 Redis 的 Revoke 請求：{userId}");
             // Backend 已完成 revoke；延遲或重複 hint 絕不可重新把 active check 轉成 pending，
             // 更不能碰可能已重新綁定的 token。它只喚醒既有 durable cleanup。
             await _roleService.RetryPendingCleanupForUserAsync(userId, cancellationToken);
@@ -649,7 +649,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 {
                     var guild = _client.GetGuild(guildId);
                     if (guild == null)
-                        continue; // 非本 shard 持有 → 交給擁有的 shard
+                        continue; // 非本 shard 持有，交由持有該 guild 的 shard 處理。
 
                     try { await guild.DownloadUsersAsync(); } catch { } // 需 GuildMembers intent 才有完整名單
 
@@ -702,7 +702,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
                             continue;
 
-                        Log.Warn($"SendMsgToLogChannelAsync: {item.GuildId} 不存在!");
+                        Log.Warn($"SendMsgToLogChannelAsync：{item.GuildId} 不存在。");
                         continue;
                     }
 
@@ -783,7 +783,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
     static class Ext
     {
-        // RestUser無法被序列化，暫時放棄Cache
+        // RestUser 無法序列化，暫不使用快取。
         //private static async Task<RestUser> GetRestUserFromCatchOrCreate(ulong userId)
         //{
         //    try
@@ -945,7 +945,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 {
                     Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
                     string warning = localizer?.Format("Member.Status.DmUnavailable", guildLocale, userId)
-                        ?? $"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`";
+                        ?? $"無法傳送訊息至：<@{userId}>\n請提醒該使用者開啟 `允許來自伺服器成員的私人訊息`";
                     await tc.SendMessageAsync(warning);
                 }
                 else
@@ -997,7 +997,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 {
                     Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
                     string warning = localizer?.Format("Member.Status.DmUnavailable", guildLocale, userId)
-                        ?? $"無法傳送訊息至: <@{userId}>\n請向該用戶提醒開啟 `允許來自伺服器成員的私人訊息`";
+                        ?? $"無法傳送訊息至：<@{userId}>\n請提醒該使用者開啟 `允許來自伺服器成員的私人訊息`";
                     await tc.SendMessageAsync(warning);
                 }
                 else

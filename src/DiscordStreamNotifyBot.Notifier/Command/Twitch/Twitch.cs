@@ -73,7 +73,7 @@ namespace DiscordStreamNotifyBot.Command.Twitch
                     await db.SaveChangesAsync();
                     await PublishReconcileRequestedAsync(twitchSpider.UserId, "spider_owner_changed");
 
-                    await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 的 Guild ID 為 `{guildId}`").ConfigureAwait(false);
                 }
                 else
                 {

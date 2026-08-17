@@ -12,7 +12,7 @@ namespace DiscordStreamNotifyBot.Shared
             if (TryParse(videoUrlOrId, out string videoId))
                 return videoId;
 
-            throw new UriFormatException("錯誤，請確認是否輸入 YouTube 影片網址");
+            throw new UriFormatException("影片網址格式錯誤，請確認輸入的是 YouTube 影片網址");
         }
 
         internal static bool TryParse(string videoUrlOrId, out string videoId)

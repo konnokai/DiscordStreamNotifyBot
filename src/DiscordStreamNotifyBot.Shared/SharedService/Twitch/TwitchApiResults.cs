@@ -3,7 +3,7 @@ using Stream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 
 namespace DiscordStreamNotifyBot.SharedService.Twitch
 {
-    /// <summary>EventSub ensure 要維持的訂閱集合。</summary>
+    /// <summary>EventSub 同步作業應維持的訂閱集合。</summary>
     public enum TwitchEventSubEnsureMode
     {
         /// <summary>已完成 OAuth 授權，永久維持 online、update、offline 三種訂閱。</summary>
@@ -39,7 +39,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         public int MaxTotalCost { get; init; }
     }
 
-    /// <summary>EventSub 精確 ensure 的變更與最終狀態。</summary>
+    /// <summary>EventSub 精確同步作業的變更與最終狀態。</summary>
     public sealed class TwitchEventSubEnsureResult
     {
         public bool IsSuccess { get; init; }

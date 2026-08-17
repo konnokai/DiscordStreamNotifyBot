@@ -65,7 +65,7 @@ namespace DiscordStreamNotifyBot
             DbService = new MainDbService(_botConfig.MySqlConnectionString);
             timerUpdateStatus = new Timer(TimerHandler);
 
-            Log.Info($"Shard {_shardId} / {_totalShardCount} 正在初始化...");
+            Log.Info($"Shard {_shardId} / {_totalShardCount} 正在初始化⋯⋯");
 
             try
             {
@@ -81,20 +81,20 @@ namespace DiscordStreamNotifyBot
                     IsDisconnect = true;
                 });
 
-                Log.Info("Redis已連線");
+                Log.Info("Redis 已連線");
 
                 if (RedisSub.Publish(new RedisChannel("youtube.test", RedisChannel.PatternMode.Literal), "nope") != 0)
                 {
-                    Log.Info("Redis Sub已存在");
+                    Log.Info("Redis Sub 已存在");
                 }
                 else
                 {
-                    Log.Warn("Redis Sub不存在，請開啟錄影工具");
+                    Log.Warn("Redis Sub 不存在，請開啟錄影工具");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error("Redis連線錯誤，請確認伺服器是否已開啟");
+                Log.Error("Redis 連線錯誤，請確認伺服器是否已開啟");
                 Log.Error(ex.Message);
                 return;
             }
@@ -113,8 +113,7 @@ namespace DiscordStreamNotifyBot
                 LogLevel = Debugger.IsAttached ? LogSeverity.Debug : LogSeverity.Info,
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 0,
-                // 因為沒有註冊事件，Discord .NET 建議可移除這兩個沒用到的特權
-                // https://dotblogs.com.tw/yc421206/2015/10/20/c_scharp_enum_of_flags
+                // 未使用邀請與排程活動事件，因此不請求 GuildInvites 與 GuildScheduledEvents intent。
                 // 會員重加入即時回補 / 孤兒身分組對帳需要 GuildMembers 特權 intent，僅在設定啟用時才請求，
                 // 否則未在 Discord 後台開特權會導致 login 4014 disallowed intent 連線失敗。
                 GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents
@@ -243,7 +242,7 @@ namespace DiscordStreamNotifyBot
             #endregion
 
 #if DEBUG || RELEASE
-            Log.Info("登入中...");
+            Log.Info("登入中⋯⋯");
 
             try
             {
@@ -256,14 +255,14 @@ namespace DiscordStreamNotifyBot
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "Discord 登入失敗!");
+                Log.Error(ex.Demystify(), "Discord 登入失敗！");
                 return;
             }
 
             do { await Task.Delay(200); }
             while (!IsConnect);
 
-            Log.Info("登入成功!");
+            Log.Info("登入成功！");
 
             UptimeKumaClient.Init(_botConfig.UptimeKumaPushUrl, client);
 #endif
@@ -464,7 +463,7 @@ namespace DiscordStreamNotifyBot
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "註冊 Slash 指令失敗，關閉中...");
+                Log.Error(ex.Demystify(), "註冊 Slash 指令失敗，關閉中⋯⋯");
                 IsDisconnect = true;
             }
             #endregion
@@ -501,7 +500,7 @@ namespace DiscordStreamNotifyBot
                 return Task.CompletedTask;
             };
 
-            Log.Info("已初始化完成!");
+            Log.Info("已完成初始化！");
 
             do { await Task.Delay(1000); }
             while (!IsDisconnect);

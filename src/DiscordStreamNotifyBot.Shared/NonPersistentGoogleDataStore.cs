@@ -2,7 +2,7 @@ using Google.Apis.Util.Store;
 
 namespace DiscordStreamNotifyBot
 {
-    /// <summary>阻止 Google SDK 隱含 Store/Delete；token mutation 必須由持有跨程序 lease 的服務明確執行。</summary>
+    /// <summary>阻止 Google SDK 隱含 Store/Delete；token 變更必須由持有跨程序 lease 的服務明確執行。</summary>
     public sealed class NonPersistentGoogleDataStore : IDataStore
     {
         public Task ClearAsync() => Task.CompletedTask;

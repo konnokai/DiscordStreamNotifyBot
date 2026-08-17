@@ -26,7 +26,7 @@ namespace DiscordStreamNotifyBot.Localization
             string normalizedLocale = SupportedLocale.NormalizeOrDefault(locale);
             string value = _resourceManager.GetString(key, SupportedLocale.GetCulture(normalizedLocale));
             if (value == null)
-                throw new MissingManifestResourceException($"找不到執行期本地化資源: {key} ({normalizedLocale})");
+                throw new MissingManifestResourceException($"找不到執行期本地化資源：{key}（{normalizedLocale}）");
 
             return value;
         }
@@ -73,7 +73,7 @@ namespace DiscordStreamNotifyBot.Localization
                 {
                     string missing = string.Join(", ", referenceKeys.Except(localeKeys, StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal));
                     string extra = string.Join(", ", localeKeys.Except(referenceKeys, StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal));
-                    throw new InvalidOperationException($"BotMessages.{locale} 資源 key 不一致。缺少: [{missing}]；多出: [{extra}]");
+                    throw new InvalidOperationException($"BotMessages.{locale} 資源 key 不一致。缺少：[{missing}]；多出：[{extra}]");
                 }
             }
 
@@ -95,7 +95,7 @@ namespace DiscordStreamNotifyBot.Localization
                 ? CultureInfo.InvariantCulture
                 : CultureInfo.GetCultureInfo(locale);
             ResourceSet resourceSet = _resourceManager.GetResourceSet(culture, true, false)
-                ?? throw new MissingManifestResourceException($"找不到 BotMessages 資源: {locale}");
+                ?? throw new MissingManifestResourceException($"找不到 BotMessages 資源：{locale}");
 
             return resourceSet.Cast<DictionaryEntry>()
                 .ToDictionary(

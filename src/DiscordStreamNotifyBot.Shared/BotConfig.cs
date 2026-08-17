@@ -32,13 +32,13 @@ public class BotConfig
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
 
     /// <summary>
-    /// 是否啟用 GuildMembers 特權 intent（會員重加入即時回補會限身分組 + 孤兒身分組回收對帳）。
-    /// <para>預設 false：未在 Discord 開發者後台開啟 Server Members Intent 前務必保持關閉，否則 bot login 會因
-    /// disallowed intent（4014）連線失敗。開啟特權並送審通過後才設 true（或環境變數 ENABLE_GUILD_MEMBERS_INTENT）。</para>
+    /// 是否啟用 GuildMembers 特權 intent（會員重新加入時立即回補會限身分組，並對帳回收孤兒身分組）。
+    /// <para>預設為 false：未在 Discord 開發者後台啟用 Server Members Intent 時，務必保持關閉；否則 Bot 會因
+    /// disallowed intent（4014）而登入失敗。啟用特權並通過審核後才設為 true（或設定環境變數 ENABLE_GUILD_MEMBERS_INTENT）。</para>
     /// </summary>
     public bool EnableGuildMembersIntent { get; set; } = false;
 
-    #region 水平擴展（三層拆分）設定 (計畫 §3)
+    #region 水平擴展（三層拆分）設定（計畫 §3）
     /// <summary>
     /// 叢集 shard 總數，供 Coordinator 公告 TOTAL_SHARDS 並比對存活 notifier 數（可由環境變數 TOTAL_SHARDS 覆寫）。
     /// <para>Notifier 自身的 shard 身分與總數由啟動參數 <c>[ShardId TotalShards]</c> 決定，不讀本欄位。</para>
@@ -58,7 +58,7 @@ public class BotConfig
     /// </summary>
     /// <param name="role">
     /// 程序角色；決定哪些欄位為必填（計畫 §5.3）。
-    /// <c>null</c>（預設，單體 monolith 用）等同 notifier，維持原有「全部必填」行為。
+    /// <c>null</c>（預設，單體模式）等同 notifier，維持原有「全部必填」行為。
     /// coordinator 僅需 Redis；scraper 需 Google/ApiServerDomain 但不需 Discord。
     /// </param>
     public void InitBotConfig(BotRole? role = null)
@@ -79,7 +79,7 @@ public class BotConfig
 
         try
         {
-            // 依角色決定必填欄位：notifier(或 monolith) 需 Discord/WebHook；scraper/notifier 需 Google/ApiServerDomain；coordinator 皆不需
+            // 依角色決定必填欄位：notifier（或單體模式）需 Discord/WebHook；scraper/notifier 需 Google/ApiServerDomain；coordinator 皆不需
             bool needsDiscord = role is null or BotRole.Notifier;
             bool needsYoutube = role is null or BotRole.Notifier or BotRole.Scraper;
 
@@ -125,14 +125,14 @@ public class BotConfig
         }
         catch (Exception ex)
         {
-            Log.Error($"設定檔讀取失敗: {ex}");
+            Log.Error($"設定檔讀取失敗：{ex}");
             throw;
         }
     }
 
     /// <summary>
-    /// 以環境變數覆寫設定（env 優先）。對應計畫 §3 的覆寫表；正式環境 / Docker Compose 透過 .env 注入，
-    /// 敏感值不入 image。未設定的環境變數則維持 bot_config.json 的值。
+    /// 以環境變數覆寫設定（環境變數優先）。對應計畫 §3 的覆寫表；正式環境 / Docker Compose 透過 .env 注入，
+    /// 敏感值不寫入映像檔。未設定的環境變數則維持 bot_config.json 的值。
     /// </summary>
     public void ApplyEnvironmentOverrides()
     {

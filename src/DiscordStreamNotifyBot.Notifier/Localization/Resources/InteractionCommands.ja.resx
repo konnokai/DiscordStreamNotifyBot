@@ -119,7 +119,7 @@
   <data name="youtube-member.cancel-member-check.description" xml:space="preserve"><value>このサーバーの認証を取り消してロールを削除します</value></data>
   <data name="youtube-member.unlink.description" xml:space="preserve"><value>Discord と Google の連携を解除して認可を取り消します</value></data>
   <data name="youtube-member.list-can-check-channel.description" xml:space="preserve"><value>現在認証できるメンバー限定チャンネルを表示します</value></data>
-  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>現在連携している YouTube アカウントを表示します</value></data>
+  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>現在連携している YouTube チャンネルを表示します</value></data>
 
   <data name="youtube-member-set.description" xml:space="preserve"><value>YouTube メンバーシップ認証の設定</value></data>
   <data name="youtube-member-set.add-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルと付与ロールを追加します</value></data>
@@ -142,7 +142,7 @@
   <data name="twitch-subscription-set.description" xml:space="preserve"><value>Twitch サブスク認証設定</value></data>
   <data name="twitch-subscription-set.add-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを追加または更新します</value></data>
   <data name="twitch-subscription-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch チャンネル URL または login</value></data>
-  <data name="twitch-subscription-set.add-subscription-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール（対応する Tier ロールも追加で付与）</value></data>
+  <data name="twitch-subscription-set.add-subscription-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール（対応するティアロールも追加で付与）</value></data>
   <data name="twitch-subscription-set.remove-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを削除します</value></data>
   <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>設定済み Twitch チャンネル</value></data>
   <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>認証済み Twitch サブスクメンバーを表示します</value></data>

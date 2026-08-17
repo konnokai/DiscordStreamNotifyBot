@@ -60,12 +60,12 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [RequireGuildMemberCount(500)]
-        [CommandSummary("新增 TwitCasting 頻道檢測爬蟲\n" +
-           "伺服器需大於 500 人才可使用\n" +
+        [CommandSummary("新增 TwitCasting 頻道監測爬蟲\n" +
+           "伺服器人數至少 500 人才可使用\n" +
            "未來會根據情況增減可新增的頻道數量\n" +
-           "如有任何需要請向擁有者詢問")]
+           "如有需求，請聯絡擁有者")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
-        [SlashCommand("add", "新增 TwitCasting 頻道檢測爬蟲")]
+        [SlashCommand("add", "新增 TwitCasting 頻道監測爬蟲")]
         public async Task AddChannelSpider([Summary("channel", "頻道網址")] string channelUrl)
         {
             await DeferAsync(true).ConfigureAwait(false);
@@ -124,7 +124,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             }
         }
 
-        [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道 (本清單可能內含中之人或前世的頻道)")]
+        [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道（此清單可能包含中之人或前世的頻道）")]
         public async Task ListNotTrustedChannelSpider([Summary("page", "頁數")] int page = 0)
         {
             if (page < 0) page = 0;

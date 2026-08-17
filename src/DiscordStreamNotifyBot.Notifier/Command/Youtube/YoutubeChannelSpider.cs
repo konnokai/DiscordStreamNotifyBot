@@ -9,7 +9,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [RequireContext(ContextType.DM)]
         [RequireOwner]
         [Command("ListDeathChannelSpider")]
-        [Summary("顯示已死去的爬蟲檢測頻道")]
+        [Summary("顯示已退出伺服器的爬蟲檢測頻道")]
         [Alias("ldcs")]
         public async Task ListDeathChannelSpider(int page = 0)
         {
@@ -25,7 +25,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             {
                 await Context.Channel.TriggerTypingAsync();
 
-                // 跨 shard：以合併快照（B1）判定伺服器是否真的退群，避免把別 shard 持有的伺服器誤判為已死去
+                // 跨 shard：以合併快照（B1）判定伺服器是否真的退群，避免把別 shard 持有的伺服器誤判為已退出。
                 var guildMap = await _clusterQuery.GetGuildNameMapAsync();
                 var list = new List<string>();
                 var checkedGuildHashSet = new HashSet<ulong>();
@@ -59,7 +59,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
                 if (list.Count == 0)
                 {
-                    await Context.Channel.SendConfirmAsync("無已死去的爬蟲...");
+                    await Context.Channel.SendConfirmAsync("沒有已退出伺服器的爬蟲…");
                     return;
                 }
 
@@ -67,7 +67,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 {
                     return new EmbedBuilder()
                         .WithOkColor()
-                        .WithTitle("死去的直播爬蟲清單")
+                        .WithTitle("已退出伺服器的直播爬蟲清單")
                         .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
                         .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
                 }, list.Count, 20, false).ConfigureAwait(false);
@@ -115,7 +115,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
                     if (list.Count == 0)
                     {
-                        await Context.Channel.SendConfirmAsync("無未設定通知的爬蟲...");
+                        await Context.Channel.SendConfirmAsync("沒有未設定通知的爬蟲…");
                         return;
                     }
 
@@ -123,12 +123,12 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                     {
                         return new EmbedBuilder()
                             .WithOkColor()
-                            .WithTitle("無未設定通知的爬蟲")
+                            .WithTitle("沒有未設定通知的爬蟲")
                             .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20).Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"))))
                             .WithFooter($"{Math.Min(list.Count, (page + 1) * 20)} / {list.Count}個頻道");
                     }, list.Count, 20, false).ConfigureAwait(false);
 
-                    if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("是否要一次移除全部清單內的爬蟲?")))
+                    if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("要一次移除清單中的所有爬蟲嗎？")))
                     {
                         try
                         {
@@ -185,8 +185,8 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [RequireContext(ContextType.DM)]
         [RequireOwner]
         [Command("ListNotTrustedChannelSpider")]
-        [Summary("顯示已加入爬蟲檢測的\"未認可\"頻道\n" +
-            "注意: 本清單可能含有中之人或前世頻道")]
+        [Summary("顯示已加入爬蟲檢測的「未認可」頻道\n" +
+            "注意：此清單可能包含中之人或前世頻道")]
         [Alias("lnvcs")]
         public async Task ListNotVTuberChannelSpider()
         {
@@ -198,7 +198,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                     .AsNoTracking()
                     .Where((x) => !x.IsTrustedChannel)
                     .Select((x) => Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}") +
-                        $" 由 `" + (x.GuildId == 0 ? "Bot擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
+                        $" 由 `" + (x.GuildId == 0 ? "Bot 擁有者" : (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : "已退出的伺服器")) + "` 新增");
 
                 await Context.SendPaginatedConfirmAsync(0, page =>
                 {
@@ -256,7 +256,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [RequireContext(ContextType.DM)]
         [RequireOwner]
         [Command("SetChannelSpiderGuildId")]
-        [Summary("設定爬蟲頻道的伺服器 Id")]
+        [Summary("設定爬蟲頻道的伺服器 ID")]
         [CommandExample("https://www.youtube.com/channel/UC0qt9BfrpQo-drjuPKl_vdA 0")]
         [Alias("scsg")]
         public async Task SetChannelSpiderGuildId([Summary("頻道網址")] string channelUrl = "", ulong guildId = 0)
@@ -286,7 +286,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                     db.YoutubeChannelSpider.Update(channel);
                     await db.SaveChangesAsync();
 
-                    await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 的 GuildId 為 `{guildId}`").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 `{channel.ChannelTitle}` 的 Guild ID 為 `{guildId}`").ConfigureAwait(false);
                 }
                 else
                 {

@@ -62,9 +62,9 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
         }
 
         [CommandSummary("新增 Twitch 頻道爬蟲\n" +
-           "伺服器需大於 200 人才可使用\n" +
+           "伺服器人數至少 200 人才可使用\n" +
            "未來會根據情況增減可新增的頻道數量\n" +
-           "如有任何需要請向擁有者詢問")]
+           "如有需求，請聯絡擁有者")]
         [CommandExample("998rrr", "https://twitch.tv/998rrr")]
         [SlashCommand("add", "新增 Twitch 頻道爬蟲")]
         public async Task AddChannelSpider([Summary("channel", "頻道網址")] string twitchUrl)
@@ -126,7 +126,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             }
         }
 
-        [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道 (本清單可能內含中之人或前世的頻道)")]
+        [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道（此清單可能包含中之人或前世的頻道）")]
         public async Task ListNotTrustedChannelSpider([Summary("page", "頁數")] int page = 0)
         {
             if (page < 0) page = 0;

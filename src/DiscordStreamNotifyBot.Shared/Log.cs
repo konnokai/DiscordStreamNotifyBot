@@ -170,7 +170,7 @@ public static class Log
             Info("Loki 主動推送已啟用");
     }
 
-    /// <summary>在指定時間內 best-effort flush Serilog sinks；逾時後不阻塞程序關閉。</summary>
+    /// <summary>在指定時間內盡力將 Serilog 輸出端的緩衝資料寫出；逾時後不阻塞程序關閉。</summary>
     public static async Task ShutdownAsync(TimeSpan timeout)
     {
         Task shutdownTask;
@@ -411,7 +411,7 @@ public static class Log
     private static void ReportShutdownTimeout(TimeSpan waitTimeout)
     {
         if (Interlocked.Exchange(ref _shutdownTimeoutReported, 1) == 0)
-            WriteLokiDiagnostic($"Serilog 關閉前 flush 逾時（本次最多等待 {Math.Max(0, waitTimeout.TotalSeconds):0.###} 秒），剩餘事件僅保留於既有 console/Docker log");
+            WriteLokiDiagnostic($"Serilog 關閉前寫出緩衝日誌逾時（本次最多等待 {Math.Max(0, waitTimeout.TotalSeconds):0.###} 秒），剩餘事件僅會輸出至既有主控台／Docker 日誌");
     }
 
     private static bool TryNormalizeLokiBaseUrl(string value, out string baseUrl)

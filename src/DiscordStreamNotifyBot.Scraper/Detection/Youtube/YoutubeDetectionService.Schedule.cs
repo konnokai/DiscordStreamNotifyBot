@@ -48,7 +48,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"HoloSchedule GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        Log.Warn($"HoloSchedule GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次重試）");
                         return timeSpan;
                     })
                     .ExecuteAsync(async () =>
@@ -92,7 +92,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 var streamVideo = BuildStreamVideo(item, decision.EventTime.Value, DataBase.Table.Video.YTChannelType.Holo);
 
-                                Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                                Log.New($"（新影片） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstHolo)
                                     await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false);
@@ -101,7 +101,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 var streamVideo = BuildStreamVideo(item, decision.EventTime.Value, DataBase.Table.Video.YTChannelType.Holo);
 
-                                Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                                Log.New($"（已開台） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live")
                                     await ReminderTimerActionAsync(streamVideo);
@@ -111,7 +111,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 var startTime = decision.EventTime.Value;
                                 var streamVideo = BuildStreamVideo(item, startTime, DataBase.Table.Video.YTChannelType.Holo);
 
-                                Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                                Log.New($"（新直播） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                                 if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                                 {
@@ -131,12 +131,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             else if (decision.Action == YoutubeApiVideoAction.ActiveChatOnly)
                             {
                                 var streamVideo = BuildStreamVideo(item, decision.EventTime.Value, DataBase.Table.Video.YTChannelType.Holo);
-                                Log.New($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                                Log.New($"（僅偵測到直播聊天室的影片） {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
                                 addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
                             }
                             else if (decision.Action == YoutubeApiVideoAction.IgnoreFakePost)
                             {
-                                Log.Error($"(新偽裝貼文) | {item.Snippet.ChannelTitle} ({item.Id})");
+                                Log.Error($"（新偽裝貼文） | {item.Snippet.ChannelTitle} ({item.Id})");
                             }
                         }
                     }
@@ -236,7 +236,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                     if (item.Status == "on_air") // 已開台
                     {
-                        Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                        Log.New($"（已開台） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                         if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             StartReminder(streamVideo, streamVideo.ChannelType);
@@ -245,7 +245,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     {
                         try
                         {
-                            Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                            Log.New($"（新直播） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                             if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo))
                             {
@@ -263,7 +263,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     }
                     else
                     {
-                        Log.New($"(已下播的新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                        Log.New($"（已下播的新直播） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
                         addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
                     }
                 }
@@ -295,7 +295,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
             catch
             {
-                Log.Error("Redis 又死了 zzz");
+                Log.Error("檢查 Redis 突襲開台鍵失敗");
             }
 #endif
 
@@ -311,7 +311,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36");
                 httpClient.DefaultRequestHeaders.Add("AcceptLanguage", "zh-TW");
 
-                Log.Info($"突襲開台檢測開始: {channelList.Count()} 個頻道");
+                Log.Info($"突襲開台檢測開始：{channelList.Count()} 個頻道");
                 foreach (var item in channelList)
                 {
                     if (Bot.IsDisconnect) break;
@@ -344,7 +344,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 .WaitAndRetryAsync(3, (retryAttempt) =>
                                 {
                                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                    Log.Warn($"OtherSchedule {item.ChannelId} - {type}: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                                    Log.Warn($"OtherSchedule {item.ChannelId} - {type}: GET 失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次重試）");
                                     return timeSpan;
                                 })
                                 .ExecuteAsync(async () =>
@@ -354,7 +354,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                             if (string.IsNullOrEmpty(response))
                             {
-                                Log.Warn($"OtherSchedule {item.ChannelId} - {type}: Response 為空，放棄本次排程");
+                                Log.Warn($"OtherSchedule {item.ChannelId} - {type}: 回應為空，放棄本次排程");
                                 continue;
                             }
 
@@ -377,12 +377,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                     {
                                         if (alertRenderer["text"]["simpleText"].ToString().Contains("未知的錯誤"))
                                         {
-                                            Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}，可能是暫時性的錯誤，跳過");
+                                            Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤：{alertRenderer["text"]["simpleText"]}，可能是暫時性的錯誤，跳過");
                                             continue;
                                         }
 
                                         // 偵測端無 Discord owner，僅記錄（原 owner 私訊改由維運監看 log）
-                                        Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤: {alertRenderer["text"]["simpleText"]}");
+                                        Log.Warn($"{item.ChannelTitle} ({item.ChannelId}) 頻道錯誤：{alertRenderer["text"]["simpleText"]}");
                                     }
                                 }
 
@@ -489,7 +489,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                     var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
                     video.Id = string.Join(",", remindersList.Select((x) => x.Key));
-                    var videoResult = await video.ExecuteAsync(); // 如果直播被刪除的話該直播 Id 不會回傳資訊，但 API 會返回 200 狀態
+                    var videoResult = await video.ExecuteAsync(); // 若直播已刪除，該直播 ID 不會出現在回應中，但 API 仍會回傳 200 狀態。
                     var videosById = videoResult.Items.ToDictionary((x) => x.Id);
 
                     foreach (var reminder in remindersList)
@@ -533,7 +533,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                             if (action == YoutubeReminderReconciliationAction.PublishStartAndRemove)
                             {
-                                // 可能是有調整到排程導致 API 回傳無資料，很少見但真的會遇到
+                                // 可能是影片已開播或排程資訊不完整，因此移除提醒並發布開台通知。
                                 await PublishYoutubeNotificationAsync(reminder.Value.StreamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
                                 continue;
                             }
@@ -558,10 +558,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 }
                                 else
                                 {
-                                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更保存失敗，找不到資料: {streamVideo.VideoId}");
+                                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更儲存失敗，找不到資料：{streamVideo.VideoId}");
                                 }
 
-                                Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}: {previousScheduledStartTime:O} -> {startTime:O}");
+                                Log.Info($"直播時間已變更 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}：{previousScheduledStartTime:O} -> {startTime:O}");
 
                                 if (action is YoutubeReminderReconciliationAction.PublishChangeAndRunImmediately or
                                     YoutubeReminderReconciliationAction.PublishChangeAndReplaceTimer)
@@ -600,7 +600,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             var decision = await ClassifyApiVideoAsync(item);
             if (decision.Action == YoutubeApiVideoAction.IgnoreFakePost)
             {
-                Log.Error($"(新偽裝貼文) | {item.Snippet.ChannelTitle} ({item.Id})");
+                Log.Error($"（新偽裝貼文） | {item.Snippet.ChannelTitle} ({item.Id})");
                 return;
             }
 
@@ -609,7 +609,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 var streamVideo = BuildStreamVideo(item, decision.EventTime.Value, DataBase.Table.Video.YTChannelType.Other);
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.New($"(新影片) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                Log.New($"（新影片） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
                     await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false);
@@ -619,7 +619,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 var streamVideo = BuildStreamVideo(item, decision.EventTime.Value, DataBase.Table.Video.YTChannelType.Other);
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.New($"(已開台) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                Log.New($"（已開台） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live" && !isFromRNRS)
                     await ReminderTimerActionAsync(streamVideo);
@@ -630,7 +630,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 var streamVideo = BuildStreamVideo(item, startTime, DataBase.Table.Video.YTChannelType.Other);
 
                 streamVideo.ChannelType = streamVideo.GetProductionType();
-                Log.New($"(新直播) | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                Log.New($"（新直播） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 if (startTime > DateTime.Now && startTime < DateTime.Now.AddDays(14))
                 {
@@ -651,7 +651,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             {
                 var streamVideo = BuildStreamVideo(item, decision.EventTime.Value, DataBase.Table.Video.YTChannelType.Other);
 
-                Log.New($"(一般路過的新直播室) {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
+                Log.New($"（僅偵測到直播聊天室的影片） {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
                 addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
             }
         }
@@ -706,7 +706,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
 
             if (saveNum != 0)
-                Log.Info($"資料庫已儲存完畢: {saveNum} 筆");
+                Log.Info($"資料庫已儲存完畢：{saveNum} 筆");
         }
 
         /// <summary>由 YouTube API 影片資料建立 <see cref="DataBase.Table.Video"/>，收斂各排程重複的物件初始化。</summary>
@@ -721,7 +721,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 ChannelType = channelType
             };
 
-        /// <summary>將 <see cref="addNewStreamVideo"/> 中指定 <paramref name="channelType"/> 的影片落庫並移除，收斂 SaveDateBase 的四段重複。</summary>
+        /// <summary>將 <see cref="addNewStreamVideo"/> 中指定 <paramref name="channelType"/> 的影片寫入資料庫後移除，收斂 SaveDateBase 的四段重複。</summary>
         private static int SaveVideosByType<T>(DataBase.MainDbContext db, DbSet<T> dbSet,
             DataBase.Table.Video.YTChannelType channelType, string logName) where T : DataBase.Table.Video, new()
         {
@@ -756,7 +756,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 addNewStreamVideo.Remove(item.Key, out _);
             }
 
-            Log.Info($"{logName} 資料庫已儲存: {db.SaveChanges()} 筆");
+            Log.Info($"{logName} 資料庫已儲存：{db.SaveChanges()} 筆");
             return saved;
         }
 

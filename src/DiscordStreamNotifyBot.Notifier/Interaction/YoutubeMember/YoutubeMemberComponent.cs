@@ -8,7 +8,7 @@ using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 
 namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 {
-    /// <summary>僅處理新版 YouTube 會限選單；Twitch 與其他 component 不會被承認。</summary>
+    /// <summary>僅處理新版 YouTube 會員驗證選單；不處理 Twitch 與其他元件。</summary>
     public sealed class YoutubeMemberComponent : TopLevelModule
     {
         private readonly MainDbService _dbService;
@@ -94,7 +94,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 YoutubeMemberPolicies.QueueRoleRemoval(check);
             }
 
-            // 先將所有取消項目的 durable intent 寫入，再碰 Discord；失敗會保留待清理列。
+            // 先寫入所有取消項目的持久化意圖，再呼叫 Discord API；失敗時保留待清理資料列。
             await db.SaveChangesAsync(GracefulShutdown.Token);
             foreach (YoutubeMemberSelectionTransition transition in transitions.Where(x => x.MarkRoleRemovalPending))
             {

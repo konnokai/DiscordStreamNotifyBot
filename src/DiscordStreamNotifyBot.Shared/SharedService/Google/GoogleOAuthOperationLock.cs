@@ -20,7 +20,7 @@ namespace DiscordStreamNotifyBot.SharedService.Google
         Exception Exception);
 
     /// <summary>
-    /// Google OAuth token mutation 的跨 Bot／Backend lease，與 Backend 共用 Redis DB1 key contract。
+    /// 用於跨 Bot 與 Backend 協調 Google OAuth token 異動的租約，並與 Backend 共用 Redis DB1 鍵名契約。
     /// </summary>
     public sealed class GoogleOAuthOperationLock
     {
@@ -151,7 +151,7 @@ namespace DiscordStreamNotifyBot.SharedService.Google
             }
             catch (Exception)
             {
-                // 由 TTL 收斂；不可無條件刪除可能已被其他程序接手的 key。
+                // 交由 TTL 到期後自動清理；不可無條件刪除可能已被其他程序接手的 key。
             }
             try { _renewalCancellation.Dispose(); } catch (ObjectDisposedException) { }
         }

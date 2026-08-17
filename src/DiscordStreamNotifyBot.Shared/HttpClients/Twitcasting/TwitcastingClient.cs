@@ -57,7 +57,7 @@ namespace DiscordStreamNotifyBot.HttpClients
         /// 取得頻道正在直播的資料
         /// </summary>
         /// <param name="channelId"></param>
-        /// <returns>如果正在直播，則回傳 (<see langword="true"/>, <see cref="int">影片 Id</see>)，否則為 (<see langword="false"/>, <see cref="int">0</see>)</returns>
+        /// <returns>目前直播的資料；未直播時回傳 <see langword="null"/>。</returns>
         public async Task<TcBackendStreamData?> GetNewStreamDataAsync(string channelId)
         {
             try
@@ -138,7 +138,7 @@ namespace DiscordStreamNotifyBot.HttpClients
         /// <summary>
         /// 取得所有已註冊的 WebHook
         /// </summary>
-        /// <returns>返回 WebHook 列表</returns>
+        /// <returns>回傳 WebHook 清單</returns>
         /// <exception cref="NullReferenceException"></exception>
         public async Task<List<Webhook>?> GetAllRegistedWebHookAsync()
         {

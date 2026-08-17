@@ -157,7 +157,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
         }
 
-        /// <summary>停止續租但保留 lock，交由 TTL 清除；用於 refresh token 已 rotation 但尚未安全保存。</summary>
+        /// <summary>停止續租但保留 lock，交由 TTL 清除；用於 refresh token 已輪替但尚未安全保存時。</summary>
         public async Task AbandonAsync()
         {
             if (Interlocked.Exchange(ref _releaseStarted, 1) != 0)

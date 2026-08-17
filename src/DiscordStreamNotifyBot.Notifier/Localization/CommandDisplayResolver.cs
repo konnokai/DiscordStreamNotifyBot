@@ -74,7 +74,7 @@ namespace DiscordStreamNotifyBot.Localization
         {
             string key = string.Join('.', canonicalPath) + "." + identifier;
             return _resourceManager.GetString(key, SupportedLocale.GetCulture(locale))
-                ?? throw new MissingManifestResourceException($"找不到指令顯示資源: {key} ({locale})");
+                ?? throw new MissingManifestResourceException($"找不到指令顯示資源：{key}（{locale}）");
         }
     }
 }

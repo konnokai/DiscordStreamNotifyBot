@@ -5,9 +5,9 @@ using DiscordStreamNotifyBot.Shared;
 namespace DiscordStreamNotifyBot.Interaction
 {
     /// <summary>
-    /// 偵測 / 通知共用的擴充方法與 DB 查詢 helper（自原 Notifier 的 Interaction.Extensions 拆出至 Shared）。
+    /// 偵測 / 通知共用的擴充方法與 DB 查詢輔助方法（自原 Notifier 的 Interaction.Extensions 拆出至 Shared）。
     /// <para>命名空間維持 <c>DiscordStreamNotifyBot.Interaction</c>，使既有 <c>using</c> 不需變動即可解析擴充方法；
-    /// 靜態 helper 改以 <c>SharedExtensions.</c> 呼叫。</para>
+    /// 靜態輔助方法改以 <c>SharedExtensions.</c> 呼叫。</para>
     /// </summary>
     public static class SharedExtensions
     {
@@ -73,7 +73,7 @@ namespace DiscordStreamNotifyBot.Interaction
             return null;
         }
 
-        // 照開始直播時間排序好像會遇到聊天用待機室的問題，函數先保留起來可能之後會用到?
+        // 依預定開播時間排序時，用於聊天的待機室可能影響結果；暫時保留此方法。
         public static DataBase.Table.Video GetLastStreamVideoByChannelId(string channelId)
         {
             channelId = channelId.Trim();

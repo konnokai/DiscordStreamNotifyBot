@@ -13,7 +13,7 @@
 
         if (string.IsNullOrEmpty(uptimeKumaPushUrl))
         {
-            Log.Warn($"未設定 {nameof(uptimeKumaPushUrl)} 的網址，略過檢測");
+            Log.Warn($"未設定 {nameof(uptimeKumaPushUrl)}，略過 Uptime Kuma 狀態回報");
             return false;
         }
 
@@ -26,7 +26,7 @@
             timerUptimeKumaPush = new Timer(async (state) => { await UptimeKumaTimerHandler(state); });
             timerUptimeKumaPush.Change(0, 30 * 1000);
 
-            Log.Info("已註冊 Uptime Kuma 狀態檢測");
+            Log.Info("已啟用 Uptime Kuma 狀態回報");
         }
         catch (Exception ex)
         {

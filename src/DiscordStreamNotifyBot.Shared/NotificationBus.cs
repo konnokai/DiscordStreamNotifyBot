@@ -7,8 +7,8 @@ namespace DiscordStreamNotifyBot.Shared
     /// 每個 group 固定一個 consumer <c>notifier-{id}</c>（重啟後同名接手自己的 PEL）。at-least-once，發送成功後 XACK。
     /// </para>
     /// <para>
-    /// StackExchange.Redis 內建（<c>StreamAdd</c> / <c>StreamReadGroup</c> / <c>StreamAcknowledge</c> / <c>StreamAutoClaim</c>），零新套件。
-    /// StackExchange.Redis 不支援 blocking read → 消費端用短輪詢（§4.3），不要嘗試 BLOCK。
+    /// 使用 StackExchange.Redis 內建功能（<c>StreamAdd</c> / <c>StreamReadGroup</c> / <c>StreamAcknowledge</c> / <c>StreamAutoClaim</c>），不需新增套件。
+    /// StackExchange.Redis 不支援封鎖式讀取 → 消費端用短輪詢（§4.3），不要嘗試 BLOCK。
     /// </para>
     /// </summary>
     public static class NotificationBus
@@ -22,7 +22,7 @@ namespace DiscordStreamNotifyBot.Shared
         /// <summary>訊息欄位名：DTO 的 JSON。</summary>
         public const string FieldPayload = "payload";
 
-        /// <summary>XADD 修剪上限（近似），防無人消費時無限堆積（§4.1，正常量遠低於此）。</summary>
+        /// <summary>XADD 修剪上限（近似），避免沒有 consumer 時無限累積（§4.1，正常量遠低於此）。</summary>
         public const int MaxApproxLength = 10000;
 
         /// <summary>shard 的 consumer group 名稱。</summary>
@@ -47,7 +47,7 @@ namespace DiscordStreamNotifyBot.Shared
                 maxLength: MaxApproxLength, useApproximateMaxLength: true);
         }
 
-        /// <summary>以 Redis Lua 原子完成去重檢查、XADD 與 marker 寫入，供不可重播的來源安全重試。</summary>
+        /// <summary>以 Redis Lua 原子完成重複檢查、XADD 與標記寫入，供不可重播的來源安全重試。</summary>
         public static async Task<RedisValue> PublishOnceAsync(
             IDatabase db,
             RedisKey dedupKey,
@@ -79,8 +79,8 @@ namespace DiscordStreamNotifyBot.Shared
         }
 
         /// <summary>
-        /// 建立本 shard 的 consumer group（§4.4）：從 <c>0</c> 建群（首次部署不漏既有訊息），
-        /// 並以 <c>MKSTREAM</c> 建 stream；已存在（BUSYGROUP）視為成功。歷史重播由消費端去重鍵吸收。
+        /// 建立本 shard 的 consumer group（§4.4）：從 <c>0</c> 建立 consumer group（首次部署不漏既有訊息），
+        /// 並以 <c>MKSTREAM</c> 建 stream；已存在（BUSYGROUP）視為成功。歷史重播由消費端的重複檢查鍵處理。
         /// </summary>
         public static async Task EnsureConsumerGroupAsync(IDatabase db, int shardId)
         {
@@ -106,7 +106,7 @@ namespace DiscordStreamNotifyBot.Shared
 
         /// <summary>
         /// 認領本 consumer PEL 中閒置逾 <paramref name="minIdle"/> 的訊息重新處理（崩潰恢復，§4.3）。
-        /// 回傳被認領的訊息，供呼叫端重跑處理迴圈。
+        /// 回傳被認領的訊息，供呼叫端重新執行處理迴圈。
         /// </summary>
         public static async Task<StreamEntry[]> AutoClaimAsync(IDatabase db, int shardId, TimeSpan minIdle, int count)
         {
@@ -115,8 +115,8 @@ namespace DiscordStreamNotifyBot.Shared
         }
 
         /// <summary>
-        /// 從指定 cursor 認領一頁 pending 訊息；呼叫端必須保存 <see cref="StreamAutoClaimResult.NextStartId" />，
-        /// 避免持續失敗的前段訊息讓後段 PEL 永遠無法被掃到。
+        /// 從指定游標認領一頁待處理訊息；呼叫端必須保存 <see cref="StreamAutoClaimResult.NextStartId" />，
+        /// 避免持續失敗的前段訊息使後段 PEL 永遠無法處理。
         /// </summary>
         public static Task<StreamAutoClaimResult> AutoClaimPageAsync(
             IDatabase db,

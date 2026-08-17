@@ -96,7 +96,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 if (!TryGetStartTime(videoResult, out DateTime startTime))
                 {
-                    Log.Error($"無法解析影片開始時間: {streamVideo.VideoId}");
+                    Log.Error($"無法解析影片開始時間：{streamVideo.VideoId}");
                     ScheduleReminderRetry(streamVideo, owner);
                     return;
                 }
@@ -124,7 +124,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 var videoResult = await GetVideoAsync(streamVideo.VideoId);
                 if (videoResult == null)
                 {
-                    Log.Info($"{streamVideo.VideoId} 待機所被刪了");
+                    Log.Info($"{streamVideo.VideoId} 待機室已刪除");
                     return (null, true);
                 }
                 return (videoResult, false);
@@ -167,12 +167,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
                 else
                 {
-                    Log.Error($"({streamVideo.ChannelType}) 直播標題變更保存失敗，找不到資料: {streamVideo.VideoId}");
+                    Log.Error($"({streamVideo.ChannelType}) 直播標題變更儲存失敗，找不到資料：{streamVideo.VideoId}");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更保存失敗: {streamVideo.VideoId}");
+                Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更儲存失敗：{streamVideo.VideoId}");
             }
 
 #if RELEASE
@@ -184,12 +184,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     {
                         if (await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), streamVideo.VideoId) != 0)
                         {
-                            Log.Info($"已發送 YouTube 錄影請求: {streamVideo.VideoId}");
+                            Log.Info($"已發送 YouTube 錄影請求：{streamVideo.VideoId}");
                             isRecord = true;
                         }
                         else
                         {
-                            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具: {streamVideo.VideoId}");
+                            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具：{streamVideo.VideoId}");
                         }
                     }
                 }
@@ -216,7 +216,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             DateTime startTime)
         {
             var previousScheduledStartTime = streamVideo.ScheduledStartTime;
-            Log.Info($"時間已更改 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}: {previousScheduledStartTime:O} -> {startTime:O}");
+            Log.Info($"直播時間已變更 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}：{previousScheduledStartTime:O} -> {startTime:O}");
 
             streamVideo.ScheduledStartTime = startTime;
             var video = GetDbVideoByType(db, streamVideo);
@@ -233,12 +233,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
                 else
                 {
-                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更保存失敗，找不到資料: {streamVideo.VideoId}");
+                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更儲存失敗，找不到資料：{streamVideo.VideoId}");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播時間變更保存失敗: {streamVideo.VideoId}");
+                Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播時間變更儲存失敗：{streamVideo.VideoId}");
             }
 
             await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
@@ -377,7 +377,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 .WaitAndRetryAsync(3, (retryAttempt) =>
                 {
                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                    Log.Warn($"YouTube GetVideoDurationAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    Log.Warn($"YouTube GetVideoDurationAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次重試）");
                     return timeSpan;
                 });
 
@@ -398,7 +398,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 .WaitAndRetryAsync(3, (retryAttempt) =>
                 {
                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                    Log.Warn($"YouTube GetCommentThreadsIsDisabledAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                    Log.Warn($"YouTube GetCommentThreadsIsDisabledAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次重試）");
                     return timeSpan;
                 });
 
@@ -418,7 +418,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"GetCommentThreadsIsDisabledAsync: {videoId} 未知的錯誤");
+                    Log.Error(ex, $"GetCommentThreadsIsDisabledAsync: {videoId} 未知錯誤");
                     return true;
                 }
             });

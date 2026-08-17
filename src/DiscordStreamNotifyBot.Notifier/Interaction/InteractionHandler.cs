@@ -252,11 +252,11 @@ namespace DiscordStreamNotifyBot.Interaction
                         IList<string> choicePath = parameterPath.Concat(new[] { choice.DisplayName }).ToList();
                         var names = _interactions.LocalizationManager.GetAllNames(choicePath, LocalizationTarget.Choice);
                         if (names.Count != 0)
-                            throw new InvalidOperationException($"Slash choice 不得提供 name localization: {string.Join('.', choicePath)}");
+                            throw new InvalidOperationException($"Slash 選項不得提供名稱本地化：{string.Join('.', choicePath)}");
 
                         ValidateCanonicalChoiceName(choice.DisplayName, string.Join(".", parameterPath));
                         if (!choiceNames.Add(choice.DisplayName))
-                            throw new InvalidOperationException($"Slash choice canonical name 重複: {choice.DisplayName} ({string.Join('.', parameterPath)})");
+                            throw new InvalidOperationException($"Slash 選項固定名稱重複：{choice.DisplayName}（{string.Join('.', parameterPath)}）");
                     }
                 }
             }
@@ -268,7 +268,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 {
                     string missing = string.Join(", ", expectedKeys.Except(actualKeys, StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal));
                     string extra = string.Join(", ", actualKeys.Except(expectedKeys, StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal));
-                    throw new InvalidOperationException($"InteractionCommands.{locale} 資源 key 不符合指令 metadata。缺少: [{missing}]；多出: [{extra}]");
+                    throw new InvalidOperationException($"InteractionCommands.{locale} 資源索引鍵不符合指令中繼資料。缺少：[{missing}]；多出：[{extra}]");
                 }
             }
         }
@@ -283,16 +283,16 @@ namespace DiscordStreamNotifyBot.Interaction
 
             var names = _interactions.LocalizationManager.GetAllNames(path, target);
             if (names.Count != 0)
-                throw new InvalidOperationException($"Slash metadata 不得提供 name localization: {string.Join('.', path)} ({target})");
+                throw new InvalidOperationException($"Slash {target} 不得提供名稱本地化：{string.Join('.', path)}");
 
             var descriptions = _interactions.LocalizationManager.GetAllDescriptions(path, target);
             foreach (string locale in SupportedLocale.Values)
             {
                 if (!descriptions.TryGetValue(locale, out string localizedDescription))
-                    throw new InvalidOperationException($"缺少 Slash description 本地化資源: {descriptionKey} ({locale})");
+                    throw new InvalidOperationException($"缺少 Slash 說明本地化資源：{descriptionKey}（{locale}）");
 
                 if (localizedDescription.Length is < 1 or > 100)
-                    throw new InvalidOperationException($"Slash description 長度必須為 1 到 100: {descriptionKey} ({locale})");
+                    throw new InvalidOperationException($"Slash 說明長度必須為 1 至 100 個字元：{descriptionKey}（{locale}）");
             }
         }
 
@@ -303,7 +303,7 @@ namespace DiscordStreamNotifyBot.Interaction
             IDictionary<string, HashSet<string>> scopedNames)
         {
             if (!CanonicalCommandNameRegex.IsMatch(name))
-                throw new InvalidOperationException($"Slash {target} canonical name 格式無效: {name}");
+                throw new InvalidOperationException($"Slash {target} 固定名稱格式無效：{name}");
 
             string scopeKey = target == "parameter" ? $"parameter|{scope}" : $"command|{scope}";
             if (!scopedNames.TryGetValue(scopeKey, out HashSet<string> names))
@@ -313,7 +313,7 @@ namespace DiscordStreamNotifyBot.Interaction
             }
 
             if (!names.Add(name))
-                throw new InvalidOperationException($"Slash {target} canonical name 重複: {name} ({scope})");
+                throw new InvalidOperationException($"Slash {target} 固定名稱重複：{name}（{scope}）");
         }
 
         private Dictionary<string, string> LoadCommandResourceValues(string locale)
@@ -322,7 +322,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 ? CultureInfo.InvariantCulture
                 : CultureInfo.GetCultureInfo(locale);
             ResourceSet resourceSet = _commandResourceManager.GetResourceSet(culture, true, false)
-                ?? throw new MissingManifestResourceException($"找不到 InteractionCommands 資源: {locale}");
+                ?? throw new MissingManifestResourceException($"找不到 InteractionCommands 資源：{locale}");
 
             return resourceSet.Cast<DictionaryEntry>()
                 .ToDictionary(entry => (string)entry.Key, entry => (string)entry.Value, StringComparer.Ordinal);
@@ -374,7 +374,7 @@ namespace DiscordStreamNotifyBot.Interaction
         private static void ValidateCanonicalChoiceName(string name, string parameterPath)
         {
             if (name.Length is < 1 or > 100 || name.Any(character => character is < ' ' or > '~'))
-                throw new InvalidOperationException($"Slash choice canonical name 必須為 1 到 100 個英文 ASCII printable 字元: {name} ({parameterPath})");
+                throw new InvalidOperationException($"Slash 選項固定名稱必須為 1 至 100 個可列印 ASCII 字元：{name}（{parameterPath}）");
         }
 
         private async Task HandleInteraction(SocketInteraction arg)
@@ -386,7 +386,7 @@ namespace DiscordStreamNotifyBot.Interaction
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"處理 Interaction 時發生未攔截例外: {arg.Type} / {arg.User?.Id}");
+                Log.Error(ex.Demystify(), $"處理互動時發生未攔截例外：{arg.Type} / {arg.User?.Id}");
                 try
                 {
                     string locale = await ResolveResponseLocaleAsync(arg, true);

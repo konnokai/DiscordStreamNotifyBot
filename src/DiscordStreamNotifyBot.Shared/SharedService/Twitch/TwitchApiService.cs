@@ -15,7 +15,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 {
     /// <summary>
     /// Twitch 無狀態 API 存取（Shared 單一來源）：封裝 <see cref="TwitchAPI"/> 與 Helix 呼叫、EventSub CRUD、
-    /// WebHook secret 維護。偵測（Scraper）與指令/發送（Notifier）皆透過本服務呼叫 Twitch，避免重複實作。
+    /// WebHook secret 維護。偵測（Scraper）與指令／發送（Notifier）皆透過本服務呼叫 Twitch，避免重複實作。
     /// </summary>
     public class TwitchApiService
     {
@@ -39,7 +39,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         {
             if (string.IsNullOrEmpty(botConfig.TwitchClientId) || string.IsNullOrEmpty(botConfig.TwitchClientSecret))
             {
-                Log.Warn($"{nameof(botConfig.TwitchClientId)} 或 {nameof(botConfig.TwitchClientSecret)} 遺失，無法運行 Twitch 類功能");
+                Log.Warn($"{nameof(botConfig.TwitchClientId)} 或 {nameof(botConfig.TwitchClientSecret)} 遺失，無法使用 Twitch 相關功能");
                 IsEnable = false;
                 return;
             }
@@ -52,7 +52,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 WebHookSecret = Bot.RedisDb.StringGet(RedisChannels.Twitch.WebhookSecret);
                 if (string.IsNullOrEmpty(WebHookSecret))
                 {
-                    Log.Warn("缺少 TwitchWebHookSecret，嘗試重新建立...");
+                    Log.Warn("缺少 TwitchWebHookSecret，嘗試重新建立…");
 
                     var candidate = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
                     Bot.RedisDb.StringSet(RedisChannels.Twitch.WebhookSecret, candidate, when: When.NotExists);
@@ -63,7 +63,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "獲取 TwitchWebHookSecret 失敗，無法運行 Twitch 類功能");
+                Log.Error(ex.Demystify(), "取得 TwitchWebHookSecret 失敗，無法使用 Twitch 相關功能");
                 IsEnable = false;
                 return;
             }
@@ -75,7 +75,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "Twitch EventSub callback URL 設定無效，無法運行 Twitch 類功能");
+                Log.Error(ex.Demystify(), "Twitch EventSub callback URL 設定無效，無法使用 Twitch 相關功能");
                 IsEnable = false;
                 return;
             }
@@ -185,10 +185,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         public TimeSpan ParseToTimeSpan(string input)
         {
             int days = 0, hours = 0, minutes = 0, seconds = 0;
-            // 定義正則表達式去匹配天、時、分、秒
+            // 定義規則運算式以比對天、時、分、秒
             Regex regex = new Regex(@"(\d+)d|(\d+)h|(\d+)m|(\d+)s");
             MatchCollection matches = regex.Matches(input);
-            // 遍歷匹配結果並賦值
+            // 逐一處理比對結果，並將值指派給對應變數
             foreach (Match match in matches)
             {
                 if (match.Groups[1].Success)
@@ -237,7 +237,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
                         subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
                     if (!deleted)
-                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID: {subscriptionId}");
+                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID：{subscriptionId}");
                     deletedCount++;
                 }
             }
@@ -325,7 +325,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 userId = new List<string> { twitchUserId };
             else if (!string.IsNullOrEmpty(twitchUserLogin))
                 userLogin = new List<string> { twitchUserLogin };
-            else throw new ArgumentException("兩者參數不可同時為空");
+            else throw new ArgumentException("兩個參數不可同時為空");
             if (!IsEnable)
                 return null;
 
@@ -336,12 +336,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
             catch (BadRequestException)
             {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: ({twitchUserId}) {twitchUserLogin}");
+                Log.Error($"無法取得 Twitch 資料，可能找不到指定的使用者：({twitchUserId}) {twitchUserLogin}");
                 return null;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: ({twitchUserId}) {twitchUserLogin}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料：({twitchUserId}) {twitchUserLogin}");
                 return null;
             }
         }
@@ -367,12 +367,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
             catch (BadRequestException)
             {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserLogins.First()}");
+                Log.Error($"無法取得 Twitch 資料，可能找不到指定的使用者：{twitchUserLogins.First()}");
                 return null;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserLogins.First()}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料：{twitchUserLogins.First()}");
                 return null;
             }
         }
@@ -389,12 +389,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
             catch (BadRequestException)
             {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
+                Log.Error($"無法取得 Twitch 資料，可能找不到指定的使用者：{twitchUserId}");
                 return null;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserId}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料：{twitchUserId}");
                 return null;
             }
         }
@@ -418,12 +418,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
             catch (BadRequestException)
             {
-                Log.Error($"無法取得 Twitch 資料，可能是找不到輸入的使用者資料: {twitchUserId}");
+                Log.Error($"無法取得 Twitch 資料，可能找不到指定的使用者：{twitchUserId}");
                 return null;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料: {twitchUserId}");
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 資料：{twitchUserId}");
                 return null;
             }
         }
@@ -483,7 +483,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     cursor = page.Pagination?.Cursor;
 
                     if (!string.IsNullOrEmpty(cursor) && !seenCursors.Add(cursor))
-                        throw new InvalidOperationException("Twitch EventSub pagination 回傳重複 cursor");
+                        throw new InvalidOperationException("Twitch EventSub 分頁回傳重複的 cursor");
                 }
                 while (!string.IsNullOrEmpty(cursor));
 
@@ -548,7 +548,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
                         subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
                     if (!deleted)
-                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID: {subscriptionId}");
+                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID：{subscriptionId}");
                     deletedIds.Add(subscriptionId);
                 }
 

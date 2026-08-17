@@ -50,7 +50,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task AddSubscriptionCheckAsync(
             [Summary("channel-url", "Twitch 頻道網址")] string channel,
-            [Summary("role", "驗證成功後給予的身分組 (額外給予各層級身分組)")] IRole role)
+            [Summary("role", "驗證成功後給予的身分組（額外給予各層級身分組）")] IRole role)
         {
             await DeferAsync(true);
             var result = await _subscriptionService.ConfigureAsync(

@@ -119,8 +119,8 @@ namespace DiscordStreamNotifyBot
             {
                 if (!NotificationBus.TryGetPayload(entry, out var type, out var payload))
                 {
-                    // 壞訊息：欄位缺失，直接 ack 丟棄避免卡佇列
-                    Log.Warn($"[NotificationBus] 壞訊息（缺 type/payload），丟棄: {entry.Id}");
+                    // 格式錯誤訊息：缺少欄位，直接 ACK 丟棄，避免卡住佇列。
+                    Log.Warn($"[NotificationBus] 格式錯誤訊息（缺 type/payload），已丟棄：{entry.Id}");
                     await NotificationBus.AckAsync(db, shardId, entry.Id);
                     _metrics?.RecordNotificationBusMessage(null, NotificationBusMetricResult.InvalidPayload);
                     return;
@@ -194,7 +194,7 @@ namespace DiscordStreamNotifyBot
                     return true;
 
                 default:
-                    Log.Warn($"[NotificationBus] 尚未接線的 type: {type}，暫時 ack 略過");
+                    Log.Warn($"[NotificationBus] 尚未處理的通知類型：{type}，暫時 ACK 後略過。");
                     return false;
             }
         }

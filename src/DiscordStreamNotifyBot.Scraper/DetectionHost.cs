@@ -65,17 +65,17 @@ namespace DiscordStreamNotifyBot.Scraper
             Log.Info("[Scraper] 偵測服務已啟動（YouTube / Twitch / Twitcasting），事件將發布至通知匯流排");
         }
 
-        /// <summary>關閉前保存偵測狀態（addNewStreamVideo → DB）。</summary>
+        /// <summary>關閉前儲存偵測狀態（addNewStreamVideo → DB）。</summary>
         public void SaveStateBeforeShutdown()
         {
             try
             {
                 Detection.Youtube.YoutubeDetectionService.SaveDateBase();
-                Log.Info("[Scraper] 已保存偵測資料庫狀態");
+                Log.Info("[Scraper] 已儲存偵測資料庫狀態");
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "[Scraper] 關閉前保存資料庫失敗");
+                Log.Error(ex.Demystify(), "[Scraper] 關閉前儲存資料庫失敗");
             }
         }
     }

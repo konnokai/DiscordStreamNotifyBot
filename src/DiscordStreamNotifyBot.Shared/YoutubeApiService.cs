@@ -96,7 +96,7 @@ namespace DiscordStreamNotifyBot.Shared
                     catch (InvalidOperationException ex)
                     {
                         Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-InvalidOperationException: {channelUrl}");
-                        throw new FormatException("網址格式化錯誤，請向 Bot 擁有者回報此問題");
+                        throw new FormatException("網址格式錯誤，請向 Bot 擁有者回報此問題");
                     }
                 }
             }
@@ -110,8 +110,8 @@ namespace DiscordStreamNotifyBot.Shared
                 if (type == "channel")
                 {
                     channelId = matchOldFormat.Groups["ChannelName"].Value;
-                    if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道 Id 格式不正確");
-                    if (channelId.Length != 24) throw new FormatException("錯誤，頻道 Id 字元數不正確");
+                    if (!channelId.StartsWith("UC")) throw new FormatException("錯誤，頻道 ID 格式不正確");
+                    if (channelId.Length != 24) throw new FormatException("錯誤，頻道 ID 字元數不正確");
                 }
                 else if (type == "c" || type == "user")
                 {
@@ -147,8 +147,8 @@ namespace DiscordStreamNotifyBot.Shared
             else
             {
                 Log.Error($"GetChannelIdAsync-NoMatch: {channelUrl}");
-                throw new FormatException("錯誤，找不到對應的網址處理方式，請向 Bot 擁有者聯絡\n" +
-                    "若你是透過自動提示來輸入頻道名稱，請勿切換 Discord 頻道，這會導致自動代入的名稱錯誤");
+                throw new FormatException("錯誤，找不到可處理的網址格式，請聯絡 Bot 擁有者。\n" +
+                    "若你透過自動提示輸入頻道名稱，請勿切換 Discord 頻道，否則自動填入的頻道名稱可能有誤。");
             }
 
             return channelId;
@@ -165,16 +165,16 @@ namespace DiscordStreamNotifyBot.Shared
                 var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
 
                 if (node == null)
-                    throw new UriFormatException("錯誤，找不到節點\n" +
+                    throw new UriFormatException("錯誤，找不到頻道 ID 資訊\n" +
                         "請確認是否輸入正確的 YouTube 頻道網址，或確認該頻道是否存在\n" +
-                        "部分頻道會有跳轉後遇到 404 錯誤的問題，你可以嘗試直接開啟連結確認是否會出現 404 錯誤\n" +
+                        "部分頻道重新導向後可能出現 404 錯誤。你可以嘗試直接開啟連結確認是否會出現 404 錯誤\n" +
                         "有需要可直接向 Bot 擁有者詢問\n" +
                         "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
                 channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
                 if (string.IsNullOrEmpty(channelId))
-                    throw new UriFormatException("錯誤，找不到頻道 Id\n" +
-                        "正常來說不該遇到這問題才對，請直接向 Bot 擁有者詢問\n" +
+                    throw new UriFormatException("錯誤，找不到頻道 ID\n" +
+                        "正常情況下不應發生此問題，請直接聯絡 Bot 擁有者。\n" +
                         "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
                 return channelId;
@@ -199,12 +199,12 @@ namespace DiscordStreamNotifyBot.Shared
             }
             catch (NullReferenceException)
             {
-                Log.Warn($"YouTube GetChannelTitle 可能已被刪除的頻道: {channelId}");
+                Log.Warn($"YouTube GetChannelTitle 頻道可能已被刪除：{channelId}");
                 return "";
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"YouTube GetChannelTitle 未知的錯誤: {channelId}");
+                Log.Error(ex.Demystify(), $"YouTube GetChannelTitle 發生未知錯誤：{channelId}");
                 return "";
             }
         }
@@ -221,12 +221,12 @@ namespace DiscordStreamNotifyBot.Shared
             }
             catch (NullReferenceException)
             {
-                Log.Warn($"YouTube GetChannelTitle 可能已被刪除的頻道: {channelId}");
+                Log.Warn($"YouTube GetChannelTitle 頻道可能已被刪除：{channelId}");
                 return null;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"YouTube GetChannelTitles 未知的錯誤: {string.Join(", ", channelId)}");
+                Log.Error(ex.Demystify(), $"YouTube GetChannelTitles 發生未知錯誤：{string.Join(", ", channelId)}");
                 return null;
             }
         }

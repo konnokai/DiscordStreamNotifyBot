@@ -9,7 +9,7 @@ namespace DiscordStreamNotifyBot.Coordinator
     /// </summary>
     public class CoordinatorService
     {
-        // pending 堆積告警門檻：單一 group 未 ack 訊息超過此值即警告（正常通知量遠低於此，見計畫 §4.1）。
+        // pending 堆積告警門檻：單一消費者群組的未確認訊息數達此值即警告。
         // ponytail: 固定門檻，若日後通知量級改變再調成可設定
         private const int PendingBacklogWarnThreshold = 500;
 
@@ -98,7 +98,7 @@ namespace DiscordStreamNotifyBot.Coordinator
         }
 
         /// <summary>
-        /// 監控匯流排各 consumer group 的 pending 堆積（計畫 §4.4 / §9.3）：
+        /// 監控匯流排各 consumer group 的 pending 堆積（計畫 §4.4 與 §9 第 3 點）：
         /// pending 過高代表消費端落後；consumer 數為 0（例如縮容後留下的 group）代表訊息無人處理，兩者皆告警。
         /// </summary>
         private async Task ReportBusBacklogAsync()

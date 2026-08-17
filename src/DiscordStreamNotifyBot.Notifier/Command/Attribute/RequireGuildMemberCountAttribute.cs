@@ -21,10 +21,10 @@ namespace DiscordStreamNotifyBot.Command.Attribute
             var memberCount = ((SocketGuild)context.Guild).MemberCount;
             if (memberCount >= GuildMemberCount) return Task.FromResult(PreconditionResult.FromSuccess());
             else return Task.FromResult(PreconditionResult.FromError($"此伺服器不可使用本指令\n" +
-                $"指令要求伺服器人數: `{GuildMemberCount}` 人\n" +
-                $"目前 Bot 所取得的伺服器人數: `{memberCount}` 人\n" +
+                $"指令要求的伺服器人數：`{GuildMemberCount}` 人\n" +
+                $"Bot 目前取得的伺服器人數：`{memberCount}` 人\n" +
                 $"由於快取的關係，可能會遇到伺服器人數錯誤的問題\n" +
-                $"如有任何需要請聯繫 Bot 擁有者處理 (你可使用 `/utility send-message-to-bot-owner` 對擁有者發送訊息)"));
+                $"如有需求，請使用 `/utility send-message-to-bot-owner` 聯絡 Bot 擁有者。"));
         }
     }
 }
