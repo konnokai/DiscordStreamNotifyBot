@@ -183,7 +183,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
         }
 
-        /// <summary>比對成員現有角色後授予共用角色與目前 Tier、移除其他 Tier，並拒絕 deletion-pending 設定重新授權。</summary>
+        /// <summary>修復缺少的層級身分組後同步成員角色，並拒絕 deletion-pending 設定重新授權。</summary>
         public async Task<bool> SynchronizeSubscribedRolesAsync(
             GuildTwitchSubscriptionConfig config,
             ulong discordUserId,
@@ -208,15 +208,21 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             SocketGuild guild = _client.GetGuild(config.GuildId);
             if (guild == null || !CanManageRoles(guild))
                 return false;
-
+            SocketRole subscriberRole = guild.GetRole(config.SubscriberRoleId);
+            if (subscriberRole == null || !CanManageRole(guild, subscriberRole.Id))
+                return false;
+            if (tier is not ("1000" or "2000" or "3000"))
+                return false;
             ulong tierRoleId = TwitchSubscriptionRolePolicy.GetTierRoleId(config, tier);
-            ulong[] requiredRoleIds = [config.SubscriberRoleId, tierRoleId];
-            if (tierRoleId == 0 || requiredRoleIds.Any(roleId => !CanManageRole(guild, roleId)))
+            if (tierRoleId != 0 && guild.GetRole(tierRoleId) != null && !CanManageRole(guild, tierRoleId))
                 return false;
 
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                await RepairMissingTierRolesAsync(guild, config, subscriberRole, cancellationToken);
+                tierRoleId = TwitchSubscriptionRolePolicy.GetTierRoleId(config, tier);
+
                 var options = new RequestOptions { CancelToken = cancellationToken };
                 IGuildUser member = await ((IGuild)guild).GetUserAsync(
                     discordUserId, CacheMode.AllowDownload, options);
@@ -265,6 +271,60 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 RecordRoleFailure(TwitchSubscriptionRoleOperation.Synchronize, ex);
                 Log.Warn($"同步 Twitch 訂閱身分組失敗: {guild.Id} / {discordUserId} / {ex.GetType().Name}");
                 return false;
+            }
+        }
+
+        private async Task RepairMissingTierRolesAsync(
+            SocketGuild guild,
+            GuildTwitchSubscriptionConfig config,
+            IRole subscriberRole,
+            CancellationToken cancellationToken)
+        {
+            if (!TwitchSubscriptionRolePolicy.HasMissingTierRole(config, id => guild.GetRole(id) != null))
+                return;
+
+            ulong[] previousRoleIds = [config.Tier1RoleId, config.Tier2RoleId, config.Tier3RoleId];
+            var createdRoles = new List<IRole>();
+            bool persisted = false;
+            try
+            {
+                config.Tier1RoleId = await EnsureTierRoleExistsAsync(guild, config.Tier1RoleId,
+                    TwitchSubscriptionRolePolicy.GetTierRoleName(subscriberRole.Name, "1000"), createdRoles, cancellationToken);
+                config.Tier2RoleId = await EnsureTierRoleExistsAsync(guild, config.Tier2RoleId,
+                    TwitchSubscriptionRolePolicy.GetTierRoleName(subscriberRole.Name, "2000"), createdRoles, cancellationToken);
+                config.Tier3RoleId = await EnsureTierRoleExistsAsync(guild, config.Tier3RoleId,
+                    TwitchSubscriptionRolePolicy.GetTierRoleName(subscriberRole.Name, "3000"), createdRoles, cancellationToken);
+
+                using var db = _dbService.GetDbContext();
+                var persistedConfig = await db.GuildTwitchSubscriptionConfig.SingleOrDefaultAsync(
+                    x => x.GuildId == config.GuildId && x.BroadcasterId == config.BroadcasterId,
+                    cancellationToken) ?? throw new InvalidOperationException("找不到 Twitch 訂閱驗證設定。");
+                persistedConfig.Tier1RoleId = config.Tier1RoleId;
+                persistedConfig.Tier2RoleId = config.Tier2RoleId;
+                persistedConfig.Tier3RoleId = config.Tier3RoleId;
+                await db.SaveChangesAsync(cancellationToken);
+                persisted = true;
+
+                await PositionTierRolesAsync(guild, subscriberRole, config, cancellationToken);
+                Log.Info($"已重建 Twitch 訂閱層級身分組: {guild.Id} / {config.BroadcasterId}");
+            }
+            catch
+            {
+                if (!persisted)
+                {
+                    config.Tier1RoleId = previousRoleIds[0];
+                    config.Tier2RoleId = previousRoleIds[1];
+                    config.Tier3RoleId = previousRoleIds[2];
+                    foreach (IRole role in createdRoles)
+                    {
+                        try { await role.DeleteAsync(new RequestOptions { CancelToken = cancellationToken }); }
+                        catch (Exception cleanupException)
+                        {
+                            Log.Warn($"補償刪除 Twitch 訂閱層級身分組失敗: {role.Id} / {cleanupException.GetType().Name}");
+                        }
+                    }
+                }
+                throw;
             }
         }
 

@@ -48,6 +48,19 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Empty(synchronized.RemoveRoleIds);
         }
 
+        [Fact]
+        public void MissingConfiguredTierRoleRequiresRepair()
+        {
+            var existingRoleIds = new HashSet<ulong> { 101, 103 };
+
+            Assert.True(TwitchSubscriptionRolePolicy.HasMissingTierRole(Config, existingRoleIds.Contains));
+            existingRoleIds.Add(102);
+            Assert.False(TwitchSubscriptionRolePolicy.HasMissingTierRole(Config, existingRoleIds.Contains));
+            Assert.True(TwitchSubscriptionRolePolicy.HasMissingTierRole(
+                new GuildTwitchSubscriptionConfig { Tier1RoleId = 101, Tier2RoleId = 102 },
+                existingRoleIds.Contains));
+        }
+
         [Theory]
         [InlineData("1000", "Subscriber Tier 1")]
         [InlineData("2000", "Subscriber Tier 2")]

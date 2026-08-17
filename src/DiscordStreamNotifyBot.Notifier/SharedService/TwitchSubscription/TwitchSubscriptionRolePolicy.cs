@@ -23,6 +23,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 .ToArray();
         }
 
+        public static bool HasMissingTierRole(
+            GuildTwitchSubscriptionConfig config,
+            Func<ulong, bool> roleExists)
+            => new[] { config.Tier1RoleId, config.Tier2RoleId, config.Tier3RoleId }
+                .Any(id => id == 0 || !roleExists(id));
+
         public static (ulong[] AddRoleIds, ulong[] RemoveRoleIds) GetSynchronizationDiff(
             GuildTwitchSubscriptionConfig config,
             string tier,
