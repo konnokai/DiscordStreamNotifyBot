@@ -96,7 +96,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
         public string GetVideoId(string videoUrl) => _apiService.GetVideoId(videoUrl);
 
-        public Task<string> GetChannelTitle(string channelId) => _apiService.GetChannelTitle(channelId);
+        public Task<string> GetChannelTitle(string channelId, CancellationToken cancellationToken = default)
+            => _apiService.GetChannelTitle(channelId, cancellationToken);
 
         public Task<List<string>> GetChannelTitle(IEnumerable<string> channelId, bool formatUrl) => _apiService.GetChannelTitle(channelId, formatUrl);
 

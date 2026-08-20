@@ -160,18 +160,25 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     token["correlationId"]?.Type != JTokenType.String ||
                     token["guildId"]?.Type != JTokenType.String ||
                     token["actorUserId"]?.Type != JTokenType.String ||
+                    token["deadlineUnixMs"]?.Type != JTokenType.Integer ||
                     token["action"]?.Type != JTokenType.String ||
                     token["payload"]?.Type is not (JTokenType.Object or JTokenType.Null))
                     return false;
 
                 request = token.ToObject<AdminSettingsRequestEnvelope>();
-                return request != null;
+                if (request == null || request.DeadlineUnixMs <= 0)
+                    return false;
+                _ = DateTimeOffset.FromUnixTimeMilliseconds(request.DeadlineUnixMs);
+                return true;
             }
-            catch (JsonException)
+            catch (Exception ex) when (ex is JsonException or ArgumentOutOfRangeException)
             {
                 return false;
             }
         }
+
+        internal static bool IsDeadlineExpired(long deadlineUnixMs, long nowUnixMs)
+            => deadlineUnixMs <= nowUnixMs;
 
         internal static bool ValidYoutubeUpsertPayload(JObject payload)
             => HasString(payload, "source") && HasString(payload, "streamChannelId") &&
@@ -215,6 +222,18 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 return;
             }
 
+            long nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (IsDeadlineExpired(request.DeadlineUnixMs, nowUnixMs))
+            {
+                Log.Warn($"忽略已逾時的網頁管理設定 request | CorrelationId: {request.CorrelationId}");
+                return;
+            }
+
+            DateTimeOffset deadline = DateTimeOffset.FromUnixTimeMilliseconds(request.DeadlineUnixMs);
+            using var deadlineCancellation = new CancellationTokenSource(deadline - DateTimeOffset.UtcNow);
+            using var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken, deadlineCancellation.Token);
+            CancellationToken requestToken = requestCancellation.Token;
             RequestRoute route = Classify(
                 request,
                 guildId => _client.GetGuild(guildId) != null,
@@ -227,25 +246,26 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             var guild = _client.GetGuild(guildId);
             try
             {
+                requestToken.ThrowIfCancellationRequested();
                 if (route == RequestRoute.UnsupportedVersion)
                 {
                     await PublishResultAsync(request, AdminSettingsMutationResult.Rejected("settings.unsupported-version"),
-                        guildId, actorUserId, cancellationToken);
+                        guildId, actorUserId, requestToken);
                     return;
                 }
 
                 if (route == RequestRoute.UnsupportedAction || snapshotRequest != (route == RequestRoute.Snapshot))
                 {
                     await PublishResultAsync(request, AdminSettingsMutationResult.Rejected("settings.unsupported-action"),
-                        guildId, actorUserId, cancellationToken);
+                        guildId, actorUserId, requestToken);
                     return;
                 }
 
                 if (route == RequestRoute.Snapshot)
                 {
-                    var snapshot = await BuildSnapshotAsync(guild, cancellationToken);
+                    var snapshot = await BuildSnapshotAsync(guild, requestToken);
                     await PublishResponseAsync(request, snapshot, guildId, actorUserId,
-                        "applied", "settings.snapshot", cancellationToken);
+                        "applied", "settings.snapshot", requestToken);
                     return;
                 }
 
@@ -254,8 +274,13 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     request.Payload,
                     guild,
                     actorUserId,
-                    cancellationToken);
-                await PublishResultAsync(request, result, guildId, actorUserId, cancellationToken);
+                    requestToken);
+                await PublishResultAsync(request, result, guildId, actorUserId, requestToken);
+            }
+            catch (OperationCanceledException) when (
+                deadlineCancellation.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                LogResult(request, guildId, actorUserId, "timeout", "settings.timeout");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -267,7 +292,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 Log.Error(ex.Demystify(),
                     $"網頁管理設定執行失敗 | CorrelationId: {request.CorrelationId} | Guild: {guildId} | Actor: {actorUserId} | Action: {request.Action}");
                 var result = AdminSettingsMutationResult.Rejected("settings.operation-failed");
-                await PublishResultAsync(request, result, guildId, actorUserId, cancellationToken);
+                await PublishResultAsync(request, result, guildId, actorUserId, requestToken);
             }
         }
 
@@ -514,7 +539,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
 
                 try
                 {
-                    var user = await _twitchService.GetUserAsync(twitchUserId: sourceId).ConfigureAwait(false);
+                    var user = await _twitchService.GetUserAsync(
+                        twitchUserId: sourceId,
+                        cancellationToken: cancellationToken).ConfigureAwait(false);
                     if (!string.IsNullOrWhiteSpace(user?.DisplayName))
                         twitchSpiders[sourceId] = user.DisplayName;
                 }
@@ -533,7 +560,8 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 if (twitcastingSpiders.GetValueOrDefault(sourceId, sourceId) != sourceId || !_twitcastingService.IsEnable)
                     continue;
 
-                string? sourceName = await _twitcastingService.GetChannelTitleAsync(sourceId).ConfigureAwait(false);
+                string? sourceName = await _twitcastingService.GetChannelTitleAsync(
+                    sourceId, cancellationToken).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(sourceName))
                     twitcastingSpiders[sourceId] = sourceName;
             }
@@ -543,7 +571,8 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 string sourceName = GetYoutubeSourceName(db, sourceId);
                 if (sourceName == sourceId)
                 {
-                    string apiSourceName = await _youtubeService.GetChannelTitle(sourceId).ConfigureAwait(false);
+                    string apiSourceName = await _youtubeService.GetChannelTitle(
+                        sourceId, cancellationToken).ConfigureAwait(false);
                     if (!string.IsNullOrWhiteSpace(apiSourceName))
                         sourceName = apiSourceName;
                 }
@@ -594,7 +623,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 Resources = new AdminSettingsResources { Channels = channels, Roles = roles },
                 Common = new AdminSettingsCommon
                 {
-                    Locale = await _guildLocaleService.GetAsync(guild.Id, guild),
+                    Locale = await _guildLocaleService.GetAsync(guild.Id, guild, cancellationToken),
                     GlobalNoticeChannelId = OptionalId(config?.NoticeChannelId ?? 0),
                     VerificationLogChannelId = OptionalId(config?.VerificationLogChannelId ?? 0)
                 },

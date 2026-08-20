@@ -409,8 +409,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             CancellationToken cancellationToken)
             => _roleOwnershipService.LoadSnapshotAsync(guildId, cancellationToken);
 
-        /// <summary>持久化刪除意圖後清理成員與系統 Tier 角色；任何 Discord 失敗皆保留設定供排程重試。</summary>
-        public async Task<bool> DeleteConfigurationAsync(
+        /// <summary>只保存設定刪除 checkpoint；Discord role 清理由背景週期處理。</summary>
+        public async Task<bool> MarkConfigurationDeletionPendingAsync(
             GuildTwitchSubscriptionConfig config,
             CancellationToken cancellationToken)
         {
@@ -420,7 +420,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 x => x.GuildId == config.GuildId && x.BroadcasterId == config.BroadcasterId,
                 cancellationToken);
             if (config == null)
-                return true;
+                return false;
 
             var checks = await db.TwitchSubscriptionCheck
                 .Where(x => x.GuildId == config.GuildId && x.BroadcasterId == config.BroadcasterId)
@@ -433,7 +433,28 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
             config.DeletionPending = true;
             await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
 
+        /// <summary>只處理已保存的設定刪除 checkpoint，不會把 active 設定標記成待刪除。</summary>
+        public async Task<bool> ProcessPendingConfigurationDeletionAsync(
+            GuildTwitchSubscriptionConfig requestedConfig,
+            CancellationToken cancellationToken)
+        {
+            await using var guildLock = await _operationCoordinator.LockGuildAsync(
+                requestedConfig.GuildId, cancellationToken);
+            using var db = _dbService.GetDbContext();
+            var config = await db.GuildTwitchSubscriptionConfig.SingleOrDefaultAsync(
+                x => x.GuildId == requestedConfig.GuildId &&
+                    x.BroadcasterId == requestedConfig.BroadcasterId &&
+                    x.DeletionPending,
+                cancellationToken);
+            if (config == null)
+                return true;
+
+            var checks = await db.TwitchSubscriptionCheck
+                .Where(x => x.GuildId == config.GuildId && x.BroadcasterId == config.BroadcasterId)
+                .ToListAsync(cancellationToken);
             MemberRoleOwnershipSnapshot ownership = await _roleOwnershipService.LoadSnapshotAsync(
                 config.GuildId, cancellationToken);
             bool allRemoved = true;
@@ -453,9 +474,14 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         cancellationToken);
                 }
                 allRemoved &= removed;
+                if (removed)
+                    db.TwitchSubscriptionCheck.Remove(check);
             }
             if (!allRemoved)
+            {
+                await db.SaveChangesAsync(cancellationToken);
                 return false;
+            }
 
             SocketGuild guild = _client.GetGuild(config.GuildId);
             if (guild != null)
@@ -483,7 +509,10 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         if (role != null)
                         {
                             if (!CanManageRole(guild, roleId))
+                            {
+                                await db.SaveChangesAsync(cancellationToken);
                                 return false;
+                            }
                             await role.DeleteAsync(new RequestOptions { CancelToken = cancellationToken });
                         }
                     }
@@ -496,11 +525,11 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 {
                     RecordRoleFailure(TwitchSubscriptionRoleOperation.Remove, ex);
                     Log.Warn($"刪除 Twitch Tier 身分組失敗: {config.GuildId} / {ex.GetType().Name}");
+                    await db.SaveChangesAsync(cancellationToken);
                     return false;
                 }
             }
 
-            db.TwitchSubscriptionCheck.RemoveRange(checks);
             var trackedConfig = await db.GuildTwitchSubscriptionConfig
                 .SingleOrDefaultAsync(x => x.Id == config.Id, cancellationToken);
             if (trackedConfig != null)

@@ -74,12 +74,15 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             return data?.User;
         }
 
-        public async Task<string?> GetChannelTitleAsync(string channelName)
+        public async Task<string?> GetChannelTitleAsync(
+            string channelName,
+            CancellationToken cancellationToken = default)
         {
             try
             {
                 HtmlAgilityPack.HtmlWeb htmlWeb = new HtmlAgilityPack.HtmlWeb();
-                var htmlDocument = await htmlWeb.LoadFromWebAsync($"https://twitcasting.tv/{channelName}");
+                var htmlDocument = await htmlWeb.LoadFromWebAsync(
+                    $"https://twitcasting.tv/{channelName}", cancellationToken);
                 var htmlNodes = htmlDocument.DocumentNode.Descendants();
                 var htmlNode = htmlNodes.FirstOrDefault((x) => x.Name == "span" && x.HasClass("tw-user-nav-name") || x.HasClass("tw-user-nav2-name"));
 
@@ -89,6 +92,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 }
 
                 return null;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

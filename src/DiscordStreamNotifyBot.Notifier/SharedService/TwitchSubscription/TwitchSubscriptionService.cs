@@ -283,10 +283,10 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 x => x.GuildId == guildId && x.BroadcasterId == sourceId, cancellationToken);
             if (config == null)
                 return AdminSettingsMutationResult.Rejected("verification.not-configured");
-            bool removed = await _roleService.DeleteConfigurationAsync(config, cancellationToken);
-            return removed
-                ? AdminSettingsMutationResult.Applied("verification.removed")
-                : AdminSettingsMutationResult.Pending("verification.cleanup-pending");
+            bool marked = await _roleService.MarkConfigurationDeletionPendingAsync(config, cancellationToken);
+            return marked
+                ? AdminSettingsMutationResult.Pending("verification.cleanup-pending")
+                : AdminSettingsMutationResult.Rejected("verification.not-configured");
         }
 
         /// <summary>將使用者所有 Twitch 驗證標記待清理，移除角色並保留失敗項目供排程重試。</summary>
@@ -363,7 +363,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     .DeletionPendingConfigurations()
                     .ToListAsync(cancellationToken);
                 foreach (var config in pendingDeletions.Where(x => Bot.IsServerOnThisShard(x.GuildId)))
-                    await _roleService.DeleteConfigurationAsync(config, cancellationToken);
+                    await _roleService.ProcessPendingConfigurationDeletionAsync(config, cancellationToken);
 
                 DateTime cutoff = DateTime.UtcNow.AddHours(-1);
                 var dueChecks = await db.TwitchSubscriptionCheck.AsNoTracking()

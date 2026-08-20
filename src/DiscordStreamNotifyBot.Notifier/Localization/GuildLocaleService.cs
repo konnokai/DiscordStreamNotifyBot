@@ -40,24 +40,32 @@ namespace DiscordStreamNotifyBot.Localization
             _timeProvider = timeProvider;
         }
 
-        public async Task<string> GetAsync(ulong guildId, SocketGuild guild = null)
-            => await GetCoreAsync(guildId, guild?.PreferredLocale).ConfigureAwait(false);
+        public async Task<string> GetAsync(
+            ulong guildId,
+            SocketGuild guild = null,
+            CancellationToken cancellationToken = default)
+            => await GetCoreAsync(guildId, guild?.PreferredLocale, cancellationToken).ConfigureAwait(false);
 
-        internal async Task<string> GetCoreAsync(ulong guildId, string preferredLocale)
+        internal async Task<string> GetCoreAsync(
+            ulong guildId,
+            string preferredLocale,
+            CancellationToken cancellationToken = default)
         {
             if (TryGetCached(guildId, out string configuredLocale))
                 return _localeResolver.ResolvePublic(configuredLocale, preferredLocale);
 
             SemaphoreSlim guildLock = GetGuildLock(guildId);
-            await guildLock.WaitAsync().ConfigureAwait(false);
+            await guildLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (TryGetCached(guildId, out configuredLocale))
                     return _localeResolver.ResolvePublic(configuredLocale, preferredLocale);
 
                 long generation = GetCacheGeneration(guildId);
+                cancellationToken.ThrowIfCancellationRequested();
                 configuredLocale = SupportedLocale.Normalize(
                     await _loadConfiguredLocaleAsync(guildId).ConfigureAwait(false));
+                cancellationToken.ThrowIfCancellationRequested();
                 if (GetCacheGeneration(guildId) == generation)
                     Cache(guildId, configuredLocale, generation);
                 return _localeResolver.ResolvePublic(configuredLocale, preferredLocale);

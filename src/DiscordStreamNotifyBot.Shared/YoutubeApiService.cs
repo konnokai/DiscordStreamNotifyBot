@@ -185,7 +185,7 @@ namespace DiscordStreamNotifyBot.Shared
         public string GetVideoId(string videoUrl)
             => YoutubeVideoIdParser.Parse(videoUrl);
 
-        public async Task<string> GetChannelTitle(string channelId)
+        public async Task<string> GetChannelTitle(string channelId, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -194,8 +194,12 @@ namespace DiscordStreamNotifyBot.Shared
 
                 var channel = YouTubeService.Channels.List("snippet");
                 channel.Id = channelId;
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
+                var response = await channel.ExecuteAsync(cancellationToken).ConfigureAwait(false);
                 return response.Items[0].Snippet.Title;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (NullReferenceException)
             {

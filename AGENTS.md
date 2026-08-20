@@ -15,6 +15,7 @@
 - YouTube 會員驗證已重構為 `/youtube-member`／`/youtube-member-set`、durable pending cleanup、role migration/deletion checkpoint、typed provider result 與可 drain 的 `PeriodicRunner`；Google callback/refresh/revoke 以 Redis DB1 per-user lease 加 MySQL unlink intent fence 跨 Bot/Backend 協調，SDK 不直接寫刪 authoritative token；YouTube/Twitch 共用 operation coordinator 與跨平台 role ownership 保護。Backend/Frontend 已同步 cleanup-pending contract，正式 MySQL migration 與 Discord acceptance 尚待維護窗口人工執行。
 - 網頁管理設定 Bot 端首版已實作：Notifier owning shard 透過固定 Redis request/reply 契約提供 guild/common/三平台通知快照，並由既有 Utility/YouTube/Twitch/TwitCasting 服務執行明確 desired-state mutation；跨專案契約與後續驗證設定擴充見 [docs/WEB_ADMIN_SETTINGS_PLAN.md](docs/WEB_ADMIN_SETTINGS_PLAN.md)。
 - 網頁管理設定的三平台爬蟲與 YouTube／Twitch 驗證已接上共用 domain service、expanded snapshot 與 Web 表單；正式 Discord／Redis／MySQL／多 shard 驗收仍依 [docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md](docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md) 執行。
+- 網頁管理設定 latency follow-up 已完成：Backend 三個 endpoint 共用 30 秒 absolute deadline，Bot envelope 傳遞 `deadlineUnixMs`，Redis reply／unavailable／deadline exceeded 分流，驗證刪除先 durable pending 再由既有週期清理；正式整合驗收仍待執行。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run

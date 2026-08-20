@@ -20,6 +20,7 @@ namespace DiscordStreamNotifyBot.Tests
                 CorrelationId = Guid.NewGuid().ToString("N"),
                 GuildId = Snowflake,
                 ActorUserId = Snowflake,
+                DeadlineUnixMs = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeMilliseconds(),
                 Action = AdminSettingsContract.YoutubeRemoveAction,
                 Payload = JObject.FromObject(new { source = "UC123" })
             }));
@@ -29,7 +30,7 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal(JTokenType.String, json["actorUserId"]!.Type);
             Assert.Equal(Snowflake, json.Value<string>("actorUserId"));
             Assert.Equal(
-                ["action", "actorUserId", "contractVersion", "correlationId", "guildId", "payload"],
+                ["action", "actorUserId", "contractVersion", "correlationId", "deadlineUnixMs", "guildId", "payload"],
                 json.Properties().Select(x => x.Name).OrderBy(x => x, StringComparer.Ordinal));
         }
 
@@ -165,11 +166,24 @@ namespace DiscordStreamNotifyBot.Tests
         public void RequestParserRejectsNumericSnowflakes()
         {
             string correlationId = Guid.NewGuid().ToString("N");
-            string valid = $"{{\"contractVersion\":1,\"correlationId\":\"{correlationId}\",\"guildId\":\"1\",\"actorUserId\":\"2\",\"action\":\"settings.snapshot\",\"payload\":{{}}}}";
-            string numeric = $"{{\"contractVersion\":1,\"correlationId\":\"{correlationId}\",\"guildId\":1,\"actorUserId\":2,\"action\":\"settings.snapshot\",\"payload\":{{}}}}";
+            long deadline = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeMilliseconds();
+            string valid = $"{{\"contractVersion\":1,\"correlationId\":\"{correlationId}\",\"guildId\":\"1\",\"actorUserId\":\"2\",\"deadlineUnixMs\":{deadline},\"action\":\"settings.snapshot\",\"payload\":{{}}}}";
+            string numeric = $"{{\"contractVersion\":1,\"correlationId\":\"{correlationId}\",\"guildId\":1,\"actorUserId\":2,\"deadlineUnixMs\":{deadline},\"action\":\"settings.snapshot\",\"payload\":{{}}}}";
 
             Assert.True(AdminSettingsService.TryReadRequest(valid, out _));
             Assert.False(AdminSettingsService.TryReadRequest(numeric, out _));
+        }
+
+        [Fact]
+        public void RequestDeadlineIsRequiredAndExpiredRequestsAreRejected()
+        {
+            string correlationId = Guid.NewGuid().ToString("N");
+            string missing = $"{{\"contractVersion\":1,\"correlationId\":\"{correlationId}\",\"guildId\":\"1\",\"actorUserId\":\"2\",\"action\":\"settings.snapshot\",\"payload\":{{}}}}";
+            string expired = $"{{\"contractVersion\":1,\"correlationId\":\"{correlationId}\",\"guildId\":\"1\",\"actorUserId\":\"2\",\"deadlineUnixMs\":1,\"action\":\"settings.snapshot\",\"payload\":{{}}}}";
+
+            Assert.False(AdminSettingsService.TryReadRequest(missing, out _));
+            Assert.True(AdminSettingsService.TryReadRequest(expired, out var request));
+            Assert.True(AdminSettingsService.IsDeadlineExpired(request!.DeadlineUnixMs, 2));
         }
 
         [Theory]
@@ -293,6 +307,7 @@ namespace DiscordStreamNotifyBot.Tests
                 CorrelationId = Guid.NewGuid().ToString("N"),
                 GuildId = "1",
                 ActorUserId = "2",
+                DeadlineUnixMs = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeMilliseconds(),
                 Action = action,
                 Payload = new JObject()
             };

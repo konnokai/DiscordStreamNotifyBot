@@ -196,8 +196,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 cancellationToken);
         }
 
-        /// <summary>設定刪除的可恢復 terminal transition；即使沒有 check 也會移除 config。</summary>
-        public async Task<bool> DeleteConfigurationAsync(
+        /// <summary>只保存設定刪除 checkpoint；Discord role 清理由背景週期處理。</summary>
+        public async Task<bool> MarkConfigurationDeletionPendingAsync(
             GuildYoutubeMemberConfig requestedConfig,
             CancellationToken cancellationToken)
         {
@@ -208,14 +208,34 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 x.GuildId == requestedConfig.GuildId &&
                 x.MemberCheckChannelId == requestedConfig.MemberCheckChannelId, cancellationToken);
             if (config == null)
-                return true;
+                return false;
 
             var checks = await db.YoutubeMemberCheck.Where(x =>
                 x.GuildId == config.GuildId && x.CheckYTChannelId == config.MemberCheckChannelId)
                 .ToListAsync(cancellationToken);
             YoutubeMemberPolicies.QueueConfigurationDeletion(config, checks);
             await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
 
+        /// <summary>只處理已保存的設定刪除 checkpoint，不會把 active 設定標記成待刪除。</summary>
+        public async Task<bool> ProcessPendingConfigurationDeletionAsync(
+            GuildYoutubeMemberConfig requestedConfig,
+            CancellationToken cancellationToken)
+        {
+            await using var guildLock = await _operationCoordinator.LockGuildAsync(
+                requestedConfig.GuildId, cancellationToken);
+            using var db = _dbService.GetDbContext();
+            var config = await db.GuildYoutubeMemberConfig.SingleOrDefaultAsync(x =>
+                x.GuildId == requestedConfig.GuildId &&
+                x.MemberCheckChannelId == requestedConfig.MemberCheckChannelId &&
+                x.DeletionPending, cancellationToken);
+            if (config == null)
+                return true;
+
+            var checks = await db.YoutubeMemberCheck.Where(x =>
+                x.GuildId == config.GuildId && x.CheckYTChannelId == config.MemberCheckChannelId)
+                .ToListAsync(cancellationToken);
             MemberRoleOwnershipSnapshot ownership = await _roleOwnershipService.LoadSnapshotAsync(
                 config.GuildId, cancellationToken);
             bool allRemoved = true;
@@ -252,7 +272,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     .Where(x => x.DeletionPending)
                     .ToArrayAsync(cancellationToken);
                 foreach (GuildYoutubeMemberConfig config in deletingConfigs.Where(x => Bot.IsServerOnThisShard(x.GuildId)))
-                    await DeleteConfigurationAsync(config, cancellationToken);
+                    await ProcessPendingConfigurationDeletionAsync(config, cancellationToken);
             }
 
             using var readDb = _dbService.GetDbContext();

@@ -74,8 +74,11 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public TimeSpan ParseToTimeSpan(string input) => _apiService.ParseToTimeSpan(input);
 
-        public Task<User> GetUserAsync(string twitchUserId = "", string twitchUserLogin = "")
-            => _apiService.GetUserAsync(twitchUserId, twitchUserLogin);
+        public Task<User> GetUserAsync(
+            string twitchUserId = "",
+            string twitchUserLogin = "",
+            CancellationToken cancellationToken = default)
+            => _apiService.GetUserAsync(twitchUserId, twitchUserLogin, cancellationToken);
 
         public Task<IReadOnlyList<User>> GetUsersAsync(params string[] twitchUserLogins)
             => _apiService.GetUsersAsync(twitchUserLogins);

@@ -485,10 +485,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 x => x.GuildId == guildId && x.MemberCheckChannelId == sourceId, cancellationToken);
             if (config == null)
                 return AdminSettingsMutationResult.Rejected("verification.not-configured");
-            bool removed = await _roleService.DeleteConfigurationAsync(config, cancellationToken);
-            return removed
-                ? AdminSettingsMutationResult.Applied("verification.removed")
-                : AdminSettingsMutationResult.Pending("verification.cleanup-pending");
+            bool marked = await _roleService.MarkConfigurationDeletionPendingAsync(config, cancellationToken);
+            return marked
+                ? AdminSettingsMutationResult.Pending("verification.cleanup-pending")
+                : AdminSettingsMutationResult.Rejected("verification.not-configured");
         }
 
         public async Task<AdminSettingsMutationResult> SetProbeVideoAsync(
@@ -787,8 +787,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         YoutubeMemberManualPinPolicy.DecideAutomaticMutation(item.IsManualVideoId) ==
                         YoutubeMemberAutomaticMutationAction.Apply)
                     {
-                        if (!await _roleService.DeleteConfigurationAsync(item, GracefulShutdown.Token))
-                            Log.Warn($"YouTube 會限設定刪除待重試: {item.GuildId} / {item.MemberCheckChannelId}");
+                        if (!await _roleService.MarkConfigurationDeletionPendingAsync(item, GracefulShutdown.Token))
+                            Log.Warn($"YouTube 會限設定刪除標記失敗: {item.GuildId} / {item.MemberCheckChannelId}");
                     }
                 }
                 catch (Exception ex)

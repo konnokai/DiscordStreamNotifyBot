@@ -318,7 +318,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         }
 
         #region TwitchAPI
-        public async Task<User> GetUserAsync(string twitchUserId = "", string twitchUserLogin = "")
+        public async Task<User> GetUserAsync(
+            string twitchUserId = "",
+            string twitchUserLogin = "",
+            CancellationToken cancellationToken = default)
         {
             List<string> userId = null, userLogin = null;
             if (!string.IsNullOrEmpty(twitchUserId))
@@ -331,8 +334,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
             try
             {
-                var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin);
+                var users = await TwitchApi.Value.Helix.Users.GetUsersAsync(userId, userLogin)
+                    .WaitAsync(cancellationToken);
                 return users.Users.FirstOrDefault();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (BadRequestException)
             {

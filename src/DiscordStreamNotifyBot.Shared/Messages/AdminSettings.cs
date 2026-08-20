@@ -47,6 +47,9 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         [JsonProperty("actorUserId")]
         public string ActorUserId { get; set; } = "";
 
+        [JsonProperty("deadlineUnixMs")]
+        public long DeadlineUnixMs { get; set; }
+
         [JsonProperty("action")]
         public string Action { get; set; } = "";
 
