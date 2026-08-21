@@ -847,6 +847,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 }
 
                 return await Policy.Handle<TimeoutException>()
+                    .Or<KeyNotFoundException>()
                     .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
@@ -871,6 +872,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             try
             {
                 return await Policy.Handle<TimeoutException>()
+                    .Or<KeyNotFoundException>()
                     .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
@@ -909,6 +911,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 }
 
                 return await Policy.Handle<TimeoutException>()
+                    .Or<KeyNotFoundException>()
                     .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                     .WaitAndRetryAsync(3, (retryAttempt) =>
                     {

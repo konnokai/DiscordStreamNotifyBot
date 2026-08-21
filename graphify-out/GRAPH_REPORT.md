@@ -1,16 +1,16 @@
-# Graph Report - DiscordStreamNotifyBot  (2026-08-20)
+# Graph Report - DiscordStreamNotifyBot  (2026-08-21)
 
 ## Corpus Check
-- 327 files · ~171,424 words
+- 327 files · ~171,445 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4147 nodes · 9626 edges · 231 communities (194 shown, 37 thin omitted)
+- 4147 nodes · 9626 edges · 232 communities (195 shown, 37 thin omitted)
 - Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 832 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1d0f897e`
+- Built from commit: `8c93aaad`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -121,7 +121,7 @@
 - .New
 - .claude/CLAUDE.md (graphify trigger)
 - DiscordWebhookClient
-- Attribute
+- DiscordStreamNotifyBot.Command.Attribute
 - Confidence rubric (EXTRACTED/INFERRED/AMBIGUOUS)
 - AST structural extraction (Part A)
 - Community detection & clustering
@@ -179,6 +179,7 @@
 - 20260611015819_SyncModelDrift.Designer.cs
 - .MakeNamesUnique
 - 20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs
+- DiscordStreamNotifyBot.Tests.Component.MySql
 - .LoadSnapshotAsync
 - .CheckRequirementsAsync
 - .NotifyAddedAsync
@@ -274,7 +275,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (231 total, 37 thin omitted)
+## Communities (232 total, 37 thin omitted)
 
 ### Community 0 - "TwitchSubscriptionApiClient"
 Cohesion: 0.14
@@ -378,7 +379,7 @@ Nodes (36): 10. Frontend 調整, 11. 安全與錯誤處理, 12.1 Backend, 12.2 B
 
 ### Community 25 - "YoutubeMemberPolicies"
 Cohesion: 0.09
-Nodes (14): ComponentInteraction, Task, IEnumerable, IReadOnlyCollection, IReadOnlyList, YoutubeMemberPolicies, YoutubeMemberRoleApplyResult, YoutubeMemberSelectionTransition (+6 more)
+Nodes (13): ComponentInteraction, Task, IEnumerable, IReadOnlyCollection, IReadOnlyList, YoutubeMemberPolicies, YoutubeMemberRoleApplyResult, YoutubeMemberSelectionTransition (+5 more)
 
 ### Community 26 - "新增 TwitCasting 錄影委派計畫（小幫手 ↔ StreamRecordTools）"
 Cohesion: 0.11
@@ -417,8 +418,8 @@ Cohesion: 0.20
 Nodes (7): Console 備援, Grafana Dashboard, Log 與 Loki, Loki 主動推送, Serilog Pipeline, 排障, 檔案路由
 
 ### Community 35 - "DiscordStreamNotifyBot.DataBase.Table"
-Cohesion: 0.03
-Nodes (43): DiscordStreamNotifyBot.Tests.Component.MySql, DiscordStreamNotifyBot.DataBase.Table, DiscordStreamNotifyBot.Command.Youtube, DiscordStreamNotifyBot.Command.Attribute, DiscordStreamNotifyBot.Command.Twitch, DbContext, IDesignTimeDbContextFactory, DbSet (+35 more)
+Cohesion: 0.04
+Nodes (35): DiscordStreamNotifyBot.DataBase.Table, DbContext, IDesignTimeDbContextFactory, DbSet, ModelBuilder, MainDbContext, MainDbContextFactory, BannerChange (+27 more)
 
 ### Community 36 - "TwitchOAuthRefreshLockLease"
 Cohesion: 0.11
@@ -522,7 +523,7 @@ Nodes (10): DiscordStreamNotifyBot.Tests.Component.Redis, DiscordStreamNotifyBot
 
 ### Community 61 - "YoutubeStreamService"
 Cohesion: 0.10
-Nodes (13): NowStreamingHost, DiscordSocketClient, Embed, EmojiService, HttpClient, IHttpClientFactory, List, NoticeCache (+5 more)
+Nodes (16): NowStreamingHost, CancellationToken, DiscordSocketClient, Embed, EmojiService, HttpClient, IEnumerable, IHttpClientFactory (+8 more)
 
 ### Community 62 - "graphify reference: extra exports and benchmark"
 Cohesion: 0.22
@@ -582,7 +583,7 @@ Nodes (14): Alias, ClusterQueryService, Command, CommandExample, DiscordSocketCl
 
 ### Community 81 - "AdminSettingsMutationResult"
 Cohesion: 0.09
-Nodes (24): IInteractionService, DiscordSocketClient, SocketGuild, AdminSettingsChannelValidator, CancellationToken, Clip, DateTime, DiscordSocketClient (+16 more)
+Nodes (21): IInteractionService, DiscordSocketClient, SocketGuild, AdminSettingsChannelValidator, CancellationToken, Clip, DateTime, DiscordSocketClient (+13 more)
 
 ### Community 82 - "AdminSettingsContractTests"
 Cohesion: 0.13
@@ -657,8 +658,8 @@ Cohesion: 0.12
 Nodes (16): 10. 首版完成閘門, 11. 驗證, 12. 實作順序, 1. 目標, 2. 已確認產品決策, 3. 系統邊界, 4.1 命令, 4.2 回應 (+8 more)
 
 ### Community 102 - "YoutubeMemberSelectMenuTests"
-Cohesion: 0.19
-Nodes (5): UserId, InlineData, Theory, YoutubeMemberSelectMenuTests, VideoId
+Cohesion: 0.20
+Nodes (6): UserId, Fact, InlineData, Theory, YoutubeMemberSelectMenuTests, VideoId
 
 ### Community 103 - ".New"
 Cohesion: 0.33
@@ -668,9 +669,9 @@ Nodes (3): ConsoleColor, LogLevel, Exception
 Cohesion: 0.31
 Nodes (6): CancellationToken, DiscordSocketClient, HttpClient, Task, DiscordWebhookClient, Message
 
-### Community 106 - "Attribute"
-Cohesion: 0.20
-Nodes (7): Attribute, string, CommandExampleAttribute, string, CommandExampleAttribute, string, CommandSummaryAttribute
+### Community 106 - "DiscordStreamNotifyBot.Command.Attribute"
+Cohesion: 0.13
+Nodes (10): Attribute, DiscordStreamNotifyBot.Command.Youtube, DiscordStreamNotifyBot.Command.Attribute, DiscordStreamNotifyBot.Command.Twitch, string, CommandExampleAttribute, string, CommandExampleAttribute (+2 more)
 
 ### Community 113 - ".CreateOrRepairConfigurationAsync"
 Cohesion: 0.14
@@ -835,6 +836,10 @@ Nodes (5): Alias, Command, RequireContext, RequireOwner, Task
 ### Community 162 - ".MakeNamesUnique"
 Cohesion: 0.31
 Nodes (5): IEnumerable, int, IReadOnlyList, AutocompleteCandidate, AutocompleteSearch
+
+### Community 164 - "DiscordStreamNotifyBot.Tests.Component.MySql"
+Cohesion: 0.20
+Nodes (5): DiscordStreamNotifyBot.Tests.Component.MySql, Fact, YoutubeMembershipSchemaContractTests, string, MySqlComponentFactAttribute
 
 ### Community 165 - ".LoadSnapshotAsync"
 Cohesion: 0.24
@@ -1060,11 +1065,11 @@ Nodes (6): DiscordStreamNotifyBot.Scraper.Detection.Youtube, DiscordStreamNotify
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DiscordStreamNotifyBot.DataBase.Table` connect `DiscordStreamNotifyBot.DataBase.Table` to `.GetDbContext`, `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `DiscordStreamNotifyBot.Tests`, `BotLocalizer`, `DiscordStreamNotifyBot.Shared.Messages`, `Extensions`, `TwitchSubscriptionService`, `AuthTokenTests`, `YoutubeMemberPolicies`, `YoutubeMemberRoleService`, `GuildLocaleService`, `MySqlComponentFixture`, `TwitchSubscriptionPolicies.cs`, `TwitchStateDecisions.cs`, `.HandleStartLiveMessageAsync`, `TwitchRefreshRotationLifecycle`, `DiscordStreamNotifyBot.Shared`, `Bot`, `DiscordStreamNotifyBot.DataBase`, `BotState`, `.CreateOrRepairConfigurationAsync`?**
+- **Why does `DiscordStreamNotifyBot.DataBase.Table` connect `DiscordStreamNotifyBot.DataBase.Table` to `.GetDbContext`, `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `DiscordStreamNotifyBot.Tests`, `BotLocalizer`, `DiscordStreamNotifyBot.Shared.Messages`, `Extensions`, `TwitchSubscriptionService`, `AuthTokenTests`, `YoutubeMemberPolicies`, `DiscordStreamNotifyBot.Tests.Component.MySql`, `YoutubeMemberRoleService`, `GuildLocaleService`, `MySqlComponentFixture`, `TwitchSubscriptionPolicies.cs`, `TwitchStateDecisions.cs`, `.HandleStartLiveMessageAsync`, `TwitchRefreshRotationLifecycle`, `DiscordStreamNotifyBot.Shared`, `Bot`, `DiscordStreamNotifyBot.DataBase`, `BotState`, `DiscordStreamNotifyBot.Command.Attribute`, `.CreateOrRepairConfigurationAsync`?**
   _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Why does `MainDbService` connect `MainDbService` to `.GetDbContext`, `.Warn`, `ClusterQueryService`, `TwitchSubscriptionService`, `.HandleTwitcastingAsync`, `.GetLocaleAsync`, `TwitcastingService`, `YoutubeMemberAuthorizationService`, `AuthTokenTests`, `SendMsgToAllGuildService`, `YoutubeMemberService`, `.LoadSnapshotAsync`, `DiscordStreamNotifyBot.Interaction.Attribute`, `YoutubeMemberRoleService`, `TwitchDetectionService`, `Twitch`, `MySqlComponentFixture`, `Administration`, `.SetMemberCheckVideoIdAsync`, `YoutubeMemberSetting`, `Utility`, `.HandleStartLiveMessageAsync`, `YoutubeDetectionService`, `YoutubeStreamService`, `Bot`, `DiscordStreamNotifyBot.DataBase`, `TwitchSubscriptionSetting`, `BotState`, `AdminSettingsService`, `YoutubeStream`, `AdminSettingsMutationResult`, `YoutubeApiService`, `.GetGuildNameMapAsync`, `.LockGuildAsync`, `.CreateOrRepairConfigurationAsync`, `.SendLocalizedConfirmAsync`, `TwitchSpider`?**
   _High betweenness centrality (0.064) - this node is a cross-community bridge._
-- **Why does `DiscordStreamNotifyBot.DataBase` connect `DiscordStreamNotifyBot.DataBase` to `.GetDbContext`, `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `20260721095646_AddLocalizationSettings.Designer.cs`, `20260813032017_RenameVerificationLogChannel.Designer.cs`, `ClusterQueryService`, `DiscordStreamNotifyBot.Shared.Messages`, `Extensions`, `TwitchSubscriptionService`, `DiscordStreamNotifyBot.Migrations`, `YoutubeMemberAuthorizationService`, `AuthTokenTests`, `.Get`, `SendMsgToAllGuildService`, `20260611015819_SyncModelDrift.Designer.cs`, `DiscordStreamNotifyBot.DataBase.Table`, `20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs`, `.LoadSnapshotAsync`, `DiscordStreamNotifyBot.Interaction.Attribute`, `YoutubeMemberRoleService`, `GuildLocaleService`, `MySqlComponentFixture`, `.RetryWithBackoffAsync`, `DiscordStreamNotifyBot.Shared`, `Bot`, `BotState`, `YoutubeDetectionService.cs`, `20260803141135_AddTwitchSubscriptionVerification.Designer.cs`, `YoutubeApiService`, `.GetGuildNameMapAsync`, `20250320095452_RefactorDbContext.Designer.cs`, `20250603065853_ModifyTwitCastingTable.Designer.cs`, `20260804173737_AddYoutubeMemberVerificationDurability.Designer.cs`, `20260807045351_AddGoogleOAuthUnlinkIntent.Designer.cs`, `.CreateOrRepairConfigurationAsync`, `20260803165758_AddTwitchSubscriptionDeletionPending.Designer.cs`, `DiscordStreamNotifyBot.HttpClients.Twitcasting.Model`, `TwitchSpider`?**
+- **Why does `DiscordStreamNotifyBot.DataBase` connect `DiscordStreamNotifyBot.DataBase` to `.GetDbContext`, `.Warn`, `DiscordStreamNotifyBot.SharedService.Twitch`, `20260721095646_AddLocalizationSettings.Designer.cs`, `20260813032017_RenameVerificationLogChannel.Designer.cs`, `ClusterQueryService`, `DiscordStreamNotifyBot.Shared.Messages`, `Extensions`, `TwitchSubscriptionService`, `DiscordStreamNotifyBot.Migrations`, `YoutubeMemberAuthorizationService`, `AuthTokenTests`, `.Get`, `SendMsgToAllGuildService`, `20260611015819_SyncModelDrift.Designer.cs`, `DiscordStreamNotifyBot.DataBase.Table`, `20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs`, `.LoadSnapshotAsync`, `DiscordStreamNotifyBot.Interaction.Attribute`, `YoutubeMemberRoleService`, `GuildLocaleService`, `MySqlComponentFixture`, `.RetryWithBackoffAsync`, `DiscordStreamNotifyBot.Shared`, `Bot`, `BotState`, `YoutubeDetectionService.cs`, `20260803141135_AddTwitchSubscriptionVerification.Designer.cs`, `YoutubeApiService`, `.GetGuildNameMapAsync`, `20250320095452_RefactorDbContext.Designer.cs`, `20250603065853_ModifyTwitCastingTable.Designer.cs`, `20260804173737_AddYoutubeMemberVerificationDurability.Designer.cs`, `DiscordStreamNotifyBot.Command.Attribute`, `20260807045351_AddGoogleOAuthUnlinkIntent.Designer.cs`, `.CreateOrRepairConfigurationAsync`, `20260803165758_AddTwitchSubscriptionDeletionPending.Designer.cs`, `DiscordStreamNotifyBot.HttpClients.Twitcasting.Model`, `TwitchSpider`?**
   _High betweenness centrality (0.059) - this node is a cross-community bridge._
 - **What connects `net8.0`, `prometheus-net.AspNetCore (8.2.1)`, `Microsoft.NET.Sdk` to the rest of the system?**
   _484 weakly-connected nodes found - possible documentation gaps or missing edges._

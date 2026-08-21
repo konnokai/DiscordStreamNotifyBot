@@ -316,9 +316,9 @@
   <data name="Member.Status.UnknownUser" xml:space="preserve"><value>找不到使用者</value></data>
   <data name="Member.Status.VerifiedRoleUnknownError" xml:space="preserve"><value>驗證成功，但授予身分組時發生未知錯誤</value></data>
   <data name="Member.Status.Verified" xml:space="preserve"><value>已驗證</value></data>
-  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>既有會員資格檢查完成</value></data>
-  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>新會員資格檢查完成</value></data>
-  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>檢查頻道：{0}&#10;這次檢查了 {1} 位成員，目前共有 {2} 位通過驗證。</value></data>
+  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>舊會員驗證完成</value></data>
+  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>新會員驗證完成</value></data>
+  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>驗證頻道：{0}&#10;本次檢查 {1} 位成員，其中 {2} 位已通過驗證。</value></data>
   <data name="Member.Background.LoginRequired" xml:space="preserve"><value>尚未登入。請至 {0} 登入，然後回到伺服器執行 {1}。</value></data>
   <data name="Member.Background.RefreshFailed" xml:space="preserve"><value>無法重新整理你的 Google 授權。請到 {0} 移除「直播小幫手會限確認」的應用程式存取權，再前往 {1} 重新登入，最後回到伺服器執行 {2}。</value></data>
   <data name="Member.Background.CredentialExpired" xml:space="preserve"><value>你的 Google 授權已失效。請到 {0} 移除「直播小幫手會限確認」的應用程式存取權，再前往 {1} 重新登入，最後回到伺服器執行 {2}。</value></data>

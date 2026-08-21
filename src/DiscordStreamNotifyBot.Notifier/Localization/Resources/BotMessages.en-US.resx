@@ -316,9 +316,9 @@
   <data name="Member.Status.UnknownUser" xml:space="preserve"><value>User not found</value></data>
   <data name="Member.Status.VerifiedRoleUnknownError" xml:space="preserve"><value>Verified, but an unknown error occurred while granting the role</value></data>
   <data name="Member.Status.Verified" xml:space="preserve"><value>Verified</value></data>
-  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>Existing membership check complete</value></data>
-  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>New membership check complete</value></data>
-  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>Channel checked: {0}&#10;Checked {1} members; {2} were verified successfully.</value></data>
+  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>Existing member verification complete</value></data>
+  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>New member verification complete</value></data>
+  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>Verification channel: {0}&#10;Checked {1} members; {2} passed verification.</value></data>
   <data name="Member.Background.LoginRequired" xml:space="preserve"><value>You are not signed in. Sign in at {0}, return to the server, and run {1}.</value></data>
   <data name="Member.Background.RefreshFailed" xml:space="preserve"><value>Your Google authorization could not be refreshed. Open {0}, remove access for the Stream Notify Bot membership checker, sign in again at {1}, then return to the server and run {2}.</value></data>
   <data name="Member.Background.CredentialExpired" xml:space="preserve"><value>Your Google authorization has expired. Open {0}, remove access for the Stream Notify Bot membership checker, sign in again at {1}, then return to the server and run {2}.</value></data>

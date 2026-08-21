@@ -316,9 +316,9 @@
   <data name="Member.Status.UnknownUser" xml:space="preserve"><value>ユーザーが見つかりません</value></data>
   <data name="Member.Status.VerifiedRoleUnknownError" xml:space="preserve"><value>認証には成功しましたが、ロール付与中に不明なエラーが発生しました</value></data>
   <data name="Member.Status.Verified" xml:space="preserve"><value>認証済み</value></data>
-  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>既存メンバーの確認が完了しました</value></data>
-  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>新規メンバーの確認が完了しました</value></data>
-  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>確認チャンネル：{0}&#10;{1} 人を確認し、{2} 人の認証に成功しました。</value></data>
+  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>既存メンバーの認証が完了しました</value></data>
+  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>新規メンバーの認証が完了しました</value></data>
+  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>認証チャンネル：{0}&#10;{1} 人を確認し、そのうち {2} 人が認証に成功しました。</value></data>
   <data name="Member.Background.LoginRequired" xml:space="preserve"><value>ログインしていません。{0} でログインし、サーバーに戻って {1} を実行してください。</value></data>
   <data name="Member.Background.RefreshFailed" xml:space="preserve"><value>Google 認証情報を更新できませんでした。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>
   <data name="Member.Background.CredentialExpired" xml:space="preserve"><value>Google 認証の有効期限が切れています。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>

@@ -91,6 +91,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     continue;
 
                 string guildLocale = await _guildLocaleService.GetAsync(guild.Id, guild);
+                int configurationMembers = 0;
                 YoutubeMemberProbeConfigurationSnapshot configurationSnapshot =
                     YoutubeMemberPolicies.CaptureProbeConfiguration(configuration);
                 foreach (YoutubeMemberCheck check in checks)
@@ -142,6 +143,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                                     probeExecution.EncryptedTokenPayload, cancellationToken))
                             {
                                 members++;
+                                configurationMembers++;
                                 if (!isOldCheck)
                                     await SendVerifiedMessagesAsync(logChannel, guild, configuration, check.UserId, userLocale, guildLocale);
                             }
@@ -186,6 +188,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             break;
                     }
                 }
+
+                await logChannel.SendConfirmMessageAsync(
+                    _localizer.Get(isOldCheck ? "Member.Status.OldCheckComplete" : "Member.Status.NewCheckComplete", guildLocale),
+                    _localizer.Format("Member.Status.CheckSummary", guildLocale,
+                        configuration.MemberCheckChannelTitle, checks.Count, configurationMembers));
             }
 
             if (total > 0)
