@@ -338,7 +338,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     {
                         try
                         {
-                            var response = await Policy.Handle<HttpRequestException>()
+                            using var responseMessage = await Policy.Handle<HttpRequestException>()
                                 .Or<WebException>((ex) => ex.Message.Contains("unavailable"))
                                 .Or<TaskCanceledException>((ex) => ex.Message.Contains("HttpClient.Timeout"))
                                 .WaitAndRetryAsync(3, (retryAttempt) =>
@@ -349,12 +349,30 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 })
                                 .ExecuteAsync(async () =>
                                 {
-                                    return await httpClient.GetStringAsync($"https://www.youtube.com/channel/{item.ChannelId}/{type}");
+                                    var message = await httpClient.GetAsync($"https://www.youtube.com/channel/{item.ChannelId}/{type}");
+                                    if (!message.IsSuccessStatusCode)
+                                    {
+                                        Log.Warn($"OtherSchedule {item.ChannelId} - {type}: HTTP {(int)message.StatusCode} {message.StatusCode}");
+                                        try
+                                        {
+                                            message.EnsureSuccessStatusCode();
+                                        }
+                                        catch
+                                        {
+                                            message.Dispose();
+                                            throw;
+                                        }
+                                    }
+
+                                    return message;
                                 });
+
+                            var responseStatus = $"HTTP {(int)responseMessage.StatusCode} {responseMessage.StatusCode}";
+                            var response = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                             if (string.IsNullOrEmpty(response))
                             {
-                                Log.Warn($"OtherSchedule {item.ChannelId} - {type}: 回應為空，放棄本次排程");
+                                Log.Warn($"OtherSchedule {item.ChannelId} - {type}: {responseStatus}，回應為空，放棄本次排程");
                                 continue;
                             }
 
@@ -364,8 +382,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             else
                                 regex = NewYtInitialDataRegex();
 
-                            var group = regex.Match(response).Groups[1];
-                            var jObject = JObject.Parse(group.Value);
+                            var match = regex.Match(response);
+                            if (!match.Success || string.IsNullOrWhiteSpace(match.Groups[1].Value))
+                            {
+                                Log.Warn($"OtherSchedule {item.ChannelId} - {type}: {responseStatus}，ytInitialData regex 未命中，回應長度 {response.Length}");
+                                continue;
+                            }
+
+                            var jObject = JObject.Parse(match.Groups[1].Value);
                             var alerts = jObject["alerts"];
 
                             if (alerts != null)
@@ -393,6 +417,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             [
                                 .. jObject.Descendants().Where((x) => x.ToString().StartsWith("\"gridVideoRenderer")),
                                 .. jObject.Descendants().Where((x) => x.ToString().StartsWith("\"videoRenderer")),
+                                .. jObject.SelectTokens("$..richItemRenderer..watchEndpoint"),
                             ];
 
                             if (!otherVideoDic.ContainsKey(item.ChannelId))
@@ -404,7 +429,19 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 try
                                 {
-                                    videoId = JObject.Parse(item2.ToString().Substring(item2.ToString().IndexOf("{")))["videoId"].ToString();
+                                    if (item2 is JObject videoRenderer)
+                                    {
+                                        videoId = videoRenderer.Value<string>("videoId");
+                                    }
+                                    else
+                                    {
+                                        var itemJson = item2.ToString();
+                                        var objectStart = itemJson.IndexOf("{");
+                                        if (objectStart < 0) continue;
+                                        videoId = JObject.Parse(itemJson.Substring(objectStart)).Value<string>("videoId");
+                                    }
+
+                                    if (string.IsNullOrEmpty(videoId)) continue;
 
                                     if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                     {
