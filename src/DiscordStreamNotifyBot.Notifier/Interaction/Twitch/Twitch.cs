@@ -55,6 +55,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
         }
 
         [CommandExample("998rrr", "https://twitch.tv/998rrr")]
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("add", "新增 Twitch 直播通知的頻道")]
         public async Task AddChannel([Summary("streamer", "頻道網址")] string twitchUrl,
             [Summary("notification-channel", "發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
@@ -153,6 +154,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
         }
 
         [CommandExample("998rrr", "https://twitch.tv/998rrr")]
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("remove", "移除 Twitch 直播通知的頻道")]
         public async Task RemoveChannel([Summary("channel", "頻道名稱"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId)
         {
@@ -183,6 +185,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             }
         }
 
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("list", "顯示已加入通知清單的 Twitch 直播頻道")]
         public async Task ListChannel([Summary("page", "頁數")] int page = 0)
         {
@@ -212,6 +215,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             "請先新增直播通知，再設定通知訊息（`/help get-command-help twitch add`）\n\n" +
             "（若通知訊息要提及特定身分組，Bot 必須具備提及所有身分組權限）")]
         [CommandExample("998rrr 開台啦", "https://twitch.tv/998rrr 開始直播 開台啦")]
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("channel", "頻道名稱"), Autocomplete(typeof(GuildNoticeTwitchChannelIdAutocompleteHandler))] string twitchId,
             [Summary("notification-type", "通知類型")] TwitchService.NoticeType noticeType,
@@ -285,6 +289,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
         string GetCurrectMessage(string message, string locale)
             => message == "-" ? BotLocalizer.Get("Notifications.TypeDisabledValue", locale) : message;
 
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("list-message", "列出已設定的 Twitch 直播通知訊息")]
         public async Task ListMessage([Summary("page", "頁數")] int page = 0)
         {

@@ -158,6 +158,26 @@ namespace DiscordStreamNotifyBot.Tests
                 command => command.Module.SlashGroupName is "member" or "member-set");
         }
 
+        [Theory]
+        [InlineData("twitcasting", GuildPermission.ManageMessages)]
+        [InlineData("twitch", GuildPermission.ManageMessages)]
+        [InlineData("twitcasting-spider", GuildPermission.Administrator)]
+        [InlineData("twitch-spider", GuildPermission.Administrator)]
+        [InlineData("youtube-spider", GuildPermission.Administrator)]
+        [InlineData("youtube-member-set", GuildPermission.Administrator)]
+        public async Task RestrictedGroupsKeepPermissionMetadataOnEveryLeaf(
+            string groupName,
+            GuildPermission expectedPermission)
+        {
+            using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
+            SlashCommandInfo[] commands = fixture.Interactions.SlashCommands
+                .Where(command => command.Module.SlashGroupName == groupName)
+                .ToArray();
+
+            Assert.NotEmpty(commands);
+            Assert.All(commands, command => Assert.Equal(expectedPermission, command.DefaultMemberPermissions));
+        }
+
         private static void AssertParameter(
             SlashCommandParameterInfo parameter,
             string expectedName,

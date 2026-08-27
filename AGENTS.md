@@ -88,6 +88,9 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 - JSON：`Newtonsoft.Json`（`JsonConvert`）；**不使用 `System.Text.Json`**。
 - Global usings 已在 csproj 宣告：`Discord`、`Discord.WebSocket`、`Newtonsoft.Json`、`StackExchange.Redis`、`Microsoft.EntityFrameworkCore`、`System.Diagnostics`、`Google.Apis.YouTube.v3.Data`。
 - Embed 顏色：`WithOkColor()`（綠）/ `WithErrorColor()`（深灰）/ `WithRecordColor()`（紅）。
+- Discord.Net 維持最新穩定版，`Shared` 與 `Notifier` 的版本必須一致；升級後執行完整 Release build 與 test。
+- Slash 權限使用 `DefaultMemberPermissions`，不使用已淘汰的 `DefaultPermission`。有 `RequireUserPermission` 的 method 必須標註相同權限；整組共用權限時 module 也必須標註。method metadata 用於契約與 review，Discord 實際只對頂層 application command 套用預設權限，子指令仍以 `RequireUserPermission` 作為執行期安全邊界。
+- `DefaultMemberPermissions` 異動必須納入 `CommandSignature` 並更新 command contract snapshot，確保 shard 0 重新註冊。
 - 風格遵循根目錄 `.editorconfig`。
 - Commit：訊息繁中；多行訊息用 Bash tool 的 heredoc（`git commit -F - <<'EOF' … EOF`），**勿用 PowerShell here-string `@'…'@`**（Bash tool 是 POSIX sh，`@'` 會漏字進標題）。
 

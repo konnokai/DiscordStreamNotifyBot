@@ -141,7 +141,8 @@ namespace DiscordStreamNotifyBot.Interaction
             {
                 sb.Append("group|")
                     .Append(string.Join(".", GetModulePath(module))).Append('|')
-                    .Append(module.Description).Append('\n');
+                    .Append(module.Description).Append('|')
+                    .Append(module.DefaultMemberPermissions?.ToString() ?? "-").Append('\n');
             }
 
             var commands = _interactions.SlashCommands
@@ -159,14 +160,18 @@ namespace DiscordStreamNotifyBot.Interaction
                             return $"{index}:{p.Name}:{p.ParameterType.FullName}:{(p.IsRequired ? "R" : "O")}:{p.Description}:[{string.Join(",", choices)}]";
                         })
                         .ToList();
-                    return (Name: commandPath, Description: cmd.Description, Parameters: parameters);
+                    return (
+                        Name: commandPath,
+                        Description: cmd.Description,
+                        Permissions: cmd.DefaultMemberPermissions?.ToString() ?? "-",
+                        Parameters: parameters);
                 })
                 .OrderBy(x => x.Name, StringComparer.Ordinal)
                 .ToList();
 
             foreach (var cmd in commands)
             {
-                sb.Append(cmd.Name).Append('|').Append(cmd.Description).Append('|');
+                sb.Append(cmd.Name).Append('|').Append(cmd.Description).Append('|').Append(cmd.Permissions).Append('|');
                 foreach (var p in cmd.Parameters)
                     sb.Append(p).Append(';');
                 sb.Append('\n');

@@ -63,6 +63,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
            "如有任何需要請向 Bot 擁有者詢問")]
         [CommandExample("https://www.youtube.com/channel/UUMOs5FNYPHeZz5f7N1BDExxfg",
             "https://www.youtube.com/@998rrr")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("add", "新增非兩大箱的頻道檢測爬蟲")]
         public async Task AddChannelSpider([Summary("channel", "頻道網址")] string channelUrl)
         {
@@ -78,6 +79,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("https://www.youtube.com/channel/UUMOs5FNYPHeZz5f7N1BDExxfg",
             "https://www.youtube.com/@998rrr")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove", "移除非兩大箱的頻道檢測爬蟲")]
         public async Task RemoveChannelSpider([Summary("channel", "頻道網址"), Autocomplete(typeof(GuildYoutubeChannelSpiderAutocompleteHandler))] string channelUrl)
         {
@@ -102,6 +104,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
         }
 
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("list", "顯示已加入的爬蟲頻道")]
         public async Task ListChannelSpider([Summary("page", "頁數")] int page = 0)
         {
@@ -131,6 +134,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             }
         }
 
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("list-not-trusted", "顯示已加入但非認可的爬蟲檢測頻道 (本清單可能內含中之人或前世的頻道)")]
         public async Task ListNotTrustedChannelSpider([Summary("page", "頁數")] int page = 0)
         {

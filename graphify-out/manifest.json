@@ -1,1672 +1,2012 @@
 {
   ".claude/settings.json": {
-    "mtime": 1787197517.3501358,
+    "mtime": 1787833723.8081987,
+    "seen": 1787834011.5886168,
     "ast_hash": "89f2edea83f2e4bea1b022ca5e72702f",
     "semantic_hash": "89f2edea83f2e4bea1b022ca5e72702f"
   },
   "DiscordStreamNotifyBot.sln": {
-    "mtime": 1787197517.3573668,
+    "mtime": 1787833723.8143752,
+    "seen": 1787834011.5886219,
     "ast_hash": "690ae403d42a25b4cf20ad1bf69bcf53",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs": {
-    "mtime": 1787197517.4202027,
+    "mtime": 1787833723.8713746,
+    "seen": 1787834011.5886273,
     "ast_hash": "a02d94e5e542270cde33f52b946557fd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/DiscordStreamNotifyBot.Coordinator.csproj": {
-    "mtime": 1787197517.4202027,
+    "mtime": 1787833723.8713746,
+    "seen": 1787834011.5886283,
     "ast_hash": "c92bcb896268b4f1cd55f61ae4c7cd6d",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Program.cs": {
-    "mtime": 1787197517.421643,
+    "mtime": 1787833723.871889,
+    "seen": 1787834011.5886288,
     "ast_hash": "3aa09c47b740cda011e3c594c2de2b49",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/Properties/launchSettings.json": {
-    "mtime": 1787197517.421643,
+    "mtime": 1787833723.871889,
+    "seen": 1787834011.5886295,
     "ast_hash": "3f35055951007d74f75f6a38ba514800",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Bot.cs": {
-    "mtime": 1787197517.421643,
+    "mtime": 1787833723.8724036,
+    "seen": 1787834011.58863,
     "ast_hash": "9cf2c11c5b67ae893a4feb4d8df1df0b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Admin/AdministraitonService.cs": {
-    "mtime": 1787197517.4228888,
+    "mtime": 1787833723.872917,
+    "seen": 1787834011.5886307,
     "ast_hash": "4e733cd47903642590e18176da48b980",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Admin/Administration.cs": {
-    "mtime": 1787197517.4228888,
-    "ast_hash": "16e3ffcd75d6c9e0ac8547ae259afd7b",
+    "mtime": 1787833723.872917,
+    "seen": 1787834011.5886316,
+    "ast_hash": "e6e452de89acaba72af1fdac82adebbc",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Attribute/CommandExampleAttribute.cs": {
-    "mtime": 1787197517.423891,
+    "mtime": 1787833723.8734298,
+    "seen": 1787834011.5886323,
     "ast_hash": "7c44b1441172aa725dbfa8020bc74da3",
     "semantic_hash": "7c44b1441172aa725dbfa8020bc74da3"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Attribute/RequireGuildMemberCountAttribute.cs": {
-    "mtime": 1787197517.423891,
+    "mtime": 1787833723.8734298,
+    "seen": 1787834011.588633,
     "ast_hash": "64ec5a60801b7aa286bb6c3b12589bc9",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Attribute/RequireGuildOwnerAttribute.cs": {
-    "mtime": 1787197517.423891,
+    "mtime": 1787833723.8739493,
+    "seen": 1787834011.5886338,
     "ast_hash": "dd34f26c9e91583efdb0934b64e99678",
     "semantic_hash": "dd34f26c9e91583efdb0934b64e99678"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/CommandHandler.cs": {
-    "mtime": 1787197517.423891,
+    "mtime": 1787833723.8739493,
+    "seen": 1787834011.5886343,
     "ast_hash": "d1634d89d55acc965a46f6cfe1961af9",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/CommonEqualityComparer.cs": {
-    "mtime": 1787197517.4250317,
+    "mtime": 1787833723.8739493,
+    "seen": 1787834011.588635,
     "ast_hash": "856d16f3edf9cddddc5ba97a2639f00c",
     "semantic_hash": "856d16f3edf9cddddc5ba97a2639f00c"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Extensions.cs": {
-    "mtime": 1787197517.4250317,
+    "mtime": 1787833723.8744671,
+    "seen": 1787834011.5886357,
     "ast_hash": "51fc1e663ce25462d720a1518ced379a",
     "semantic_hash": "51fc1e663ce25462d720a1518ced379a"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Help/Help.cs": {
-    "mtime": 1787197517.4250317,
+    "mtime": 1787833723.8744671,
+    "seen": 1787834011.5886364,
     "ast_hash": "090893280e56489afebe9b38a4f33402",
     "semantic_hash": "090893280e56489afebe9b38a4f33402"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Help/HelpService.cs": {
-    "mtime": 1787197517.4260113,
+    "mtime": 1787833723.8744671,
+    "seen": 1787834011.5886369,
     "ast_hash": "d0e21906e10cdef4d879bb07bffd4afd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/ICommandService.cs": {
-    "mtime": 1787197517.4260113,
+    "mtime": 1787833723.874985,
+    "seen": 1787834011.5886376,
     "ast_hash": "0b6d7be157fb5155038aaaed8cd386a6",
     "semantic_hash": "0b6d7be157fb5155038aaaed8cd386a6"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Normal/Normal.cs": {
-    "mtime": 1787197517.4260113,
+    "mtime": 1787833723.874985,
+    "seen": 1787834011.5886383,
     "ast_hash": "36aa211823dd52998967e73f52283c62",
     "semantic_hash": "36aa211823dd52998967e73f52283c62"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/ReactionEventWrapper.cs": {
-    "mtime": 1787197517.4272082,
+    "mtime": 1787833723.874985,
+    "seen": 1787834011.5886388,
     "ast_hash": "75138a9183a43382383070794f9e09b1",
     "semantic_hash": "75138a9183a43382383070794f9e09b1"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/TopLevelModule.cs": {
-    "mtime": 1787197517.4272082,
+    "mtime": 1787833723.874985,
+    "seen": 1787834011.5886395,
     "ast_hash": "1abce18212ccea4542eb14cd1245752e",
     "semantic_hash": "1abce18212ccea4542eb14cd1245752e"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/TwitCasting/TwitCasting.cs": {
-    "mtime": 1787197517.4272082,
+    "mtime": 1787833723.875502,
+    "seen": 1787834011.58864,
     "ast_hash": "29c88a961c69b98fbf553ef1c3571b2d",
     "semantic_hash": "29c88a961c69b98fbf553ef1c3571b2d"
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Twitch/Twitch.cs": {
-    "mtime": 1787197517.4272082,
+    "mtime": 1787833723.875502,
+    "seen": 1787834011.588641,
     "ast_hash": "d63273affd8ae3c5cf0bd8ca6236127b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/YoutubeMember/YoutubeMember.cs": {
-    "mtime": 1787197517.4299915,
+    "mtime": 1787833723.8760202,
+    "seen": 1787834011.588642,
     "ast_hash": "f3c2ecb73a801c1871e45e07c931d4cd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Youtube/YoutubeChannelSpider.cs": {
-    "mtime": 1787197517.4287114,
+    "mtime": 1787833723.8760202,
+    "seen": 1787834011.5886424,
     "ast_hash": "95a926b86f519261b114ccb44ed1164e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Command/Youtube/YoutubeStream.cs": {
-    "mtime": 1787197517.4287114,
+    "mtime": 1787833723.8760202,
+    "seen": 1787834011.588643,
     "ast_hash": "58605df5bb4123ac76f44f541a67edc2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/DiscordStreamNotifyBot.Notifier.csproj": {
-    "mtime": 1787197517.4299915,
-    "ast_hash": "eadb45413a2ad514425c2382f12d0a16",
+    "mtime": 1787833851.3734162,
+    "seen": 1787834011.5886436,
+    "ast_hash": "3503520894b85ede99f0ff810a62314b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Attribute/CommandExampleAttribute.cs": {
-    "mtime": 1787197517.43124,
+    "mtime": 1787833723.876533,
+    "seen": 1787834011.5886455,
     "ast_hash": "cfd4595f2aea5c2e28246d634f4cae87",
     "semantic_hash": "cfd4595f2aea5c2e28246d634f4cae87"
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Attribute/CommandSummaryAttribute.cs": {
-    "mtime": 1787197517.43124,
+    "mtime": 1787833723.8770494,
+    "seen": 1787834011.588646,
     "ast_hash": "3281f01c90e5fdecd2ec76ece72c7d7f",
     "semantic_hash": "3281f01c90e5fdecd2ec76ece72c7d7f"
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Attribute/RequireGuildAttribute.cs": {
-    "mtime": 1787197517.4322429,
+    "mtime": 1787833723.8770494,
+    "seen": 1787834011.5886464,
     "ast_hash": "7b4ac04fbfb76c63bb978fd0656c8244",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Attribute/RequireGuildMemberCountAttribute.cs": {
-    "mtime": 1787197517.4322429,
+    "mtime": 1787833723.8770494,
+    "seen": 1787834011.5886471,
     "ast_hash": "f80a524608fdf9dd81537a18c8cb0104",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Attribute/RequireGuildOwnerAttribute.cs": {
-    "mtime": 1787197517.4322429,
+    "mtime": 1787833723.8770494,
+    "seen": 1787834011.5886478,
     "ast_hash": "4efce112b7aace3fdf7d2cbd41a3ca35",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/CommonEqualityComparer.cs": {
-    "mtime": 1787197517.4332736,
+    "mtime": 1787833723.877564,
+    "seen": 1787834011.5886495,
     "ast_hash": "908326dd870b683a46e64cbb25f77ee0",
     "semantic_hash": "908326dd870b683a46e64cbb25f77ee0"
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Extensions.cs": {
-    "mtime": 1787197517.4332736,
+    "mtime": 1787833723.877564,
+    "seen": 1787834011.58865,
     "ast_hash": "46b7c33cc447486c0a5363770772d931",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Help/Help.cs": {
-    "mtime": 1787197517.4342842,
+    "mtime": 1787833723.8780775,
+    "seen": 1787834011.5886507,
     "ast_hash": "4eca9dc52536d16732a72c3dbc0155ae",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Help/Service/HelpService.cs": {
-    "mtime": 1787197517.4342842,
+    "mtime": 1787833723.8780775,
+    "seen": 1787834011.5886512,
     "ast_hash": "02246c7af9df5e22a086de605dc35424",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/IInteractionService.cs": {
-    "mtime": 1787197517.4342842,
+    "mtime": 1787833723.8780775,
+    "seen": 1787834011.5886517,
     "ast_hash": "0c18b938b13b32676d6d56fd6ab8d6f5",
     "semantic_hash": "0c18b938b13b32676d6d56fd6ab8d6f5"
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/InteractionHandler.cs": {
-    "mtime": 1787197517.435746,
-    "ast_hash": "0dc6ad0a8abf31c9664c91c9a2daff82",
+    "mtime": 1787833851.3759916,
+    "seen": 1787834011.5886543,
+    "ast_hash": "a882aa9b3a3e73c01d5c41383234ecb8",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/OwnerOnly/SendMsgToAllGuild.cs": {
-    "mtime": 1787197517.435746,
+    "mtime": 1787833723.878593,
+    "seen": 1787834011.5886548,
     "ast_hash": "71099fda9f834b16abce6d8a87714ffe",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/OwnerOnly/Service/SendMsgToAllGuildService.cs": {
-    "mtime": 1787197517.436744,
+    "mtime": 1787833723.879108,
+    "seen": 1787834011.5886555,
     "ast_hash": "46287c47eb6a4b4c76af0c1a606a90fd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/ReactionEventWrapper.cs": {
-    "mtime": 1787197517.436744,
+    "mtime": 1787833723.879108,
+    "seen": 1787834011.5886562,
     "ast_hash": "ece703f60a5b8e805ec686267565fe23",
     "semantic_hash": "ece703f60a5b8e805ec686267565fe23"
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/TopLevelModule.cs": {
-    "mtime": 1787197517.436744,
+    "mtime": 1787833723.879627,
+    "seen": 1787834011.5886574,
     "ast_hash": "dcc86463fb7d4575b5ab56071affb213",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Twitcasting/Twitcasting.cs": {
-    "mtime": 1787197517.436744,
-    "ast_hash": "d1f4c9e69eec0b53b4db5274a7774768",
+    "mtime": 1787833851.3734162,
+    "seen": 1787834011.5886579,
+    "ast_hash": "1f358a99ca49e81f04a7fe05eb685793",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Twitcasting/TwitcastingSpider.cs": {
-    "mtime": 1787197517.4382517,
-    "ast_hash": "b2d28a125ab2c12ea36b2d3ac36ec445",
+    "mtime": 1787833851.3744464,
+    "seen": 1787834011.5886583,
+    "ast_hash": "888b9a8f7c831e2010a775b4203142aa",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Twitch/Twitch.cs": {
-    "mtime": 1787197517.4382517,
-    "ast_hash": "836b09703d7b6a6a7e06cf9ebf34e1c1",
+    "mtime": 1787833851.3739314,
+    "seen": 1787834011.5886607,
+    "ast_hash": "103875c4da68b07ad03b8011e5c344c3",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Twitch/TwitchSpider.cs": {
-    "mtime": 1787197517.4394095,
-    "ast_hash": "0d512a8129c01140981df1ddd6bcd6c0",
+    "mtime": 1787833851.3749607,
+    "seen": 1787834011.5886612,
+    "ast_hash": "1d0f4e8b2aaef0413811db868bdf684e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Utility/Service/UtilityService.cs": {
-    "mtime": 1787197517.4403825,
+    "mtime": 1787833723.8806589,
+    "seen": 1787834011.588662,
     "ast_hash": "a20336ee5e785fc16acef0bd4a0e0c63",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Utility/Utility.cs": {
-    "mtime": 1787197517.4403825,
+    "mtime": 1787833723.8811743,
+    "seen": 1787834011.5886626,
     "ast_hash": "c8e55bd7a7307589528e4679f4165016",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/YoutubeMember/YoutubeMember.cs": {
-    "mtime": 1787197517.4427996,
+    "mtime": 1787833723.8816898,
+    "seen": 1787834011.588663,
     "ast_hash": "1c1be16aea4866f48cc4bfd8ee1fb5fa",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/YoutubeMember/YoutubeMemberSetting.cs": {
-    "mtime": 1787197517.4438028,
-    "ast_hash": "ea91d91fb4bcbd1d176c0388e0b44042",
+    "mtime": 1787833851.375475,
+    "seen": 1787834011.5886645,
+    "ast_hash": "56d73445450d14bc36f8967976d02cdd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Youtube/Youtube.cs": {
-    "mtime": 1787197517.441664,
+    "mtime": 1787833723.8811743,
+    "seen": 1787834011.588665,
     "ast_hash": "7e9a11be432ef1e59ed9d992fbabb227",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/Youtube/YoutubeChannelSpider.cs": {
-    "mtime": 1787197517.4427996,
-    "ast_hash": "5dade608181ec028fa4487aef0eb7483",
+    "mtime": 1787833851.3749607,
+    "seen": 1787834011.588666,
+    "ast_hash": "08bc277c5150a9f382df4dc1d183edcc",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/NotificationBusConsumer.cs": {
-    "mtime": 1787197517.4543746,
+    "mtime": 1787833723.8852801,
+    "seen": 1787834011.5886707,
     "ast_hash": "0450e0bb84e0a18c94d556ae9d5621c2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Program.cs": {
-    "mtime": 1787197517.4553633,
+    "mtime": 1787833723.8857946,
+    "seen": 1787834011.588673,
     "ast_hash": "05ae8a335f629f3aacff7be4b48d2e48",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Properties/launchSettings.json": {
-    "mtime": 1787197517.4563363,
+    "mtime": 1787833723.8857946,
+    "seen": 1787834011.5886736,
     "ast_hash": "e3c8d7824760b41b28beaa2b8f670af1",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Cluster/ClusterQueryService.cs": {
-    "mtime": 1787197517.4598162,
-    "ast_hash": "3fd9dcddac74a23b1ac12e16e729931a",
+    "mtime": 1787833723.88682,
+    "seen": 1787834011.588678,
+    "ast_hash": "bf617cb84b5b5ea551ba5aaa5373311c",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/EmojiService.cs": {
-    "mtime": 1787197517.460825,
+    "mtime": 1787833723.887335,
+    "seen": 1787834011.5886786,
     "ast_hash": "8ff132fd93490b65c0be77cdc52cbc1a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/NoticeCache.cs": {
-    "mtime": 1787197517.4618843,
+    "mtime": 1787833723.8878496,
+    "seen": 1787834011.5886807,
     "ast_hash": "dc44a07ee594bf1378c6461d8122801e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Twitcasting/TwitcastingEmbedBuilderFactory.cs": {
-    "mtime": 1787197517.4618843,
+    "mtime": 1787833723.8883643,
+    "seen": 1787834011.5886812,
     "ast_hash": "eb90d41d66dc953e9a169af4bde71134",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Twitcasting/TwitcastingService.cs": {
-    "mtime": 1787197517.4628868,
+    "mtime": 1787833723.8888776,
+    "seen": 1787834011.5886843,
     "ast_hash": "e7159b31de2afda40e54ff9250e34f17",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Twitch/TwitchEmbedBuilderFactory.cs": {
-    "mtime": 1787197517.4628868,
+    "mtime": 1787833723.8888776,
+    "seen": 1787834011.5886893,
     "ast_hash": "fe90cbf7d865d1d8f1f074d9ed86b921",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Twitch/TwitchService.cs": {
-    "mtime": 1787197517.4642527,
+    "mtime": 1787833723.8893926,
+    "seen": 1787834011.5886898,
     "ast_hash": "27bfc39ff5db0be70b4cf89f862ec0bd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/CheckMemberShip.cs": {
-    "mtime": 1787284275.7514796,
-    "ast_hash": "083fcca328b38a522b18135cf7cb39ea",
+    "mtime": 1787833723.8920605,
+    "seen": 1787834011.5886908,
+    "ast_hash": "bd4b7180e9e3200981576ff1ba31c493",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberService.cs": {
-    "mtime": 1787284286.9305768,
-    "ast_hash": "496b95a94756a4268e754c338892fff5",
+    "mtime": 1787833723.8936038,
+    "seen": 1787834011.5886972,
+    "ast_hash": "c10c34aaa472a50bbc5c526f5bc3d8e2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/EmbedBuilderFactory.cs": {
-    "mtime": 1787197517.4688601,
+    "mtime": 1787833723.8915458,
+    "seen": 1787834011.5886989,
     "ast_hash": "80062d7abacf433edf7b56f723e3e737",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Youtube/YoutubeStreamService.cs": {
-    "mtime": 1787197517.4693632,
+    "mtime": 1787833723.8915458,
+    "seen": 1787834011.5886993,
     "ast_hash": "20e2c3cd9a78cc49f6a2a0cbf1792dce",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/UptimeKumaClient.cs": {
-    "mtime": 1787197517.4758387,
+    "mtime": 1787833723.8936038,
+    "seen": 1787834011.5886998,
     "ast_hash": "deeacb96f6282d1fbd9b8c3f13bf4084",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/DetectionHost.cs": {
-    "mtime": 1787197517.4858198,
+    "mtime": 1787833723.8976407,
+    "seen": 1787834011.5887005,
     "ast_hash": "03691032ec6ddf4a0a2da9da652fa768",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitcasting/TwitCastingWebHookJson.cs": {
-    "mtime": 1787197517.4758387,
+    "mtime": 1787833723.8941207,
+    "seen": 1787834011.5887012,
     "ast_hash": "7c794e0db3c4add9877b7a5428f49d49",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitcasting/TwitcastingDetectionService.cs": {
-    "mtime": 1787197517.4758387,
+    "mtime": 1787833723.89463,
+    "seen": 1787834011.588702,
     "ast_hash": "86ece674d7abe0edceb748b4d7f0c527",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/Debounce/DebounceChannelUpdateMessage.cs": {
-    "mtime": 1787197517.4782581,
+    "mtime": 1787833723.8951445,
+    "seen": 1787834011.5887048,
     "ast_hash": "e478dac2ad3acb9a41b7e5af7c3572fc",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchDetectionService.cs": {
-    "mtime": 1787197517.47976,
+    "mtime": 1787833723.8951445,
+    "seen": 1787834011.5887053,
     "ast_hash": "e5c4aca7d09555c51bd3057f6678f951",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeDetectionService.Reminder.cs": {
-    "mtime": 1787197517.482793,
+    "mtime": 1787833723.8971317,
+    "seen": 1787834011.588709,
     "ast_hash": "8bd30c2807c7c61a2d9e94c9719707ed",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeDetectionService.Schedule.cs": {
-    "mtime": 1787197517.4838166,
-    "ast_hash": "d343a0879d4d29c3e9c7f5413ccf8af0",
+    "mtime": 1787833723.8971317,
+    "seen": 1787834011.5887096,
+    "ast_hash": "246c20bd4fd222fb841bc703c595636b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeDetectionService.cs": {
-    "mtime": 1787197517.4848282,
+    "mtime": 1787833723.8976407,
+    "seen": 1787834011.5887103,
     "ast_hash": "6a45af42ce27b5e4bfb762783d24dc49",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/DiscordStreamNotifyBot.Scraper.csproj": {
-    "mtime": 1787197517.4858198,
+    "mtime": 1787833723.8986342,
+    "seen": 1787834011.5887132,
     "ast_hash": "42f56e9de5563854099a6bbecc2d3e67",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Program.cs": {
-    "mtime": 1787197517.4858198,
+    "mtime": 1787833723.8986342,
+    "seen": 1787834011.5887136,
     "ast_hash": "ffa8eb183cf13e45de2dd2dcca64cd52",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Properties/launchSettings.json": {
-    "mtime": 1787197517.4858198,
+    "mtime": 1787833723.8986342,
+    "seen": 1787834011.5887141,
     "ast_hash": "6b9641c27180dc6458e6ee577d85f759",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/ScraperService.cs": {
-    "mtime": 1787197517.4870472,
+    "mtime": 1787833723.8986342,
+    "seen": 1787834011.5887156,
     "ast_hash": "9a23bc34167e7700466c70afd961a39b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Auth/TokenCrypto.cs": {
-    "mtime": 1787197517.4880204,
+    "mtime": 1787833723.8986342,
+    "seen": 1787834011.5887163,
     "ast_hash": "745437b32129186c890a69d2cf72fdfa",
     "semantic_hash": "745437b32129186c890a69d2cf72fdfa"
   },
   "src/DiscordStreamNotifyBot.Shared/Auth/TokenManager.cs": {
-    "mtime": 1787197517.4880204,
+    "mtime": 1787833723.8996348,
+    "seen": 1787834011.588717,
     "ast_hash": "2a9a851998c99752921001c34e779a2c",
     "semantic_hash": "2a9a851998c99752921001c34e779a2c"
   },
   "src/DiscordStreamNotifyBot.Shared/BotConfig.cs": {
-    "mtime": 1787197517.489023,
+    "mtime": 1787833723.8996348,
+    "seen": 1787834011.5887187,
     "ast_hash": "17dc0f8a2e79fcd64d4cea4ed8af6ab1",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/BotRole.cs": {
-    "mtime": 1787197517.4900455,
+    "mtime": 1787833723.8996348,
+    "seen": 1787834011.5887194,
     "ast_hash": "706a1208d21b185f6a3947eec3ef2f12",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/BotState.cs": {
-    "mtime": 1787197517.4900455,
+    "mtime": 1787833723.8996348,
+    "seen": 1787834011.5887198,
     "ast_hash": "fe558db8988aa0a6af334b7f7e1006f7",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/ClusterService.cs": {
-    "mtime": 1787197517.4900455,
+    "mtime": 1787833723.8996348,
+    "seen": 1787834011.5887203,
     "ast_hash": "13fe8d6c628954c30bece10cbdedd95a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/MainDbContext.cs": {
-    "mtime": 1787197517.492314,
+    "mtime": 1787833723.8996348,
+    "seen": 1787834011.588721,
     "ast_hash": "0e803341a97831786b4d32fa9ea980e8",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/MainDbContextFactory.cs": {
-    "mtime": 1787197517.492314,
+    "mtime": 1787833723.9006352,
+    "seen": 1787834011.588722,
     "ast_hash": "a39dddd48cd486b33c72a2798ea10482",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/MainDbService.cs": {
-    "mtime": 1787197517.4933233,
+    "mtime": 1787833723.9006352,
+    "seen": 1787834011.5887225,
     "ast_hash": "2f00e3fd6e98ba8f70cebf9ce84252bb",
     "semantic_hash": "2f00e3fd6e98ba8f70cebf9ce84252bb"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/BannerChange.cs": {
-    "mtime": 1787197517.493848,
+    "mtime": 1787833723.9006352,
+    "seen": 1787834011.5887232,
     "ast_hash": "4a81c41fb67d6728c67150fa8228c9e6",
     "semantic_hash": "4a81c41fb67d6728c67150fa8228c9e6"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/DbEntity.cs": {
-    "mtime": 1787197517.493848,
+    "mtime": 1787833723.9006352,
+    "seen": 1787834011.5887237,
     "ast_hash": "f163f4f64cba5e68604b55f753d4ea46",
     "semantic_hash": "f163f4f64cba5e68604b55f753d4ea46"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/GuildConfig.cs": {
-    "mtime": 1787197517.494391,
+    "mtime": 1787833723.9006352,
+    "seen": 1787834011.5887253,
     "ast_hash": "fc504d297ec6fd473fe9fc3ec447787a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/GuildYoutubeMemberConfig.cs": {
-    "mtime": 1787197517.494391,
+    "mtime": 1787833723.901635,
+    "seen": 1787834011.5887265,
     "ast_hash": "494efe0af0fba9d449c26d01cc40aa4b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/HoloVideo.cs": {
-    "mtime": 1787197517.4953845,
+    "mtime": 1787833723.901635,
+    "seen": 1787834011.5887272,
     "ast_hash": "1f26389d5d4f3550284f0ade8c17e81f",
     "semantic_hash": "1f26389d5d4f3550284f0ade8c17e81f"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/NijisanjiVideo.cs": {
-    "mtime": 1787197517.4953845,
+    "mtime": 1787833723.901635,
+    "seen": 1787834011.588728,
     "ast_hash": "829a7a649532c49bef47dc2d7d45f553",
     "semantic_hash": "829a7a649532c49bef47dc2d7d45f553"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/NonApprovedVideo.cs": {
-    "mtime": 1787197517.4953845,
+    "mtime": 1787833723.901635,
+    "seen": 1787834011.5887287,
     "ast_hash": "54d6ed8b43bcd4599f033c3b2dc89f74",
     "semantic_hash": "54d6ed8b43bcd4599f033c3b2dc89f74"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/NoticeTwitcastingStreamChannel.cs": {
-    "mtime": 1787197517.49664,
+    "mtime": 1787833723.901635,
+    "seen": 1787834011.5887291,
     "ast_hash": "429a9afcc3cf32e67487d19c477813bd",
     "semantic_hash": "429a9afcc3cf32e67487d19c477813bd"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/NoticeTwitchStreamChannel.cs": {
-    "mtime": 1787197517.49664,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.5887299,
     "ast_hash": "afa123b8adae7e1772d97a4f54e66f84",
     "semantic_hash": "afa123b8adae7e1772d97a4f54e66f84"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/NoticeYoutubeStreamChannel.cs": {
-    "mtime": 1787197517.49664,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.5887306,
     "ast_hash": "13d521dca22b9bc5a9a4893f7d53a40b",
     "semantic_hash": "13d521dca22b9bc5a9a4893f7d53a40b"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/OtherVideo.cs": {
-    "mtime": 1787197517.49664,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.588731,
     "ast_hash": "1f3cd897f2277f0c65a96f2d83aa83ec",
     "semantic_hash": "1f3cd897f2277f0c65a96f2d83aa83ec"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/RecordYoutubeChannel.cs": {
-    "mtime": 1787197517.49664,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.5887318,
     "ast_hash": "af22d19be65ce73501ce7409409464bf",
     "semantic_hash": "af22d19be65ce73501ce7409409464bf"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/TwitcastingSpider.cs": {
-    "mtime": 1787197517.4978883,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.5887325,
     "ast_hash": "67e7e3a70a59cfbe92269feb8d17936b",
     "semantic_hash": "67e7e3a70a59cfbe92269feb8d17936b"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/TwitcastingStream.cs": {
-    "mtime": 1787197517.4978883,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.588733,
     "ast_hash": "5db77b99836948d26aec6718dd4586d9",
     "semantic_hash": "5db77b99836948d26aec6718dd4586d9"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/TwitchSpider.cs": {
-    "mtime": 1787197517.4978883,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.5887341,
     "ast_hash": "577207a5099e280a248aa3573d391869",
     "semantic_hash": "577207a5099e280a248aa3573d391869"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/TwitchStream.cs": {
-    "mtime": 1787197517.4978883,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.5887346,
     "ast_hash": "00e29da102f6c08bd028c945cc512e61",
     "semantic_hash": "00e29da102f6c08bd028c945cc512e61"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/Video.cs": {
-    "mtime": 1787197517.4989336,
+    "mtime": 1787833723.9036353,
+    "seen": 1787834011.588736,
     "ast_hash": "3fb4310afe08b99d6f0810105ed74e05",
     "semantic_hash": "3fb4310afe08b99d6f0810105ed74e05"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/YoutubeChannelNameToId.cs": {
-    "mtime": 1787197517.4989336,
+    "mtime": 1787833723.9036353,
+    "seen": 1787834011.5887368,
     "ast_hash": "b1b44bbde20e10a147697301a273db95",
     "semantic_hash": "b1b44bbde20e10a147697301a273db95"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/YoutubeChannelOwnedType.cs": {
-    "mtime": 1787197517.4989336,
+    "mtime": 1787833723.9036353,
+    "seen": 1787834011.5887372,
     "ast_hash": "e7b847084b8c4cbd3c17d230fe3f9939",
     "semantic_hash": "e7b847084b8c4cbd3c17d230fe3f9939"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/YoutubeChannelSpider.cs": {
-    "mtime": 1787197517.5000174,
+    "mtime": 1787833723.9036353,
+    "seen": 1787834011.5887377,
     "ast_hash": "93bb30c84d6b62bb2848f566f411b364",
     "semantic_hash": "93bb30c84d6b62bb2848f566f411b364"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/YoutubeMemberAccessToken.cs": {
-    "mtime": 1787197517.5000174,
+    "mtime": 1787833723.9036353,
+    "seen": 1787834011.5887384,
     "ast_hash": "91c091d7f00efb7ac32401ca6ad2b0d8",
     "semantic_hash": "91c091d7f00efb7ac32401ca6ad2b0d8"
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/YoutubeMemberCheck.cs": {
-    "mtime": 1787197517.5000174,
+    "mtime": 1787833723.9046357,
+    "seen": 1787834011.5887392,
     "ast_hash": "5856a11e26ddc74090f5a17e42ce8dad",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DiscordStreamNotifyBot.Shared.csproj": {
-    "mtime": 1787197517.5000174,
-    "ast_hash": "488ad4fb9f2ba67158530ec41ea17d69",
+    "mtime": 1787833851.3723857,
+    "seen": 1787834011.5887399,
+    "ast_hash": "48403d28f46b9f64d31cee2a1deb7152",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/GracefulShutdown.cs": {
-    "mtime": 1787197517.5010464,
+    "mtime": 1787833723.9046357,
+    "seen": 1787834011.5887406,
     "ast_hash": "10f4ccfcb39eaa58e63490bb1bf3a63f",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/HttpClients/DiscordWebhookClient.cs": {
-    "mtime": 1787197517.5010464,
+    "mtime": 1787833723.9046357,
+    "seen": 1787834011.588741,
     "ast_hash": "121d77e275891ef862e2b47386dc3538",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/HttpClients/Twitcasting/Model/CategoriesJson.cs": {
-    "mtime": 1787197517.502049,
+    "mtime": 1787833723.9056358,
+    "seen": 1787834011.5887418,
     "ast_hash": "81fe54af8749eab66abba8e5ad9a534f",
     "semantic_hash": "81fe54af8749eab66abba8e5ad9a534f"
   },
   "src/DiscordStreamNotifyBot.Shared/HttpClients/Twitcasting/Model/GetAllRegistedWebHookJson.cs": {
-    "mtime": 1787197517.502049,
+    "mtime": 1787833723.9056358,
+    "seen": 1787834011.5887425,
     "ast_hash": "ac9f7b784727628e48b5695fc8207669",
     "semantic_hash": "ac9f7b784727628e48b5695fc8207669"
   },
   "src/DiscordStreamNotifyBot.Shared/HttpClients/Twitcasting/Model/GetMovieInfoResponse.cs": {
-    "mtime": 1787197517.502049,
+    "mtime": 1787833723.9056358,
+    "seen": 1787834011.5887432,
     "ast_hash": "e23519aad08b4285167c9fc45cb4d798",
     "semantic_hash": "e23519aad08b4285167c9fc45cb4d798"
   },
   "src/DiscordStreamNotifyBot.Shared/HttpClients/Twitcasting/Model/GetUserInfoResponse.cs": {
-    "mtime": 1787197517.5031729,
+    "mtime": 1787833723.9056358,
+    "seen": 1787834011.5887437,
     "ast_hash": "d4e01f064f6b980237bf92f255998bc9",
     "semantic_hash": "d4e01f064f6b980237bf92f255998bc9"
   },
   "src/DiscordStreamNotifyBot.Shared/HttpClients/Twitcasting/Model/TcBackendStreamData.cs": {
-    "mtime": 1787197517.5031729,
+    "mtime": 1787833723.9056358,
+    "seen": 1787834011.5887442,
     "ast_hash": "ca0685305d1524c5ce65d672a9e749eb",
     "semantic_hash": "ca0685305d1524c5ce65d672a9e749eb"
   },
   "src/DiscordStreamNotifyBot.Shared/HttpClients/Twitcasting/TwitcastingClient.cs": {
-    "mtime": 1787197517.5041764,
+    "mtime": 1787833723.9056358,
+    "seen": 1787834011.5887449,
     "ast_hash": "0ecd0c60725ce279a451cf805ce6a16a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Log.cs": {
-    "mtime": 1787197517.5051715,
+    "mtime": 1787833723.906636,
+    "seen": 1787834011.5887465,
     "ast_hash": "15217489584adb7273dd432385e64249",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Messages/Notifications.cs": {
-    "mtime": 1787197517.5072267,
+    "mtime": 1787833723.906636,
+    "seen": 1787834011.5887487,
     "ast_hash": "cc326c2adb948660a81ef404e8259dce",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20250320095452_RefactorDbContext.Designer.cs": {
-    "mtime": 1787197517.5082006,
+    "mtime": 1787833723.906636,
+    "seen": 1787834011.5887494,
     "ast_hash": "89a67aab2ce2753b039c305ad6c8d6ec",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20250320095452_RefactorDbContext.cs": {
-    "mtime": 1787197517.5082006,
+    "mtime": 1787833723.9076364,
+    "seen": 1787834011.5887501,
     "ast_hash": "27e247c2a827def1a2569e783ca33f2e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20250603065853_ModifyTwitCastingTable.Designer.cs": {
-    "mtime": 1787197517.5082006,
+    "mtime": 1787833723.9076364,
+    "seen": 1787834011.5887506,
     "ast_hash": "4b0b8067efab30a1a37602a1e3b95abc",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20250603065853_ModifyTwitCastingTable.cs": {
-    "mtime": 1787197517.5095074,
+    "mtime": 1787833723.9076364,
+    "seen": 1787834011.5887513,
     "ast_hash": "0aa1ad92f509a0f34570e8bb4fcea0e5",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20250620094111_AddMaxSpiderCountSettingField.Designer.cs": {
-    "mtime": 1787197517.5095074,
+    "mtime": 1787833723.9086366,
+    "seen": 1787834011.5887518,
     "ast_hash": "12d5f45252a16961e326f7462cea69ad",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20250620094111_AddMaxSpiderCountSettingField.cs": {
-    "mtime": 1787197517.5104809,
+    "mtime": 1787833723.9086366,
+    "seen": 1787834011.5887523,
     "ast_hash": "80d570077e91343193f2c039b58fe988",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260611015819_SyncModelDrift.Designer.cs": {
-    "mtime": 1787197517.5104809,
+    "mtime": 1787833723.9086366,
+    "seen": 1787834011.5887532,
     "ast_hash": "81b7bf5f2c06e3b07dc5fe7eb0f96722",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260611015819_SyncModelDrift.cs": {
-    "mtime": 1787197517.5114534,
+    "mtime": 1787833723.9086366,
+    "seen": 1787834011.5887537,
     "ast_hash": "98d394b861fb6f7a78f3d296e299bc30",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/MainDbContextModelSnapshot.cs": {
-    "mtime": 1787197517.52157,
+    "mtime": 1787833723.9143345,
+    "seen": 1787834011.5887651,
     "ast_hash": "fc5f1ea1052de77f22aa7d197ec7aee0",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/_Baseline_ExistingDb.sql": {
-    "mtime": 1787197517.52157,
+    "mtime": 1787833723.9143345,
+    "seen": 1787834071.504662,
     "ast_hash": "437bd7efec6dd637146bb113da8de92a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/NotificationBus.cs": {
-    "mtime": 1787197517.523647,
+    "mtime": 1787833723.9148502,
+    "seen": 1787834011.5887673,
     "ast_hash": "9c3c5340ba7e9e97dce7f6b0c763be1d",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/PeriodicRunner.cs": {
-    "mtime": 1787197517.523647,
+    "mtime": 1787833723.9153676,
+    "seen": 1787834011.5887678,
     "ast_hash": "1d87c85944911fdb68725af31c489296",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/RedisChannels.cs": {
-    "mtime": 1787197517.523647,
+    "mtime": 1787833723.9153676,
+    "seen": 1787834011.5887682,
     "ast_hash": "1bb3cf46be2dc7f03694da85979ed2f2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/RedisConnection.cs": {
-    "mtime": 1787197517.523647,
+    "mtime": 1787833723.9158833,
+    "seen": 1787834011.588769,
     "ast_hash": "a79aa6a714ea606c2f71f48e585d0da2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedExtensions.cs": {
-    "mtime": 1787197517.525072,
+    "mtime": 1787833723.9158833,
+    "seen": 1787834011.5887694,
     "ast_hash": "926e255be3dc644a58c3a262f354c6b3",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Twitch/TwitchApiService.cs": {
-    "mtime": 1787197517.527084,
+    "mtime": 1787833723.9174232,
+    "seen": 1787834011.5887725,
     "ast_hash": "92ee2ce10c2f57bfb0eaaa9b48a3764a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Youtube/Json/NijisanjiLiverJson.cs": {
-    "mtime": 1787197517.5280683,
+    "mtime": 1787833723.9184537,
+    "seen": 1787834011.5887752,
     "ast_hash": "80772be9b1c8ebad6ad3c5c5838831bf",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Youtube/Json/NijisanjiStreamJson.cs": {
-    "mtime": 1787197517.5290713,
+    "mtime": 1787833723.9184537,
+    "seen": 1787834011.5887756,
     "ast_hash": "6194c0f95f6f54841e5eb57729f59a1f",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/StartupPreflight.cs": {
-    "mtime": 1787197517.5290713,
+    "mtime": 1787833723.9184537,
+    "seen": 1787834011.5887764,
     "ast_hash": "5beeadaeeba70eba72ac1ad951924f36",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Utility.cs": {
-    "mtime": 1787197517.5304992,
+    "mtime": 1787833723.9189684,
+    "seen": 1787834011.5887773,
     "ast_hash": "5a66ac39423bb7d6c88ece5da7852c3e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/YoutubeApiService.cs": {
-    "mtime": 1787197517.5304992,
+    "mtime": 1787833723.9189684,
+    "seen": 1787834011.5887778,
     "ast_hash": "20b79722783509ab1f19a23ee636567c",
     "semantic_hash": ""
   },
   ".claude/CLAUDE.md": {
-    "mtime": 1787197517.3501358,
+    "mtime": 1787833723.8081987,
+    "seen": 1787834011.5888221,
     "ast_hash": "c232166e6492ba1ed955030b16979b05",
     "semantic_hash": "c232166e6492ba1ed955030b16979b05"
   },
   ".claude/skills/add-detection-platform/SKILL.md": {
-    "mtime": 1787197517.3501358,
+    "mtime": 1787833723.8087082,
+    "seen": 1787834011.5888228,
     "ast_hash": "476030cf2edde92662893d97dab0dd95",
     "semantic_hash": ""
   },
   ".claude/skills/debug-detection-bus/SKILL.md": {
-    "mtime": 1787197517.3511386,
+    "mtime": 1787833723.8087082,
+    "seen": 1787834011.5888233,
     "ast_hash": "aa191543790bcc93aec6fe2ea154a9d7",
     "semantic_hash": ""
   },
   ".claude/skills/ef-migration-baseline/SKILL.md": {
-    "mtime": 1787197517.3511386,
+    "mtime": 1787833723.809227,
+    "seen": 1787834011.588824,
     "ast_hash": "9f0ca03e1cb2a95de43996be00e86ac3",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/SKILL.md": {
-    "mtime": 1787197517.352167,
+    "mtime": 1787833723.8097408,
+    "seen": 1787834011.5888245,
     "ast_hash": "dd0e9bbeb780cea3f8709f1e19bd6b92",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/add-watch.md": {
-    "mtime": 1787197517.3526692,
+    "mtime": 1787833723.8097408,
+    "seen": 1787834011.5888252,
     "ast_hash": "58c888b5ec0689a886543dd765c1acc9",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/exports.md": {
-    "mtime": 1787197517.3526692,
+    "mtime": 1787833723.8097408,
+    "seen": 1787834011.5888262,
     "ast_hash": "ecc0c36852fee4ba6280cdf2b9149039",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/extraction-spec.md": {
-    "mtime": 1787197517.3526692,
+    "mtime": 1787833723.8097408,
+    "seen": 1787834011.5888267,
     "ast_hash": "024c6f2a3c146b03c72cc871dc56ed3c",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/github-and-merge.md": {
-    "mtime": 1787197517.3526692,
+    "mtime": 1787833723.8097408,
+    "seen": 1787834011.5888271,
     "ast_hash": "aa0e7ef186392cad062e60483ca7dbbf",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/hooks.md": {
-    "mtime": 1787197517.3526692,
+    "mtime": 1787833723.810254,
+    "seen": 1787834011.5888278,
     "ast_hash": "0045c2f12c69bff3a641a8908a1ac057",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/query.md": {
-    "mtime": 1787197517.3540566,
+    "mtime": 1787833723.810254,
+    "seen": 1787834011.5888283,
     "ast_hash": "852ef14334d60a75ae666ea103d4c4f0",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/transcribe.md": {
-    "mtime": 1787197517.3540566,
+    "mtime": 1787833723.8128257,
+    "seen": 1787834011.5888293,
     "ast_hash": "5c6a9af05d12b5797b2fa8b9493dcc37",
     "semantic_hash": ""
   },
   ".claude/skills/graphify/references/update.md": {
-    "mtime": 1787197517.3540566,
+    "mtime": 1787833723.8128257,
+    "seen": 1787834011.5888298,
     "ast_hash": "01c78ea9438925c605b58a2eecbbcf5b",
     "semantic_hash": ""
   },
   ".github/FUNDING.yml": {
-    "mtime": 1784479668.0,
+    "mtime": 1784479668.4255695,
+    "seen": 1787834011.5888302,
     "ast_hash": "806aebf111b3eeee4ce54d1a1002abf2",
     "semantic_hash": "806aebf111b3eeee4ce54d1a1002abf2"
   },
   ".github/workflows/build.yml": {
-    "mtime": 1784479668.0,
+    "mtime": 1784479668.4321535,
+    "seen": 1787834011.588831,
     "ast_hash": "cf674c49c862f93be0e5c1aae0c2fb24",
     "semantic_hash": "cf674c49c862f93be0e5c1aae0c2fb24"
   },
   "LICENSE.txt": {
-    "mtime": 1784479668.0,
+    "mtime": 1784479668.4578416,
+    "seen": 1787834011.5888326,
     "ast_hash": "b9b4482fcdced804092238320e960a54",
     "semantic_hash": "b9b4482fcdced804092238320e960a54"
   },
   "README.md": {
-    "mtime": 1787197517.3573668,
+    "mtime": 1787833723.8148885,
+    "seen": 1787834011.5888333,
     "ast_hash": "f9fb5bc6931ea675a55f7c3c0a1744e5",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1787197517.3595166,
+    "mtime": 1787833723.8164368,
+    "seen": 1787834011.5888338,
     "ast_hash": "26bb127a81489a573637ec0abd239e28",
     "semantic_hash": ""
   },
   "docs/HORIZONTAL_SCALING_PLAN.md": {
-    "mtime": 1787197517.3595166,
+    "mtime": 1787833723.8169506,
+    "seen": 1787834011.588835,
     "ast_hash": "e375e57c8f67d7c306eb84ac26a8f443",
     "semantic_hash": ""
   },
   "docs/LETTER_TO_FUTURE_SESSIONS.md": {
-    "mtime": 1787197517.360781,
+    "mtime": 1787833723.817466,
+    "seen": 1787834011.588836,
     "ast_hash": "6668a4b63bf81b50082ed598e1de7153",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Data/HelpDescription.txt": {
-    "mtime": 1787197517.4299915,
+    "mtime": 1787833723.876533,
+    "seen": 1787834011.588845,
     "ast_hash": "fc1e3c1a2e4b1bd549782c5a25d09fa6",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Logo.png": {
-    "mtime": 1787197517.4533718,
+    "mtime": 1787833723.8847718,
+    "seen": 1787834011.588846,
     "ast_hash": "0a397459a420d0b34f815a22346790c2",
     "semantic_hash": "0a397459a420d0b34f815a22346790c2"
   },
   "docs/ADD_TWITCASTING_RECORDING_DELEGATION_PLAN.md": {
-    "mtime": 1787197517.3595166,
+    "mtime": 1787833723.8169506,
+    "seen": 1787834011.5888345,
     "ast_hash": "70669b6e0ce8f4f1b02bd7045e13f55e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeDetectionService.MemberVideo.cs": {
-    "mtime": 1787197517.4822671,
+    "mtime": 1787833723.8961313,
+    "seen": 1787834011.5887086,
     "ast_hash": "b4dced3991d2f6da8e97e6239bc35bc6",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260709091318_AddManualMemberCheckVideoFlag.Designer.cs": {
-    "mtime": 1787197517.5114534,
+    "mtime": 1787833723.909645,
+    "seen": 1787834011.5887544,
     "ast_hash": "5dca58f93f19cf6b51e7c58a41b772fe",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260709091318_AddManualMemberCheckVideoFlag.cs": {
-    "mtime": 1787197517.512427,
+    "mtime": 1787833723.909645,
+    "seen": 1787834011.5887551,
     "ast_hash": "f0b860f89c21a91502df627f7d82eefa",
     "semantic_hash": ""
   },
   "docs/MEMBER_TOKEN_STORE_MYSQL_PLAN.md": {
-    "mtime": 1787197517.3618424,
+    "mtime": 1787833723.8179793,
+    "seen": 1787834011.5888379,
     "ast_hash": "cc0d094f50aca7f5b61ca0dec7411305",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/ITokenDataStore.cs": {
-    "mtime": 1787197517.5041764,
+    "mtime": 1787833723.9056358,
+    "seen": 1787834011.588746,
     "ast_hash": "9b1c7f7462e91d2dc30a3b15bc774237",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/MySqlDataStore.cs": {
-    "mtime": 1787197517.5226362,
+    "mtime": 1787833723.9148502,
+    "seen": 1787834011.5887656,
     "ast_hash": "3b1fa75c6f984e6ea3ebc2c7fa2b6207",
     "semantic_hash": ""
   },
   "deploy/grafana/dashboards/coordinator-prometheus.json": {
-    "mtime": 1787197517.3584707,
-    "ast_hash": "c9a8839b4d4f69db57852c5e0abcac76",
+    "mtime": 1787833723.8159192,
+    "seen": 1787834011.5886235,
+    "ast_hash": "8dc5940df0835ec39c7f27430f969041",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Coordinator/CoordinatorMetrics.cs": {
-    "mtime": 1787197517.4202027,
+    "mtime": 1787833723.8713746,
+    "seen": 1787834011.5886266,
     "ast_hash": "e5ef89417aa0c3a96cf12bc8ecdfc84c",
     "semantic_hash": ""
   },
   "docs/PROMETHEUS_GRAFANA.md": {
-    "mtime": 1787197517.3618424,
+    "mtime": 1787833723.818493,
+    "seen": 1787834011.5888383,
     "ast_hash": "169e4e9fea08b47164fba8892c82d3f2",
     "semantic_hash": ""
   },
   "docs/LOGGING.md": {
-    "mtime": 1787197517.360781,
+    "mtime": 1787833723.8179793,
+    "seen": 1787834011.5888371,
     "ast_hash": "49a7cbda9b992f6a243ccb850c361d5f",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchGuildEligibilityEvaluator.cs": {
-    "mtime": 1787197517.4807644,
+    "mtime": 1787833723.8961313,
+    "seen": 1787834011.588706,
     "ast_hash": "3ce88a435bcf6452f6c071a12b7ee5ac",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/ScraperMetrics.cs": {
-    "mtime": 1787197517.4870472,
+    "mtime": 1787833723.8986342,
+    "seen": 1787834011.588715,
     "ast_hash": "431f1732449dac01181d2f48efaa1cec",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/TwitchBroadcasterAuthorization.cs": {
-    "mtime": 1787197517.4978883,
+    "mtime": 1787833723.9026353,
+    "seen": 1787834011.5887334,
     "ast_hash": "42fb150565f01e2f6f9d543f7420c6cb",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Messages/GuildSnapshots.cs": {
-    "mtime": 1787197517.5062444,
+    "mtime": 1787833723.906636,
+    "seen": 1787834011.588748,
     "ast_hash": "93b640f0cda5649ed94183c43e9efcb2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260719142803_AddTwitchBroadcasterAuthorization.Designer.cs": {
-    "mtime": 1787197517.513401,
+    "mtime": 1787833723.910159,
+    "seen": 1787834011.5887556,
     "ast_hash": "6783ba5ddb8df315e7fb4b9780dca558",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260719142803_AddTwitchBroadcasterAuthorization.cs": {
-    "mtime": 1787197517.513401,
+    "mtime": 1787833723.910159,
+    "seen": 1787834011.5887566,
     "ast_hash": "d7b66deb68dcd1431dc75669d3f58a77",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Twitch/TwitchApiResults.cs": {
-    "mtime": 1787197517.5260644,
+    "mtime": 1787833723.9169104,
+    "seen": 1787834011.588772,
     "ast_hash": "a23e68bfe9a9e8da272c9e3a58685792",
     "semantic_hash": ""
   },
   "docs/TWITCH_OAUTH_EVENTSUB_PLAN.md": {
-    "mtime": 1787197517.3633454,
+    "mtime": 1787833723.8195298,
+    "seen": 1787834011.5888402,
     "ast_hash": "6b16ef144d0d84e3a3070d68d555991e",
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1787197517.356215,
-    "ast_hash": "81e5b2e7899705e2e5ef32c2c7ef83ff",
+    "mtime": 1787833851.3765078,
+    "seen": 1787834011.588832,
+    "ast_hash": "0f9497acece8eab4180f1f738775fa20",
     "semantic_hash": ""
   },
   "docs/LOCALIZATION_PLAN.md": {
-    "mtime": 1787197517.360781,
+    "mtime": 1787833723.817466,
+    "seen": 1787834011.5888364,
     "ast_hash": "35c81f56151394abbcac32adfae09999",
     "semantic_hash": ""
   },
   "docs/SERILOG_MIGRATION_PLAN.md": {
-    "mtime": 1787197517.3618424,
+    "mtime": 1787833723.8190086,
+    "seen": 1787834011.5888388,
     "ast_hash": "211c9991a13da4a3fdc570ce90978107",
     "semantic_hash": ""
   },
   "migrate_sql/20260709091318_AddManualMemberCheckVideoFlag.sql": {
-    "mtime": 1787197517.417031,
+    "mtime": 1787833723.8693166,
+    "seen": 1787834071.5045242,
     "ast_hash": "fcff89c4e7e89417614dcc00ca654a1e",
     "semantic_hash": ""
   },
   "migrate_sql/20260719142803_AddTwitchBroadcasterAuthorization.sql": {
-    "mtime": 1787197517.418055,
+    "mtime": 1787833723.8693166,
+    "seen": 1787834071.504525,
     "ast_hash": "dc9385480afbcc15aac19f861bf80e4d",
     "semantic_hash": ""
   },
   "migrate_sql/20260721095646_AddLocalizationSettings.sql": {
-    "mtime": 1787197517.418055,
+    "mtime": 1787833723.8698316,
+    "seen": 1787834071.504526,
     "ast_hash": "054d809fb2109975ad89e1cee4c718c5",
     "semantic_hash": ""
   },
   "migrate_sql/all.sql": {
-    "mtime": 1787197517.4202027,
+    "mtime": 1787833723.8708603,
+    "seen": 1787834071.5045295,
     "ast_hash": "ce53a34658470fb59f127306bbfe777e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/InteractionErrorCodes.cs": {
-    "mtime": 1787197517.4342842,
+    "mtime": 1787833723.8780775,
+    "seen": 1787834011.5886528,
     "ast_hash": "abacb5de2ec13ca79dc77b80691d715a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/SpiderManagementComponent.cs": {
-    "mtime": 1787197517.436744,
+    "mtime": 1787833723.879108,
+    "seen": 1787834011.5886567,
     "ast_hash": "4a7c2d316d16ba247f2198b41170f279",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Localization/BotLocalizer.cs": {
-    "mtime": 1787197517.4448,
+    "mtime": 1787833723.882211,
+    "seen": 1787834011.5886667,
     "ast_hash": "0bbd6c296d069f01d77f39e4ce9efbaa",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Localization/CommandDisplayResolver.cs": {
-    "mtime": 1787197517.4458976,
+    "mtime": 1787833723.882211,
+    "seen": 1787834011.5886674,
     "ast_hash": "9057d475f89f8dcc1acccbac7eddd70b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Localization/DescriptionOnlyLocalizationManager.cs": {
-    "mtime": 1787197517.4458976,
+    "mtime": 1787833723.882211,
+    "seen": 1787834011.588668,
     "ast_hash": "ba94d997d3ccbbc0202920a267d95c49",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Localization/GuildLocaleService.cs": {
-    "mtime": 1787197517.4469757,
+    "mtime": 1787833723.882211,
+    "seen": 1787834011.5886688,
     "ast_hash": "caefc105df9599a7e739962cedc81c96",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Localization/LocaleResolver.cs": {
-    "mtime": 1787197517.4469757,
+    "mtime": 1787833723.8827274,
+    "seen": 1787834011.5886695,
     "ast_hash": "09f4ea717a8df9b15233c347a294f833",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Localization/SupportedLocale.cs": {
-    "mtime": 1787197517.4523985,
+    "mtime": 1787833723.8847718,
+    "seen": 1787834011.5886703,
     "ast_hash": "e10cdde676f61228cf3fb459126dbb4d",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/NotificationDedupPolicy.cs": {
-    "mtime": 1787197517.4543746,
+    "mtime": 1787833723.8852801,
+    "seen": 1787834011.5886712,
     "ast_hash": "8946a7af044e50aba7549e27e42aa88c",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260721095646_AddLocalizationSettings.Designer.cs": {
-    "mtime": 1787197517.513401,
+    "mtime": 1787833723.9106684,
+    "seen": 1787834011.588757,
     "ast_hash": "d647bb5605ffb04aad958d836e0271d4",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260721095646_AddLocalizationSettings.cs": {
-    "mtime": 1787197517.5149038,
+    "mtime": 1787833723.9106684,
+    "seen": 1787834011.5887575,
     "ast_hash": "63584b2999489cde844ae81b0f280c8c",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/AuthTokenTests.cs": {
-    "mtime": 1787197517.5314734,
+    "mtime": 1787833723.9199994,
+    "seen": 1787834011.5887797,
     "ast_hash": "05cbdd587d36503473c1c98b90e9e8e7",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/BotLocalizerTests.cs": {
-    "mtime": 1787197517.532829,
+    "mtime": 1787833723.9199994,
+    "seen": 1787834011.588781,
     "ast_hash": "af8816ca3964f568b6be39044d97c27e",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/BotStateTests.cs": {
-    "mtime": 1787197517.532829,
+    "mtime": 1787833723.9205132,
+    "seen": 1787834011.5887818,
     "ast_hash": "6154fe73aea2f5d28ea954d60f4a10f7",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/DiscordStreamNotifyBot.Tests.csproj": {
-    "mtime": 1787197517.5363102,
+    "mtime": 1787833723.9231267,
+    "seen": 1787834011.5887904,
     "ast_hash": "e9b2b4fd80665ac12359a4a4aefe7515",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/InteractionCommandContractTests.cs": {
-    "mtime": 1787197517.537295,
-    "ast_hash": "cd1b8db7ed8fd5aaa5f5b80d17b045ac",
+    "mtime": 1787833851.3765078,
+    "seen": 1787834011.5887918,
+    "ast_hash": "1892dc4dc35e2b326aa44d8289742ade",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/InteractionCommandLocalizationTests.cs": {
-    "mtime": 1787197517.537295,
+    "mtime": 1787833723.9236414,
+    "seen": 1787834011.5887928,
     "ast_hash": "760ab3a4c0ecd95e7f90648c794ab396",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/InteractionMetadataFixture.cs": {
-    "mtime": 1787197517.537295,
+    "mtime": 1787833723.9236414,
+    "seen": 1787834011.588794,
     "ast_hash": "f953d4d4555d9fbd72157dc42621d823",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/LocaleResolverTests.cs": {
-    "mtime": 1787197517.537295,
+    "mtime": 1787833723.9241562,
+    "seen": 1787834011.588795,
     "ast_hash": "afb9742c4808bb17ed0d6339ef32f640",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/NotificationContractTests.cs": {
-    "mtime": 1787197517.5385623,
+    "mtime": 1787833723.9246724,
+    "seen": 1787834011.5887973,
     "ast_hash": "932fd036c37d039032da4af6126b7902",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/NotificationDedupPolicyTests.cs": {
-    "mtime": 1787197517.5395908,
+    "mtime": 1787833723.9246724,
+    "seen": 1787834011.5887983,
     "ast_hash": "50bbbe9bef23debeea583d10f3ca8032",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/NotificationEmbedFactoryTests.cs": {
-    "mtime": 1787197517.5395908,
+    "mtime": 1787833723.9246724,
+    "seen": 1787834011.5887988,
     "ast_hash": "642b033769c4b7f5b9482e8404224cf8",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/RedisContractTests.cs": {
-    "mtime": 1787197517.5405648,
+    "mtime": 1787833723.925189,
+    "seen": 1787834011.5888016,
     "ast_hash": "3e35b361f64f851d7b89bb2249d8c0f8",
     "semantic_hash": ""
   },
   "docs/TESTING_PLAN.md": {
-    "mtime": 1787197517.3618424,
+    "mtime": 1787833723.8190086,
+    "seen": 1787834011.5888398,
     "ast_hash": "b8d83213aa14f529ad7f1d585851abad",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/InteractionErrorPolicy.cs": {
-    "mtime": 1787197517.4342842,
+    "mtime": 1787833723.878593,
+    "seen": 1787834011.5886536,
     "ast_hash": "9a451756c50fd8307a64284be4799a68",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/InteractionErrorPolicyTests.cs": {
-    "mtime": 1787197517.537295,
+    "mtime": 1787833723.9236414,
+    "seen": 1787834011.5887935,
     "ast_hash": "2e288ad8c56e90dfdc302f659d342836",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/YoutubeVideoIdParser.cs": {
-    "mtime": 1787197517.5314734,
+    "mtime": 1787833723.9194818,
+    "seen": 1787834011.5887785,
     "ast_hash": "5eb7cb6d30a3d239ae6e3bc1387a408e",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeVideoIdParserTests.cs": {
-    "mtime": 1787197517.5524359,
+    "mtime": 1787833723.930334,
+    "seen": 1787834011.5888212,
     "ast_hash": "e6e675890cf7f3943801d2a882a458be",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/AutocompleteSearch.cs": {
-    "mtime": 1787197517.4332736,
+    "mtime": 1787833723.877564,
+    "seen": 1787834011.5886488,
     "ast_hash": "a8904f888e393e1a028d7df34bccaed5",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/AutocompleteSearchTests.cs": {
-    "mtime": 1787197517.532829,
+    "mtime": 1787833723.9199994,
+    "seen": 1787834011.5887806,
     "ast_hash": "4b9fce3554f7bc31bbe45704c6dd7b46",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberVideoLogMessageFormatter.cs": {
-    "mtime": 1787197517.4748652,
+    "mtime": 1787833723.8936038,
+    "seen": 1787834011.5886981,
     "ast_hash": "cd8d9053c5de005c55fde2a8fb8e28e4",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/NoNotifyGuildFilterTests.cs": {
-    "mtime": 1787197517.537295,
+    "mtime": 1787833723.9241562,
+    "seen": 1787834011.5887957,
     "ast_hash": "29ff7a860971b5a19debc184baffe4fb",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberVideoLogMessageFormatterTests.cs": {
-    "mtime": 1787197517.5502052,
+    "mtime": 1787833723.929308,
+    "seen": 1787834011.5888174,
     "ast_hash": "3e7ba6b564dcc36f7f6b0356164f665c",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeReminderPolicy.cs": {
-    "mtime": 1787197517.4848282,
+    "mtime": 1787833723.8976407,
+    "seen": 1787834011.5887117,
     "ast_hash": "45ab76ea077103180e038a18344a50c1",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/GuildLocaleServiceTests.cs": {
-    "mtime": 1787197517.537295,
+    "mtime": 1787833723.9231267,
+    "seen": 1787834011.5887914,
     "ast_hash": "f9a69c79316dca72cb1dbce9dcf72336",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/NoticeCacheTests.cs": {
-    "mtime": 1787197517.5385623,
+    "mtime": 1787833723.9241562,
+    "seen": 1787834011.5887961,
     "ast_hash": "2a52131543ebc892b68a8c9812ba3e62",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/PeriodicRunnerTests.cs": {
-    "mtime": 1787197517.5395908,
+    "mtime": 1787833723.925189,
+    "seen": 1787834011.5888002,
     "ast_hash": "685e1b20d75975ad7235bf278caafc71",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/StartupPreflightTests.cs": {
-    "mtime": 1787197517.5415373,
+    "mtime": 1787833723.9257002,
+    "seen": 1787834011.5888023,
     "ast_hash": "d2d025bddb84af0bea10c1f846ac36f0",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchChannelUpdateDebounceTests.cs": {
-    "mtime": 1787197517.5439038,
+    "mtime": 1787833723.9267304,
+    "seen": 1787834011.5888062,
     "ast_hash": "e1de5248a1ecaf707bb5ba3c391efc17",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeReminderPolicyTests.cs": {
-    "mtime": 1787197517.5502052,
+    "mtime": 1787833723.929308,
+    "seen": 1787834011.5888188,
     "ast_hash": "6affa08724cc7a240cb5a08c64374d81",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeReminderRegistryTests.cs": {
-    "mtime": 1787197517.5513585,
+    "mtime": 1787833723.929823,
+    "seen": 1787834011.58882,
     "ast_hash": "df44d9bc05682192250eba9f859b8e96",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberManualPinPolicy.cs": {
-    "mtime": 1787197517.471351,
+    "mtime": 1787833723.8925705,
+    "seen": 1787834011.5886946,
     "ast_hash": "e08021c500367b86cec8eb482979c329",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitcasting/TwitcastingLiveStartPlanner.cs": {
-    "mtime": 1787197517.4772856,
+    "mtime": 1787833723.89463,
+    "seen": 1787834011.5887027,
     "ast_hash": "c11a79df6d6e783dbb9ac2e52f3b3379",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitcasting/TwitcastingWebhookParser.cs": {
-    "mtime": 1787197517.4772856,
+    "mtime": 1787833723.89463,
+    "seen": 1787834011.5887032,
     "ast_hash": "b4294c778fb2cb40b3664708931284c7",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitcasting/TwitcastingWebhookRegistrationPlanner.cs": {
-    "mtime": 1787197517.4782581,
+    "mtime": 1787833723.8951445,
+    "seen": 1787834011.588704,
     "ast_hash": "632096ac4012a1706dcbc078689a823e",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Twitch/TwitchStateDecisions.cs": {
-    "mtime": 1787197517.4807644,
+    "mtime": 1787833723.8961313,
+    "seen": 1787834011.588707,
     "ast_hash": "1ac35a6376c41f9c0f48473365e0fcec",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeApiVideoPolicy.cs": {
-    "mtime": 1787197517.4822671,
+    "mtime": 1787833723.8961313,
+    "seen": 1787834011.5887077,
     "ast_hash": "e2f67fc04cbc356c05306a9da4b89e15",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeMemberVideoPolicy.cs": {
-    "mtime": 1787197517.4848282,
+    "mtime": 1787833723.8976407,
+    "seen": 1787834011.588711,
     "ast_hash": "1304c4c68938adcdcee73edde828d82d",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Youtube/YoutubeTerminalEventRegistry.cs": {
-    "mtime": 1787197517.4858198,
+    "mtime": 1787833723.8976407,
+    "seen": 1787834011.5887125,
     "ast_hash": "dad3f1622cb2ae7e103861ee6bfd79ec",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Twitch/TwitchEventSubReconcilePolicy.cs": {
-    "mtime": 1787197517.527084,
+    "mtime": 1787833723.9174232,
+    "seen": 1787834011.588773,
     "ast_hash": "bdbc7ab6224179e99c5f2f3adfaa7fc2",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitcastingLiveStartPlannerTests.cs": {
-    "mtime": 1787197517.5426116,
+    "mtime": 1787833723.9257002,
+    "seen": 1787834011.588803,
     "ast_hash": "8bf0d1e068787bc2a7c04f7ecb3cb191",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitcastingWebhookRegistrationPlannerTests.cs": {
-    "mtime": 1787197517.5426116,
+    "mtime": 1787833723.9262164,
+    "seen": 1787834011.5888035,
     "ast_hash": "6d8ebc8e3a41974cd0556bac613c92c4",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchChannelUpdateDecisionTests.cs": {
-    "mtime": 1787197517.5439038,
+    "mtime": 1787833723.9267304,
+    "seen": 1787834011.5888069,
     "ast_hash": "3743600872a9c36e057a19bf8149dc55",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchEventSubReconcilePolicyTests.cs": {
-    "mtime": 1787197517.5439038,
+    "mtime": 1787833723.9267304,
+    "seen": 1787834011.5888073,
     "ast_hash": "f55e3e79c444ab7d01438294c07a8cae",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchReconcileDecisionTests.cs": {
-    "mtime": 1787197517.5439038,
+    "mtime": 1787833723.9272447,
+    "seen": 1787834011.5888083,
     "ast_hash": "dbe3e7608a23118882fcc0d35189e9c1",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchStreamLifecycleDecisionTests.cs": {
-    "mtime": 1787197517.545407,
+    "mtime": 1787833723.9272447,
+    "seen": 1787834011.5888093,
     "ast_hash": "5a9d644805d7f2436fc9cfae977fe218",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeApiVideoPolicyTests.cs": {
-    "mtime": 1787197517.5476532,
+    "mtime": 1787833723.9277613,
+    "seen": 1787834011.5888126,
     "ast_hash": "91f754082d0c6a469f3093ea7e7b230f",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberManualPinPolicyTests.cs": {
-    "mtime": 1787197517.5486557,
+    "mtime": 1787833723.9282768,
+    "seen": 1787834011.5888145,
     "ast_hash": "c0dfd5ad3e7b17f8bdd70f5c1909464e",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberVideoPolicyTests.cs": {
-    "mtime": 1787197517.5502052,
+    "mtime": 1787833723.929308,
+    "seen": 1787834011.588818,
     "ast_hash": "5c6ff7f0785cd1672210494a1716d047",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeReminderReconciliationPolicyTests.cs": {
-    "mtime": 1787197517.5513585,
+    "mtime": 1787833723.929823,
+    "seen": 1787834011.5888195,
     "ast_hash": "914c6968a828a51063398c19a8594c90",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeTerminalEventRegistryTests.cs": {
-    "mtime": 1787197517.5524359,
+    "mtime": 1787833723.930334,
+    "seen": 1787834011.5888205,
     "ast_hash": "f515f047d9115f98fa626d07eb549e8f",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/MySql/MigrationAndConstraintTests.cs": {
-    "mtime": 1787197517.532829,
+    "mtime": 1787833723.9205132,
+    "seen": 1787834011.5887825,
     "ast_hash": "6c94d94290e98ea89cee3663f130bafd",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/MySql/MySqlComponentFactAttribute.cs": {
-    "mtime": 1787197517.5343323,
+    "mtime": 1787833723.9205132,
+    "seen": 1787834011.5887833,
     "ast_hash": "b445084d2a5397753258640c67588837",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/MySql/MySqlComponentFixture.cs": {
-    "mtime": 1787197517.5343323,
+    "mtime": 1787833723.9210274,
+    "seen": 1787834011.588784,
     "ast_hash": "00c01e74d201a5336863224ef9f698ac",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/MySql/MySqlDataStoreTests.cs": {
-    "mtime": 1787197517.5343323,
+    "mtime": 1787833723.9210274,
+    "seen": 1787834011.5887847,
     "ast_hash": "ec9e1d954d5c17990fec232febd6a8bf",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/MySql/VideoQueryAndConcurrencyTests.cs": {
-    "mtime": 1787197517.5343323,
+    "mtime": 1787833723.9215398,
+    "seen": 1787834011.5887852,
     "ast_hash": "71bdbccb74e89dc54d51bd80ce6d6a58",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/Redis/ClusterServiceRedisComponentTests.cs": {
-    "mtime": 1787197517.5353172,
+    "mtime": 1787833723.9220593,
+    "seen": 1787834011.5887864,
     "ast_hash": "c39b51a6221a749118c788d333d31fa6",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/Redis/NotificationBusConsumerRedisComponentTests.cs": {
-    "mtime": 1787197517.5353172,
+    "mtime": 1787833723.9220593,
+    "seen": 1787834011.588788,
     "ast_hash": "533af612a232cc583af44405373e67b7",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/Redis/NotificationBusRedisComponentTests.cs": {
-    "mtime": 1787197517.5363102,
+    "mtime": 1787833723.9226098,
+    "seen": 1787834011.5887885,
     "ast_hash": "03d5491bef50555c5113f9df285c7865",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/Redis/RedisComponentTestInfrastructure.cs": {
-    "mtime": 1787197517.5363102,
+    "mtime": 1787833723.9226098,
+    "seen": 1787834011.5887892,
     "ast_hash": "68151d7961fc4de4e292bfdb33995af8",
     "semantic_hash": ""
   },
   "tests/docker-compose.component.yml": {
-    "mtime": 1787197517.5524359,
+    "mtime": 1787833723.930334,
+    "seen": 1787834011.5888455,
     "ast_hash": "e3a91f3ea178cede27a95bbb97688311",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/NotificationBusConsumerOptionsTests.cs": {
-    "mtime": 1787197517.5385623,
+    "mtime": 1787833723.9241562,
+    "seen": 1787834011.5887969,
     "ast_hash": "a55464c966c3dbf64af352aa0cb7f8b1",
     "semantic_hash": ""
   },
   "migrate_sql/20260803141135_AddTwitchSubscriptionVerification.sql": {
-    "mtime": 1787197517.418055,
+    "mtime": 1787833723.8698316,
+    "seen": 1787834071.5045264,
     "ast_hash": "0c4164dc6b7d7008cb153344f057170d",
     "semantic_hash": ""
   },
   "migrate_sql/20260803165758_AddTwitchSubscriptionDeletionPending.sql": {
-    "mtime": 1787197517.4191618,
+    "mtime": 1787833723.8703458,
+    "seen": 1787834071.5045269,
     "ast_hash": "00d989a42d40651a92027b93033bc5b7",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/NotifierMetrics.cs": {
-    "mtime": 1787197517.4543746,
+    "mtime": 1787833723.8852801,
+    "seen": 1787834011.5886722,
     "ast_hash": "adfd87e0bc6796ff1f3acb546af01d76",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/TwitchSubscription/TwitchAuthorizationTokenService.cs": {
-    "mtime": 1787197517.4652622,
+    "mtime": 1787833723.889906,
+    "seen": 1787834011.588685,
     "ast_hash": "163105324034bab5643fd79aaddcc611",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/TwitchSubscription/TwitchSubscriptionApiClient.cs": {
-    "mtime": 1787197517.4652622,
+    "mtime": 1787833723.889906,
+    "seen": 1787834011.5886858,
     "ast_hash": "e80c805b93246b20d2cac800400123ab",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/TwitchSubscription/TwitchSubscriptionPolicies.cs": {
-    "mtime": 1787197517.4652622,
+    "mtime": 1787833723.889906,
+    "seen": 1787834011.5886867,
     "ast_hash": "f84b8e33f69d6a74bc447f4b50de676b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/TwitchSubscription/TwitchSubscriptionRolePolicy.cs": {
-    "mtime": 1787197517.4663372,
+    "mtime": 1787833723.889906,
+    "seen": 1787834011.5886874,
     "ast_hash": "2d970c51becb8ba5839371f478b09461",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/TwitchSubscription/TwitchSubscriptionRoleService.cs": {
-    "mtime": 1787197517.4663372,
+    "mtime": 1787833723.8904252,
+    "seen": 1787834011.588688,
     "ast_hash": "65f2de7b7f9c55fced5d587322e09ee9",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/TwitchSubscription/TwitchSubscriptionService.cs": {
-    "mtime": 1787197517.4674177,
+    "mtime": 1787833723.8909385,
+    "seen": 1787834011.5886889,
     "ast_hash": "c6bef226f243cf98e936424061d44e64",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Auth/TwitchAccessTokenData.cs": {
-    "mtime": 1787197517.489023,
+    "mtime": 1787833723.8996348,
+    "seen": 1787834011.588718,
     "ast_hash": "8daae0e7ecc6d3d5397a8383daeb6b03",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/GuildTwitchSubscriptionConfig.cs": {
-    "mtime": 1787197517.494391,
+    "mtime": 1787833723.901635,
+    "seen": 1787834011.588726,
     "ast_hash": "89318353a7c9d510624d15ca1e4e193a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/TwitchSubscriptionCheck.cs": {
-    "mtime": 1787197517.4989336,
+    "mtime": 1787833723.9036353,
+    "seen": 1787834011.5887356,
     "ast_hash": "c0f4b296b1dccd28fd0a16550c15443f",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260803141135_AddTwitchSubscriptionVerification.Designer.cs": {
-    "mtime": 1787197517.5154264,
+    "mtime": 1787833723.911244,
+    "seen": 1787834011.5887582,
     "ast_hash": "bcc08411869a12fb144ac2226bfcc7dc",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260803141135_AddTwitchSubscriptionVerification.cs": {
-    "mtime": 1787197517.5159414,
+    "mtime": 1787833723.911244,
+    "seen": 1787834011.5887587,
     "ast_hash": "82613cc98ff435ec70e9d30b2cd929d0",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260803165758_AddTwitchSubscriptionDeletionPending.Designer.cs": {
-    "mtime": 1787197517.5159414,
+    "mtime": 1787833723.911759,
+    "seen": 1787834011.5887597,
     "ast_hash": "4a73ed573c7582ebcb2ca06887caf38d",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260803165758_AddTwitchSubscriptionDeletionPending.cs": {
-    "mtime": 1787197517.5169601,
+    "mtime": 1787833723.911759,
+    "seen": 1787834011.5887604,
     "ast_hash": "94d5bde4aede0b7b47c2ba5e42773454",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Twitch/TwitchOAuthRefreshLock.cs": {
-    "mtime": 1787197517.5280683,
+    "mtime": 1787833723.9174232,
+    "seen": 1787834011.588774,
     "ast_hash": "d146f41fe151ac7d58ba492fb8d84100",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Twitch/TwitchSubscriptionResults.cs": {
-    "mtime": 1787197517.5280683,
+    "mtime": 1787833723.9179394,
+    "seen": 1787834011.5887744,
     "ast_hash": "c37e216094c1c1c33e04c6e15616f775",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/Redis/TwitchOAuthRefreshLockRedisComponentTests.cs": {
-    "mtime": 1787197517.5363102,
+    "mtime": 1787833723.9226098,
+    "seen": 1787834011.58879,
     "ast_hash": "2180bbb84bc5f62fbed01120162cef70",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/NotifierMetricsTests.cs": {
-    "mtime": 1787197517.5395908,
+    "mtime": 1787833723.925189,
+    "seen": 1787834011.5887995,
     "ast_hash": "33f04e8e78a833633c748a86a613fc81",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/ProviderTokenEncryptionKeyTests.cs": {
-    "mtime": 1787197517.5405648,
+    "mtime": 1787833723.925189,
+    "seen": 1787834011.588801,
     "ast_hash": "14de3d37bc4f9a5008a5af57012de0d0",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchAccessTokenContractTests.cs": {
-    "mtime": 1787197517.5426116,
+    "mtime": 1787833723.9262164,
+    "seen": 1787834011.5888047,
     "ast_hash": "9f63ead96af8ba360e6ca1c457bd71a9",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchSubscriptionApiClientTests.cs": {
-    "mtime": 1787197517.545407,
+    "mtime": 1787833723.9272447,
+    "seen": 1787834011.58881,
     "ast_hash": "44dfec5f6592f28b3c830e4c949814ac",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchSubscriptionConfigurationPolicyTests.cs": {
-    "mtime": 1787197517.545407,
+    "mtime": 1787833723.9272447,
+    "seen": 1787834011.5888104,
     "ast_hash": "61de8985ee3c86624550c9a19e10902c",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchSubscriptionPoliciesTests.cs": {
-    "mtime": 1787197517.5464287,
+    "mtime": 1787833723.9277613,
+    "seen": 1787834011.5888112,
     "ast_hash": "d7fd15d20fd703de743328a6c1116885",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchSubscriptionRolePolicyTests.cs": {
-    "mtime": 1787197517.5464287,
+    "mtime": 1787833723.9277613,
+    "seen": 1787834011.5888119,
     "ast_hash": "48f28e3d8794c474545339dd084e9d7c",
     "semantic_hash": ""
   },
   "docs/TWITCH_SUBSCRIPTION_VERIFICATION_PLAN.md": {
-    "mtime": 1787197517.3633454,
+    "mtime": 1787833723.8195298,
+    "seen": 1787834011.588841,
     "ast_hash": "692a86354ca950e88199e338c3b16ace",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/TwitchApiServiceDisabledTests.cs": {
-    "mtime": 1787197517.5439038,
+    "mtime": 1787833723.9262164,
+    "seen": 1787834011.5888054,
     "ast_hash": "7198c75ab016ae888ef915aea69c8e43",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberSelectMenuTests.cs": {
-    "mtime": 1787197517.5496862,
+    "mtime": 1787833723.92879,
+    "seen": 1787834011.588817,
     "ast_hash": "6e0f8abafdd1556deaea6a643b16b5bc",
     "semantic_hash": ""
   },
   "docs/YOUTUBE_MEMBER_VERIFICATION_PREFLIGHT.sql": {
-    "mtime": 1787197517.3666372,
+    "mtime": 1787833723.820554,
+    "seen": 1787834071.5045228,
     "ast_hash": "95e1e70bbdbd12d270fb3582341a502d",
     "semantic_hash": ""
   },
   "migrate_sql/20260804173737_AddYoutubeMemberVerificationDurability.sql": {
-    "mtime": 1787197517.4191618,
+    "mtime": 1787833723.8703458,
+    "seen": 1787834071.5045273,
     "ast_hash": "bf6cbba93830a7c8b8b9af06d64acada",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/YoutubeMember/YoutubeMemberComponent.cs": {
-    "mtime": 1787197517.4438028,
+    "mtime": 1787833723.8816898,
+    "seen": 1787834011.588664,
     "ast_hash": "984ec4e6ca48c947c6e5ae6178d25571",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Member/MemberOperationCoordinator.cs": {
-    "mtime": 1787197517.460825,
+    "mtime": 1787833723.887335,
+    "seen": 1787834011.5886793,
     "ast_hash": "a85d34311614682332c52d797a7b42f2",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/Member/MemberRoleOwnershipService.cs": {
-    "mtime": 1787197517.460825,
+    "mtime": 1787833723.8878496,
+    "seen": 1787834011.58868,
     "ast_hash": "df37a12c6f1bdf34a90fcc8af12a130b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberApiClient.cs": {
-    "mtime": 1787197517.470361,
+    "mtime": 1787833723.8920605,
+    "seen": 1787834011.5886917,
     "ast_hash": "ae5e49fce7648462b5f336d48f29bcea",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberAuthorizationService.cs": {
-    "mtime": 1787197517.470361,
+    "mtime": 1787833723.8920605,
+    "seen": 1787834011.5886922,
     "ast_hash": "16c4b43e6ea2c425c917cc85d2d51df7",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberDatabaseLocks.cs": {
-    "mtime": 1787197517.471351,
+    "mtime": 1787833723.8925705,
+    "seen": 1787834011.588693,
     "ast_hash": "59ac26c49a739300418d0ac480eeac9c",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberLifecyclePolicy.cs": {
-    "mtime": 1787197517.471351,
+    "mtime": 1787833723.8925705,
+    "seen": 1787834011.5886936,
     "ast_hash": "4ba5aa32ef6f5978e9e87e73a1dd625a",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberPolicies.cs": {
-    "mtime": 1787197517.472854,
+    "mtime": 1787833723.8930857,
+    "seen": 1787834011.5886953,
     "ast_hash": "3be3211fb0cb87622b2d2f0a3e01e363",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberRoleService.cs": {
-    "mtime": 1787197517.472854,
+    "mtime": 1787833723.8930857,
+    "seen": 1787834011.5886958,
     "ast_hash": "dc83fee7223afb42b063324f42180a8b",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/YoutubeMember/YoutubeMemberSafeLogging.cs": {
-    "mtime": 1787197517.4738746,
+    "mtime": 1787833723.8930857,
+    "seen": 1787834011.5886965,
     "ast_hash": "ce869aecde65780bc300f811a0afb73f",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260804173737_AddYoutubeMemberVerificationDurability.Designer.cs": {
-    "mtime": 1787197517.5169601,
+    "mtime": 1787833723.9122794,
+    "seen": 1787834011.5887609,
     "ast_hash": "b6770743991fb66fd0ece9ef262c83a8",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260804173737_AddYoutubeMemberVerificationDurability.cs": {
-    "mtime": 1787197517.5169601,
+    "mtime": 1787833723.9127948,
+    "seen": 1787834011.5887616,
     "ast_hash": "12945ba22f17df0d790699565a387b5b",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/MySql/YoutubeMemberTokenCleanupConcurrencyTests.cs": {
-    "mtime": 1787197517.5353172,
+    "mtime": 1787833723.9215398,
+    "seen": 1787834011.588786,
     "ast_hash": "6be821267024e89dc189d8095d28989b",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberApiClientTests.cs": {
-    "mtime": 1787197517.5476532,
+    "mtime": 1787833723.9282768,
+    "seen": 1787834011.5888133,
     "ast_hash": "761e77efa482fa8082c0b01820930fe6",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberLifecyclePolicyTests.cs": {
-    "mtime": 1787197517.5476532,
+    "mtime": 1787833723.9282768,
+    "seen": 1787834011.588814,
     "ast_hash": "c826151383e931fb090bc819e86b3ac5",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberRolePoliciesTests.cs": {
-    "mtime": 1787197517.5486557,
+    "mtime": 1787833723.92879,
+    "seen": 1787834011.5888157,
     "ast_hash": "9afca377ccc7c21ace6f6fc627752bd2",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/YoutubeMemberSafeLoggingTests.cs": {
-    "mtime": 1787197517.5491705,
+    "mtime": 1787833723.92879,
+    "seen": 1787834011.5888162,
     "ast_hash": "bd4740dcfb9733cf1b95dc4b5c7161da",
     "semantic_hash": ""
   },
   "docs/YOUTUBE_MEMBER_VERIFICATION.md": {
-    "mtime": 1787197517.3654914,
+    "mtime": 1787833723.8200383,
+    "seen": 1787834011.5888438,
     "ast_hash": "b368b03686762066091e31d670e1922c",
     "semantic_hash": ""
   },
   "docs/YOUTUBE_MEMBER_VERIFICATION_REFACTOR_PLAN.md": {
-    "mtime": 1787197517.3666372,
+    "mtime": 1787833723.820554,
+    "seen": 1787834011.5888443,
     "ast_hash": "0cdd938489675b49c8d0103e1d6ce721",
     "semantic_hash": ""
   },
   "deploy/grafana/dashboards/logs-loki.json": {
-    "mtime": 1787197517.3595166,
+    "mtime": 1787833723.8164368,
+    "seen": 1787834011.5886252,
     "ast_hash": "b66922b287e1ec107f2ff5589ad1fc30",
     "semantic_hash": ""
   },
   "migrate_sql/20260807045351_AddGoogleOAuthUnlinkIntent.sql": {
-    "mtime": 1787197517.4191618,
+    "mtime": 1787833723.8703458,
+    "seen": 1787834071.5045278,
     "ast_hash": "e582454470fcb22a00c352f4b1114efd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/DataBase/Table/GoogleOAuthUnlinkIntent.cs": {
-    "mtime": 1787197517.494391,
+    "mtime": 1787833723.9006352,
+    "seen": 1787834011.5887244,
     "ast_hash": "e875c4e8c70a5ffac106da57307f5998",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260807045351_AddGoogleOAuthUnlinkIntent.Designer.cs": {
-    "mtime": 1787197517.5184772,
+    "mtime": 1787833723.9127948,
+    "seen": 1787834011.5887625,
     "ast_hash": "43352a2018b2c141ca900fec943fc934",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260807045351_AddGoogleOAuthUnlinkIntent.cs": {
-    "mtime": 1787197517.5184772,
+    "mtime": 1787833723.9133098,
+    "seen": 1787834011.5887632,
     "ast_hash": "a8fcd378721c9dd2024ee89728c6eaaa",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/NonPersistentGoogleDataStore.cs": {
-    "mtime": 1787197517.5226362,
+    "mtime": 1787833723.9148502,
+    "seen": 1787834011.5887668,
     "ast_hash": "52fc2f633d525ef836f6797e8f9bf2d9",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/SharedService/Google/GoogleOAuthOperationLock.cs": {
-    "mtime": 1787197517.525072,
+    "mtime": 1787833723.9163961,
+    "seen": 1787834011.5887713,
     "ast_hash": "0b9041f795374a8fd13c45344c525678",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/Component/Redis/GoogleOAuthOperationLockRedisComponentTests.cs": {
-    "mtime": 1787197517.5353172,
+    "mtime": 1787833723.9220593,
+    "seen": 1787834011.5887873,
     "ast_hash": "9a691692a8b27d3d17f04536eb870a8d",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/TwitchSubscription/TwitchSubscription.cs": {
-    "mtime": 1787197517.4394095,
+    "mtime": 1787833723.8801444,
+    "seen": 1787834011.5886595,
     "ast_hash": "76e2c8690f20df77a22577e3cf3c71dd",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/Interaction/TwitchSubscription/TwitchSubscriptionSetting.cs": {
-    "mtime": 1787197517.4403825,
+    "mtime": 1787833723.8806589,
+    "seen": 1787834011.5886602,
     "ast_hash": "449bd25f866ffabecaf86f7ec67f4142",
     "semantic_hash": ""
   },
   "migrate_sql/20260813032017_RenameVerificationLogChannel.sql": {
-    "mtime": 1787197517.4191618,
+    "mtime": 1787833723.8708603,
+    "seen": 1787834071.5045285,
     "ast_hash": "0543777033c51424857d6747e414d4bf",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/AdminSettings/AdminSettingsChannelValidator.cs": {
-    "mtime": 1787197517.4563363,
+    "mtime": 1787833723.8857946,
+    "seen": 1787834011.5886743,
     "ast_hash": "3d056aa9ee4e535fe7ce00790540a3c9",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/AdminSettings/AdminSettingsService.cs": {
-    "mtime": 1787197517.4573107,
+    "mtime": 1787833723.8863034,
+    "seen": 1787834011.588675,
     "ast_hash": "d153f9ef553efcef054c8cc22faf8008",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Messages/AdminSettings.cs": {
-    "mtime": 1787197517.5062444,
+    "mtime": 1787833723.906636,
+    "seen": 1787834011.5887475,
     "ast_hash": "09e9f82fdf62d24109480ec7c8e36bcf",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260813032017_RenameVerificationLogChannel.Designer.cs": {
-    "mtime": 1787197517.5195017,
+    "mtime": 1787833723.9133098,
+    "seen": 1787834011.588764,
     "ast_hash": "a5166d2e7f1220d413ed8733d795dad5",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Shared/Migrations/20260813032017_RenameVerificationLogChannel.cs": {
-    "mtime": 1787197517.5204933,
+    "mtime": 1787833723.9138196,
+    "seen": 1787834011.5887644,
     "ast_hash": "97d5ff7008d7a4e729457e6e13cccf8e",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/AdminSettingsContractTests.cs": {
-    "mtime": 1787197517.5314734,
+    "mtime": 1787833723.9194818,
+    "seen": 1787834011.588779,
     "ast_hash": "9a512a780b285c2a6425527d86bf2879",
     "semantic_hash": ""
   },
   "docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md": {
-    "mtime": 1787197517.3643446,
+    "mtime": 1787833723.8200383,
+    "seen": 1787834011.5888414,
     "ast_hash": "72fde402c105085355ffc0f105ff2d04",
     "semantic_hash": ""
   },
   "docs/WEB_ADMIN_SETTINGS_PLAN.md": {
-    "mtime": 1787197517.3654914,
+    "mtime": 1787833723.8200383,
+    "seen": 1787834011.588843,
     "ast_hash": "5b45260f10c0c6b75da661f60edf021c",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/AdminSettings/CrawlerPolicy.cs": {
-    "mtime": 1787197517.4588134,
+    "mtime": 1787833723.8863034,
+    "seen": 1787834011.5886772,
     "ast_hash": "bf6c403baed7f57721bc6005f8cfddc9",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Notifier/SharedService/AdminSettings/CrawlerOwnerNotifier.cs": {
-    "mtime": 1787197517.4588134,
+    "mtime": 1787833723.8863034,
+    "seen": 1787834011.5886762,
     "ast_hash": "bc526c094845dfb772655e318482c379",
     "semantic_hash": ""
   },
   "docs/WEB_ADMIN_SETTINGS_LATENCY_PLAN.md": {
-    "mtime": 1787197517.3654914,
+    "mtime": 1787833723.8200383,
+    "seen": 1787834011.5888422,
     "ast_hash": "4e9acd41ee051b5f1fd7dea548bc4523",
+    "semantic_hash": ""
+  },
+  "src/DiscordStreamNotifyBot.Notifier/Interaction/AdministrationComponent.cs": {
+    "mtime": 1787833723.876533,
+    "seen": 1787834011.5886445,
+    "ast_hash": "f2ad7d9cd971688054c68ae14e41e9cd",
     "semantic_hash": ""
   }
 }

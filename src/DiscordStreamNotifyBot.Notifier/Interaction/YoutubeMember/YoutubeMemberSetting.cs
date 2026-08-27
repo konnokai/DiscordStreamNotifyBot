@@ -84,6 +84,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
            "伺服器人數至少 250 人才可使用\n" +
            "如有需求，請聯絡擁有者")]
         [CommandExample("https://www.youtube.com/@998rrr @玖桃")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("add-member-check", "新增會員驗證頻道")]
         public async Task AddMemberCheckAsync([Summary("channel-url", "頻道連結")] string url, [Summary("role", "身分組 ID")] IRole role)
         {
@@ -95,6 +96,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
         [CommandSummary("移除會員驗證頻道")]
         [CommandExample("https://www.youtube.com/@998rrr")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove-member-check", "移除會員驗證頻道")]
         public async Task RemoveMemberCheckAsync([Summary("channel-url", "頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
         {
@@ -117,6 +119,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             "用於頻道有多階會員時，指定「最低階」的會員限定影片，避免低階但合法的會員被誤判失敗\n" +
             "指定後自動探索不會再覆寫此影片；該影片失效時會發送通知到通知頻道提醒需重設")]
         [CommandExample("頻道名稱 https://youtu.be/xxxxxxxxxxx")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("set-check-video", "手動指定會員驗證探測影片")]
         public async Task SetCheckVideoAsync(
             [Summary("channel", "頻道名稱"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url,
@@ -140,6 +143,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
 
         [CommandSummary("改回自動挑選會員驗證偵測影片（取消手動指定）")]
         [CommandExample("https://www.youtube.com/@998rrr")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("clear-check-video", "改回自動挑選會員驗證偵測影片")]
         public async Task ClearCheckVideoAsync(
             [Summary("channel-url", "頻道連結"), Autocomplete(typeof(GuildYoutubeMemberCheckChannelIdAutocompleteHandler))] string url)
@@ -198,6 +202,7 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 ? config.MemberCheckChannelId
                 : config.MemberCheckChannelTitle;
 
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]
         public async Task ListCheckedMemberAsync([Summary("page", "頁數")] int page = 1)
         {

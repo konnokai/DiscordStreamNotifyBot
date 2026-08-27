@@ -53,6 +53,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("add", "新增 TwitCasting 直播通知的頻道")]
         public async Task AddChannel([Summary("streamer", "頻道網址")] string channelUrl,
             [Summary("notification-channel", "發送通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
@@ -134,6 +135,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("remove", "移除 TwitCasting 直播通知的頻道")]
         public async Task RemoveChannel([Summary("channel", "頻道網址"), Autocomplete(typeof(GuildNoticeTwitCastingChannelIdAutocompleteHandler))] string channelUrl)
         {
@@ -175,6 +177,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             }
         }
 
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("list", "顯示已加入通知清單的 TwitCasting 直播頻道")]
         public async Task ListChannel([Summary("page", "頁數")] int page = 0)
         {
@@ -204,6 +207,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             "請先新增直播通知，再設定通知訊息（`/help get-command-help twitcasting add`）\n\n" +
             "（若通知訊息要提及特定身分組，Bot 必須具備提及所有身分組權限）")]
         [CommandExample("nana_kaguraaa 開台啦", "https://twitcasting.tv/nana_kaguraaa 開台啦")]
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("set-message", "設定通知訊息")]
         public async Task SetMessage([Summary("channel", "頻道網址"), Autocomplete(typeof(GuildNoticeTwitCastingChannelIdAutocompleteHandler))] string channelUrl, [Summary("message", "通知訊息")] string message = "")
         {
@@ -242,6 +246,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             }
         }
 
+        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("list-message", "列出已設定的 TwitCasting 直播通知訊息")]
         public async Task ListMessage([Summary("page", "頁數")] int page = 0)
         {
