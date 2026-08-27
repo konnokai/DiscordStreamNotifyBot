@@ -7,6 +7,14 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "description": "請選擇接收直播小幫手 structured log 的 Loki datasource。",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
     }
   ],
   "__requires": [
@@ -20,6 +28,12 @@
       "type": "datasource",
       "id": "prometheus",
       "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "loki",
+      "name": "Loki",
       "version": "1.0.0"
     },
     {
@@ -73,7 +87,7 @@
           "mappings": [
             { "options": { "0": { "color": "red", "text": "離線" }, "1": { "color": "green", "text": "在線" } }, "type": "value" }
           ],
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         },
         "overrides": []
@@ -95,7 +109,7 @@
           "mappings": [
             { "options": { "0": { "color": "red", "text": "離線" }, "1": { "color": "green", "text": "在線" } }, "type": "value" }
           ],
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         },
         "overrides": []
@@ -117,7 +131,7 @@
           "mappings": [
             { "options": { "0": { "color": "red", "text": "離線" }, "1": { "color": "green", "text": "在線" } }, "type": "value" }
           ],
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         },
         "overrides": []
@@ -139,7 +153,7 @@
           "mappings": [
             { "options": { "0": { "color": "red", "text": "離線" }, "1": { "color": "green", "text": "在線" } }, "type": "value" }
           ],
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
         },
         "overrides": []
@@ -187,7 +201,7 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
         },
         "overrides": []
@@ -285,8 +299,8 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "Coordinator 最近一次成功完成監控迴圈距今秒數；尚未成功時顯示無資料。",
-      "fieldConfig": { "defaults": { "decimals": 0, "noValue": "無資料", "unit": "s" }, "overrides": [] },
+      "description": "Coordinator 最近一次成功完成監控迴圈距今秒數；尚未成功時顯示 N/A。",
+      "fieldConfig": { "defaults": { "decimals": 0, "noValue": "N/A", "unit": "s" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 21 },
       "id": 41,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
@@ -299,7 +313,7 @@
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "description": "Coordinator 目前觀察到的 Redis Stream consumer group 數量。",
-      "fieldConfig": { "defaults": { "decimals": 0, "noValue": "無資料", "unit": "short" }, "overrides": [] },
+      "fieldConfig": { "defaults": { "decimals": 0, "noValue": "N/A", "unit": "short" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 21 },
       "id": 42,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
@@ -483,7 +497,7 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] },
           "unit": "percent"
         },
@@ -521,11 +535,11 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "最近區間 polling success / 全部 polling。",
+      "description": "dashboard 時間範圍內 polling success / 全部 polling；沒有 polling 時顯示 N/A。",
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 90 }, { "color": "green", "value": 99 }] },
           "unit": "percent"
         },
@@ -535,7 +549,7 @@
       "id": 18,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "100 * sum(rate(discord_stream_notify_twitch_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\", result=\"success\"}[$__rate_interval])) / clamp_min(sum(rate(discord_stream_notify_twitch_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__rate_interval])), 0.000001)", "instant": true, "legendFormat": "成功率", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "100 * (sum(increase(discord_stream_notify_twitch_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\", result=\"success\"}[$__range])) or vector(0)) / sum(increase(discord_stream_notify_twitch_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__range]))", "instant": true, "legendFormat": "成功率", "range": false, "refId": "A" }
       ],
       "title": "Polling 成功率",
       "type": "stat"
@@ -739,11 +753,11 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "member / (member + not_member)，不把 token、配額或 provider 錯誤算進資格判定成功率。",
+      "description": "dashboard 時間範圍內 member / (member + not_member)；不把 token、配額或 provider 錯誤算進資格判定率，沒有判定時顯示 N/A。",
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 50 }, { "color": "green", "value": 80 }] },
           "unit": "percent"
         },
@@ -753,7 +767,7 @@
       "id": 31,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "100 * (sum(rate(discord_stream_notify_youtube_member_verifications_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result=\"member\"}[$__rate_interval])) or vector(0)) / clamp_min(sum(rate(discord_stream_notify_youtube_member_verifications_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result=~\"member|not_member\"}[$__rate_interval])), 0.000001)", "instant": true, "legendFormat": "會員判定率", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "100 * (sum(increase(discord_stream_notify_youtube_member_verifications_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result=\"member\"}[$__range])) or vector(0)) / sum(increase(discord_stream_notify_youtube_member_verifications_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result=~\"member|not_member\"}[$__range]))", "instant": true, "legendFormat": "會員判定率", "range": false, "refId": "A" }
       ],
       "title": "會員判定率",
       "type": "stat"
@@ -785,7 +799,7 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 900 }, { "color": "red", "value": 172800 }] },
           "unit": "s"
         },
@@ -802,11 +816,11 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "最近區間各檢查類型完整週期的 p95 耗時。",
+      "description": "dashboard 時間範圍內各檢查類型完整週期的 p95 耗時。",
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 300 }, { "color": "red", "value": 900 }] },
           "unit": "s"
         },
@@ -816,7 +830,7 @@
       "id": 40,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "valueAndName", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le, check_type) (rate(discord_stream_notify_youtube_member_check_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval])))", "instant": true, "legendFormat": "{{check_type}}", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le, check_type) (increase(discord_stream_notify_youtube_member_check_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__range])))", "instant": true, "legendFormat": "{{check_type}}", "range": false, "refId": "A" }
       ],
       "title": "YouTube 會員檢查 p95",
       "type": "stat"
@@ -896,13 +910,13 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "最近區間 Twitch 訂閱重新驗證完整週期的 p95 耗時。",
-      "fieldConfig": { "defaults": { "decimals": 1, "noValue": "無資料", "unit": "s" }, "overrides": [] },
+      "description": "dashboard 時間範圍內 Twitch 訂閱重新驗證完整週期的 p95 耗時。",
+      "fieldConfig": { "defaults": { "decimals": 1, "noValue": "N/A", "unit": "s" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 6, "x": 0, "y": 94 },
       "id": 48,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le) (rate(discord_stream_notify_twitch_subscription_cycle_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval])))", "instant": true, "legendFormat": "p95", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le) (increase(discord_stream_notify_twitch_subscription_cycle_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__range])))", "instant": true, "legendFormat": "p95", "range": false, "refId": "A" }
       ],
       "title": "Twitch 訂閱複驗 p95",
       "type": "stat"
@@ -922,14 +936,14 @@
       "type": "bargauge"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "最近區間 Notifier 關機時等待 Twitch token rotation 寫入完成的 p95 耗時。",
-      "fieldConfig": { "defaults": { "decimals": 1, "noValue": "無資料", "unit": "s" }, "overrides": [] },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "description": "dashboard 時間範圍內 Notifier 關機等待 Twitch token rotation 寫入完成的 p95 耗時，取自關機完成 log。",
+      "fieldConfig": { "defaults": { "decimals": 1, "noValue": "N/A", "unit": "s" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 6, "x": 18, "y": 94 },
       "id": 50,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "histogram_quantile(0.95, sum by (le) (rate(discord_stream_notify_twitch_refresh_shutdown_drain_duration_seconds_bucket{job=~\"$notifier_job\", instance=~\"$notifier_instance\"}[$__rate_interval])))", "instant": true, "legendFormat": "p95", "range": false, "refId": "A" }
+        { "datasource": { "type": "loki", "uid": "${DS_LOKI}" }, "editorMode": "code", "expr": "quantile_over_time(0.95, {app=\"discord-stream-notify-bot\", service=\"notifier\"} |= \"Twitch refresh rotation 已全部保存，關閉等待\" | regexp \"關閉等待 (?P<duration>[0-9.]+) 秒\" | unwrap duration [$__range])", "queryType": "instant", "refId": "A" }
       ],
       "title": "Twitch 關機 Drain p95",
       "type": "stat"
@@ -965,11 +979,11 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "sent / 實際嘗試發送結果；disabled 不列入分母。",
+      "description": "dashboard 時間範圍內 sent / 實際嘗試發送結果；disabled 不列入分母，沒有嘗試時顯示 N/A。",
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
-          "noValue": "無資料",
+          "noValue": "N/A",
           "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 95 }, { "color": "green", "value": 99 }] },
           "unit": "percent"
         },
@@ -979,7 +993,7 @@
       "id": 35,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "valueAndName", "wideLayout": true },
       "targets": [
-        { "editorMode": "code", "expr": "100 * (sum by (platform) (rate(discord_stream_notify_notification_deliveries_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result=\"sent\"}[$__rate_interval])) or 0 * sum by (platform) (rate(discord_stream_notify_notification_deliveries_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result!=\"disabled\"}[$__rate_interval]))) / clamp_min(sum by (platform) (rate(discord_stream_notify_notification_deliveries_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result!=\"disabled\"}[$__rate_interval])), 0.000001)", "instant": true, "legendFormat": "{{platform}}", "range": false, "refId": "A" }
+        { "editorMode": "code", "expr": "100 * sum by (platform) (increase(discord_stream_notify_notification_deliveries_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result=\"sent\"}[$__range])) / sum by (platform) (increase(discord_stream_notify_notification_deliveries_total{job=~\"$notifier_job\", instance=~\"$notifier_instance\", result!=\"disabled\"}[$__range]))", "instant": true, "legendFormat": "{{platform}}", "range": false, "refId": "A" }
       ],
       "title": "各平台發送成功率",
       "type": "stat"
