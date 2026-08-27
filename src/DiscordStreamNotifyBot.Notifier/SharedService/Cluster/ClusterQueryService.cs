@@ -2,6 +2,7 @@ using DiscordStreamNotifyBot.Command;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.AdminSettings;
 using System.Collections.Concurrent;
 
 namespace DiscordStreamNotifyBot.SharedService.Cluster
@@ -14,14 +15,14 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
     /// </para>
     /// <list type="bullet">
     /// <item><b>B1 共享快照</b>：各 shard 把自己持有的伺服器寫入 Redis HASH，請求端一次讀回合併（純讀取、無等待）。</item>
-    /// <item><b>B2 request/reply</b>：少數需即時打到持有/在線 shard 的查詢（UserInfo / GuildInfo / GetInviteUrl），
+    /// <item><b>B2 request/reply</b>：少數需即時打到持有/在線 shard 的查詢（UserInfo / GuildInfo / GetInviteUrl / NotificationChannelCheck），
     /// 以 correlationId 散播請求、收集回應，逾時即用部分結果。</item>
     /// </list>
     /// </summary>
     public class ClusterQueryService : ICommandService
     {
         /// <summary>跨 shard 查詢類型。</summary>
-        public enum ClusterQueryType { UserInfo, GuildInfo, GetInviteUrl }
+        public enum ClusterQueryType { UserInfo, GuildInfo, GetInviteUrl, NotificationChannelCheck }
 
         private class QueryRequest
         {
@@ -64,7 +65,28 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
             public string Name { get; set; }
         }
 
+        /// <summary><see cref="ClusterQueryType.NotificationChannelCheck"/> 回應：本 shard 的通知頻道檢查結果。</summary>
+        public class NotificationChannelCheckResponse
+        {
+            public int ShardId { get; set; }
+            public int CheckedCount { get; set; }
+            public List<NotificationChannelIssue> Issues { get; set; } = new();
+        }
+
+        /// <summary>單一通知頻道的缺失或權限問題。</summary>
+        public class NotificationChannelIssue
+        {
+            public ulong GuildId { get; set; }
+            public string GuildName { get; set; } = "";
+            public string Platform { get; set; } = "";
+            public string ChannelName { get; set; } = "";
+            public ulong ChannelId { get; set; }
+            public List<string> Usages { get; set; } = new();
+            public List<string> MissingPermissions { get; set; } = new();
+        }
+
         private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(2.5);
+        public static readonly TimeSpan NotificationChannelCheckTimeout = TimeSpan.FromSeconds(300);
 
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
@@ -396,6 +418,77 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
                         }
 
                         return JsonConvert.SerializeObject(resp);
+                    }
+
+                case ClusterQueryType.NotificationChannelCheck:
+                    {
+                        var guilds = _client.Guilds.ToDictionary(guild => guild.Id);
+                        var response = new NotificationChannelCheckResponse { ShardId = Bot.ShardId };
+                        if (guilds.Count == 0)
+                            return JsonConvert.SerializeObject(response);
+
+                        var targets = new Dictionary<(ulong GuildId, string Platform, ulong ChannelId),
+                            (SocketGuild Guild, string Platform, ulong ChannelId, List<string> Usages, bool RequiresManageEvents)>();
+                        var guildIds = guilds.Keys.ToList();
+
+                        using (var db = _dbService.GetDbContext())
+                        {
+                            foreach (var item in db.NoticeYoutubeStreamChannel.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
+                            {
+                                AddTarget(guilds[item.GuildId], "YouTube", "直播", item.DiscordNoticeStreamChannelId, item.IsCreateEventForNewStream);
+                                AddTarget(guilds[item.GuildId], "YouTube", "影片", item.DiscordNoticeVideoChannelId);
+                            }
+
+                            foreach (var item in db.NoticeTwitchStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
+                                AddTarget(guilds[item.GuildId], "Twitch", "直播", item.DiscordChannelId);
+
+                            foreach (var item in db.NoticeTwitcastingStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
+                                AddTarget(guilds[item.GuildId], "TwitCasting", "直播", item.DiscordChannelId);
+                        }
+
+                        response.CheckedCount = targets.Count;
+                        foreach (var target in targets.Values)
+                        {
+                            var validation = AdminSettingsChannelValidator.Validate(
+                                _client, target.Guild, target.ChannelId, target.RequiresManageEvents);
+                            if (validation == null)
+                                continue;
+
+                            var issue = new NotificationChannelIssue
+                            {
+                                GuildId = target.Guild.Id,
+                                GuildName = target.Guild.Name,
+                                Platform = target.Platform,
+                                ChannelId = target.ChannelId,
+                                ChannelName = target.Guild.GetChannel(target.ChannelId)?.Name ?? "",
+                                Usages = target.Usages
+                            };
+
+                            if (validation.Code == "settings.channel-missing-permissions")
+                                issue.MissingPermissions.AddRange(validation.Arguments["permissions"]?.Values<string>() ?? Enumerable.Empty<string>());
+                            else if (validation.Code == "settings.channel-not-found")
+                                issue.MissingPermissions.Add("channel");
+                            else if (validation.Code == "settings.bot-unavailable")
+                                issue.MissingPermissions.Add("bot");
+                            else
+                                issue.MissingPermissions.Add("unknown");
+
+                            response.Issues.Add(issue);
+                        }
+
+                        return JsonConvert.SerializeObject(response);
+
+                        void AddTarget(SocketGuild guild, string platform, string usage, ulong channelId, bool requiresManageEvents = false)
+                        {
+                            var key = (guild.Id, platform, channelId);
+                            if (!targets.TryGetValue(key, out var target))
+                                target = (guild, platform, channelId, new List<string>(), false);
+
+                            if (!target.Usages.Contains(usage))
+                                target.Usages.Add(usage);
+                            target.RequiresManageEvents |= requiresManageEvents;
+                            targets[key] = target;
+                        }
                     }
             }
 

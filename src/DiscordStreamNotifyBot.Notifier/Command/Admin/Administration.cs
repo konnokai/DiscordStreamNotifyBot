@@ -464,6 +464,101 @@ namespace DiscordStreamNotifyBot.Command.Admin
         }
 
         [RequireContext(ContextType.DM)]
+        [Command("CheckNotifyChannel")]
+        [Summary("檢查各平台通知頻道是否缺失或權限不足")]
+        [Alias("cnc")]
+        [RequireOwner]
+        public async Task CheckNotifyChannelAsync(int page = 0)
+        {
+            IUserMessage processingMessage = null;
+            try
+            {
+                processingMessage = await Context.Channel.SendMessageAsync("處理中，正在跨 shard 檢查通知頻道...");
+                var (responses, responded, expected) = await _clusterQuery.RequestAsync<ClusterQueryService.NotificationChannelCheckResponse>(
+                    ClusterQueryService.ClusterQueryType.NotificationChannelCheck, "",
+                    ClusterQueryService.NotificationChannelCheckTimeout);
+
+                if (responded < expected && responses.Count == 0)
+                {
+                    await Context.Channel.SendErrorAsync($"通知頻道檢查未完成（{responded}/{expected} shard 回應）");
+                    return;
+                }
+
+                int checkedCount = responses.Sum(response => response.CheckedCount);
+                var issues = responses
+                    .SelectMany(response => response.Issues)
+                    .OrderBy(issue => issue.GuildName, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(issue => issue.Platform, StringComparer.Ordinal)
+                    .ThenBy(issue => issue.ChannelId)
+                    .ToList();
+
+                if (responded < expected && issues.Count == 0)
+                {
+                    await Context.Channel.SendErrorAsync($"通知頻道檢查未完成（{responded}/{expected} shard 回應），目前無法確認完整結果");
+                    return;
+                }
+
+                if (checkedCount == 0)
+                {
+                    await Context.Channel.SendConfirmAsync("目前沒有設定任何 YouTube、Twitch 或 TwitCasting 通知頻道");
+                    return;
+                }
+
+                if (issues.Count == 0)
+                {
+                    await Context.Channel.SendConfirmAsync(
+                        $"所有平台通知頻道檢查正常（已檢查 {checkedCount} 項，{responded}/{expected} shard 回應）");
+                    return;
+                }
+
+                page = Math.Max(page, 0);
+                await Context.SendPaginatedConfirmAsync(page, currentPage => new EmbedBuilder()
+                    .WithErrorColor()
+                    .WithTitle("各平台通知頻道檢查")
+                    .WithDescription(string.Join('\n', issues.Skip(currentPage * 10).Take(10).Select(FormatIssue)))
+                    .WithFooter($"問題 {issues.Count} 項 / 已檢查 {checkedCount} 項（{responded}/{expected} shard 回應）"),
+                    issues.Count, 10);
+
+                var sqlButtons = new ComponentBuilder();
+                foreach (string platform in issues.Select(issue => issue.Platform).Distinct(StringComparer.Ordinal))
+                    sqlButtons.WithButton($"{platform} DELETE SQL", $"admin-notify-sql:{platform.ToLowerInvariant()}", ButtonStyle.Danger);
+                await Context.Channel.SendMessageAsync("點擊按鈕取得對應平台的 DELETE SQL：", components: sqlButtons.Build());
+
+                string FormatIssue(ClusterQueryService.NotificationChannelIssue issue)
+                {
+                    string channel = issue.ChannelId == 0
+                        ? "未設定"
+                        : $"{(string.IsNullOrEmpty(issue.ChannelName) ? $"頻道 {issue.ChannelId}" : $"#{issue.ChannelName}")} ({issue.ChannelId})";
+                    string missing = string.Join("、", issue.MissingPermissions.Select(permission => permission switch
+                    {
+                        "channel" => "通知頻道不存在",
+                        "bot" => "無法取得 Bot 成員資訊",
+                        "viewChannel" => "查看頻道",
+                        "sendMessages" => "傳送訊息",
+                        "embedLinks" => "嵌入連結",
+                        "manageEvents" => "管理活動",
+                        _ => "未知權限"
+                    }));
+
+                    return $"{issue.GuildName} ({issue.GuildId}) | {issue.Platform} {string.Join("/", issue.Usages)} | {channel} | 缺少：{missing}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "CheckNotifyChannel Error");
+                await Context.Channel.SendErrorAsync("檢查通知頻道失敗，請查看日誌").ConfigureAwait(false);
+            }
+            finally
+            {
+                if (processingMessage != null)
+                {
+                    try { await processingMessage.DeleteAsync().ConfigureAwait(false); }
+                    catch { }
+                }
+            }
+        }
+
+        [RequireContext(ContextType.DM)]
         [Command("ListNoNotifyGuild")]
         [Summary("顯示未設定通知的伺服器清單")]
         [Alias("lnng")]
