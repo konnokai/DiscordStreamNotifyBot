@@ -1,6 +1,7 @@
 using Discord.Interactions;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 using System.Globalization;
+using System.Text;
 
 namespace DiscordStreamNotifyBot.Interaction
 {
@@ -20,20 +21,20 @@ namespace DiscordStreamNotifyBot.Interaction
             var button = (SocketMessageComponent)Context.Interaction;
             if (Context.User.Id != Bot.ApplicatonOwner.Id)
             {
-                await button.RespondAsync("只有 Bot owner 可以使用此按鈕", ephemeral: true);
+                await button.RespondAsync("只有 Bot owner 可以使用此按鈕");
                 return;
             }
 
             platform = platform.ToLowerInvariant();
             if (platform is not ("youtube" or "twitch" or "twitcasting"))
             {
-                await button.RespondAsync("無效的平台", ephemeral: true);
+                await button.RespondAsync("無效的平台");
                 return;
             }
 
             try
             {
-                await button.RespondAsync("處理中，正在重新檢查通知頻道...", ephemeral: true);
+                await button.RespondAsync("處理中，正在重新檢查通知頻道...");
                 var (responses, responded, expected) = await _clusterQuery.RequestAsync<ClusterQueryService.NotificationChannelCheckResponse>(
                     ClusterQueryService.ClusterQueryType.NotificationChannelCheck, "",
                     ClusterQueryService.NotificationChannelCheckTimeout);
@@ -68,7 +69,11 @@ namespace DiscordStreamNotifyBot.Interaction
 
                 if (responded < expected)
                     sql += $"{Environment.NewLine}{Environment.NewLine}-- 注意：只收到 {responded}/{expected} shard 回應，SQL 可能不完整";
-                await button.ModifyOriginalResponseAsync(message => message.Content = $"```sql\n{sql}\n```");
+                await button.ModifyOriginalResponseAsync(message => message.Content = "DELETE SQL 已產生，請下載附件");
+                using var sqlStream = new MemoryStream(Encoding.UTF8.GetBytes(sql));
+                await button.FollowupWithFileAsync(
+                    new FileAttachment(sqlStream, $"notification-delete-{platform}.sql"),
+                    text: "對應平台的 DELETE SQL");
             }
             catch (Exception ex)
             {
@@ -76,7 +81,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 if (Context.Interaction.HasResponded)
                     await button.ModifyOriginalResponseAsync(message => message.Content = "產生 DELETE SQL 失敗，請查看日誌");
                 else
-                    await button.RespondAsync("產生 DELETE SQL 失敗，請查看日誌", ephemeral: true);
+                    await button.RespondAsync("產生 DELETE SQL 失敗，請查看日誌");
             }
         }
     }
