@@ -1,6 +1,7 @@
 slash-contract v1
 [global]
 group /help
+group /server-admin
 group /twitcasting
 group /twitcasting-spider
 group /twitch
@@ -18,6 +19,16 @@ command /help get-all-modules permissions=- dm=true nsfw=false contexts=- integr
 command /help get-command-help permissions=- dm=true nsfw=false contexts=- integrations=-
   option 0 module type=String required=false autocomplete=true channels=- min=- max=- minLength=- maxLength=-
   option 1 command type=String required=false autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /server-admin send-message-to-bot-owner permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+command /server-admin set-global-notice-channel permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
+command /server-admin set-language permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 language type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+    choice 0 name="Traditional Chinese" value="zh-TW"
+    choice 1 name="English" value="en-US"
+    choice 2 name="Japanese" value="ja"
+command /server-admin set-verification-log-channel permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 log-channel type=Channel required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
 command /twitcasting-spider add permissions=Administrator dm=true nsfw=false contexts=- integrations=-
   option 0 channel type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
 command /twitcasting-spider list permissions=Administrator dm=true nsfw=false contexts=- integrations=-
@@ -75,16 +86,6 @@ command /twitch set-message permissions=ManageMessages dm=true nsfw=false contex
   option 2 message type=String required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
 command /utility invite permissions=- dm=true nsfw=false contexts=- integrations=-
 command /utility ping permissions=- dm=true nsfw=false contexts=- integrations=-
-command /utility send-message-to-bot-owner permissions=Administrator dm=true nsfw=false contexts=- integrations=-
-command /utility set-global-notice-channel permissions=Administrator dm=true nsfw=false contexts=- integrations=-
-  option 0 channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
-command /utility set-language permissions=Administrator dm=true nsfw=false contexts=- integrations=-
-  option 0 language type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
-    choice 0 name="Traditional Chinese" value="zh-TW"
-    choice 1 name="English" value="en-US"
-    choice 2 name="Japanese" value="ja"
-command /utility set-verification-log-channel permissions=Administrator dm=true nsfw=false contexts=- integrations=-
-  option 0 log-channel type=Channel required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
 command /utility status permissions=- dm=true nsfw=false contexts=- integrations=-
 command /youtube-member-set add-member-check permissions=Administrator dm=true nsfw=false contexts=- integrations=-
   option 0 channel-url type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-

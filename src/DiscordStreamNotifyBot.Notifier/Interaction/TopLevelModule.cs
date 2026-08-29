@@ -47,7 +47,7 @@ namespace DiscordStreamNotifyBot.Interaction
         {
             string locale = await GetLocaleAsync(true);
             string addPath = CommandDisplayResolver.GetCommandPath(locale, platform, "add");
-            string contactPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "send-message-to-bot-owner");
+            string contactPath = CommandDisplayResolver.GetCommandPath(locale, "server-admin", "send-message-to-bot-owner");
             switch (result.Code)
             {
                 case "crawler.added":
@@ -105,8 +105,8 @@ namespace DiscordStreamNotifyBot.Interaction
             string roleName = "")
         {
             string locale = await GetLocaleAsync(true);
-            string setLogPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "set-verification-log-channel");
-            string contactPath = CommandDisplayResolver.GetCommandPath(locale, "utility", "send-message-to-bot-owner");
+            string setLogPath = CommandDisplayResolver.GetCommandPath(locale, "server-admin", "set-verification-log-channel");
+            string contactPath = CommandDisplayResolver.GetCommandPath(locale, "server-admin", "send-message-to-bot-owner");
             switch (result.Code)
             {
                 case "verification.configured":
@@ -293,9 +293,9 @@ namespace DiscordStreamNotifyBot.Interaction
                     initialized.Locale,
                     Context.Interaction.GuildLocale);
                 string displayLanguage = BotLocalizer.GetLocaleDisplayName(initialized.Locale, responseLocale);
-                string setLanguagePath = CommandDisplayResolver.GetCommandPath(responseLocale, "utility", "set-language");
-                string globalNoticePath = CommandDisplayResolver.GetCommandPath(responseLocale, "utility", "set-global-notice-channel");
-                string contactPath = CommandDisplayResolver.GetCommandPath(responseLocale, "utility", "send-message-to-bot-owner");
+                string setLanguagePath = CommandDisplayResolver.GetCommandPath(responseLocale, "server-admin", "set-language");
+                string globalNoticePath = CommandDisplayResolver.GetCommandPath(responseLocale, "server-admin", "set-global-notice-channel");
+                string contactPath = CommandDisplayResolver.GetCommandPath(responseLocale, "server-admin", "send-message-to-bot-owner");
                 string message = string.Join('\n',
                     BotLocalizer.Format("Onboarding.FirstNotificationSetup", responseLocale, globalNoticePath, contactPath),
                     BotLocalizer.Format("Onboarding.CurrentLanguage", responseLocale, displayLanguage),

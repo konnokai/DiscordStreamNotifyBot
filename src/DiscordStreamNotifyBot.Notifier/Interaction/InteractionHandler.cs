@@ -423,7 +423,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 Log.Error($"[{location}] {arg2.User.Username} 執行 `{slashCommand}` 發生錯誤\r\n{arg3.ErrorReason}");
                 string locale = await ResolveResponseLocaleAsync(arg2.Interaction, true);
                 string contactPath = arg3.Error == InteractionCommandError.UnmetPrecondition
-                    ? _commandDisplayResolver.GetCommandPath(locale, "utility", "send-message-to-bot-owner")
+                    ? _commandDisplayResolver.GetCommandPath(locale, "server-admin", "send-message-to-bot-owner")
                     : null;
                 InteractionErrorDescriptor error = InteractionErrorPolicy.Resolve(
                     arg3.Error, arg3.ErrorReason, contactPath);

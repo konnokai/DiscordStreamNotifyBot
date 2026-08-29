@@ -29,7 +29,7 @@ namespace DiscordStreamNotifyBot.Tests
         public void KnownPreconditionMapsToExpectedResource(string errorCode, string expectedResourceKey)
         {
             InteractionErrorDescriptor descriptor = InteractionErrorPolicy.Resolve(
-                InteractionCommandError.UnmetPrecondition, errorCode, "/utility send-message-to-bot-owner");
+                InteractionCommandError.UnmetPrecondition, errorCode, "/server-admin send-message-to-bot-owner");
 
             Assert.Equal(expectedResourceKey, descriptor.ResourceKey);
             Assert.Empty(descriptor.Arguments);
@@ -38,7 +38,7 @@ namespace DiscordStreamNotifyBot.Tests
         [Fact]
         public void GuildMemberCountPreconditionMapsValuesAndContactPath()
         {
-            const string contactPath = "/utility send-message-to-bot-owner";
+            const string contactPath = "/server-admin send-message-to-bot-owner";
             string errorCode = InteractionErrorCodes.GuildMemberCount(100, 42);
 
             InteractionErrorDescriptor descriptor = InteractionErrorPolicy.Resolve(
@@ -62,7 +62,7 @@ namespace DiscordStreamNotifyBot.Tests
         public void UnknownOrMalformedPreconditionUsesFallback(string errorCode)
         {
             InteractionErrorDescriptor descriptor = InteractionErrorPolicy.Resolve(
-                InteractionCommandError.UnmetPrecondition, errorCode, "/utility send-message-to-bot-owner");
+                InteractionCommandError.UnmetPrecondition, errorCode, "/server-admin send-message-to-bot-owner");
 
             Assert.Equal("Preconditions.Unmet", descriptor.ResourceKey);
             Assert.Empty(descriptor.Arguments);

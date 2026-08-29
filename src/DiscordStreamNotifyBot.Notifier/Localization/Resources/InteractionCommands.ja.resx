@@ -9,13 +9,15 @@
   <data name="utility.ping.description" xml:space="preserve"><value>Bot の応答遅延を確認します</value></data>
   <data name="utility.invite.description" xml:space="preserve"><value>Bot の招待リンクを取得します</value></data>
   <data name="utility.status.description" xml:space="preserve"><value>Bot の現在の状態を表示します</value></data>
-  <data name="utility.set-language.description" xml:space="preserve"><value>サーバーの公開コンテンツとバックグラウンド通知に使用する言語を設定します</value></data>
-  <data name="utility.set-language.language.description" xml:space="preserve"><value>サーバーで使用する言語</value></data>
-  <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>Bot の所有者へメッセージを送ります</value></data>
-  <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>Bot の所有者からのお知らせを受信するチャンネルを設定します</value></data>
-  <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>お知らせを受信するテキストまたはアナウンスチャンネル</value></data>
-  <data name="utility.set-verification-log-channel.description" xml:space="preserve"><value>YouTube メンバーシップと Twitch サブスク認証のログチャンネルを設定します</value></data>
-  <data name="utility.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>メンバーシップとサブスク認証ログを受信するテキストチャンネル</value></data>
+
+  <data name="server-admin.description" xml:space="preserve"><value>サーバー管理</value></data>
+  <data name="server-admin.set-language.description" xml:space="preserve"><value>サーバーの公開コンテンツとバックグラウンド通知に使用する言語を設定します</value></data>
+  <data name="server-admin.set-language.language.description" xml:space="preserve"><value>サーバーで使用する言語</value></data>
+  <data name="server-admin.send-message-to-bot-owner.description" xml:space="preserve"><value>Bot の所有者へメッセージを送ります</value></data>
+  <data name="server-admin.set-global-notice-channel.description" xml:space="preserve"><value>Bot の所有者からのお知らせを受信するチャンネルを設定します</value></data>
+  <data name="server-admin.set-global-notice-channel.channel.description" xml:space="preserve"><value>お知らせを受信するテキストまたはアナウンスチャンネル</value></data>
+  <data name="server-admin.set-verification-log-channel.description" xml:space="preserve"><value>YouTube メンバーシップと Twitch サブスク認証のログチャンネルを設定します</value></data>
+  <data name="server-admin.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>メンバーシップとサブスク認証ログを受信するテキストチャンネル</value></data>
 
   <data name="help.description" xml:space="preserve"><value>コマンドと使い方を確認します</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>利用可能なコマンドモジュールをすべて表示します</value></data>

@@ -9,13 +9,15 @@
   <data name="utility.ping.description" xml:space="preserve"><value>Check the bot's response latency</value></data>
   <data name="utility.invite.description" xml:space="preserve"><value>Get the bot's invite link</value></data>
   <data name="utility.status.description" xml:space="preserve"><value>Show the bot's current status</value></data>
-  <data name="utility.set-language.description" xml:space="preserve"><value>Set the language for public server content and background notifications</value></data>
-  <data name="utility.set-language.language.description" xml:space="preserve"><value>The language the server should use</value></data>
-  <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>Send a message to the bot owner</value></data>
-  <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>Set the channel for announcements from the bot owner</value></data>
-  <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>The text or announcement channel that receives announcements</value></data>
-  <data name="utility.set-verification-log-channel.description" xml:space="preserve"><value>Set the YouTube membership and Twitch subscription verification log channel</value></data>
-  <data name="utility.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>The text channel for membership and subscription verification logs</value></data>
+
+  <data name="server-admin.description" xml:space="preserve"><value>Server administration</value></data>
+  <data name="server-admin.set-language.description" xml:space="preserve"><value>Set the language for public server content and background notifications</value></data>
+  <data name="server-admin.set-language.language.description" xml:space="preserve"><value>The language the server should use</value></data>
+  <data name="server-admin.send-message-to-bot-owner.description" xml:space="preserve"><value>Send a message to the bot owner</value></data>
+  <data name="server-admin.set-global-notice-channel.description" xml:space="preserve"><value>Set the channel for announcements from the bot owner</value></data>
+  <data name="server-admin.set-global-notice-channel.channel.description" xml:space="preserve"><value>The text or announcement channel that receives announcements</value></data>
+  <data name="server-admin.set-verification-log-channel.description" xml:space="preserve"><value>Set the YouTube membership and Twitch subscription verification log channel</value></data>
+  <data name="server-admin.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>The text channel for membership and subscription verification logs</value></data>
 
   <data name="help.description" xml:space="preserve"><value>Browse commands and usage information</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>Show every available command module</value></data>

@@ -41,7 +41,7 @@ namespace DiscordStreamNotifyBot.Tests
         {
             using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
             SlashCommandInfo command = fixture.Interactions.SlashCommands.Single(command =>
-                command.Module.SlashGroupName == "utility" && command.Name == "set-language");
+                command.Module.SlashGroupName == "server-admin" && command.Name == "set-language");
             SlashCommandParameterInfo parameter = Assert.Single(command.Parameters);
 
             Assert.Equal("language", parameter.Name);
@@ -66,13 +66,29 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public async Task VerificationLogChannelIsASharedUtilityAdministratorCommand()
+        public async Task SharedAdministratorCommandsUseDedicatedServerAdminGroup()
         {
             using InteractionMetadataFixture fixture = await InteractionMetadataFixture.CreateAsync();
-            SlashCommandInfo command = fixture.Interactions.SlashCommands.Single(command =>
-                command.Module.SlashGroupName == "utility" && command.Name == "set-verification-log-channel");
+            SlashCommandInfo[] commands = fixture.Interactions.SlashCommands
+                .Where(command => command.Module.SlashGroupName == "server-admin")
+                .ToArray();
 
-            Assert.Equal(GuildPermission.Administrator, command.DefaultMemberPermissions);
+            Assert.Equal([
+                "send-message-to-bot-owner",
+                "set-global-notice-channel",
+                "set-language",
+                "set-verification-log-channel"
+            ], commands.Select(command => command.Name).OrderBy(name => name, StringComparer.Ordinal));
+            Assert.All(commands, command =>
+            {
+                Assert.Equal(GuildPermission.Administrator, command.DefaultMemberPermissions);
+                Assert.Equal(GuildPermission.Administrator, command.Module.DefaultMemberPermissions);
+            });
+            Assert.DoesNotContain(fixture.Interactions.SlashCommands, command =>
+                command.Module.SlashGroupName == "utility" &&
+                command.DefaultMemberPermissions == GuildPermission.Administrator);
+
+            SlashCommandInfo command = commands.Single(command => command.Name == "set-verification-log-channel");
             SlashCommandParameterInfo channel = Assert.Single(command.Parameters);
             AssertParameter(channel, "log-channel", typeof(ITextChannel), true);
             Assert.DoesNotContain(fixture.Interactions.SlashCommands, command =>

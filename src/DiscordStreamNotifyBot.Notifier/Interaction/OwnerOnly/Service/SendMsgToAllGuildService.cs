@@ -152,7 +152,7 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 .WithTitle("來自開發者的訊息")
                 .WithDescription(payload.Message)
                 .WithImageUrl(payload.ImageUrl)
-                .WithFooter("管理員可透過 `/utility set-global-notice-channel` 設定接收小幫手通知的頻道");
+                .WithFooter("管理員可透過 `/server-admin set-global-notice-channel` 設定接收小幫手通知的頻道");
 
             if (!string.IsNullOrEmpty(payload.AuthorName))
                 eb.WithAuthor(payload.AuthorName, payload.AuthorIconUrl);
