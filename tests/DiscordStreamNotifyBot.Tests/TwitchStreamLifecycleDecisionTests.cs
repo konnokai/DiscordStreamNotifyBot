@@ -1,5 +1,6 @@
 using DiscordStreamNotifyBot.Scraper.Detection.Twitch;
 using DiscordStreamNotifyBot.Shared.Messages;
+using System.Collections.Concurrent;
 
 namespace DiscordStreamNotifyBot.Tests
 {
@@ -17,6 +18,34 @@ namespace DiscordStreamNotifyBot.Tests
                 processDuplicate, redisDuplicate, databaseDuplicate));
 
             Assert.Equal(TwitchStreamStartAction.RefreshStateOnly, action);
+        }
+
+        [Fact]
+        public void ResumeBeforeOfflineConfirmationMarksStreamForFollowingSources()
+        {
+            var handledStreamIds = new ConcurrentDictionary<string, byte>();
+
+            Assert.True(TwitchDetectionService.RecordAndCheckProcessDuplicate(
+                handledStreamIds, "new-stream", resumedBeforeOfflineConfirmation: true));
+            Assert.True(TwitchDetectionService.RecordAndCheckProcessDuplicate(
+                handledStreamIds, "new-stream", resumedBeforeOfflineConfirmation: false));
+        }
+
+        [Fact]
+        public void ConfirmedOfflineAllowsFollowingStreamToPublish()
+        {
+            var handledStreamIds = new ConcurrentDictionary<string, byte>();
+            TwitchDetectionService.RecordAndCheckProcessDuplicate(
+                handledStreamIds, "resumed-stream", resumedBeforeOfflineConfirmation: true);
+
+            handledStreamIds.TryRemove("resumed-stream", out _);
+            bool processDuplicate = TwitchDetectionService.RecordAndCheckProcessDuplicate(
+                handledStreamIds, "following-stream", resumedBeforeOfflineConfirmation: false);
+            var action = TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
+                "following-stream", "user", HasSpider: true,
+                processDuplicate, RedisDuplicate: false, DatabaseDuplicate: false));
+
+            Assert.Equal(TwitchStreamStartAction.PublishStart, action);
         }
 
         [Fact]

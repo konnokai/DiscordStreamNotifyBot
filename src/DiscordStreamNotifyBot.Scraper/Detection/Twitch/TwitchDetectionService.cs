@@ -359,7 +359,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 var twitchStream = TwitchStreamNotificationFactory.CreateState(streamFacts);
                 bool resumedBeforeOfflineConfirmation = CancelOfflineReminder(stream.UserId);
                 bool databaseDuplicate = await db.TwitchStreams.AsNoTracking().AnyAsync(x => x.StreamId == stream.Id);
-                bool processDuplicate = resumedBeforeOfflineConfirmation || _handledStreamIds.ContainsKey(stream.Id);
+                bool processDuplicate = RecordAndCheckProcessDuplicate(
+                    _handledStreamIds, stream.Id, resumedBeforeOfflineConfirmation);
                 bool redisDuplicate = !processDuplicate && await IsStreamNotificationPublishedAsync(stream.Id);
                 var startAction = TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
                     stream.Id, stream.UserId, HasSpider: true,
@@ -1044,6 +1045,20 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
             cancellation.Cancel();
             return true;
+        }
+
+        /// <summary>
+        /// 恢復直播時先記住新的場次，避免 EventSub 與輪詢的後續事件繞過離線確認期間的通知抑制。
+        /// </summary>
+        internal static bool RecordAndCheckProcessDuplicate(
+            ConcurrentDictionary<string, byte> handledStreamIds,
+            string streamId,
+            bool resumedBeforeOfflineConfirmation)
+        {
+            if (resumedBeforeOfflineConfirmation)
+                handledStreamIds[streamId] = 0;
+
+            return resumedBeforeOfflineConfirmation || handledStreamIds.ContainsKey(streamId);
         }
 
         private SemaphoreSlim GetUserLock(string userId) => _userLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
