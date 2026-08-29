@@ -731,7 +731,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     string message = YoutubeMemberVideoLogMessageFormatter.Format(
                         dto, guildLocale, _localizer, _commandDisplayResolver);
                     string setLogChannelPath = _commandDisplayResolver.GetCommandPath(guildLocale,
-                        "utility", "set-verification-log-channel");
+                        "server-admin", "set-verification-log-channel");
 
                     var guildConfig = await db.GuildConfig.FirstOrDefaultAsync((x) => x.GuildId == item.GuildId);
                     if (guildConfig == null)

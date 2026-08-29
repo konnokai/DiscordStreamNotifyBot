@@ -208,7 +208,7 @@ locale varchar(16) NULL
 
 - null 表示尚未由 Bot 保存明確語系。
 - 首次設定通知時保存正規化後的 locale。
-- `/utility set-language` 更新此欄位。
+- `/server-admin set-language` 更新此欄位。
 - 不直接把任意 Discord locale 原樣寫入 DB。
 
 ### 7.2 `YoutubeMemberCheck.Locale`
@@ -258,10 +258,10 @@ dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Sh
 
 ### 8.2 語系設定指令
 
-在 `Interaction/Utility/Utility.cs` 新增 guild 管理員專用指令，canonical path 建議為：
+在 `Interaction/ServerAdministration/ServerAdministration.cs` 新增 guild 管理員專用指令，canonical path 為：
 
 ```text
-/utility set-language
+/server-admin set-language
 ```
 
 要求：
@@ -438,7 +438,7 @@ Notifier 目前有多處把 `ex.Message`、`fex.Message` 或 `ErrorReason` 直�
 - [x] 新增 `GuildConfig.Locale`。
 - [x] 新增 `YoutubeMemberCheck.Locale`。
 - [x] 產生 migration、更新 snapshot。
-- [x] 新增 `/utility set-language`。
+- [x] 新增 `/server-admin set-language`。
 - [x] 實作 guild locale cache 與切換後失效。
 - [x] `/member check` 建立與更新 row 時保存 `UserLocale`。
 - [x] 產生並人工檢查冪等 migration SQL。

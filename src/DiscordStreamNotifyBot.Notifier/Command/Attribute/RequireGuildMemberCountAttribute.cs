@@ -24,7 +24,7 @@ namespace DiscordStreamNotifyBot.Command.Attribute
                 $"指令要求的伺服器人數：`{GuildMemberCount}` 人\n" +
                 $"Bot 目前取得的伺服器人數：`{memberCount}` 人\n" +
                 $"由於快取的關係，可能會遇到伺服器人數錯誤的問題\n" +
-                $"如有需求，請使用 `/utility send-message-to-bot-owner` 聯絡 Bot 擁有者。"));
+                $"如有需求，請使用 `/server-admin send-message-to-bot-owner` 聯絡 Bot 擁有者。"));
         }
     }
 }

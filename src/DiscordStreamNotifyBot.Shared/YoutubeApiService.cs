@@ -169,13 +169,13 @@ namespace DiscordStreamNotifyBot.Shared
                         "請確認是否輸入正確的 YouTube 頻道網址，或確認該頻道是否存在\n" +
                         "部分頻道重新導向後可能出現 404 錯誤。你可以嘗試直接開啟連結確認是否會出現 404 錯誤\n" +
                         "有需要可直接向 Bot 擁有者詢問\n" +
-                        "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
+                        "(你可以使用 `/server-admin send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
                 channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
                 if (string.IsNullOrEmpty(channelId))
                     throw new UriFormatException("錯誤，找不到頻道 ID\n" +
                         "正常情況下不應發生此問題，請直接聯絡 Bot 擁有者。\n" +
-                        "(你可以使用 `/utility send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
+                        "(你可以使用 `/server-admin send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
                 return channelId;
             }

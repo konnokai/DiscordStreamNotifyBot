@@ -9,13 +9,15 @@
   <data name="utility.ping.description" xml:space="preserve"><value>檢查機器人的回應延遲</value></data>
   <data name="utility.invite.description" xml:space="preserve"><value>取得機器人的邀請連結</value></data>
   <data name="utility.status.description" xml:space="preserve"><value>顯示機器人目前的狀態</value></data>
-  <data name="utility.set-language.description" xml:space="preserve"><value>設定伺服器公開內容與背景通知使用的語言</value></data>
-  <data name="utility.set-language.language.description" xml:space="preserve"><value>伺服器要使用的語言</value></data>
-  <data name="utility.send-message-to-bot-owner.description" xml:space="preserve"><value>傳送訊息給 Bot 擁有者</value></data>
-  <data name="utility.set-global-notice-channel.description" xml:space="preserve"><value>設定接收 Bot 擁有者公告的頻道</value></data>
-  <data name="utility.set-global-notice-channel.channel.description" xml:space="preserve"><value>用來接收公告的文字或公告頻道</value></data>
-  <data name="utility.set-verification-log-channel.description" xml:space="preserve"><value>設定 YouTube 會員與 Twitch 訂閱驗證紀錄頻道</value></data>
-  <data name="utility.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>接收會員與訂閱驗證狀態紀錄的文字頻道</value></data>
+
+  <data name="server-admin.description" xml:space="preserve"><value>伺服器管理</value></data>
+  <data name="server-admin.set-language.description" xml:space="preserve"><value>設定伺服器公開內容與背景通知使用的語言</value></data>
+  <data name="server-admin.set-language.language.description" xml:space="preserve"><value>伺服器要使用的語言</value></data>
+  <data name="server-admin.send-message-to-bot-owner.description" xml:space="preserve"><value>傳送訊息給 Bot 擁有者</value></data>
+  <data name="server-admin.set-global-notice-channel.description" xml:space="preserve"><value>設定接收 Bot 擁有者公告的頻道</value></data>
+  <data name="server-admin.set-global-notice-channel.channel.description" xml:space="preserve"><value>用來接收公告的文字或公告頻道</value></data>
+  <data name="server-admin.set-verification-log-channel.description" xml:space="preserve"><value>設定 YouTube 會員與 Twitch 訂閱驗證紀錄頻道</value></data>
+  <data name="server-admin.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>接收會員與訂閱驗證狀態紀錄的文字頻道</value></data>
 
   <data name="help.description" xml:space="preserve"><value>查詢指令與使用說明</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>顯示所有可用的指令模組</value></data>
