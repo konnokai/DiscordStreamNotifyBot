@@ -71,8 +71,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     if (url.StartsWith("https://www.youtube.com/watch"))
                     {
                         string videoId = url.Split("?v=")[1].Trim();
-                        if (!newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId)) idList.Add(videoId);
-                        newStreamList.Add(videoId);
+                        if (TryClaimUnknownVideo(videoId))
+                            idList.Add(videoId);
                     }
                 }
 
@@ -201,8 +201,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         continue;
 
                     string videoId = item.Url.Split("?v=")[1].Trim();
-                    if (newStreamList.Contains(videoId) || addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId)) continue;
-                    newStreamList.Add(videoId);
+                    if (!TryClaimUnknownVideo(videoId))
+                        continue;
                     pendingItems.Add((item, videoId));
                 }
 
@@ -446,9 +446,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                     if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                     {
                                         otherVideoDic[item.ChannelId].Add(videoId);
-                                        if (!newStreamList.Contains(videoId) && !addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId))
+                                        if (TryClaimUnknownVideo(videoId))
                                             addVideoIdList.Add(videoId);
-                                        newStreamList.Add(videoId);
                                     }
                                 }
                                 catch (Exception ex)

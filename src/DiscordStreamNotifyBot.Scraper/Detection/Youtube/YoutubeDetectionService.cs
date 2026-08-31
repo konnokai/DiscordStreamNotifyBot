@@ -25,8 +25,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         public YouTubeService YouTubeService => _apiService.YouTubeService;
 
+        private static readonly TimeSpan NewStreamClaimTtl = TimeSpan.FromHours(24);
         private static ConcurrentDictionary<string, TableVideo> addNewStreamVideo = new();
-        private static ConcurrentBag<string> newStreamList = new();
+
+        private readonly YoutubeVideoClaimCache _newStreamClaims = new(TimeProvider.System, NewStreamClaimTtl);
 
         private bool isSubscribing = false;
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
@@ -418,7 +420,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             PeriodicRunner.RunAsync("YT-niji", TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5), NijisanjiScheduleAsync, token);
             PeriodicRunner.RunAsync("YT-other", TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5), OtherScheduleAsync, token);
             PeriodicRunner.RunAsync("YT-checkSchedule", TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15), CheckScheduleTime, token);
-            PeriodicRunner.RunAsync("YT-saveDb", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3), () => { SaveDateBase(); return Task.CompletedTask; }, token);
+            PeriodicRunner.RunAsync("YT-saveDb", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3), () =>
+            {
+                SaveDateBase();
+                _newStreamClaims.RemoveExpired();
+                return Task.CompletedTask;
+            }, token);
 
 #if !RELEASE
             return;
@@ -555,6 +562,26 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         public Task<string> GetChannelTitle(string channelId) => _apiService.GetChannelTitle(channelId);
         public Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true) => _apiService.PostSubscribeRequestAsync(channelId, subscribe);
         #endregion
+
+        /// <summary>
+        /// 依序使用程序內 claim、待寫入集合與資料庫判斷影片是否需要進一步處理。
+        /// </summary>
+        private bool TryClaimUnknownVideo(string videoId)
+        {
+            if (!_newStreamClaims.TryClaim(videoId))
+                return false;
+
+            try
+            {
+                return !addNewStreamVideo.ContainsKey(videoId) &&
+                    !SharedExtensions.HasStreamVideoByVideoId(videoId);
+            }
+            catch
+            {
+                _newStreamClaims.Release(videoId);
+                throw;
+            }
+        }
 
         private bool CanRecord(DataBase.Table.Video streamVideo)
         {
