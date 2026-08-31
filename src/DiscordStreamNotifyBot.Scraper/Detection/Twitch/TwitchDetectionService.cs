@@ -18,6 +18,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
     public class TwitchDetectionService
     {
         private static readonly TimeSpan OfflineDebounce = TimeSpan.FromMinutes(3);
+        internal static TimeSpan StreamNotificationTtl { get; } = TimeSpan.FromDays(1);
 
         private readonly TwitchApiService _apiService;
         private readonly MainDbService _dbService;
@@ -188,9 +189,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 {
                     Log.Info($"Twitch 頻道更新：{data.BroadcasterUserName} - {data.Title} ({data.CategoryName})");
                     var twitchStream = await GetStreamStateAsync(data.BroadcasterUserId);
-                    if (twitchStream == null)
+                    if (twitchStream == null || twitchStream.StreamEndAt.HasValue)
                     {
-                        Log.Warn($"Redis 找不到 Twitch 頻道資料，忽略：{data.BroadcasterUserName}");
+                        Log.Warn($"Redis Twitch 頻道資料不存在或已關台，忽略：{data.BroadcasterUserName}");
                         return;
                     }
 
@@ -313,7 +314,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             foreach (string userId in ids.Where(x => !liveIds.Contains(x)))
             {
                 var state = await GetStreamStateAsync(userId);
-                if (state != null)
+                if (state is { StreamEndAt: null })
                 {
                     ScheduleOfflineCleanup(userId, state.UserLogin, state.UserName);
                 }
@@ -368,9 +369,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     stream.Id, stream.UserId, HasSpider: true,
                     processDuplicate, redisDuplicate, databaseDuplicate));
 
-                if (startAction == TwitchStreamStartAction.RefreshStateOnly)
+                if (startAction is TwitchStreamStartAction.RefreshStateOnly or
+                    TwitchStreamStartAction.PersistStreamAndRefreshState)
                 {
-                    // 重複開台事件仍要更新直播快取與 EventSub，但不可再次發布通知或啟動錄影。
+                    // 恢復直播仍抑制通知與錄影；若是新場次，先保留歷史紀錄再刷新狀態。
+                    if (startAction == TwitchStreamStartAction.PersistStreamAndRefreshState)
+                    {
+                        db.TwitchStreams.Add(twitchStream);
+                        await db.SaveChangesAsync();
+                    }
+
                     await SetStreamStateAsync(twitchStream);
                     await MaintainLiveSubscriptionsAsync(spider, authorization, stream.StartedAt);
                     return;
@@ -387,7 +395,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
                 if (!databaseDuplicate)
                     db.TwitchStreams.Add(twitchStream);
-                await db.SaveChangesAsync();
 
                 await SetStreamStateAsync(twitchStream);
                 await MaintainLiveSubscriptionsAsync(spider, authorization, stream.StartedAt);
@@ -397,6 +404,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     TwitchStreamNotificationFactory.CreateStart(twitchStream, isRecord));
                 await MarkStreamNotificationPublishedAsync(stream.Id, messageId);
                 _handledStreamIds[stream.Id] = 0;
+                await db.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -547,7 +555,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     state.Authorization,
                     liveStateKnown,
                     liveStream != null,
-                    streamState != null,
+                    streamState is { StreamEndAt: null },
                     offlineConfirmationCompleted: false,
                     liveStream?.StartedAt ?? default));
                 switch (action)
@@ -821,7 +829,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                             cleanupStillDeferredForLive,
                             publishEndNotification,
                             HasStreamState: twitchStream != null,
-                            HasSpider: state.Spider != null));
+                            HasSpider: state.Spider != null,
+                            AlreadyEnded: twitchStream?.StreamEndAt != null));
                     }
                     else
                     {
@@ -850,7 +859,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
             if (offlineAction == TwitchOfflineAction.ClearState)
             {
-                await Bot.RedisDb.KeyDeleteAsync(RedisChannels.Twitch.StreamData(userId));
+                if (twitchStream != null)
+                {
+                    twitchStream.StreamEndAt = endAtUtc;
+                    await SetStreamStateAsync(twitchStream);
+                }
                 if (!string.IsNullOrEmpty(twitchStream?.StreamId))
                     _handledStreamIds.TryRemove(twitchStream.StreamId, out _);
                 return;
@@ -914,7 +927,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     ClipsValue = clipsValue,
                 });
 
-                await Bot.RedisDb.KeyDeleteAsync(RedisChannels.Twitch.StreamData(userId));
+                if (twitchStream != null)
+                {
+                    twitchStream.StreamEndAt = endAtUtc;
+                    await SetStreamStateAsync(twitchStream);
+                }
                 if (!string.IsNullOrEmpty(twitchStream?.StreamId))
                     _handledStreamIds.TryRemove(twitchStream.StreamId, out _);
             }
@@ -1114,9 +1131,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         {
             try
             {
-                // 保留 30 天可涵蓋服務重啟與延遲 callback，值同時記錄匯流排 message id 供追查。
+                // 保留一天以涵蓋服務重啟與延遲 callback，值同時記錄匯流排 message id 供追查。
                 await Bot.RedisDb.StringSetAsync(RedisChannels.Twitch.StreamNotification(streamId), messageId,
-                    TimeSpan.FromDays(30));
+                    StreamNotificationTtl);
             }
             catch (Exception ex)
             {

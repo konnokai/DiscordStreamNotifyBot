@@ -42,7 +42,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
         }
 
         [RedisComponentFact]
-        public async Task GroupCreatedAfterMessageReadsFromBeginningTracksPelAndAcks()
+        public async Task GroupCreatedAfterMessageSkipsHistoryAndReadsNewMessages()
         {
             var db = _fixture.Database;
             const int shardId = 9102;
@@ -50,16 +50,19 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
 
             try
             {
-                var messageId = await NotificationBus.PublishAsync(db, "component.before-group", new { Value = 42 });
+                await NotificationBus.PublishAsync(db, "component.before-group", new { Value = 42 });
                 await NotificationBus.EnsureConsumerGroupAsync(db, shardId);
 
+                Assert.Empty(await NotificationBus.ReadNewAsync(db, shardId, 10));
+
+                var messageId = await NotificationBus.PublishAsync(db, "component.after-group", new { Value = 43 });
                 var entries = await NotificationBus.ReadNewAsync(db, shardId, 10);
 
                 var entry = Assert.Single(entries);
                 Assert.Equal(messageId, entry.Id);
                 Assert.True(NotificationBus.TryGetPayload(entry, out var type, out var payload));
-                Assert.Equal("component.before-group", type);
-                Assert.Contains("\"Value\":42", payload);
+                Assert.Equal("component.after-group", type);
+                Assert.Contains("\"Value\":43", payload);
 
                 var pending = await db.StreamPendingAsync(NotificationBus.StreamKey, NotificationBus.GroupName(shardId));
                 Assert.Equal(1, pending.PendingMessageCount);

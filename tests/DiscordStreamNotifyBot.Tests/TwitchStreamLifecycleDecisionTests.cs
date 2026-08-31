@@ -1,5 +1,7 @@
+using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Scraper.Detection.Twitch;
 using DiscordStreamNotifyBot.Shared.Messages;
+using Newtonsoft.Json;
 using System.Collections.Concurrent;
 
 namespace DiscordStreamNotifyBot.Tests
@@ -7,26 +9,32 @@ namespace DiscordStreamNotifyBot.Tests
     public sealed class TwitchStreamLifecycleDecisionTests
     {
         [Theory]
-        [InlineData(true, false, false)]
-        [InlineData(false, true, false)]
-        [InlineData(false, false, true)]
-        public void AnyDurableOrInProcessDuplicateOnlyRefreshesState(
-            bool processDuplicate, bool redisDuplicate, bool databaseDuplicate)
+        [InlineData(true, false, false, "PersistStreamAndRefreshState")]
+        [InlineData(false, true, false, "PersistStreamAndRefreshState")]
+        [InlineData(false, false, true, "RefreshStateOnly")]
+        public void DuplicateSuppressesNotificationAndPersistsOnlyMissingDatabaseRecord(
+            bool processDuplicate, bool redisDuplicate, bool databaseDuplicate,
+            string expected)
         {
             var action = TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
                 "stream", "user", HasSpider: true,
                 processDuplicate, redisDuplicate, databaseDuplicate));
 
-            Assert.Equal(TwitchStreamStartAction.RefreshStateOnly, action);
+            Assert.Equal(Enum.Parse<TwitchStreamStartAction>(expected), action);
         }
 
         [Fact]
-        public void ResumeBeforeOfflineConfirmationMarksStreamForFollowingSources()
+        public void ResumeBeforeOfflineConfirmationPersistsWithoutPublishingAndMarksFollowingSources()
         {
             var handledStreamIds = new ConcurrentDictionary<string, byte>();
 
-            Assert.True(TwitchDetectionService.RecordAndCheckProcessDuplicate(
-                handledStreamIds, "new-stream", resumedBeforeOfflineConfirmation: true));
+            bool processDuplicate = TwitchDetectionService.RecordAndCheckProcessDuplicate(
+                handledStreamIds, "new-stream", resumedBeforeOfflineConfirmation: true);
+            var action = TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
+                "new-stream", "user", HasSpider: true,
+                processDuplicate, RedisDuplicate: false, DatabaseDuplicate: false));
+
+            Assert.Equal(TwitchStreamStartAction.PersistStreamAndRefreshState, action);
             Assert.True(TwitchDetectionService.RecordAndCheckProcessDuplicate(
                 handledStreamIds, "new-stream", resumedBeforeOfflineConfirmation: false));
         }
@@ -135,6 +143,39 @@ namespace DiscordStreamNotifyBot.Tests
                 HasSpider: false));
 
             Assert.Equal(Enum.Parse<TwitchOfflineAction>(expected), action);
+        }
+
+        [Fact]
+        public void ConfirmedEndedStateIgnoresRepeatedOfflineEvent()
+        {
+            var action = TwitchOfflinePolicy.Decide(new TwitchOfflineFacts(
+                StreamLookupSucceeded: true,
+                HasResumedStream: false,
+                CleanupStillDeferredForLive: false,
+                PublishEndRequested: true,
+                HasStreamState: true,
+                HasSpider: true,
+                AlreadyEnded: true));
+
+            Assert.Equal(TwitchOfflineAction.Ignore, action);
+        }
+
+        [Fact]
+        public void StreamEndStateSurvivesRedisSerialization()
+        {
+            DateTime endAt = new(2026, 8, 31, 12, 0, 0, DateTimeKind.Utc);
+            var state = new TwitchStream { StreamId = "stream", StreamEndAt = endAt };
+
+            var restored = JsonConvert.DeserializeObject<TwitchStream>(JsonConvert.SerializeObject(state));
+
+            Assert.NotNull(restored);
+            Assert.Equal(endAt, restored.StreamEndAt);
+        }
+
+        [Fact]
+        public void StreamNotificationMarkerExpiresAfterOneDay()
+        {
+            Assert.Equal(TimeSpan.FromDays(1), TwitchDetectionService.StreamNotificationTtl);
         }
 
         [Theory]

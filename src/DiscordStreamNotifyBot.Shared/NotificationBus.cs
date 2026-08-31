@@ -79,15 +79,15 @@ namespace DiscordStreamNotifyBot.Shared
         }
 
         /// <summary>
-        /// 建立本 shard 的 consumer group（§4.4）：從 <c>0</c> 建立 consumer group（首次部署不漏既有訊息），
-        /// 並以 <c>MKSTREAM</c> 建 stream；已存在（BUSYGROUP）視為成功。歷史重播由消費端的重複檢查鍵處理。
+        /// 建立本 shard 的 consumer group（§4.4）：從 <c>$</c> 建立，只接收 group 建立後的新訊息，
+        /// 並以 <c>MKSTREAM</c> 建 stream；已存在（BUSYGROUP）視為成功。
         /// </summary>
         public static async Task EnsureConsumerGroupAsync(IDatabase db, int shardId)
         {
             try
             {
                 await db.StreamCreateConsumerGroupAsync(StreamKey, GroupName(shardId),
-                    position: StreamPosition.Beginning, createStream: true);
+                    position: StreamPosition.NewMessages, createStream: true);
             }
             catch (RedisServerException ex) when (ex.Message.Contains("BUSYGROUP"))
             {

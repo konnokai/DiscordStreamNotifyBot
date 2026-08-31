@@ -214,6 +214,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         IgnoreInvalid,
         IgnoreMissingSpider,
         RefreshStateOnly,
+        PersistStreamAndRefreshState,
         PublishStart
     }
 
@@ -233,8 +234,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 return TwitchStreamStartAction.IgnoreInvalid;
             if (!facts.HasSpider)
                 return TwitchStreamStartAction.IgnoreMissingSpider;
-            return facts.ProcessDuplicate || facts.RedisDuplicate || facts.DatabaseDuplicate
-                ? TwitchStreamStartAction.RefreshStateOnly
+            if (facts.DatabaseDuplicate)
+                return TwitchStreamStartAction.RefreshStateOnly;
+            return facts.ProcessDuplicate || facts.RedisDuplicate
+                ? TwitchStreamStartAction.PersistStreamAndRefreshState
                 : TwitchStreamStartAction.PublishStart;
         }
     }
@@ -293,7 +296,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         bool CleanupStillDeferredForLive,
         bool PublishEndRequested,
         bool HasStreamState,
-        bool HasSpider);
+        bool HasSpider,
+        bool AlreadyEnded = false);
 
     internal static class TwitchOfflinePolicy
     {
@@ -303,6 +307,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 return TwitchOfflineAction.Defer;
             if (facts.HasResumedStream)
                 return TwitchOfflineAction.ResumeStream;
+            if (facts.AlreadyEnded)
+                return TwitchOfflineAction.Ignore;
             if (!facts.PublishEndRequested)
                 return TwitchOfflineAction.ClearState;
             return facts.HasStreamState || facts.HasSpider
