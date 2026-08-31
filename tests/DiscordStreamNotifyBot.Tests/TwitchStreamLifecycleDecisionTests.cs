@@ -62,6 +62,15 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal(TwitchStreamStartAction.IgnoreMissingSpider, missingSpider);
         }
 
+        [Fact]
+        public void RepeatedMissingSpiderPollingOnlyRecordsFirstPendingObservation()
+        {
+            var pendingCleanup = new ConcurrentDictionary<string, byte>();
+
+            Assert.True(TwitchDetectionService.RecordPendingCleanup(pendingCleanup, "user"));
+            Assert.False(TwitchDetectionService.RecordPendingCleanup(pendingCleanup, "user"));
+        }
+
         [Theory]
         [InlineData(null, "user")]
         [InlineData("stream", "")]

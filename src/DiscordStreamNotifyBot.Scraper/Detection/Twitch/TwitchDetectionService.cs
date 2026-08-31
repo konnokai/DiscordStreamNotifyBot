@@ -346,10 +346,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 var spider = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == stream.UserId);
                 if (spider == null)
                 {
-                    if (TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
+                    var action = TwitchStreamStartPolicy.Decide(new TwitchStreamStartFacts(
                         stream.Id, stream.UserId, HasSpider: false,
-                        ProcessDuplicate: false, RedisDuplicate: false, DatabaseDuplicate: false)) ==
-                        TwitchStreamStartAction.IgnoreMissingSpider)
+                        ProcessDuplicate: false, RedisDuplicate: false, DatabaseDuplicate: false));
+                    bool firstPendingObservation = SetPending(
+                        stream.UserId, TwitchEventSubCleanupDeferredMetricReason.StreamLive);
+                    if (action == TwitchStreamStartAction.IgnoreMissingSpider && firstPendingObservation)
                         Log.Warn($"Twitch 開台事件沒有對應 spider，交由同步程序清理：{stream.UserId}");
                     return;
                 }
@@ -1013,16 +1015,21 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             return true;
         }
 
-        private void SetPending(string userId, TwitchEventSubCleanupDeferredMetricReason? reason)
+        private bool SetPending(string userId, TwitchEventSubCleanupDeferredMetricReason? reason)
         {
             // 不持久化此集合；服務重啟後完整同步會從 DB 與現有 EventSub 重新建立待處理項目。
-            _pendingCleanup[userId] = 0;
+            bool firstObservation = RecordPendingCleanup(_pendingCleanup, userId);
             if (reason.HasValue)
                 _deferredCleanup[userId] = reason.Value;
             else
                 _deferredCleanup.TryRemove(userId, out _);
             RefreshPendingMetrics();
+            return firstObservation;
         }
+
+        internal static bool RecordPendingCleanup(
+            ConcurrentDictionary<string, byte> pendingCleanup, string userId)
+            => pendingCleanup.TryAdd(userId, 0);
 
         private void ClearPending(string userId)
         {
