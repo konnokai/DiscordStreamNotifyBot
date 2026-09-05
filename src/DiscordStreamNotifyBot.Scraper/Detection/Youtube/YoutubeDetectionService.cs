@@ -609,7 +609,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         }
                         else
                         {
-                            Log.Warn($"註冊 YT PubSub 失敗：{item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
+                            Log.Warn($"註冊 YT PubSub 失敗：{item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})，停止本輪註冊，等待下次執行");
+                            break;
                         }
                     }
                 }
