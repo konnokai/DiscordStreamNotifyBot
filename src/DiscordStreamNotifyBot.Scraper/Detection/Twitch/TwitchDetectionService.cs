@@ -872,7 +872,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 return;
 
             var clipItems = new List<TwitchClipInfo>();
-            string clipsValue = string.Empty;
             var video = await _apiService.GetLatestVODAsync(userId);
             if (video == null)
             {
@@ -894,8 +893,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                             ViewCount = x.ViewCount,
                         })
                         .ToList();
-                    clipsValue = string.Join('\n', clipItems.Select((x, index) =>
-                        $"{index}. [{x.Title}]({x.Url}) 剪輯者：`{x.CreatorName}` (`{x.ViewCount}` 次觀看)"));
                 }
             }
 
@@ -924,7 +921,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     StreamStartAt = twitchStream?.StreamStartAt,
                     StreamEndAt = endAtUtc,
                     Clips = clipItems,
-                    ClipsValue = clipsValue,
                 });
 
                 if (twitchStream != null)
@@ -1251,9 +1247,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         {
             try
             {
-                var batch = TwitchChannelUpdatePolicy.CreateBatch(
-                    updates.Select(TwitchChannelUpdateChange.FromDto));
-                if (batch.Updates.Count == 0)
+                var batch = TwitchChannelUpdatePolicy.CreateBatch(updates);
+                if (batch.Count == 0)
                     return;
 
                 await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Twitch, new TwitchNotification
@@ -1262,8 +1257,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     UserId = userId,
                     UserLogin = userLogin,
                     UserName = userName,
-                    Updates = batch.Updates.ToList(),
-                    Description = batch.LegacyDescription,
+                    Updates = batch,
                 });
             }
             catch (Exception ex)

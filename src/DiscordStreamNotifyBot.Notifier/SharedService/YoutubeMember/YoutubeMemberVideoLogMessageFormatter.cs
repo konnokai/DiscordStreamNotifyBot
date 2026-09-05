@@ -30,7 +30,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         : arguments[0];
                     return localizer.Format("Member.VideoLog.ChannelTitleChanged", locale, oldTitle, arguments[1]);
                 default:
-                    return notification.Message;
+                    throw new ArgumentException("會限影片通知代碼或參數無效。", nameof(notification));
             }
         }
     }

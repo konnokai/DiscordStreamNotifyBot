@@ -55,6 +55,44 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
+        public void BatchReleasesFailedOrOmittedVideosButRetainsCompletedVideos()
+        {
+            var cache = new YoutubeVideoClaimCache(new FakeTimeProvider(), Ttl);
+            using (var batch = cache.CreateBatch())
+            {
+                Assert.True(batch.TryClaim("completed"));
+                Assert.True(batch.TryClaim("omitted"));
+                Assert.True(batch.TryClaim("failed"));
+                batch.Complete("completed");
+                Assert.False(batch.TryClaim("failed"));
+            }
+
+            Assert.False(cache.TryClaim("completed"));
+            Assert.True(cache.TryClaim("omitted"));
+            Assert.True(cache.TryClaim("failed"));
+        }
+
+        [Fact]
+        public void DisposingExpiredBatchDoesNotReleaseReplacementClaim()
+        {
+            var clock = new FakeTimeProvider();
+            var cache = new YoutubeVideoClaimCache(clock, Ttl);
+            var previous = cache.CreateBatch();
+            Assert.True(previous.TryClaim("video"));
+            clock.Advance(Ttl);
+            using var replacement = cache.CreateBatch();
+            Assert.True(replacement.TryClaim("video"));
+            clock.Advance(Ttl);
+            Assert.True(replacement.TryClaim("video"));
+
+            previous.Dispose();
+
+            Assert.False(cache.TryClaim("video"));
+            replacement.Dispose();
+            Assert.True(cache.TryClaim("video"));
+        }
+
+        [Fact]
         public void ReleasedClaimCanBeRetriedImmediately()
         {
             var cache = new YoutubeVideoClaimCache(new FakeTimeProvider(), Ttl);

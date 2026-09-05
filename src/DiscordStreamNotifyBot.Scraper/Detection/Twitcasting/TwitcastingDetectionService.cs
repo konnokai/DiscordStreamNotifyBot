@@ -19,7 +19,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
 
         private readonly TwitcastingClient _twitcastingClient;
         private readonly MainDbService _dbService;
-        private readonly BotConfig _botConfig;
         private readonly SemaphoreSlim _startLiveLock = new(1, 1);
 
         private List<Category> categories;
@@ -34,7 +33,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             }
 
             _twitcastingClient = twitcastingClient;
-            _botConfig = botConfig;
             _dbService = dbService;
 
             // 偵測排程（計畫 §12.1）：PeriodicRunner 以背景輪詢執行，支援 await、避免重入，並使用 CancellationToken。

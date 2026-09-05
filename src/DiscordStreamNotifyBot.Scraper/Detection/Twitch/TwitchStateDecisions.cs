@@ -367,9 +367,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             OldCategory = OldCategory,
             NewCategory = NewCategory
         };
-
-        public static TwitchChannelUpdateChange FromDto(TwitchChannelUpdateInfo update) => new(
-            update.ElapsedSeconds, update.OldTitle, update.NewTitle, update.OldCategory, update.NewCategory);
     }
 
     internal enum TwitchChannelUpdateAction
@@ -383,10 +380,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         TwitchChannelUpdateAction Action,
         TwitchChannelUpdateChange Change,
         TwitchChannelStateFacts NextState);
-
-    internal sealed record TwitchChannelUpdateBatch(
-        IReadOnlyList<TwitchChannelUpdateInfo> Updates,
-        string LegacyDescription);
 
     internal static class TwitchChannelUpdatePolicy
     {
@@ -413,29 +406,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             return new(TwitchChannelUpdateAction.Queue, change, next);
         }
 
-        public static IReadOnlyList<TwitchChannelUpdateChange> Aggregate(
-            IEnumerable<TwitchChannelUpdateChange> changes) =>
-            changes.Where(x => x?.HasChanges == true).ToArray();
-
-        public static TwitchChannelUpdateBatch CreateBatch(IEnumerable<TwitchChannelUpdateChange> changes)
-        {
-            var aggregated = Aggregate(changes);
-            return new TwitchChannelUpdateBatch(
-                aggregated.Select(x => x.ToDto()).ToArray(),
-                string.Join("\n\n", aggregated.Select(FormatLegacy)));
-        }
-
-        public static string FormatLegacy(TwitchChannelUpdateChange update)
-        {
-            string message = $"`{TimeSpan.FromSeconds(update.ElapsedSeconds):hh':'mm':'ss}`";
-            if (update.NewTitle != null)
-                message += $"\n標題變更 `{update.OldTitle}` => `{update.NewTitle}`";
-            if (update.NewCategory != null)
-            {
-                message += $"\n分類變更 `{(string.IsNullOrEmpty(update.OldCategory) ? "無" : update.OldCategory)}`" +
-                    $" => `{(string.IsNullOrEmpty(update.NewCategory) ? "無" : update.NewCategory)}`";
-            }
-            return message;
-        }
+        public static List<TwitchChannelUpdateInfo> CreateBatch(IEnumerable<TwitchChannelUpdateInfo> updates)
+            => updates.Where(x => x != null && (x.NewTitle != null || x.NewCategory != null)).ToList();
     }
 }

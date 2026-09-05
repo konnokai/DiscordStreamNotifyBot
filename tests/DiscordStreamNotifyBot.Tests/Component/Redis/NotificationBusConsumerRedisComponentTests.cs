@@ -30,7 +30,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
             try
             {
                 var entry = await CreatePendingEntryAsync(db, shardId, dto);
-                var consumer = new NotificationBusConsumer((type, json) =>
+                var consumer = new NotificationBusConsumer((type, json, _) =>
                 {
                     Assert.Equal(NotifyType.Youtube, type);
                     Assert.Equal(payload, json);
@@ -65,7 +65,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
             try
             {
                 var entry = await CreatePendingEntryAsync(db, shardId, dto);
-                var consumer = new NotificationBusConsumer((_, _) =>
+                var consumer = new NotificationBusConsumer((_, _, _) =>
                     Task.FromException(new InvalidOperationException("component dispatch failure")));
 
                 await consumer.ProcessEntryAsync(db, shardId, entry);
@@ -95,7 +95,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
             {
                 var entry = await CreatePendingEntryAsync(db, shardId, dto);
                 await db.StringSetAsync(dedupKey, "1", TimeSpan.FromMinutes(5));
-                var consumer = new NotificationBusConsumer((_, _) =>
+                var consumer = new NotificationBusConsumer((_, _, _) =>
                 {
                     Interlocked.Increment(ref dispatchCount);
                     return Task.CompletedTask;
@@ -135,7 +135,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                     restartedDb, shardId, TimeSpan.Zero, 1));
                 Assert.Equal(entry.Id, claimed.Id);
 
-                var consumer = new NotificationBusConsumer((_, _) =>
+                var consumer = new NotificationBusConsumer((_, _, _) =>
                 {
                     Interlocked.Increment(ref dispatchCount);
                     return Task.CompletedTask;
@@ -169,7 +169,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                 await NotificationBus.EnsureConsumerGroupAsync(db, shardId);
                 await NotificationBus.PublishAsync(db, NotifyType.Youtube, dto);
                 var consumer = new NotificationBusConsumer(
-                    (_, _) =>
+                    (_, _, _) =>
                     {
                         if (Interlocked.Increment(ref dispatchCount) == 1)
                             throw new InvalidOperationException("first dispatch fails");
@@ -224,7 +224,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                 Assert.Equal(2, (await NotificationBus.ReadNewAsync(db, shardId, 2)).Length);
 
                 var consumer = new NotificationBusConsumer(
-                    (_, json) =>
+                    (_, json, _) =>
                     {
                         var dto = JsonConvert.DeserializeObject<YoutubeNotification>(json);
                         if (dto.VideoId == poison.VideoId)
@@ -278,7 +278,7 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                     NotificationBus.StreamKey,
                     [new NameValueEntry(NotificationBus.FieldType, NotifyType.Youtube)]);
                 var entry = Assert.Single(await NotificationBus.ReadNewAsync(db, shardId, 1));
-                var consumer = new NotificationBusConsumer((_, _) =>
+                var consumer = new NotificationBusConsumer((_, _, _) =>
                 {
                     Interlocked.Increment(ref dispatchCount);
                     return Task.CompletedTask;
@@ -293,6 +293,66 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
             finally
             {
                 await db.KeyDeleteAsync(NotificationBus.StreamKey);
+            }
+        }
+
+        [RedisComponentFact]
+        public async Task PartialDeliverySurvivesRestartAndOnlyAcknowledgesAfterFailedTargetRecovers()
+        {
+            var db = _fixture.Database;
+            const int shardId = 9208;
+            var dto = CreateNotification();
+            string dedupKey = NotificationDedupPolicy.TryGetKey(shardId, NotifyType.Youtube,
+                JsonConvert.SerializeObject(dto));
+            await RedisComponentFixture.AssertKeysAbsentAsync(db, NotificationBus.StreamKey, dedupKey);
+            string progressKey = null;
+            int successfulSends = 0, failedSends = 0;
+            bool fail = true;
+
+            async Task Dispatch(string type, string json, NotificationDeliveryProgress progress)
+            {
+                if (!progress.IsComplete("successful-target"))
+                {
+                    await progress.RunAsync("message:successful-target", () =>
+                        Task.FromResult((++successfulSends).ToString()));
+                    await progress.CompleteAsync("successful-target");
+                }
+                failedSends++;
+                if (fail)
+                    progress.Fail(new TimeoutException());
+                else
+                    await progress.CompleteAsync("failed-target");
+            }
+
+            try
+            {
+                var entry = await CreatePendingEntryAsync(db, shardId, dto);
+                progressKey = NotificationDeliveryProgress.Key(shardId, entry.Id);
+                await new NotificationBusConsumer(Dispatch).ProcessEntryAsync(db, shardId, entry);
+
+                Assert.Equal("1", (string)await db.HashGetAsync(progressKey, "done:successful-target"));
+                Assert.False(await db.KeyExistsAsync(dedupKey));
+                Assert.Equal(1, (await db.StreamPendingAsync(NotificationBus.StreamKey,
+                    NotificationBus.GroupName(shardId))).PendingMessageCount);
+
+                fail = false;
+                using var restartedConnection = await _fixture.OpenConnectionAsync();
+                var restartedDb = restartedConnection.GetDatabase();
+                var reclaimed = Assert.Single(await NotificationBus.AutoClaimAsync(restartedDb, shardId, TimeSpan.Zero, 1));
+                await new NotificationBusConsumer(Dispatch).ProcessEntryAsync(restartedDb, shardId, reclaimed);
+
+                Assert.Equal(1, successfulSends);
+                Assert.Equal(2, failedSends);
+                Assert.True(await db.KeyExistsAsync(dedupKey));
+                Assert.False(await db.KeyExistsAsync(progressKey));
+                Assert.Equal(0, (await db.StreamPendingAsync(NotificationBus.StreamKey,
+                    NotificationBus.GroupName(shardId))).PendingMessageCount);
+            }
+            finally
+            {
+                if (progressKey != null)
+                    await db.KeyDeleteAsync(progressKey);
+                await db.KeyDeleteAsync([NotificationBus.StreamKey, dedupKey]);
             }
         }
 

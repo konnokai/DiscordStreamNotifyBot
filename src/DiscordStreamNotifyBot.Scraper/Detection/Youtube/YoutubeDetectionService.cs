@@ -37,14 +37,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly YoutubeTerminalEventRegistry _terminalEvents = new();
         private readonly MainDbService _dbService;
-        private readonly BotConfig _botConfig;
         private readonly Shared.YoutubeApiService _apiService;
 
         public YoutubeDetectionService(IHttpClientFactory httpClientFactory, BotConfig botConfig, MainDbService dbService, Shared.YoutubeApiService apiService)
         {
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
-            _botConfig = botConfig;
             _apiService = apiService;
 
             _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
@@ -566,21 +564,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// <summary>
         /// 依序使用程序內 claim、待寫入集合與資料庫判斷影片是否需要進一步處理。
         /// </summary>
-        private bool TryClaimUnknownVideo(string videoId)
+        private bool TryClaimUnknownVideo(string videoId, YoutubeVideoClaimCache.Batch claims)
         {
-            if (!_newStreamClaims.TryClaim(videoId))
+            if (!claims.TryClaim(videoId))
                 return false;
 
-            try
-            {
-                return !addNewStreamVideo.ContainsKey(videoId) &&
-                    !SharedExtensions.HasStreamVideoByVideoId(videoId);
-            }
-            catch
-            {
-                _newStreamClaims.Release(videoId);
-                throw;
-            }
+            if (!addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId))
+                return true;
+
+            claims.Complete(videoId);
+            return false;
         }
 
         private bool CanRecord(DataBase.Table.Video streamVideo)

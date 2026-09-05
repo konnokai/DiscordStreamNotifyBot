@@ -331,7 +331,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         /// 通知匯流排消費端入口：依 DTO 類型以工廠重建 embed 後，走 <see cref="SendStreamMessageAsync"/> 發送
         /// （shard 過濾沿用既有守衛）。Profile/Offline 圖片由本端 DB（TwitchSpider）補齊。
         /// </summary>
-        public async Task DispatchFromBusAsync(Shared.Messages.TwitchNotification dto)
+        internal async Task DispatchFromBusAsync(Shared.Messages.TwitchNotification dto, NotificationDeliveryProgress progress)
         {
             DataBase.Table.TwitchSpider twitchSpider;
             using (var db = _dbService.GetDbContext())
@@ -357,7 +357,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
 
             long thumbnailCacheBuster = DateTime.UtcNow.ToFileTimeUtc();
-            await SendStreamMessageAsync(dto, twitchSpider, noticeType, thumbnailCacheBuster).ConfigureAwait(false);
+            await SendStreamMessageAsync(dto, twitchSpider, noticeType, thumbnailCacheBuster, progress).ConfigureAwait(false);
         }
 
         private TwitchNotificationVariant BuildVariant(Shared.Messages.TwitchNotification dto,
@@ -384,12 +384,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 case NoticeType.EndStream:
                     embed = TwitchEmbedBuilderFactory.CreateStreamEnded(dto.UserName, dto.UserLogin,
                         dto.StreamTitle, dto.StreamStartAt, dto.StreamEndAt ?? DateTime.UtcNow,
-                        dto.Clips, dto.ClipsValue, twitchSpider?.ProfileImageUrl,
+                        dto.Clips, twitchSpider?.ProfileImageUrl,
                         twitchSpider?.OfflineImageUrl, _localizer, locale).Build();
                     break;
                 case NoticeType.ChangeStreamData:
                     embed = TwitchEmbedBuilderFactory.CreateChannelUpdate(dto.UserName, dto.UserLogin,
-                        dto.Updates, dto.Description, twitchSpider?.ProfileImageUrl, _localizer, locale).Build();
+                        dto.Updates, twitchSpider?.ProfileImageUrl, _localizer, locale).Build();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(noticeType));
@@ -409,10 +409,11 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         }
 
         internal async Task SendStreamMessageAsync(Shared.Messages.TwitchNotification dto,
-            DataBase.Table.TwitchSpider twitchSpider, NoticeType noticeType, long thumbnailCacheBuster)
+            DataBase.Table.TwitchSpider twitchSpider, NoticeType noticeType, long thumbnailCacheBuster,
+            NotificationDeliveryProgress progress)
         {
             if (!Bot.IsConnect)
-                return;
+                throw new InvalidOperationException("Discord 尚未就緒，保留通知等待重試。");
 
             NotificationMetricEvent metricEvent = NotifierMetrics.ToMetricEvent(dto.NoticeType);
 
@@ -430,15 +431,18 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     .Distinct()
                     .Select(guildId => _client.GetGuild(guildId))
                     .Where(guild => guild != null)
-                    .GroupBy(guild => guild.Id)
-                    .ToDictionary(group => group.Key, group => group.First());
+                    .ToDictionary(guild => guild.Id);
                 Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
                 foreach (var item in noticeGuildList)
                 {
+                    string target = $"{item.Id}:{item.DiscordChannelId}";
+                    if (progress.IsComplete(target))
+                        continue;
                     NotificationDeliveryResult? deliveryResult = null;
                     Stopwatch deliveryStopwatch = null;
                     bool primaryMessageSent = false;
+                    bool retryRequired = false;
                     try
                     {
                         string sendMessage = "";
@@ -503,29 +507,21 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                                 Log.Warn($"Twitch 通知 ({dto.UserId}) | {item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
                             })
-                            .ExecuteAsync(async () =>
+                            .ExecuteAsync(() => progress.SendAsync(target, channel, async () =>
                             {
                                 var message = await channel.SendMessageAsync(text: sendMessage, embed: variant.Embed,
                                     components: variant.Component,
                                     options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
                                 primaryMessageSent = true;
-
-                                try
-                                {
-                                    if (channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id))
-                                        await message.CrosspostAsync();
-                                }
-                                catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
-                                {
-                                    // ignore
-                                }
-                            });
+                                return message;
+                            }, channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id)));
                         deliveryResult = NotificationDeliveryResult.Sent;
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
                         if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"Twitch 通知 ({dto.UserId})"))
                         {
+                            retryRequired = true;
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.AuthorizationFailure;
@@ -544,6 +540,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
+                            retryRequired = true;
+                            progress.Fail(httpEx);
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.Discord5xx;
@@ -551,14 +549,18 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         }
                         else
                         {
+                            retryRequired = true;
+                            progress.Fail(httpEx);
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.UnknownError;
                             Log.Error(httpEx, $"Twitch 通知 ({dto.UserId}) | Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                         }
                     }
-                    catch (TimeoutException)
+                    catch (TimeoutException ex)
                     {
+                        retryRequired = true;
+                        progress.Fail(ex);
                         deliveryResult = primaryMessageSent
                             ? NotificationDeliveryResult.Sent
                             : NotificationDeliveryResult.Timeout;
@@ -566,6 +568,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     }
                     catch (Exception ex)
                     {
+                        retryRequired = true;
+                        progress.Fail(ex);
                         deliveryResult = primaryMessageSent
                             ? NotificationDeliveryResult.Sent
                             : NotificationDeliveryResult.UnknownError;
@@ -580,7 +584,11 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         }
 
                         if (deliveryResult.HasValue)
+                        {
                             _metrics.RecordNotificationDelivery(metricEvent, deliveryResult.Value);
+                            if (!retryRequired)
+                                await progress.CompleteAsync(target);
+                        }
                     }
                 }
             }

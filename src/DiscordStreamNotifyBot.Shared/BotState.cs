@@ -22,9 +22,6 @@ namespace DiscordStreamNotifyBot.Shared
         public static bool IsConnect { get; set; } = false;
         public static bool IsDisconnect { get; set; } = false;
 
-        /// <summary>本程序是否為偵測宿主（Scraper 設 true；Notifier 恆 false）。</summary>
-        public static bool IsDetectionHost { get; set; } = false;
-
         // 爬蟲執行中旗標（偵測再入防護）
         public static bool IsHoloChannelSpider { get; set; } = false;
         public static bool IsNijisanjiChannelSpider { get; set; } = false;

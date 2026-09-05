@@ -56,7 +56,7 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public void BatchFactoryPreservesOrderFiltersNoOpsAndBuildsLegacyFallback()
+        public void BatchFactoryPreservesOrderAndFiltersNoOps()
         {
             TwitchChannelUpdateChange[] changes =
             [
@@ -65,30 +65,11 @@ namespace DiscordStreamNotifyBot.Tests
                 new(67, null, null, "", "game")
             ];
 
-            var batch = TwitchChannelUpdatePolicy.CreateBatch(changes);
+            var batch = TwitchChannelUpdatePolicy.CreateBatch(changes.Select(x => x.ToDto()));
 
-            Assert.Equal(2, batch.Updates.Count);
-            Assert.Equal("new", batch.Updates[0].NewTitle);
-            Assert.Equal("game", batch.Updates[1].NewCategory);
-            Assert.Equal(
-                "`00:01:05`\n標題變更 `old` => `new`\n\n" +
-                "`00:01:07`\n分類變更 `無` => `game`",
-                batch.LegacyDescription);
-        }
-
-        [Fact]
-        public void LegacyFormattingPreservesEmptyCategoryAndCombinedChangeContract()
-        {
-            var text = TwitchChannelUpdatePolicy.FormatLegacy(new TwitchChannelUpdateChange(
-                3_661,
-                "old title",
-                "new title",
-                "game",
-                ""));
-
-            Assert.Equal(
-                "`01:01:01`\n標題變更 `old title` => `new title`\n分類變更 `game` => `無`",
-                text);
+            Assert.Equal(2, batch.Count);
+            Assert.Equal("new", batch[0].NewTitle);
+            Assert.Equal("game", batch[1].NewCategory);
         }
 
         private static TwitchChannelStateFacts State(string title, string category) => new(

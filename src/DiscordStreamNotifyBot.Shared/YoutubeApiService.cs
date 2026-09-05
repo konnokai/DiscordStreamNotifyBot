@@ -156,30 +156,24 @@ namespace DiscordStreamNotifyBot.Shared
 
         private async Task<string> GetChannelIdByUrlAsync(string channelUrl)
         {
-            try
-            {
-                string channelId = "";
+            HtmlWeb htmlWeb = new HtmlWeb();
+            var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
+            var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
 
-                HtmlWeb htmlWeb = new HtmlWeb();
-                var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
-                var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
+            if (node == null)
+                throw new UriFormatException("錯誤，找不到頻道 ID 資訊\n" +
+                    "請確認是否輸入正確的 YouTube 頻道網址，或確認該頻道是否存在\n" +
+                    "部分頻道重新導向後可能出現 404 錯誤。你可以嘗試直接開啟連結確認是否會出現 404 錯誤\n" +
+                    "有需要可直接向 Bot 擁有者詢問\n" +
+                    "(你可以使用 `/server-admin send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
-                if (node == null)
-                    throw new UriFormatException("錯誤，找不到頻道 ID 資訊\n" +
-                        "請確認是否輸入正確的 YouTube 頻道網址，或確認該頻道是否存在\n" +
-                        "部分頻道重新導向後可能出現 404 錯誤。你可以嘗試直接開啟連結確認是否會出現 404 錯誤\n" +
-                        "有需要可直接向 Bot 擁有者詢問\n" +
-                        "(你可以使用 `/server-admin send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
+            string channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
+            if (string.IsNullOrEmpty(channelId))
+                throw new UriFormatException("錯誤，找不到頻道 ID\n" +
+                    "正常情況下不應發生此問題，請直接聯絡 Bot 擁有者。\n" +
+                    "(你可以使用 `/server-admin send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
 
-                channelId = node.Attributes.FirstOrDefault((x) => x.Name == "content").Value;
-                if (string.IsNullOrEmpty(channelId))
-                    throw new UriFormatException("錯誤，找不到頻道 ID\n" +
-                        "正常情況下不應發生此問題，請直接聯絡 Bot 擁有者。\n" +
-                        "(你可以使用 `/server-admin send-message-to-bot-owner` 指令來聯絡 Bot 擁有者)");
-
-                return channelId;
-            }
-            catch { throw; }
+            return channelId;
         }
 
         public string GetVideoId(string videoUrl)

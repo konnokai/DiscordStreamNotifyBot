@@ -31,9 +31,6 @@ namespace DiscordStreamNotifyBot
 
         public static bool IsConnect { get => BotState.IsConnect; set => BotState.IsConnect = value; }
         public static bool IsDisconnect { get => BotState.IsDisconnect; set => BotState.IsDisconnect = value; }
-        public static bool IsHoloChannelSpider { get => BotState.IsHoloChannelSpider; set => BotState.IsHoloChannelSpider = value; }
-        public static bool IsNijisanjiChannelSpider { get => BotState.IsNijisanjiChannelSpider; set => BotState.IsNijisanjiChannelSpider = value; }
-        public static bool IsOtherChannelSpider { get => BotState.IsOtherChannelSpider; set => BotState.IsOtherChannelSpider = value; }
 
         public static int ShardId { get => BotState.ShardId; private set => BotState.ShardId = value; }
         public static int TotalShardCount { get => BotState.TotalShardCount; private set => BotState.TotalShardCount = value; }
@@ -504,17 +501,6 @@ namespace DiscordStreamNotifyBot
 
             do { await Task.Delay(1000); }
             while (!IsDisconnect);
-
-            while (IsHoloChannelSpider || IsOtherChannelSpider)
-            {
-                List<string> str = new List<string>();
-
-                if (IsHoloChannelSpider) str.Add("Holo");
-                if (IsOtherChannelSpider) str.Add("Other");
-
-                Log.Info($"等待 {string.Join(", ", str)} 完成");
-                await Task.Delay(5000);
-            }
 
             await serviceProvider.GetRequiredService<SharedService.YoutubeMember.YoutubeMemberService>().StopAsync();
             await twitchSubscriptionService.StopAsync();

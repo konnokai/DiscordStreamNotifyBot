@@ -81,12 +81,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal),
                 (_, value) => TrackEventTask(() => HandleRevokeTokenAsync(value, cancellationToken)));
             _newCheckTask = PeriodicRunner.RunAsync("Youtube-member-new-check", TimeSpan.FromSeconds(15),
-                TimeSpan.FromMinutes(5), () => CheckMemberShipCore(false, cancellationToken), cancellationToken);
+                TimeSpan.FromMinutes(5), () => CheckMemberShip(false, cancellationToken), cancellationToken);
             _oldCheckTask = PeriodicRunner.RunAsync("Youtube-member-old-check",
                 YoutubeMemberLifecyclePolicy.NextOldCheckDelay(DateTime.Now), TimeSpan.FromDays(1),
-                () => CheckMemberShipCore(true, cancellationToken), cancellationToken);
+                () => CheckMemberShip(true, cancellationToken), cancellationToken);
 
-            if (YoutubeMemberLifecyclePolicy.ShouldManageGuildMemberSubscription(_botConfig.EnableGuildMembersIntent))
+            if (_botConfig.EnableGuildMembersIntent)
             {
                 _client.UserJoined += OnUserJoinedRestoreMemberRoleAsync;
                 _orphanCheckTask = PeriodicRunner.RunAsync("Youtube-member-orphan-role", TimeSpan.FromMinutes(5),
@@ -100,7 +100,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (Volatile.Read(ref _started) == 0 || Interlocked.Exchange(ref _stopped, 1) != 0)
                 return;
 
-            if (YoutubeMemberLifecyclePolicy.ShouldManageGuildMemberSubscription(_botConfig.EnableGuildMembersIntent))
+            if (_botConfig.EnableGuildMembersIntent)
                 _client.UserJoined -= OnUserJoinedRestoreMemberRoleAsync;
             try
             {
@@ -394,15 +394,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
         public async Task<string> GetYoutubeDataAsync(string discordUserId)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(discordUserId))
-                    throw new NullReferenceException("userId");
+            if (string.IsNullOrEmpty(discordUserId))
+                throw new NullReferenceException("userId");
 
-                return await _authorizationService.GetLinkedChannelAsync(discordUserId, CancellationToken.None);
-
-            }
-            catch { throw; }
+            return await _authorizationService.GetLinkedChannelAsync(discordUserId, CancellationToken.None);
         }
 
         public async Task<AdminSettingsMutationResult> ConfigureAsync(

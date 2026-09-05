@@ -37,6 +37,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private async Task HoloScheduleAsync()
         {
             if (Bot.IsHoloChannelSpider || Bot.IsDisconnect) return;
+            using var claims = _newStreamClaims.CreateBatch();
             Bot.IsHoloChannelSpider = true;
 
             try
@@ -71,7 +72,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     if (url.StartsWith("https://www.youtube.com/watch"))
                     {
                         string videoId = url.Split("?v=")[1].Trim();
-                        if (TryClaimUnknownVideo(videoId))
+                        if (TryClaimUnknownVideo(videoId, claims))
                             idList.Add(videoId);
                     }
                 }
@@ -138,6 +139,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 Log.Error($"（新偽裝貼文） | {item.Snippet.ChannelTitle} ({item.Id})");
                             }
+                            claims.Complete(item.Id);
                         }
                     }
                 }
@@ -161,6 +163,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 return;
             }
 
+            using var claims = _newStreamClaims.CreateBatch();
             try
             {
                 Bot.IsNijisanjiChannelSpider = true;
@@ -201,7 +204,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         continue;
 
                     string videoId = item.Url.Split("?v=")[1].Trim();
-                    if (!TryClaimUnknownVideo(videoId))
+                    if (!TryClaimUnknownVideo(videoId, claims))
                         continue;
                     pendingItems.Add((item, videoId));
                 }
@@ -212,7 +215,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     var idChunk = pendingItems.Skip(i).Take(50).Select((x) => x.videoId);
                     try
                     {
-                        foreach (var v in await GetVideosAsync(idChunk))
+                        foreach (var v in await GetVideosAsync(idChunk) ?? [])
                         {
                             if (!string.IsNullOrEmpty(v?.Id)) videoDict[v.Id] = v;
                         }
@@ -266,6 +269,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         Log.New($"（已下播的新直播） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
                         addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
                     }
+                    claims.Complete(videoId);
                 }
             }
             catch (Exception ex)
@@ -281,6 +285,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private async Task OtherScheduleAsync()
         {
             if (Bot.IsOtherChannelSpider || Bot.IsDisconnect) return;
+            using var claims = _newStreamClaims.CreateBatch();
 
 #if RELEASE
             try
@@ -446,7 +451,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                     if (!otherVideoDic[item.ChannelId].Contains(videoId))
                                     {
                                         otherVideoDic[item.ChannelId].Add(videoId);
-                                        if (TryClaimUnknownVideo(videoId))
+                                        if (TryClaimUnknownVideo(videoId, claims))
                                             addVideoIdList.Add(videoId);
                                     }
                                 }
@@ -481,11 +486,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         return;
                     }
 
-                    foreach (var item in videos)
+                    foreach (var item in videos ?? [])
                     {
                         try
                         {
                             await AddOtherDataAsync(item);
+                            claims.Complete(item.Id);
                         }
                         catch (Exception ex)
                         {

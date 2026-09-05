@@ -23,10 +23,8 @@ namespace DiscordStreamNotifyBot
         private readonly SharedService.Twitcasting.TwitcastingService _twitcastingService;
         private readonly SharedService.YoutubeMember.YoutubeMemberService _youtubeMemberService;
         private readonly NotifierMetrics _metrics;
-        private readonly Func<string, string, Task<bool>> _dispatchAsync;
+        private readonly Func<string, string, NotificationDeliveryProgress, Task<bool>> _dispatchAsync;
         private readonly NotificationBusConsumerOptions _options;
-
-        private int _shardId;
 
         internal NotificationBusConsumer(YoutubeStreamService youtubeStreamService,
             SharedService.Twitch.TwitchService twitchService,
@@ -44,14 +42,14 @@ namespace DiscordStreamNotifyBot
         }
 
         internal NotificationBusConsumer(
-            Func<string, string, Task> dispatchAsync,
+            Func<string, string, NotificationDeliveryProgress, Task> dispatchAsync,
             NotificationBusConsumerOptions options = null,
             NotifierMetrics metrics = null)
         {
             ArgumentNullException.ThrowIfNull(dispatchAsync);
-            _dispatchAsync = async (type, payload) =>
+            _dispatchAsync = async (type, payload, progress) =>
             {
-                await dispatchAsync(type, payload);
+                await dispatchAsync(type, payload, progress);
                 return true;
             };
             _options = options ?? NotificationBusConsumerOptions.Default;
@@ -61,7 +59,6 @@ namespace DiscordStreamNotifyBot
         /// <summary>建立本 shard 的 consumer group 並於背景啟動消費迴圈（吃 GracefulShutdown.Token）。</summary>
         public async Task StartAsync(int shardId)
         {
-            _shardId = shardId;
             await NotificationBus.EnsureConsumerGroupAsync(BotState.RedisDb, shardId);
             _ = Task.Run(() => ConsumeLoopAsync(BotState.RedisDb, shardId, GracefulShutdown.Token));
             Log.Info($"[NotificationBus] 已開始消費 {NotificationBus.StreamKey}（group {NotificationBus.GroupName(shardId)}）");
@@ -91,6 +88,8 @@ namespace DiscordStreamNotifyBot
                             autoClaimStartId,
                             _options.BatchSize);
                         autoClaimStartId = claimPage.NextStartId;
+                        foreach (var deletedId in claimPage.DeletedIds)
+                            await db.KeyDeleteAsync(NotificationDeliveryProgress.Key(shardId, deletedId));
                         foreach (var entry in claimPage.ClaimedEntries)
                             await ProcessEntryAsync(db, shardId, entry);
                     }
@@ -121,7 +120,7 @@ namespace DiscordStreamNotifyBot
                 {
                     // 格式錯誤訊息：缺少欄位，直接 ACK 丟棄，避免卡住佇列。
                     Log.Warn($"[NotificationBus] 格式錯誤訊息（缺 type/payload），已丟棄：{entry.Id}");
-                    await NotificationBus.AckAsync(db, shardId, entry.Id);
+                    await AckAsync(db, shardId, entry.Id);
                     _metrics?.RecordNotificationBusMessage(null, NotificationBusMetricResult.InvalidPayload);
                     return;
                 }
@@ -133,14 +132,21 @@ namespace DiscordStreamNotifyBot
                 // 送出成功但 ack 失敗 → XAUTOCLAIM 重投時，去重鍵已存在 → 直接 ack 略過（避免重複發送）
                 if (dedupKey != null && await db.KeyExistsAsync(dedupKey))
                 {
-                    await NotificationBus.AckAsync(db, shardId, entry.Id);
+                    await AckAsync(db, shardId, entry.Id);
                     _metrics?.RecordNotificationBusMessage(type, NotificationBusMetricResult.Deduplicated);
                     return;
                 }
 
-                if (!await _dispatchAsync(type, payload))
+                string progressKey = NotificationDeliveryProgress.Key(shardId, entry.Id);
+                var completed = (await db.HashGetAllAsync(progressKey))
+                    .ToDictionary(x => (string)x.Name, x => (string)x.Value, StringComparer.Ordinal);
+                var progress = new NotificationDeliveryProgress(completed,
+                    (step, value) => db.HashSetAsync(progressKey, step, value));
+                bool dispatched = await _dispatchAsync(type, payload, progress);
+                progress.ThrowIfFailed();
+                if (!dispatched)
                 {
-                    await NotificationBus.AckAsync(db, shardId, entry.Id);
+                    await AckAsync(db, shardId, entry.Id);
                     _metrics?.RecordNotificationBusMessage(type, NotificationBusMetricResult.InvalidPayload);
                     return;
                 }
@@ -148,7 +154,7 @@ namespace DiscordStreamNotifyBot
                 if (dedupKey != null)
                     await db.StringSetAsync(dedupKey, "1", _options.DedupTtl);
 
-                await NotificationBus.AckAsync(db, shardId, entry.Id);
+                await AckAsync(db, shardId, entry.Id);
                 _metrics?.RecordNotificationBusMessage(type, NotificationBusMetricResult.Dispatched);
             }
             catch (Exception ex)
@@ -159,26 +165,36 @@ namespace DiscordStreamNotifyBot
             }
         }
 
-        private async Task<bool> DispatchAsync(string type, string json)
+        /// <summary>ACK 與 checkpoint 清除必須原子完成，避免 ACK 失敗卻先丟失成功目標的記錄。</summary>
+        private static Task AckAsync(IDatabase db, int shardId, RedisValue entryId)
+            => db.ScriptEvaluateAsync("""
+                local acknowledged = redis.call('XACK', KEYS[1], ARGV[1], ARGV[2])
+                redis.call('DEL', KEYS[2])
+                return acknowledged
+                """,
+                [NotificationBus.StreamKey, NotificationDeliveryProgress.Key(shardId, entryId)],
+                [NotificationBus.GroupName(shardId), entryId]);
+
+        private async Task<bool> DispatchAsync(string type, string json, NotificationDeliveryProgress progress)
         {
             switch (type)
             {
                 case NotifyType.Youtube:
                     var youtubeDto = JsonConvert.DeserializeObject<YoutubeNotification>(json);
                     if (youtubeDto == null) return false;
-                    await _youtubeStreamService.DispatchFromBusAsync(youtubeDto);
+                    await _youtubeStreamService.DispatchFromBusAsync(youtubeDto, progress);
                     return true;
 
                 case NotifyType.Twitch:
                     var twitchDto = JsonConvert.DeserializeObject<TwitchNotification>(json);
                     if (twitchDto == null) return false;
-                    await _twitchService.DispatchFromBusAsync(twitchDto);
+                    await _twitchService.DispatchFromBusAsync(twitchDto, progress);
                     return true;
 
                 case NotifyType.Twitcasting:
                     var twitcastingDto = JsonConvert.DeserializeObject<TwitcastingNotification>(json);
                     if (twitcastingDto == null) return false;
-                    await _twitcastingService.DispatchFromBusAsync(twitcastingDto);
+                    await _twitcastingService.DispatchFromBusAsync(twitcastingDto, progress);
                     return true;
 
                 case NotifyType.Banner:

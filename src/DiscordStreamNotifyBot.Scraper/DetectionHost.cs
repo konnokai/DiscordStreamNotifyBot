@@ -14,7 +14,7 @@ namespace DiscordStreamNotifyBot.Scraper
     /// 發送、建立活動、更換伺服器橫幅、會員身分組等需 Discord 的動作由 Notifier 消費匯流排後執行。
     /// </para>
     /// <para>
-    /// 角色由執行檔決定：本宿主設定 <c>BotState.IsDetectionHost = true</c>。
+    /// 角色由執行檔決定，只有 Scraper 啟動本宿主。
     /// 會限檢查（YoutubeMemberService）不在此執行：它按 shard 分區，由各 Notifier 自行執行。
     /// </para>
     /// </summary>
@@ -31,9 +31,6 @@ namespace DiscordStreamNotifyBot.Scraper
         /// <summary>初始化靜態相依並啟動偵測服務（建構子內即啟動 Timer 與 Redis 訂閱）。</summary>
         public void Start(BotConfig config)
         {
-            // 標記本程序為偵測宿主
-            BotState.IsDetectionHost = true;
-
             // 設定偵測服務所需的靜態相依（DbService / Redis），不建立 Discord 連線
             BotState.InitDetectionDependencies(config);
 

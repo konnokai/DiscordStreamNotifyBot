@@ -28,7 +28,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         private readonly TwitcastingClient _twitcastingClient;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
-        private readonly BotConfig _botConfig;
         private readonly NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel> _noticeCache;
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
@@ -47,7 +46,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             _client = client;
             _twitcastingClient = twitcastingClient;
             _emojiService = emojiService;
-            _botConfig = botConfig;
             _dbService = dbService;
             _localizer = localizer;
             _guildLocaleService = guildLocaleService;
@@ -310,7 +308,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         /// <summary>
         /// 通知匯流排消費端入口：還原 TwitcastingStream 後實際發送。
         /// </summary>
-        public Task DispatchFromBusAsync(Shared.Messages.TwitcastingNotification dto)
+        internal Task DispatchFromBusAsync(Shared.Messages.TwitcastingNotification dto, NotificationDeliveryProgress progress)
             => SendStreamMessageAsync(new TwitcastingStream
             {
                 ChannelId = dto.ChannelId,
@@ -321,10 +319,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 Category = dto.Category,
                 ThumbnailUrl = dto.ThumbnailUrl,
                 StreamStartAt = dto.StreamStartAt,
-            }, dto.IsPrivate, dto.IsRecord);
+            }, dto.IsPrivate, dto.IsRecord, progress);
 
-        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate, bool isRecord)
+        private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate, bool isRecord,
+            NotificationDeliveryProgress progress)
         {
+            if (!Bot.IsConnect)
+                throw new InvalidOperationException("Discord 尚未就緒，保留通知等待重試。");
 #if DEBUG
             Log.New($"TwitCasting 開台通知: {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (isPrivate: {isPrivate})");
 #else
@@ -340,15 +341,18 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                     .Distinct()
                     .Select(guildId => _client.GetGuild(guildId))
                     .Where(guild => guild != null)
-                    .GroupBy(guild => guild.Id)
-                    .ToDictionary(group => group.Key, group => group.First());
+                    .ToDictionary(guild => guild.Id);
                 Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
                 foreach (var item in noticeGuildList)
                 {
+                    string target = $"{item.Id}:{item.DiscordChannelId}";
+                    if (progress.IsComplete(target))
+                        continue;
                     NotificationDeliveryResult? deliveryResult = null;
                     Stopwatch deliveryStopwatch = null;
                     bool primaryMessageSent = false;
+                    bool retryRequired = false;
                     try
                     {
                         if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
@@ -403,29 +407,21 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                                 Log.Warn($"{item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
                             })
-                            .ExecuteAsync(async () =>
+                            .ExecuteAsync(() => progress.SendAsync(target, channel, async () =>
                             {
                                 var message = await channel.SendMessageAsync(text: item.StartStreamMessage,
                                     embed: variant.Embed, components: variant.Component,
                                     options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
                                 primaryMessageSent = true;
-
-                                try
-                                {
-                                    if (channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id))
-                                        await message.CrosspostAsync();
-                                }
-                                catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MessageAlreadyCrossposted)
-                                {
-                                    // ignore
-                                }
-                            });
+                                return message;
+                            }, channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id)));
                         deliveryResult = NotificationDeliveryResult.Sent;
                     }
                     catch (Discord.Net.HttpException httpEx)
                     {
                         if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"TwitCasting 通知 ({item.DiscordChannelId})"))
                         {
+                            retryRequired = true;
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.AuthorizationFailure;
@@ -444,6 +440,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {
+                            retryRequired = true;
+                            progress.Fail(httpEx);
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.Discord5xx;
@@ -451,14 +449,18 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                         }
                         else
                         {
+                            retryRequired = true;
+                            progress.Fail(httpEx);
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.UnknownError;
                             Log.Error(httpEx, $"TwitCasting 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
                         }
                     }
-                    catch (TimeoutException)
+                    catch (TimeoutException ex)
                     {
+                        retryRequired = true;
+                        progress.Fail(ex);
                         deliveryResult = primaryMessageSent
                             ? NotificationDeliveryResult.Sent
                             : NotificationDeliveryResult.Timeout;
@@ -466,6 +468,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                     }
                     catch (Exception ex)
                     {
+                        retryRequired = true;
+                        progress.Fail(ex);
                         deliveryResult = primaryMessageSent
                             ? NotificationDeliveryResult.Sent
                             : NotificationDeliveryResult.UnknownError;
@@ -480,7 +484,11 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                         }
 
                         if (deliveryResult.HasValue)
+                        {
                             _metrics.RecordNotificationDelivery(NotificationMetricEvent.TwitcastingStart, deliveryResult.Value);
+                            if (!retryRequired)
+                                await progress.CompleteAsync(target);
+                        }
                     }
                 }
             }

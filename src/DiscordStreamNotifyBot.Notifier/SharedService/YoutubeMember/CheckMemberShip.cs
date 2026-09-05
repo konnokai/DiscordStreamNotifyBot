@@ -5,13 +5,17 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 {
     public partial class YoutubeMemberService
     {
-        public async Task CheckMemberShip(bool isOldCheck)
+        public Task CheckMemberShip(bool isOldCheck)
+            => CheckMemberShip(isOldCheck, GracefulShutdown.Token);
+
+        /// <summary>手動與排程驗證共用統計入口，並保留呼叫端的關閉取消訊號。</summary>
+        internal async Task CheckMemberShip(bool isOldCheck, CancellationToken cancellationToken)
         {
             YoutubeMemberCheckType checkType = isOldCheck ? YoutubeMemberCheckType.Old : YoutubeMemberCheckType.New;
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                await CheckMemberShipCore(isOldCheck, GracefulShutdown.Token);
+                await CheckMemberShipCore(isOldCheck, cancellationToken);
                 _metrics.RecordYoutubeMemberCheckCycle(checkType, YoutubeMemberCheckCycleResult.Success);
             }
             catch
@@ -31,7 +35,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         {
             YoutubeMemberCheckType checkType = isOldCheck ? YoutubeMemberCheckType.Old : YoutubeMemberCheckType.New;
             await _roleService.RetryPendingCleanupAsync(cancellationToken);
-            if (!YoutubeMemberLifecyclePolicy.ShouldRunProviderCheck(IsEnable))
+            if (!IsEnable)
                 return;
 
             List<GuildYoutubeMemberConfig> configurations;
@@ -247,27 +251,33 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             return true;
         }
 
-        private readonly record struct YoutubeMemberNotMemberApplyResult(bool Applied, bool WasChecked);
+        internal readonly record struct YoutubeMemberNotMemberApplyResult(bool Applied, bool WasChecked);
 
-        private async Task<YoutubeMemberNotMemberApplyResult> ApplyNotMemberAsync(YoutubeMemberProbeConfigurationSnapshot configurationSnapshot,
+        internal async Task<YoutubeMemberNotMemberApplyResult> ApplyNotMemberAsync(YoutubeMemberProbeConfigurationSnapshot configurationSnapshot,
             YoutubeMemberCheck check, YoutubeMemberCheckStateSnapshot snapshot, string expectedEncryptedToken,
             CancellationToken cancellationToken)
         {
             await using var userLock = await _operationCoordinator.LockUserAsync(check.UserId, cancellationToken);
             await using var guildLock = await _operationCoordinator.LockGuildAsync(configurationSnapshot.GuildId, cancellationToken);
             using var db = _dbService.GetDbContext();
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            YoutubeMemberAccessToken token = await LockTokenAsync(db, check.UserId, cancellationToken);
-            YoutubeMemberCheck current = await LockCheckAsync(db, check.Id, cancellationToken);
-            GuildYoutubeMemberConfig currentConfiguration = await LockConfigurationAsync(db, configurationSnapshot.Id,
-                cancellationToken);
-            if (!YoutubeMemberPolicies.CanApplyProviderResult(YoutubeMemberProbeResultKind.NotMember,
-                    expectedEncryptedToken, token?.EncryptedAccessToken, snapshot, current, configurationSnapshot,
-                    currentConfiguration))
-                return default;
-            bool wasChecked = current.IsChecked;
-            YoutubeMemberPolicies.QueueRoleRemoval(current);
-            await db.SaveChangesAsync(cancellationToken);
+            YoutubeMemberCheck current;
+            GuildYoutubeMemberConfig currentConfiguration;
+            bool wasChecked;
+            await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
+            {
+                YoutubeMemberAccessToken token = await LockTokenAsync(db, check.UserId, cancellationToken);
+                current = await LockCheckAsync(db, check.Id, cancellationToken);
+                currentConfiguration = await LockConfigurationAsync(db, configurationSnapshot.Id, cancellationToken);
+                if (!YoutubeMemberPolicies.CanApplyProviderResult(YoutubeMemberProbeResultKind.NotMember,
+                        expectedEncryptedToken, token?.EncryptedAccessToken, snapshot, current, configurationSnapshot,
+                        currentConfiguration))
+                    return default;
+                wasChecked = current.IsChecked;
+                YoutubeMemberPolicies.QueueRoleRemoval(current);
+                await db.SaveChangesAsync(cancellationToken);
+                // 待清理狀態必須先提交；Discord 失敗或程序中斷不能 rollback 唯一的重試依據。
+                await transaction.CommitAsync(cancellationToken);
+            }
             if (!await _roleService.RemoveAsync(currentConfiguration, check.UserId, cancellationToken))
             {
                 _metrics.RecordYoutubeMemberRoleOperation(YoutubeMemberRoleOperation.Remove, YoutubeMemberRoleResult.DiscordError);
@@ -275,7 +285,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
             db.YoutubeMemberCheck.Remove(current);
             await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
             _metrics.RecordYoutubeMemberRoleOperation(YoutubeMemberRoleOperation.Remove, YoutubeMemberRoleResult.Success);
             return new(true, wasChecked);
         }

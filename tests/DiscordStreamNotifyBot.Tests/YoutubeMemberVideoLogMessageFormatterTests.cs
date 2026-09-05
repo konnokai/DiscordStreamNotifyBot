@@ -54,16 +54,15 @@ namespace DiscordStreamNotifyBot.Tests
         [InlineData("NoVideos", null)]
         [InlineData("NewProbeVideo", "only-one")]
         [InlineData("ChannelTitleChanged", "only-one")]
-        public void MissingUnknownOrMalformedCodeUsesLegacyMessage(string messageCode, string argument)
+        public void MissingUnknownOrMalformedCodeIsRejected(string messageCode, string argument)
         {
             var notification = new YoutubeMemberVideoLogNotification
             {
-                Message = "legacy message",
                 MessageCode = messageCode,
                 MessageArguments = argument == null ? null : new[] { argument },
             };
 
-            Assert.Equal("legacy message", Format(notification, "en-US"));
+            Assert.Throws<ArgumentException>(() => Format(notification, "en-US"));
         }
 
         [Fact]
@@ -81,7 +80,6 @@ namespace DiscordStreamNotifyBot.Tests
         private static YoutubeMemberVideoLogNotification Create(string code, params string[] arguments)
             => new()
             {
-                Message = "legacy message",
                 MessageCode = code,
                 MessageArguments = arguments,
             };

@@ -118,7 +118,7 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public void TwitchStreamEndedUsesUnknownTitleAndClipsFallbackWhenMetadataIsMissing()
+        public void TwitchStreamEndedUsesUnknownTitleAndOmitsMissingClips()
         {
             DateTime endAt = UtcDate(2026, 7, 20, 4, 5, 6);
 
@@ -129,7 +129,6 @@ namespace DiscordStreamNotifyBot.Tests
                 null,
                 endAt,
                 null,
-                "legacy clips fallback",
                 "https://example.com/profile.png",
                 "https://example.com/offline.jpg",
                 Localizer,
@@ -139,14 +138,14 @@ namespace DiscordStreamNotifyBot.Tests
             AssertColor(ErrorColor, embed);
             AssertField(embed, "Stream status", "Offline");
             AssertField(embed, "Ended at", DiscordTimestamp(endAt));
-            AssertField(embed, "Most-viewed clips", "legacy clips fallback");
+            Assert.DoesNotContain(embed.Fields, field => field.Name == "Most-viewed clips");
             Assert.DoesNotContain(embed.Fields, field => field.Name == "Stream duration");
             Assert.Equal("https://example.com/profile.png", embed.Thumbnail?.Url);
             Assert.Equal("https://example.com/offline.jpg", embed.Image?.Url);
         }
 
         [Fact]
-        public void TwitchStreamEndedUsesDurationAndStructuredClipsBeforeFallback()
+        public void TwitchStreamEndedUsesDurationAndStructuredClips()
         {
             DateTime startAt = UtcDate(2026, 7, 20, 1, 2, 3);
             DateTime endAt = startAt.AddHours(1).AddMinutes(2).AddSeconds(3);
@@ -168,7 +167,6 @@ namespace DiscordStreamNotifyBot.Tests
                 startAt,
                 endAt,
                 clips,
-                "legacy clips fallback",
                 null,
                 null,
                 Localizer,
@@ -178,7 +176,6 @@ namespace DiscordStreamNotifyBot.Tests
             AssertField(embed, "Stream duration", "1h 2m 3s");
             AssertField(embed, "Most-viewed clips",
                 "1. [Best moment](https://clips.twitch.tv/best-moment) by `Clipper` (`1,234` views)");
-            Assert.DoesNotContain("legacy clips fallback", FieldValue(embed, "Most-viewed clips"));
         }
 
         [Fact]
@@ -198,7 +195,6 @@ namespace DiscordStreamNotifyBot.Tests
                 "Example User",
                 "example_login",
                 updates,
-                "legacy update fallback",
                 null,
                 Localizer,
                 Locale).Build();
@@ -206,7 +202,6 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("Example User's stream details were updated", embed.Title);
             Assert.Contains("`0h 0m 0s`", embed.Description);
             Assert.Contains("Category changed: `Gaming` → `None`", embed.Description);
-            Assert.DoesNotContain("legacy update fallback", embed.Description);
             AssertColor(OkColor, embed);
         }
 

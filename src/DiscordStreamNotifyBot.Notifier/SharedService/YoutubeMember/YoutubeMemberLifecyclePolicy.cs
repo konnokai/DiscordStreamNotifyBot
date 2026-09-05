@@ -12,12 +12,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             return next - now;
         }
 
-        public static bool ShouldRunProviderCheck(bool apiEnabled) => apiEnabled;
-
-        // Start/Stop 必須使用同一 intent gate，避免未訂閱卻嘗試解除或反之造成 lifecycle 漂移。
-        public static bool ShouldManageGuildMemberSubscription(bool enableGuildMembersIntent)
-            => enableGuildMembersIntent;
-
         public static Task DrainAsync(IEnumerable<Task> tasks)
             => Task.WhenAll(tasks ?? []);
     }

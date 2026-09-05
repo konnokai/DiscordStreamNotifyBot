@@ -111,7 +111,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             {
                 if (YoutubeMemberPolicies.IsActive(check))
                 {
-                    YoutubeMemberRoleApplyResult grantResult = await GrantForMigrationAsync(
+                    YoutubeMemberRoleApplyResult grantResult = await GrantCoreAsync(
                         config, check.UserId, cancellationToken);
                     synchronized &= YoutubeMemberPolicies.IsRoleMigrationSynchronized(grantResult);
                 }
@@ -142,13 +142,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             ulong userId,
             CancellationToken cancellationToken)
             => await GrantCoreAsync(config, userId, cancellationToken) == YoutubeMemberRoleApplyResult.Applied;
-
-        /// <summary>migration 將已離開 guild 的使用者視為同步完成，避免舊 checkpoint 永久卡住。</summary>
-        private Task<YoutubeMemberRoleApplyResult> GrantForMigrationAsync(
-            GuildYoutubeMemberConfig config,
-            ulong userId,
-            CancellationToken cancellationToken)
-            => GrantCoreAsync(config, userId, cancellationToken);
 
         private async Task<YoutubeMemberRoleApplyResult> GrantCoreAsync(
             GuildYoutubeMemberConfig config,

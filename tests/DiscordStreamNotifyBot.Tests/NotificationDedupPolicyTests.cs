@@ -124,18 +124,25 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public void MemberVideoLogKeyUsesChannelAndMessageHash()
+        public void MemberVideoLogKeyIncludesCodeArgumentsAndSideEffects()
         {
-            const string message = "測試訊息";
-            var json = JsonConvert.SerializeObject(new YoutubeMemberVideoLogNotification
+            var notification = new YoutubeMemberVideoLogNotification
             {
                 CheckChannelId = "channel-1",
-                Message = message,
-            });
+                MessageCode = "NewProbeVideo",
+                MessageArguments = ["channel-1", "video-1"],
+            };
+            string Key() => NotificationDedupPolicy.TryGetKey(6, NotifyType.YoutubeMemberVideoLog,
+                JsonConvert.SerializeObject(notification));
 
-            Assert.Equal(
-                "notified:6:ytmv:channel-1:568280694250aa0573a183cb",
-                NotificationDedupPolicy.TryGetKey(6, NotifyType.YoutubeMemberVideoLog, json));
+            string first = Key();
+            Assert.Equal(first, Key());
+            Assert.StartsWith("notified:6:ytmv:channel-1:", first);
+            notification.MessageArguments[1] = "video-2";
+            string second = Key();
+            Assert.NotEqual(first, second);
+            notification.IsNeedRemove = !notification.IsNeedRemove;
+            Assert.NotEqual(second, Key());
         }
 
         [Fact]

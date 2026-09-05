@@ -82,7 +82,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 Log.Info($"新會限影片（{item.ChannelId}）：{videoId}");
                                 await PublishMemberVideoLogAsync(item.ChannelId,
-                                    $"新會限檢測影片（{item.ChannelId}）：{videoId}",
                                     isNeedRemove: false, isNeedSendToOwner: false,
                                     messageCode: "NewProbeVideo", messageArguments: [item.ChannelId, videoId]);
 
@@ -144,8 +143,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         Log.Info($"會限頻道名稱已變更（{item.ChannelId}）：`" +
                             (string.IsNullOrEmpty(previousTitle) ? "無" : previousTitle) + $"` -> `{channel.Snippet.Title}`");
                         await PublishMemberVideoLogAsync(item.ChannelId,
-                            $"會限頻道名稱已變更：`" +
-                            (string.IsNullOrEmpty(previousTitle) ? "無" : previousTitle) + $"` -> `{channel.Snippet.Title}`",
                             isNeedRemove: false, isNeedSendToOwner: false,
                             messageCode: "ChannelTitleChanged",
                             messageArguments: [previousTitle ?? string.Empty, channel.Snippet.Title]);
@@ -170,19 +167,15 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private static Task PublishNoMemberVideosAsync(string channelId, bool notifyBotOwner)
             => PublishMemberVideoLogAsync(channelId,
-                $"{channelId} 無會限影片，請等待該頻道主有新的會限影片且可留言時再使用會限驗證功能\n" +
-                $"你可以使用 `/youtube get-member-only-playlist` 來確認該頻道是否有可驗證的影片",
                 messageCode: "NoVideos",
                 messageArguments: [channelId],
                 botOwnerMessage: notifyBotOwner ? $"{channelId} 無任何可檢測的會限影片！" : null);
 
-        private static Task PublishMemberVideoLogAsync(string checkChannelId, string message,
-            bool isNeedRemove = true, bool isNeedSendToOwner = true, string botOwnerMessage = null,
-            string messageCode = null, string[] messageArguments = null)
+        private static Task PublishMemberVideoLogAsync(string checkChannelId, string messageCode, string[] messageArguments,
+            bool isNeedRemove = true, bool isNeedSendToOwner = true, string botOwnerMessage = null)
             => NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.YoutubeMemberVideoLog, new YoutubeMemberVideoLogNotification
             {
                 CheckChannelId = checkChannelId,
-                Message = message,
                 MessageCode = messageCode,
                 MessageArguments = messageArguments,
                 IsNeedRemove = isNeedRemove,

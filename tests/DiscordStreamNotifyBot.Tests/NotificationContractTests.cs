@@ -58,7 +58,7 @@ namespace DiscordStreamNotifyBot.Tests
             var json = JObject.FromObject(new TwitchNotification());
 
             AssertFields(json,
-                "Clips", "ClipsValue", "Description", "GameName", "IsRecord", "NoticeType",
+                "Clips", "GameName", "IsRecord", "NoticeType",
                 "StreamEndAt", "StreamId", "StreamStartAt", "StreamTitle", "ThumbnailUrl", "Updates",
                 "UserId", "UserLogin", "UserName");
             Assert.Equal(0, json.Value<int>("NoticeType"));
@@ -104,7 +104,7 @@ namespace DiscordStreamNotifyBot.Tests
             var json = JObject.FromObject(new YoutubeMemberVideoLogNotification());
 
             AssertFields(json,
-                "BotOwnerMessage", "CheckChannelId", "IsNeedRemove", "IsNeedSendToOwner", "Message",
+                "BotOwnerMessage", "CheckChannelId", "IsNeedRemove", "IsNeedSendToOwner",
                 "MessageArguments", "MessageCode");
             Assert.True(json.Value<bool>("IsNeedRemove"));
             Assert.True(json.Value<bool>("IsNeedSendToOwner"));

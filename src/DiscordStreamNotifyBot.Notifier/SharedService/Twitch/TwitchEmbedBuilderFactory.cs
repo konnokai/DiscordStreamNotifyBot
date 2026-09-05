@@ -28,7 +28,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
 
         public static EmbedBuilder CreateStreamEnded(string userName, string userLogin,
             string streamTitle, DateTime? streamStartAtUtc, DateTime endAt,
-            IReadOnlyCollection<TwitchClipInfo> clips, string clipsFallback,
+            IReadOnlyCollection<TwitchClipInfo> clips,
             string profileImageUrl, string offlineImageUrl, BotLocalizer localizer, string locale)
         {
             var embedBuilder = new EmbedBuilder()
@@ -50,8 +50,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             embedBuilder.AddField(localizer.Get("Notifications.Field.EndedAt", locale), endAt.ConvertDateTimeToDiscordMarkdown());
 
             string clipsValue = FormatClips(clips, localizer, locale);
-            if (string.IsNullOrEmpty(clipsValue))
-                clipsValue = clipsFallback;
             if (!string.IsNullOrEmpty(clipsValue))
                 embedBuilder.AddField(localizer.Get("Twitch.Notification.Clips", locale), clipsValue);
 
@@ -63,12 +61,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         }
 
         public static EmbedBuilder CreateChannelUpdate(string userName, string userLogin,
-            IReadOnlyCollection<TwitchChannelUpdateInfo> updates, string descriptionFallback,
+            IReadOnlyCollection<TwitchChannelUpdateInfo> updates,
             string profileImageUrl, BotLocalizer localizer, string locale)
         {
             string description = FormatUpdates(updates, localizer, locale);
-            if (string.IsNullOrEmpty(description))
-                description = descriptionFallback;
 
             var embedBuilder = new EmbedBuilder()
                 .WithOkColor()

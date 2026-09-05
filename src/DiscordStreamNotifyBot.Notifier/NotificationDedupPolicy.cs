@@ -32,7 +32,7 @@ namespace DiscordStreamNotifyBot
                         : $"notified:{shardId}:tw:{jo.Value<string>("StreamId")}:{jo.Value<int?>("NoticeType")}",
                     NotifyType.Twitcasting => $"notified:{shardId}:tc:{jo.Value<string>("ChannelId")}:{jo.Value<int?>("StreamId")}",
                     NotifyType.Banner => $"notified:{shardId}:banner:{jo.Value<string>("ChannelId")}:{jo.Value<string>("VideoId")}",
-                    NotifyType.YoutubeMemberVideoLog => $"notified:{shardId}:ytmv:{jo.Value<string>("CheckChannelId")}:{StableHash(jo.Value<string>("Message") ?? "")}",
+                    NotifyType.YoutubeMemberVideoLog => $"notified:{shardId}:ytmv:{jo.Value<string>("CheckChannelId")}:{StableHash(json)}",
                     _ => null,
                 };
             }

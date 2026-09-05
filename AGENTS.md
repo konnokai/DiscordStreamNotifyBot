@@ -8,6 +8,7 @@
 
 ## 目前狀態（架構變更時，與變更同一個 commit 更新本段）
 
+- 通知補送：三平台共用 `NotificationDeliveryProgress`，以 `notification:delivery:{shardId}:{entryId}` HASH 保存逐目標訊息／crosspost checkpoint；暫時失敗保留 PEL，ACK 與 checkpoint 刪除使用同一段 Lua。checkpoint 不設 TTL，已修剪事件於 XAUTOCLAIM 回報刪除時清理；仍是 at-least-once，Discord 成功與 Redis 保存之間的程序中斷可能重複。已移除舊版通知 payload fallback，不支援混版部署。
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
 - 本地化第一階段的程式實作已完成，待手動 Discord 驗證：Slash group／command／parameter／choice 名稱固定使用英文 canonical，description 支援 `zh-TW`／`en-US`／`ja`；一般互動、Help、三平台背景通知與會限訊息維持三語，通知事件對本 shard guild 批次讀取 locale，通知 DTO 不攜帶 locale；`/utility` 僅保留一般工具，共用管理指令集中於 `/server-admin`。
 - 自動化測試第一至四批已完成，第五批 Redis／MySQL component tests 已實跑通過；多 shard guild ownership 與外部 API request contract 待完成。細節見 [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)。

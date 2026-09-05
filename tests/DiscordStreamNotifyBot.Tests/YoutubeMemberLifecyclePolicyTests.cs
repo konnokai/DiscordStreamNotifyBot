@@ -26,20 +26,6 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public void DisabledApiSkipsOnlyProviderWorkSoCleanupCanRunFirst()
-        {
-            Assert.False(YoutubeMemberLifecyclePolicy.ShouldRunProviderCheck(false));
-            Assert.True(YoutubeMemberLifecyclePolicy.ShouldRunProviderCheck(true));
-        }
-
-        [Fact]
-        public void GuildMemberSubscriptionUsesTheSameIntentGateForStartAndStop()
-        {
-            Assert.False(YoutubeMemberLifecyclePolicy.ShouldManageGuildMemberSubscription(false));
-            Assert.True(YoutubeMemberLifecyclePolicy.ShouldManageGuildMemberSubscription(true));
-        }
-
-        [Fact]
         public async Task StopDrainWaitsForTrackedLifecycleTask()
         {
             var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

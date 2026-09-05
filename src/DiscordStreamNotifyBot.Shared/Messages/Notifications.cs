@@ -101,14 +101,8 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         /// <summary>語言中立的最多觀看 Clip 清單（EndStream 用）。</summary>
         public List<TwitchClipInfo> Clips { get; set; }
 
-        /// <summary>最多觀看 Clip 清單的舊版繁中字串，供舊版 payload 或舊版 Notifier 回退時使用。</summary>
-        public string ClipsValue { get; set; }
-
         /// <summary>語言中立的直播資料更新清單（ChangeStreamData 用，去抖動後合併）。</summary>
         public List<TwitchChannelUpdateInfo> Updates { get; set; }
-
-        /// <summary>直播資料更新的舊版繁中字串，供舊版 payload 或舊版 Notifier 回退時使用。</summary>
-        public string Description { get; set; }
     }
 
     public class TwitchClipInfo
@@ -159,10 +153,7 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         /// <summary>會限頻道 Id（= SendMsgToLogChannelAsync 的 checkChannelId，用來反查各 guild 的 log channel）。</summary>
         public string CheckChannelId { get; set; }
 
-        /// <summary>要傳送給伺服器紀錄頻道或伺服器擁有者的訊息。</summary>
-        public string Message { get; set; }
-
-        /// <summary>可由 Notifier 依 guild locale 排版的穩定訊息代碼；舊 payload 可為空。</summary>
+        /// <summary>由 Notifier 依 guild locale 排版的穩定訊息代碼。</summary>
         public string MessageCode { get; set; }
 
         /// <summary>訊息代碼的語言中立參數；不包含 locale。</summary>

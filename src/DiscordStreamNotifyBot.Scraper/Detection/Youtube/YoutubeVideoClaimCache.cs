@@ -25,11 +25,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// 嘗試取得影片 ID 的 claim。未過期時不延長期限；不存在或已到期時只有一個併發呼叫會成功。
         /// </summary>
         internal bool TryClaim(string videoId)
+            => TryClaim(videoId, out _);
+
+        private bool TryClaim(string videoId, out DateTimeOffset expiresAt)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(videoId);
 
             DateTimeOffset now = _timeProvider.GetUtcNow();
-            DateTimeOffset expiresAt = now.Add(_ttl);
+            expiresAt = now.Add(_ttl);
             while (true)
             {
                 if (!_claims.TryGetValue(videoId, out DateTimeOffset currentExpiry))
@@ -50,6 +53,34 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// <summary>後續兜底檢查拋出例外時釋放 claim，讓下一輪可以重試。</summary>
         internal void Release(string videoId)
             => _claims.TryRemove(videoId, out _);
+
+        internal Batch CreateBatch() => new(this);
+
+        /// <summary>
+        /// 排程批次只保留已完成處理的 claim；API 失敗、未回傳影片或提早結束都釋放未完成項目。
+        /// 釋放時比對到期值，避免移除其他批次在 TTL 到期後取得的新 claim。
+        /// </summary>
+        internal sealed class Batch(YoutubeVideoClaimCache cache) : IDisposable
+        {
+            private readonly Dictionary<string, DateTimeOffset> _pending = new(StringComparer.Ordinal);
+
+            internal bool TryClaim(string videoId)
+            {
+                if (!cache.TryClaim(videoId, out var expiry))
+                    return false;
+                _pending[videoId] = expiry;
+                return true;
+            }
+
+            internal void Complete(string videoId) => _pending.Remove(videoId);
+
+            public void Dispose()
+            {
+                foreach (var claim in _pending)
+                    cache._claims.TryRemove(claim);
+                _pending.Clear();
+            }
+        }
 
         /// <summary>移除已到期且未被其他執行緒更新的 claim。</summary>
         internal int RemoveExpired()
