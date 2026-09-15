@@ -146,6 +146,36 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
+        public void ChzzkKeyUsesStreamKeyAndNoticeType()
+        {
+            var start = NotificationDedupPolicy.TryGetKey(2, NotifyType.Chzzk,
+                JsonConvert.SerializeObject(new ChzzkNotification
+                {
+                    StreamKey = "channel-1:2026-09-15 13:41:52",
+                }));
+            var end = NotificationDedupPolicy.TryGetKey(2, NotifyType.Chzzk,
+                JsonConvert.SerializeObject(new ChzzkNotification
+                {
+                    StreamKey = "channel-1:2026-09-15 13:41:52",
+                    NoticeType = ChzzkNoticeType.EndStream,
+                }));
+
+            Assert.Equal("notified:2:cz:channel-1:2026-09-15 13:41:52:0", start);
+            Assert.Equal("notified:2:cz:channel-1:2026-09-15 13:41:52:1", end);
+        }
+
+        [Fact]
+        public void ChzzkWithoutStreamKeyDoesNotDeduplicate()
+        {
+            var json = JsonConvert.SerializeObject(new ChzzkNotification
+            {
+                NoticeType = ChzzkNoticeType.StartStream,
+            });
+
+            Assert.Null(NotificationDedupPolicy.TryGetKey(2, NotifyType.Chzzk, json));
+        }
+
+        [Fact]
         public void SameNotificationUsesDifferentKeysForDifferentShards()
         {
             var json = JsonConvert.SerializeObject(new YoutubeNotification

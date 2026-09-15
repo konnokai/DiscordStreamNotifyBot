@@ -21,6 +21,7 @@ namespace DiscordStreamNotifyBot
         private readonly YoutubeStreamService _youtubeStreamService;
         private readonly SharedService.Twitch.TwitchService _twitchService;
         private readonly SharedService.Twitcasting.TwitcastingService _twitcastingService;
+        private readonly SharedService.Chzzk.ChzzkService _chzzkService;
         private readonly SharedService.YoutubeMember.YoutubeMemberService _youtubeMemberService;
         private readonly NotifierMetrics _metrics;
         private readonly Func<string, string, NotificationDeliveryProgress, Task<bool>> _dispatchAsync;
@@ -29,12 +30,14 @@ namespace DiscordStreamNotifyBot
         internal NotificationBusConsumer(YoutubeStreamService youtubeStreamService,
             SharedService.Twitch.TwitchService twitchService,
             SharedService.Twitcasting.TwitcastingService twitcastingService,
+            SharedService.Chzzk.ChzzkService chzzkService,
             SharedService.YoutubeMember.YoutubeMemberService youtubeMemberService,
             NotifierMetrics metrics)
         {
             _youtubeStreamService = youtubeStreamService;
             _twitchService = twitchService;
             _twitcastingService = twitcastingService;
+            _chzzkService = chzzkService;
             _youtubeMemberService = youtubeMemberService;
             _metrics = metrics;
             _dispatchAsync = DispatchAsync;
@@ -195,6 +198,12 @@ namespace DiscordStreamNotifyBot
                     var twitcastingDto = JsonConvert.DeserializeObject<TwitcastingNotification>(json);
                     if (twitcastingDto == null) return false;
                     await _twitcastingService.DispatchFromBusAsync(twitcastingDto, progress);
+                    return true;
+
+                case NotifyType.Chzzk:
+                    var chzzkDto = JsonConvert.DeserializeObject<ChzzkNotification>(json);
+                    if (chzzkDto == null) return false;
+                    await _chzzkService.DispatchFromBusAsync(chzzkDto, progress);
                     return true;
 
                 case NotifyType.Banner:

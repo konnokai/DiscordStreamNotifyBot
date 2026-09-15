@@ -149,4 +149,25 @@
   <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>A configured Twitch channel</value></data>
   <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>List verified Twitch subscribers</value></data>
   <data name="twitch-subscription-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
+  <data name="chzzk.description" xml:space="preserve"><value>CHZZK stream notification settings</value></data>
+  <data name="chzzk.add.description" xml:space="preserve"><value>Add a CHZZK stream notification</value></data>
+  <data name="chzzk.add.streamer.description" xml:space="preserve"><value>Channel URL</value></data>
+  <data name="chzzk.add.notification-channel.description" xml:space="preserve"><value>Channel to send notifications to</value></data>
+  <data name="chzzk.remove.description" xml:space="preserve"><value>Remove a CHZZK stream notification</value></data>
+  <data name="chzzk.remove.channel.description" xml:space="preserve"><value>CHZZK channel to remove</value></data>
+  <data name="chzzk.list.description" xml:space="preserve"><value>Show CHZZK channels with notifications</value></data>
+  <data name="chzzk.list.page.description" xml:space="preserve"><value>The page to display</value></data>
+  <data name="chzzk.set-message.description" xml:space="preserve"><value>Set the CHZZK notification message</value></data>
+  <data name="chzzk.set-message.channel.description" xml:space="preserve"><value>A CHZZK channel with notifications configured</value></data>
+  <data name="chzzk.set-message.notification-type.description" xml:space="preserve"><value>Stream event to configure</value></data>
+  <data name="chzzk.set-message.message.description" xml:space="preserve"><value>Custom message text; leave empty to clear, use - to disable the notification</value></data>
+  <data name="chzzk.list-message.description" xml:space="preserve"><value>List configured CHZZK notification messages</value></data>
+  <data name="chzzk.list-message.page.description" xml:space="preserve"><value>The page to display</value></data>
+  <data name="chzzk-spider.description" xml:space="preserve"><value>CHZZK channel crawler settings</value></data>
+  <data name="chzzk-spider.add.description" xml:space="preserve"><value>Add a CHZZK channel crawler</value></data>
+  <data name="chzzk-spider.add.channel.description" xml:space="preserve"><value>CHZZK channel to add</value></data>
+  <data name="chzzk-spider.remove.description" xml:space="preserve"><value>Remove a CHZZK channel crawler</value></data>
+  <data name="chzzk-spider.remove.channel.description" xml:space="preserve"><value>CHZZK channel to remove</value></data>
+  <data name="chzzk-spider.list.description" xml:space="preserve"><value>Show CHZZK channel crawlers</value></data>
+  <data name="chzzk-spider.list.page.description" xml:space="preserve"><value>The page to display</value></data>
 </root>

@@ -415,4 +415,18 @@
   <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; passed the Twitch subscription check for `{1}`, but Discord role synchronization failed and will be retried.</value></data>
   <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; no longer qualifies for `{1}`, but Discord role removal failed and will be retried.</value></data>
   <data name="TwitchMember.StatusLog.AuthorizationInvalid" xml:space="preserve"><value>&lt;@{0}&gt;'s Twitch authorization expired. Their verification roles for `{1}` were removed.</value></data>
+  <data name="Chzzk.StreamStatus.Live" xml:space="preserve"><value>Live</value></data>
+  <data name="Chzzk.StreamStatus.Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Chzzk.Notification.UnknownTitle" xml:space="preserve"><value>(stream title unavailable)</value></data>
+  <data name="Chzzk.NoticeType.Start" xml:space="preserve"><value>stream started</value></data>
+  <data name="Chzzk.NoticeType.End" xml:space="preserve"><value>stream ended</value></data>
+  <data name="Chzzk.Messages.ListTitle" xml:space="preserve"><value>CHZZK Notification Messages</value></data>
+  <data name="Chzzk.Messages.ListValue" xml:space="preserve"><value>Start: {0}&#10;End: {1}</value></data>
+  <data name="Chzzk.Notifications.Added" xml:space="preserve"><value>`{0}` has been added to the CHZZK notification list.{1}</value></data>
+  <data name="Chzzk.Notifications.Empty" xml:space="preserve"><value>The CHZZK stream notification list is empty.</value></data>
+  <data name="Chzzk.Notifications.ListTitle" xml:space="preserve"><value>CHZZK Stream Notifications</value></data>
+  <data name="Chzzk.Notifications.ConfigureFirst" xml:space="preserve"><value>CHZZK notifications are not configured for `{0}`. Use {1} to add them before setting a message.</value></data>
+  <data name="Chzzk.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>No CHZZK stream notifications are configured. Use {0} to add one first.</value></data>
+  <data name="Chzzk.Errors.ChannelNotFound" xml:space="preserve"><value>The specified CHZZK channel could not be found. Check the channel URL or channel ID.</value></data>
+  <data name="ChzzkSpider.ListTitle" xml:space="preserve"><value>CHZZK Channel Crawlers</value></data>
 </root>

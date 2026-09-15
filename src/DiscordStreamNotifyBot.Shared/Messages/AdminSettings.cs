@@ -18,12 +18,16 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public const string TwitchRemoveAction = "twitch-notification.remove";
         public const string TwitcastingUpsertAction = "twitcasting-notification.upsert";
         public const string TwitcastingRemoveAction = "twitcasting-notification.remove";
+        public const string ChzzkUpsertAction = "chzzk-notification.upsert";
+        public const string ChzzkRemoveAction = "chzzk-notification.remove";
         public const string YoutubeCrawlerAddAction = "youtube-crawler.add";
         public const string YoutubeCrawlerRemoveAction = "youtube-crawler.remove";
         public const string TwitchCrawlerAddAction = "twitch-crawler.add";
         public const string TwitchCrawlerRemoveAction = "twitch-crawler.remove";
         public const string TwitcastingCrawlerAddAction = "twitcasting-crawler.add";
         public const string TwitcastingCrawlerRemoveAction = "twitcasting-crawler.remove";
+        public const string ChzzkCrawlerAddAction = "chzzk-crawler.add";
+        public const string ChzzkCrawlerRemoveAction = "chzzk-crawler.remove";
         public const string YoutubeVerificationUpsertAction = "youtube-verification.upsert";
         public const string YoutubeVerificationRemoveAction = "youtube-verification.remove";
         public const string YoutubeVerificationSetProbeVideoAction = "youtube-verification.set-probe-video";
@@ -233,6 +237,9 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("twitcasting")]
         public List<AdminSettingsTwitcastingNotification> Twitcasting { get; set; } = [];
+
+        [JsonProperty("chzzk")]
+        public List<AdminSettingsChzzkNotification> Chzzk { get; set; } = [];
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -334,6 +341,35 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     }
 
     [JsonObject(MemberSerialization.OptIn)]
+    public sealed class AdminSettingsChzzkNotification
+    {
+        [JsonProperty("sourceId")]
+        public string SourceId { get; set; } = "";
+
+        [JsonProperty("sourceName")]
+        public string SourceName { get; set; } = "";
+
+        [JsonProperty("channelId")]
+        public string ChannelId { get; set; } = "";
+
+        [JsonProperty("messages")]
+        public AdminSettingsChzzkMessages Messages { get; set; } = new();
+
+        [JsonProperty("detectionEnabled")]
+        public bool DetectionEnabled { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    public sealed class AdminSettingsChzzkMessages
+    {
+        [JsonProperty("start")]
+        public string Start { get; set; } = "";
+
+        [JsonProperty("end")]
+        public string End { get; set; } = "";
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
     public sealed class AdminSettingsCrawlers
     {
         [JsonProperty("youtube")]
@@ -344,6 +380,9 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("twitcasting")]
         public AdminSettingsCrawlerPlatform Twitcasting { get; set; } = new();
+
+        [JsonProperty("chzzk")]
+        public AdminSettingsCrawlerPlatform Chzzk { get; set; } = new();
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -536,6 +575,29 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("startMessage")]
         public string? StartMessage { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    public sealed class AdminChzzkUpsertPayload
+    {
+        [JsonProperty("source")]
+        public string? Source { get; set; }
+
+        [JsonProperty("channelId")]
+        public string? ChannelId { get; set; }
+
+        [JsonProperty("messages")]
+        public AdminChzzkMessagesPayload? Messages { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    public sealed class AdminChzzkMessagesPayload
+    {
+        [JsonProperty("start")]
+        public string? Start { get; set; }
+
+        [JsonProperty("end")]
+        public string? End { get; set; }
     }
 
     [JsonObject(MemberSerialization.OptIn)]

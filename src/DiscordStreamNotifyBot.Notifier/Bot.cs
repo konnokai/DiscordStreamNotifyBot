@@ -279,6 +279,7 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<SharedService.EmojiService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
+                .AddSingleton<SharedService.Chzzk.ChzzkService>()
                 .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionApiClient>()
                 .AddSingleton<SharedService.Member.MemberOperationCoordinator>()
                 .AddSingleton<SharedService.Member.MemberRoleOwnershipService>()
@@ -318,6 +319,8 @@ namespace DiscordStreamNotifyBot
                 .AddPolicyHandler(HttpPolicyExtensions
                 .HandleTransientHttpError()
                 .RetryAsync(3));
+            // CHZZK 為匿名網站 endpoint：失敗由呼叫端處理（新增驗證失敗即回報，不在 client 層重試）。
+            services.AddHttpClient<HttpClients.Chzzk.ChzzkClient>();
 
             services.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
             services.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
@@ -343,6 +346,7 @@ namespace DiscordStreamNotifyBot
                     serviceProvider.GetService<SharedService.Youtube.YoutubeStreamService>(),
                     serviceProvider.GetService<SharedService.Twitch.TwitchService>(),
                     serviceProvider.GetService<SharedService.Twitcasting.TwitcastingService>(),
+                    serviceProvider.GetService<SharedService.Chzzk.ChzzkService>(),
                     serviceProvider.GetService<SharedService.YoutubeMember.YoutubeMemberService>(),
                     _metrics);
                 await _busConsumer.StartAsync(_shardId);

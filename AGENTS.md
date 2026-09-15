@@ -17,6 +17,7 @@
 - 網頁管理設定 Bot 端首版已實作：Notifier owning shard 透過固定 Redis request/reply 契約提供 guild/common/三平台通知快照，並由既有 Utility/YouTube/Twitch/TwitCasting 服務執行明確 desired-state mutation；跨專案契約與後續驗證設定擴充見 [docs/WEB_ADMIN_SETTINGS_PLAN.md](docs/WEB_ADMIN_SETTINGS_PLAN.md)。
 - 網頁管理設定的三平台爬蟲與 YouTube／Twitch 驗證已接上共用 domain service、expanded snapshot 與 Web 表單；正式 Discord／Redis／MySQL／多 shard 驗收仍依 [docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md](docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md) 執行。
 - 網頁管理設定 latency follow-up 已完成：Backend 三個 endpoint 共用 30 秒 absolute deadline，Bot envelope 傳遞 `deadlineUnixMs`，Redis reply／unavailable／deadline exceeded 分流，驗證刪除先 durable pending 再由既有週期清理；正式整合驗收仍待執行。
+- CHZZK 直播通知 Bot 端已實作（計畫見 [docs/CHZZK_NOTIFICATION_PLAN.md](docs/CHZZK_NOTIFICATION_PLAN.md)）：網站匿名 live-status 輪詢（30 秒常數、僅 Scraper leader）、`streamKey = channelId + ":" + 正規化 openDate`（移除冒號與減號、空格改底線，如 `20260915_124110`；KST 固定 UTC+9 轉 UTC）、三張新表＋`GuildConfig.MaxChzzkSpiderCount`（預設 3）、`/chzzk` 與 `/chzzk-spider` 三語指令、AdminSettings 快照與 action（capability `chzzk-notification`／`chzzk-crawler`）；不含 OAuth、全站輪詢 fallback、錄影與 IsWarningUser。Backend 為 pass-through 無需改動，Frontend 已同步表單與型別。Release build 0 警告、681 tests passed；正式 Discord／Redis／MySQL／多 shard 驗收與 migration 套用尚待人工執行。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run

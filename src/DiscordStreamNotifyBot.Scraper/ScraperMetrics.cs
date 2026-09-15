@@ -104,6 +104,11 @@ namespace DiscordStreamNotifyBot.Scraper
             new GaugeConfiguration { LabelNames = ["reason"] });
         private readonly Counter _oauthBypassAdditions = Metrics.CreateCounter(
             Prefix + "twitch_oauth_bypass_additions_total", "使用 Twitch OAuth 豁免 200 人限制新增 spider 的次數。");
+        private readonly Counter _chzzkPollCycles = Metrics.CreateCounter(
+            Prefix + "chzzk_poll_cycles_total", "CHZZK live-status 輪詢循環執行次數。",
+            new CounterConfiguration { LabelNames = ["result"] });
+        private readonly Gauge _chzzkSpiders = Metrics.CreateGauge(
+            Prefix + "chzzk_spiders", "目前的 CHZZK spider 數。");
 
         public void SetSpiderCount(TwitchSpiderMetricMode mode, int count)
         {
@@ -157,6 +162,16 @@ namespace DiscordStreamNotifyBot.Scraper
         public void RecordOAuthBypassAddition()
         {
             _oauthBypassAdditions.Inc();
+        }
+
+        public void RecordChzzkPollCycle(ScraperMetricResult result)
+        {
+            _chzzkPollCycles.WithLabels(ToLabel(result)).Inc();
+        }
+
+        public void SetChzzkSpiderCount(int count)
+        {
+            _chzzkSpiders.Set(NonNegative(count));
         }
 
         private static double NonNegative(double value) => Math.Max(0, value);

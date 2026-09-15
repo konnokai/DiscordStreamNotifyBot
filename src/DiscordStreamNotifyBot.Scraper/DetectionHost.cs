@@ -1,4 +1,5 @@
 using DiscordStreamNotifyBot.HttpClients;
+using DiscordStreamNotifyBot.HttpClients.Chzzk;
 using DiscordStreamNotifyBot.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
@@ -44,7 +45,8 @@ namespace DiscordStreamNotifyBot.Scraper
                 .AddSingleton<Detection.Youtube.YoutubeDetectionService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
                 .AddSingleton<Detection.Twitch.TwitchDetectionService>()
-                .AddSingleton<Detection.Twitcasting.TwitcastingDetectionService>();
+                .AddSingleton<Detection.Twitcasting.TwitcastingDetectionService>()
+                .AddSingleton<Detection.Chzzk.ChzzkDetectionService>();
 
             // 與 Notifier 端相同的 TwitcastingClient 設定（HandleTransientHttpError 含 5xx 及 408）
             services.AddHttpClient<TwitcastingClient>()
@@ -52,14 +54,18 @@ namespace DiscordStreamNotifyBot.Scraper
                 .HandleTransientHttpError()
                 .RetryAsync(3));
 
+            // CHZZK 為匿名網站 endpoint：429／5xx 由偵測端自行退避，client 層不重試。
+            services.AddHttpClient<ChzzkClient>();
+
             _serviceProvider = services.BuildServiceProvider();
 
             // 實體化（各服務建構子內啟動偵測 Timer 與 Redis 訂閱）
             _serviceProvider.GetRequiredService<Detection.Youtube.YoutubeDetectionService>();
             _serviceProvider.GetRequiredService<Detection.Twitch.TwitchDetectionService>();
             _serviceProvider.GetRequiredService<Detection.Twitcasting.TwitcastingDetectionService>();
+            _serviceProvider.GetRequiredService<Detection.Chzzk.ChzzkDetectionService>();
 
-            Log.Info("[Scraper] 偵測服務已啟動（YouTube / Twitch / Twitcasting），事件將發布至通知匯流排");
+            Log.Info("[Scraper] 偵測服務已啟動（YouTube / Twitch / Twitcasting / CHZZK），事件將發布至通知匯流排");
         }
 
         /// <summary>關閉前儲存偵測狀態（addNewStreamVideo → DB）。</summary>

@@ -149,4 +149,25 @@
   <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>設定済み Twitch チャンネル</value></data>
   <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>認証済み Twitch サブスクメンバーを表示します</value></data>
   <data name="twitch-subscription-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="chzzk.description" xml:space="preserve"><value>CHZZK 配信通知設定</value></data>
+  <data name="chzzk.add.description" xml:space="preserve"><value>CHZZK 配信通知を追加します</value></data>
+  <data name="chzzk.add.streamer.description" xml:space="preserve"><value>チャンネル URL</value></data>
+  <data name="chzzk.add.notification-channel.description" xml:space="preserve"><value>通知を送信するチャンネル</value></data>
+  <data name="chzzk.remove.description" xml:space="preserve"><value>CHZZK 配信通知を削除します</value></data>
+  <data name="chzzk.remove.channel.description" xml:space="preserve"><value>削除する CHZZK チャンネル</value></data>
+  <data name="chzzk.list.description" xml:space="preserve"><value>通知設定済みの CHZZK チャンネルを表示します</value></data>
+  <data name="chzzk.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="chzzk.set-message.description" xml:space="preserve"><value>CHZZK 通知メッセージを設定します</value></data>
+  <data name="chzzk.set-message.channel.description" xml:space="preserve"><value>通知設定済みの CHZZK チャンネル</value></data>
+  <data name="chzzk.set-message.notification-type.description" xml:space="preserve"><value>設定する配信イベント</value></data>
+  <data name="chzzk.set-message.message.description" xml:space="preserve"><value>カスタムメッセージ。空欄で解除、- で通知を無効化します</value></data>
+  <data name="chzzk.list-message.description" xml:space="preserve"><value>設定済みの CHZZK 通知メッセージを表示します</value></data>
+  <data name="chzzk.list-message.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
+  <data name="chzzk-spider.description" xml:space="preserve"><value>CHZZK チャンネルクローラー設定</value></data>
+  <data name="chzzk-spider.add.description" xml:space="preserve"><value>CHZZK チャンネルクローラーを追加します</value></data>
+  <data name="chzzk-spider.add.channel.description" xml:space="preserve"><value>追加する CHZZK チャンネル</value></data>
+  <data name="chzzk-spider.remove.description" xml:space="preserve"><value>CHZZK チャンネルクローラーを削除します</value></data>
+  <data name="chzzk-spider.remove.channel.description" xml:space="preserve"><value>削除する CHZZK チャンネル</value></data>
+  <data name="chzzk-spider.list.description" xml:space="preserve"><value>登録済みの CHZZK チャンネルクローラーを表示します</value></data>
+  <data name="chzzk-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 </root>

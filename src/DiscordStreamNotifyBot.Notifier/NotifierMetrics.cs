@@ -105,7 +105,9 @@ namespace DiscordStreamNotifyBot
         TwitchStart,
         TwitchEnd,
         TwitchChangeData,
-        TwitcastingStart
+        TwitcastingStart,
+        ChzzkStart,
+        ChzzkEnd
     }
 
     internal enum NotificationDeliveryResult
@@ -333,6 +335,13 @@ namespace DiscordStreamNotifyBot
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
 
+        internal static NotificationMetricEvent ToMetricEvent(ChzzkNoticeType type) => type switch
+        {
+            ChzzkNoticeType.StartStream => NotificationMetricEvent.ChzzkStart,
+            ChzzkNoticeType.EndStream => NotificationMetricEvent.ChzzkEnd,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+
         internal static string ToLabel(YoutubeMemberCheckType value) => value switch
         {
             YoutubeMemberCheckType.New => "new",
@@ -369,6 +378,8 @@ namespace DiscordStreamNotifyBot
             NotificationMetricEvent.TwitchEnd => ("twitch", "end"),
             NotificationMetricEvent.TwitchChangeData => ("twitch", "change_data"),
             NotificationMetricEvent.TwitcastingStart => ("twitcasting", "start"),
+            NotificationMetricEvent.ChzzkStart => ("chzzk", "start"),
+            NotificationMetricEvent.ChzzkEnd => ("chzzk", "end"),
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
         };
 
@@ -488,6 +499,7 @@ namespace DiscordStreamNotifyBot
             NotifyType.Youtube => "youtube",
             NotifyType.Twitch => "twitch",
             NotifyType.Twitcasting => "twitcasting",
+            NotifyType.Chzzk => "chzzk",
             NotifyType.Banner => "banner",
             NotifyType.YoutubeMemberVideoLog => "youtube_member_video_log",
             _ => "unknown"

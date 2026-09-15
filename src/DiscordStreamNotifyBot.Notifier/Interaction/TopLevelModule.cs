@@ -279,6 +279,7 @@ namespace DiscordStreamNotifyBot.Interaction
             bool hasNoYoutubeNotice = !await dbContext.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
             bool hasNoTwitchNotice = !await dbContext.NoticeTwitchStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
             bool hasNoTwitcastingNotice = !await dbContext.NoticeTwitcastingStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
+            bool hasNoChzzkNotice = !await dbContext.NoticeChzzkStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
             var initialized = await GuildLocaleService.InitializeAsync(
                 dbContext,
                 guildId,
@@ -286,7 +287,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 Context.Interaction.UserLocale);
 
             bool hasNoVerificationLog = initialized.GuildConfig.VerificationLogChannelId == 0;
-            if (hasNoYoutubeNotice && hasNoTwitchNotice && hasNoTwitcastingNotice && hasNoVerificationLog)
+            if (hasNoYoutubeNotice && hasNoTwitchNotice && hasNoTwitcastingNotice && hasNoChzzkNotice && hasNoVerificationLog)
             {
                 string responseLocale = LocaleResolver.ResolvePrivate(
                     Context.Interaction.UserLocale,

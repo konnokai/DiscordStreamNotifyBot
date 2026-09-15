@@ -71,7 +71,7 @@
       }
     ]
   },
-  "description": "直播小幫手整體服務監控：Coordinator 叢集與 Redis Streams、Scraper Twitch 偵測、Backend OAuth/Webhook、Notifier YouTube 會員與 Twitch 訂閱驗證及三平台通知。所有 PromQL 只依固定低基數 label 聚合。",
+  "description": "直播小幫手整體服務監控：Coordinator 叢集與 Redis Streams、Scraper Twitch 與 CHZZK 偵測、Backend OAuth/Webhook、Notifier YouTube 會員與 Twitch 訂閱驗證及全平台通知。所有 PromQL 只依固定低基數 label 聚合。",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -958,7 +958,7 @@
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "YouTube、Twitch、TwitCasting 每個圖表區間對本 shard 實際持有目的地的最終發送結果事件數。",
+      "description": "YouTube、Twitch、TwitCasting、CHZZK 每個圖表區間對本 shard 實際持有目的地的最終發送結果事件數。",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -1084,6 +1084,72 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 119 },
+      "id": 109,
+      "panels": [],
+      "title": "CHZZK 偵測",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "目前 Scraper 追蹤的 CHZZK 頻道數；同一頻道被多個 guild 訂閱仍只算一筆。",
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "noValue": "0", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 120 },
+      "id": 51,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "sum(discord_stream_notify_chzzk_spiders{job=~\"$scraper_job\", instance=~\"$scraper_instance\"})", "instant": true, "legendFormat": "CHZZK 頻道", "range": false, "refId": "A" }
+      ],
+      "title": "CHZZK Spider 數",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "CHZZK live-status 輪詢每個圖表區間的成功與失敗事件數；每 30 秒走訪一輪所有已追蹤頻道。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "decimals": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 120 },
+      "id": 52,
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum by (result) (increase(discord_stream_notify_chzzk_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__rate_interval]))", "legendFormat": "{{result}}", "range": true, "refId": "A" }
+      ],
+      "title": "CHZZK 輪詢結果事件數",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "dashboard 時間範圍內 CHZZK polling success / 全部 polling；沒有 polling 時顯示 N/A。",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "noValue": "N/A",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 90 }, { "color": "green", "value": 99 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 120 },
+      "id": 53,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
+      "targets": [
+        { "editorMode": "code", "expr": "100 * (sum(increase(discord_stream_notify_chzzk_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\", result=\"success\"}[$__range])) or vector(0)) / sum(increase(discord_stream_notify_chzzk_poll_cycles_total{job=~\"$scraper_job\", instance=~\"$scraper_instance\"}[$__range]))", "instant": true, "legendFormat": "成功率", "range": false, "refId": "A" }
+      ],
+      "title": "CHZZK 輪詢成功率",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 128 },
       "id": 105,
       "panels": [],
       "title": "程序資源",
@@ -1100,7 +1166,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 120 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 129 },
       "id": 27,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1123,7 +1189,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 120 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 129 },
       "id": 28,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1149,6 +1215,7 @@
     "twitch-eventsub",
     "youtube-membership",
     "twitch-subscription",
+    "chzzk",
     "notifications"
   ],
   "templating": {

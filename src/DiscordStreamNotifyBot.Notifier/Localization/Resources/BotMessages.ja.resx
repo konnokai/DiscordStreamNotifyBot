@@ -415,4 +415,18 @@
   <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク確認に成功しましたが、Discord ロールの同期に失敗しました。後で再試行します。</value></data>
   <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` のサブスク条件を満たしていませんが、Discord ロールの削除に失敗しました。後で再試行します。</value></data>
   <data name="TwitchMember.StatusLog.AuthorizationInvalid" xml:space="preserve"><value>&lt;@{0}&gt; の Twitch 認証が無効になったため、`{1}` の認証ロールを削除しました。</value></data>
+  <data name="Chzzk.StreamStatus.Live" xml:space="preserve"><value>配信中</value></data>
+  <data name="Chzzk.StreamStatus.Offline" xml:space="preserve"><value>オフライン</value></data>
+  <data name="Chzzk.Notification.UnknownTitle" xml:space="preserve"><value>（配信タイトルを取得できません）</value></data>
+  <data name="Chzzk.NoticeType.Start" xml:space="preserve"><value>配信開始</value></data>
+  <data name="Chzzk.NoticeType.End" xml:space="preserve"><value>配信終了</value></data>
+  <data name="Chzzk.Messages.ListTitle" xml:space="preserve"><value>CHZZK 通知メッセージ一覧</value></data>
+  <data name="Chzzk.Messages.ListValue" xml:space="preserve"><value>配信開始：{0}&#10;配信終了：{1}</value></data>
+  <data name="Chzzk.Notifications.Added" xml:space="preserve"><value>`{0}` を CHZZK 通知一覧に追加しました。{1}</value></data>
+  <data name="Chzzk.Notifications.Empty" xml:space="preserve"><value>CHZZK 配信通知一覧は空です。</value></data>
+  <data name="Chzzk.Notifications.ListTitle" xml:space="preserve"><value>CHZZK 配信通知一覧</value></data>
+  <data name="Chzzk.Notifications.ConfigureFirst" xml:space="preserve"><value>`{0}` の CHZZK 配信通知は設定されていません。先に {1} で追加してから通知メッセージを設定してください。</value></data>
+  <data name="Chzzk.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>CHZZK 配信通知が設定されていません。先に {0} で追加してください。</value></data>
+  <data name="Chzzk.Errors.ChannelNotFound" xml:space="preserve"><value>指定された CHZZK チャンネルが見つかりません。チャンネル URL またはチャンネル ID を確認してください。</value></data>
+  <data name="ChzzkSpider.ListTitle" xml:space="preserve"><value>CHZZK チャンネルクローラー一覧</value></data>
 </root>

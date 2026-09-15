@@ -1,0 +1,11 @@
+{
+  "code": 200,
+  "message": null,
+  "content": {
+    "channelId": "f39c3d74e33a81ab3080356b91bb8de5",
+    "channelName": "테스트 채널",
+    "channelImageUrl": "https://example.invalid/avatar.png",
+    "openLive": true,
+    "followerCount": 100
+  }
+}

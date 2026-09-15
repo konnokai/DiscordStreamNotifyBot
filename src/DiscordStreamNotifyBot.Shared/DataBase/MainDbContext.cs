@@ -9,10 +9,13 @@ namespace DiscordStreamNotifyBot.DataBase
         }
 
         public DbSet<BannerChange> BannerChange { get; set; }
+        public DbSet<ChzzkSpider> ChzzkSpider { get; set; }
+        public DbSet<ChzzkStream> ChzzkStreams { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
         public DbSet<GuildTwitchSubscriptionConfig> GuildTwitchSubscriptionConfig { get; set; }
         public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
         public DbSet<GoogleOAuthUnlinkIntent> GoogleOAuthUnlinkIntent { get; set; }
+        public DbSet<NoticeChzzkStreamChannel> NoticeChzzkStreamChannels { get; set; }
         public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
@@ -38,6 +41,34 @@ namespace DiscordStreamNotifyBot.DataBase
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ChzzkStream>(entity =>
+            {
+                entity.Property(x => x.StreamKey).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired();
+                entity.Property(x => x.ChannelId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
+                entity.Property(x => x.OpenDateRaw).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
+                entity.Property(x => x.CloseDateRaw).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired(false);
+                entity.Property(x => x.StreamTitle).HasColumnType("varchar(256)").HasMaxLength(256).IsRequired(false);
+                entity.Property(x => x.CategoryName).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired(false);
+                entity.Property(x => x.LastObservedAt).HasColumnType("datetime(6)");
+                entity.HasIndex(x => x.StreamKey).IsUnique();
+                entity.HasIndex(x => x.ChannelId);
+            });
+
+            modelBuilder.Entity<NoticeChzzkStreamChannel>(entity =>
+            {
+                entity.Property(x => x.NoticeChzzkChannelId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
+                entity.HasIndex(x => new { x.GuildId, x.NoticeChzzkChannelId }).IsUnique();
+            });
+
+            modelBuilder.Entity<ChzzkSpider>(entity =>
+            {
+                entity.Property(x => x.ChannelName).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired(false);
+                entity.Property(x => x.ChannelImageUrl).HasColumnType("varchar(512)").HasMaxLength(512).IsRequired(false);
+                entity.Property(x => x.CurrentStreamKey).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired(false);
+                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
+                entity.Property(x => x.InitializedAt).HasColumnType("datetime(6)");
+            });
+
             modelBuilder.Entity<GuildConfig>()
                 .Property(x => x.Locale)
                 .HasColumnType("varchar(16)")

@@ -4,6 +4,7 @@ using DiscordStreamNotifyBot.Interaction.Utility.Service;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.Chzzk;
 using DiscordStreamNotifyBot.SharedService.Twitcasting;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using DiscordStreamNotifyBot.SharedService.TwitchSubscription;
@@ -40,6 +41,8 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             "youtube-crawler",
             "twitch-crawler",
             "twitcasting-crawler",
+            "chzzk-notification",
+            "chzzk-crawler",
             "youtube-verification",
             "twitch-verification"
         ];
@@ -51,6 +54,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
         private readonly YoutubeStreamService _youtubeService;
         private readonly TwitchService _twitchService;
         private readonly TwitcastingService _twitcastingService;
+        private readonly ChzzkService _chzzkService;
         private readonly YoutubeMemberService _youtubeMemberService;
         private readonly TwitchSubscriptionService _twitchSubscriptionService;
         private int _started;
@@ -63,6 +67,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             YoutubeStreamService youtubeService,
             TwitchService twitchService,
             TwitcastingService twitcastingService,
+            ChzzkService chzzkService,
             YoutubeMemberService youtubeMemberService,
             TwitchSubscriptionService twitchSubscriptionService)
         {
@@ -73,6 +78,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             _youtubeService = youtubeService;
             _twitchService = twitchService;
             _twitcastingService = twitcastingService;
+            _chzzkService = chzzkService;
             _youtubeMemberService = youtubeMemberService;
             _twitchSubscriptionService = twitchSubscriptionService;
         }
@@ -128,12 +134,16 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 or AdminSettingsContract.TwitchRemoveAction
                 or AdminSettingsContract.TwitcastingUpsertAction
                 or AdminSettingsContract.TwitcastingRemoveAction
+                or AdminSettingsContract.ChzzkUpsertAction
+                or AdminSettingsContract.ChzzkRemoveAction
                 or AdminSettingsContract.YoutubeCrawlerAddAction
                 or AdminSettingsContract.YoutubeCrawlerRemoveAction
                 or AdminSettingsContract.TwitchCrawlerAddAction
                 or AdminSettingsContract.TwitchCrawlerRemoveAction
                 or AdminSettingsContract.TwitcastingCrawlerAddAction
                 or AdminSettingsContract.TwitcastingCrawlerRemoveAction
+                or AdminSettingsContract.ChzzkCrawlerAddAction
+                or AdminSettingsContract.ChzzkCrawlerRemoveAction
                 or AdminSettingsContract.YoutubeVerificationUpsertAction
                 or AdminSettingsContract.YoutubeVerificationRemoveAction
                 or AdminSettingsContract.YoutubeVerificationSetProbeVideoAction
@@ -194,15 +204,22 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 HasString(messages, "start", true) && HasString(messages, "end", true) &&
                 HasString(messages, "change", true);
 
+        internal static bool ValidChzzkUpsertPayload(JObject payload)
+            => HasString(payload, "source") && HasString(payload, "channelId") &&
+                payload["messages"] is JObject messages &&
+                HasString(messages, "start", true) && HasString(messages, "end", true);
+
         internal static bool ValidCrawlerOrVerificationPayload(string action, JObject payload)
             => action switch
             {
                 AdminSettingsContract.YoutubeCrawlerAddAction or
                 AdminSettingsContract.TwitchCrawlerAddAction or
-                AdminSettingsContract.TwitcastingCrawlerAddAction => HasString(payload, "source"),
+                AdminSettingsContract.TwitcastingCrawlerAddAction or
+                AdminSettingsContract.ChzzkCrawlerAddAction => HasString(payload, "source"),
                 AdminSettingsContract.YoutubeCrawlerRemoveAction or
                 AdminSettingsContract.TwitchCrawlerRemoveAction or
                 AdminSettingsContract.TwitcastingCrawlerRemoveAction or
+                AdminSettingsContract.ChzzkCrawlerRemoveAction or
                 AdminSettingsContract.YoutubeVerificationRemoveAction or
                 AdminSettingsContract.YoutubeVerificationAutomaticProbeAction or
                 AdminSettingsContract.TwitchVerificationRemoveAction => HasString(payload, "sourceId"),
@@ -409,9 +426,35 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                         return InvalidPayload();
                     return await _twitcastingService.RemoveNotificationAsync(guild.Id, twitcastingRemove.Source, cancellationToken);
 
+                case AdminSettingsContract.ChzzkUpsertAction:
+                    if (!ValidChzzkUpsertPayload(payload) ||
+                        !TryPayload(payload, out AdminChzzkUpsertPayload? chzzkPayload) ||
+                        string.IsNullOrWhiteSpace(chzzkPayload.Source) ||
+                        !TryParseChannelId(chzzkPayload.ChannelId, false, out ulong chzzkChannelId) ||
+                        !Valid(chzzkPayload.Messages))
+                        return InvalidPayload();
+                    return await _chzzkService.UpsertNotificationAsync(
+                        guild,
+                        chzzkPayload.Source,
+                        chzzkChannelId,
+                        new AdminSettingsChzzkMessages
+                        {
+                            Start = chzzkPayload.Messages!.Start!,
+                            End = chzzkPayload.Messages.End!
+                        },
+                        cancellationToken);
+
+                case AdminSettingsContract.ChzzkRemoveAction:
+                    if (!HasString(payload, "source") ||
+                        !TryPayload(payload, out AdminRemoveNotificationPayload? chzzkRemove) ||
+                        string.IsNullOrWhiteSpace(chzzkRemove.Source))
+                        return InvalidPayload();
+                    return await _chzzkService.RemoveNotificationAsync(guild.Id, chzzkRemove.Source, cancellationToken);
+
                 case AdminSettingsContract.YoutubeCrawlerAddAction:
                 case AdminSettingsContract.TwitchCrawlerAddAction:
                 case AdminSettingsContract.TwitcastingCrawlerAddAction:
+                case AdminSettingsContract.ChzzkCrawlerAddAction:
                     if (!HasString(payload, "source") || !TryPayload(payload, out AdminSourcePayload? addCrawler) ||
                         string.IsNullOrWhiteSpace(addCrawler.Source))
                         return InvalidPayload();
@@ -421,6 +464,8 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                             guild, actorUserId, addCrawler.Source, cancellationToken),
                         AdminSettingsContract.TwitchCrawlerAddAction => await _twitchService.AddCrawlerAsync(
                             guild, actorUserId, addCrawler.Source, cancellationToken),
+                        AdminSettingsContract.ChzzkCrawlerAddAction => await _chzzkService.AddCrawlerAsync(
+                            guild, actorUserId, addCrawler.Source, cancellationToken),
                         _ => await _twitcastingService.AddCrawlerAsync(
                             guild, actorUserId, addCrawler.Source, cancellationToken)
                     };
@@ -428,6 +473,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 case AdminSettingsContract.YoutubeCrawlerRemoveAction:
                 case AdminSettingsContract.TwitchCrawlerRemoveAction:
                 case AdminSettingsContract.TwitcastingCrawlerRemoveAction:
+                case AdminSettingsContract.ChzzkCrawlerRemoveAction:
                     if (!HasString(payload, "sourceId") || !TryPayload(payload, out AdminSourceIdPayload? removeCrawler) ||
                         string.IsNullOrWhiteSpace(removeCrawler.SourceId))
                         return InvalidPayload();
@@ -436,6 +482,8 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                         AdminSettingsContract.YoutubeCrawlerRemoveAction => await _youtubeService.RemoveCrawlerAsync(
                             guild.Id, removeCrawler.SourceId, cancellationToken),
                         AdminSettingsContract.TwitchCrawlerRemoveAction => await _twitchService.RemoveCrawlerAsync(
+                            guild.Id, removeCrawler.SourceId, cancellationToken),
+                        AdminSettingsContract.ChzzkCrawlerRemoveAction => await _chzzkService.RemoveCrawlerAsync(
                             guild.Id, removeCrawler.SourceId, cancellationToken),
                         _ => await _twitcastingService.RemoveCrawlerAsync(
                             guild.Id, removeCrawler.SourceId, cancellationToken)
@@ -494,6 +542,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             var twitcasting = await db.NoticeTwitcastingStreamChannels.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id)
                 .ToListAsync(cancellationToken);
+            var chzzk = await db.NoticeChzzkStreamChannels.AsNoTracking()
+                .Where(x => x.GuildId == guild.Id)
+                .ToListAsync(cancellationToken);
             var youtubeSpiders = await db.YoutubeChannelSpider.AsNoTracking()
                 .Select(x => x.ChannelId)
                 .ToListAsync(cancellationToken);
@@ -502,11 +553,15 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             var twitcastingSpiders = (await db.TwitcastingSpider.AsNoTracking().ToListAsync(cancellationToken))
                 .GroupBy(x => x.ScreenId)
                 .ToDictionary(x => x.Key, x => x.First().ChannelTitle);
+            var chzzkSpiders = await db.ChzzkSpider.AsNoTracking()
+                .ToDictionaryAsync(x => x.ChannelId, x => x.ChannelName, cancellationToken);
             var ownedYoutubeSpiders = await db.YoutubeChannelSpider.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
             var ownedTwitchSpiders = await db.TwitchSpider.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
             var ownedTwitcastingSpiders = await db.TwitcastingSpider.AsNoTracking()
+                .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
+            var ownedChzzkSpiders = await db.ChzzkSpider.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
             var youtubeVerification = await db.GuildYoutubeMemberConfig.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
@@ -531,6 +586,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             int youtubeCrawlerLimit = await YoutubeStreamService.GetYoutubeCrawlerLimitAsync(db, guild.Id, cancellationToken);
             int twitchCrawlerLimit = await TwitchService.GetTwitchCrawlerLimitAsync(db, guild.Id, cancellationToken);
             int twitcastingCrawlerLimit = await TwitcastingService.GetTwitcastingCrawlerLimitAsync(db, guild.Id, cancellationToken);
+            int chzzkCrawlerLimit = await ChzzkService.GetChzzkCrawlerLimitAsync(db, guild.Id, cancellationToken);
 
             foreach (string sourceId in twitch.Select(x => x.NoticeTwitchUserId).Distinct())
             {
@@ -564,6 +620,17 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     sourceId, cancellationToken).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(sourceName))
                     twitcastingSpiders[sourceId] = sourceName;
+            }
+
+            foreach (string sourceId in chzzk.Select(x => x.NoticeChzzkChannelId).Distinct())
+            {
+                if (chzzkSpiders.GetValueOrDefault(sourceId, sourceId) != sourceId || !_chzzkService.IsEnable)
+                    continue;
+
+                var chzzkChannel = await _chzzkService.GetChannelAsync(
+                    sourceId, cancellationToken).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(chzzkChannel?.ChannelName))
+                    chzzkSpiders[sourceId] = chzzkChannel.ChannelName;
             }
             var youtubeSourceNames = new Dictionary<string, string>();
             foreach (string sourceId in youtube.Select(x => x.YouTubeChannelId).Distinct())
@@ -669,6 +736,18 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                         ChannelId = OptionalId(item.DiscordChannelId),
                         StartMessage = item.StartStreamMessage ?? "",
                         DetectionEnabled = twitcastingSpiders.ContainsKey(item.ScreenId)
+                    }).ToList(),
+                    Chzzk = chzzk.Select(item => new AdminSettingsChzzkNotification
+                    {
+                        SourceId = item.NoticeChzzkChannelId,
+                        SourceName = chzzkSpiders.GetValueOrDefault(item.NoticeChzzkChannelId, item.NoticeChzzkChannelId),
+                        ChannelId = OptionalId(item.DiscordChannelId),
+                        Messages = new AdminSettingsChzzkMessages
+                        {
+                            Start = item.StartStreamMessage ?? "",
+                            End = item.EndStreamMessage ?? ""
+                        },
+                        DetectionEnabled = chzzkSpiders.ContainsKey(item.NoticeChzzkChannelId)
                     }).ToList()
                 },
                 Crawlers = new AdminSettingsCrawlers
@@ -678,7 +757,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     Twitch = CrawlerPlatform(_twitchService.IsEnable, twitchCrawlerLimit,
                         ownedTwitchSpiders.Select(x => (x.UserId, x.UserName))),
                     Twitcasting = CrawlerPlatform(_twitcastingService.IsEnable, twitcastingCrawlerLimit,
-                        ownedTwitcastingSpiders.Select(x => (x.ScreenId, x.ChannelTitle)))
+                        ownedTwitcastingSpiders.Select(x => (x.ScreenId, x.ChannelTitle))),
+                    Chzzk = CrawlerPlatform(_chzzkService.IsEnable, chzzkCrawlerLimit,
+                        ownedChzzkSpiders.Select(x => (x.ChannelId, x.ChannelName)))
                 },
                 Verification = new AdminSettingsVerification
                 {
@@ -822,6 +903,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
 
         internal static bool Valid(AdminTwitchMessagesPayload? messages)
             => messages?.Start != null && messages.End != null && messages.Change != null;
+
+        internal static bool Valid(AdminChzzkMessagesPayload? messages)
+            => messages?.Start != null && messages.End != null;
 
         private static bool HasString(JObject value, string property, bool allowEmpty = false)
             => value[property]?.Type == JTokenType.String &&

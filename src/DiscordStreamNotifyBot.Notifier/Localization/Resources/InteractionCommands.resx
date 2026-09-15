@@ -149,4 +149,25 @@
   <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>已設定的 Twitch 頻道</value></data>
   <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>列出已驗證的 Twitch 訂閱者</value></data>
   <data name="twitch-subscription-set.list-checked-member.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="chzzk.description" xml:space="preserve"><value>CHZZK 直播通知設定</value></data>
+  <data name="chzzk.add.description" xml:space="preserve"><value>新增 CHZZK 直播通知的頻道</value></data>
+  <data name="chzzk.add.streamer.description" xml:space="preserve"><value>頻道網址</value></data>
+  <data name="chzzk.add.notification-channel.description" xml:space="preserve"><value>發送通知的頻道</value></data>
+  <data name="chzzk.remove.description" xml:space="preserve"><value>移除 CHZZK 直播通知的頻道</value></data>
+  <data name="chzzk.remove.channel.description" xml:space="preserve"><value>要移除通知的 CHZZK 頻道</value></data>
+  <data name="chzzk.list.description" xml:space="preserve"><value>顯示已設定通知的 CHZZK 直播頻道</value></data>
+  <data name="chzzk.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="chzzk.set-message.description" xml:space="preserve"><value>設定 CHZZK 直播通知訊息</value></data>
+  <data name="chzzk.set-message.channel.description" xml:space="preserve"><value>已設定通知的 CHZZK 頻道</value></data>
+  <data name="chzzk.set-message.notification-type.description" xml:space="preserve"><value>要設定訊息的直播事件</value></data>
+  <data name="chzzk.set-message.message.description" xml:space="preserve"><value>自訂訊息文字；留空會清除設定，輸入 - 則停用該通知</value></data>
+  <data name="chzzk.list-message.description" xml:space="preserve"><value>列出已設定的 CHZZK 直播通知訊息</value></data>
+  <data name="chzzk.list-message.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
+  <data name="chzzk-spider.description" xml:space="preserve"><value>CHZZK 頻道爬蟲設定</value></data>
+  <data name="chzzk-spider.add.description" xml:space="preserve"><value>新增 CHZZK 頻道爬蟲</value></data>
+  <data name="chzzk-spider.add.channel.description" xml:space="preserve"><value>要加入爬蟲的 CHZZK 頻道</value></data>
+  <data name="chzzk-spider.remove.description" xml:space="preserve"><value>移除 CHZZK 頻道爬蟲</value></data>
+  <data name="chzzk-spider.remove.channel.description" xml:space="preserve"><value>要移除爬蟲的 CHZZK 頻道</value></data>
+  <data name="chzzk-spider.list.description" xml:space="preserve"><value>顯示已加入爬蟲檢測的 CHZZK 頻道</value></data>
+  <data name="chzzk-spider.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
 </root>

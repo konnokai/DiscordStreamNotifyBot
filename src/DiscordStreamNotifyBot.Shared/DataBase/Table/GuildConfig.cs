@@ -11,5 +11,6 @@
         public uint MaxTwitcastingSpiderCount { get; set; } = 3;
         public uint MaxTwitterSpaceSpiderCount { get; set; } = 3;
         public uint MaxTwitchSpiderCount { get; set; } = 3;
+        public uint MaxChzzkSpiderCount { get; set; } = 3;
     }
 }

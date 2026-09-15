@@ -415,4 +415,18 @@
   <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; 已通過 `{1}` 的 Twitch 訂閱驗證，但 Discord 身分組同步失敗。Bot 稍後會再試一次。</value></data>
   <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; 已不符合 `{1}` 的 Twitch 訂閱資格，但 Bot 無法移除 Discord 身分組，稍後會再試一次。</value></data>
   <data name="TwitchMember.StatusLog.AuthorizationInvalid" xml:space="preserve"><value>&lt;@{0}&gt; 的 Twitch 授權已失效，已移除該使用者在 `{1}` 的驗證身分組。</value></data>
+  <data name="Chzzk.StreamStatus.Live" xml:space="preserve"><value>直播中</value></data>
+  <data name="Chzzk.StreamStatus.Offline" xml:space="preserve"><value>已離線</value></data>
+  <data name="Chzzk.Notification.UnknownTitle" xml:space="preserve"><value>（找不到直播標題）</value></data>
+  <data name="Chzzk.NoticeType.Start" xml:space="preserve"><value>開始直播</value></data>
+  <data name="Chzzk.NoticeType.End" xml:space="preserve"><value>結束直播</value></data>
+  <data name="Chzzk.Messages.ListTitle" xml:space="preserve"><value>CHZZK 直播通知訊息清單</value></data>
+  <data name="Chzzk.Messages.ListValue" xml:space="preserve"><value>開台：{0}&#10;關台：{1}</value></data>
+  <data name="Chzzk.Notifications.Added" xml:space="preserve"><value>已將 `{0}` 加入 CHZZK 通知清單。{1}</value></data>
+  <data name="Chzzk.Notifications.Empty" xml:space="preserve"><value>CHZZK 直播通知清單為空。</value></data>
+  <data name="Chzzk.Notifications.ListTitle" xml:space="preserve"><value>CHZZK 直播通知清單</value></data>
+  <data name="Chzzk.Notifications.ConfigureFirst" xml:space="preserve"><value>尚未設定 `{0}` 的 CHZZK 直播通知。請先使用 {1} 新增通知，再設定通知訊息。</value></data>
+  <data name="Chzzk.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>尚未設定 CHZZK 直播通知。請先使用 {0} 新增通知。</value></data>
+  <data name="Chzzk.Errors.ChannelNotFound" xml:space="preserve"><value>找不到指定的 CHZZK 頻道，請確認頻道網址或頻道 ID 是否正確。</value></data>
+  <data name="ChzzkSpider.ListTitle" xml:space="preserve"><value>CHZZK 頻道爬蟲清單</value></data>
 </root>

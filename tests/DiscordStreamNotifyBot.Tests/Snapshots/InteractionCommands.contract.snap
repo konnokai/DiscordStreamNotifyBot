@@ -1,5 +1,7 @@
 slash-contract v1
 [global]
+group /chzzk
+group /chzzk-spider
 group /help
 group /server-admin
 group /twitcasting
@@ -13,6 +15,27 @@ group /youtube
 group /youtube-member
 group /youtube-member-set
 group /youtube-spider
+command /chzzk-spider add permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /chzzk-spider list permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /chzzk-spider remove permissions=Administrator dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /chzzk add permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 streamer type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+  option 1 notification-channel type=Channel required=true autocomplete=false channels=Text,News min=- max=- minLength=- maxLength=-
+command /chzzk list permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /chzzk list-message permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 page type=Integer required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+command /chzzk remove permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+command /chzzk set-message permissions=ManageMessages dm=true nsfw=false contexts=- integrations=-
+  option 0 channel type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
+  option 1 notification-type type=String required=true autocomplete=false channels=- min=- max=- minLength=- maxLength=-
+    choice 0 name="Stream started" value="0"
+    choice 1 name="Stream ended" value="1"
+  option 2 message type=String required=false autocomplete=false channels=- min=- max=- minLength=- maxLength=-
 command /help get-all-commands permissions=- dm=true nsfw=false contexts=- integrations=-
   option 0 module type=String required=true autocomplete=true channels=- min=- max=- minLength=- maxLength=-
 command /help get-all-modules permissions=- dm=true nsfw=false contexts=- integrations=-
