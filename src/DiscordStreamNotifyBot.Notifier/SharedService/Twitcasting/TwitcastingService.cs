@@ -333,7 +333,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             {
                 // 通知設定改讀記憶體快取（§12.3）
                 var noticeGuildList = _noticeCache.Get().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
-                Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
+                Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
                 var variants = new Dictionary<string, Lazy<TwitcastingNotificationVariant>>(StringComparer.Ordinal);
                 var guildsById = noticeGuildList

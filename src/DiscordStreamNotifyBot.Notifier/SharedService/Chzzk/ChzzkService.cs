@@ -11,9 +11,9 @@ using DiscordStreamNotifyBot.SharedService.Cluster;
 using DiscordStreamNotifyBot.SharedService.Member;
 using Newtonsoft.Json.Linq;
 
-//#if !DEBUG
+#if !DEBUG
 using Polly;
-//#endif
+#endif
 
 namespace DiscordStreamNotifyBot.SharedService.Chzzk
 {
@@ -298,12 +298,12 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
         /// 通知匯流排消費端入口：依 DTO 類型重建 embed 後發送（shard 過濾沿用既有守衛）。
         /// 頻道頭像由偵測端帶入；來源已被移除時仍以 DTO 內容完成通知。
         /// </summary>
-        internal async Task DispatchFromBusAsync(Shared.Messages.ChzzkNotification dto, NotificationDeliveryProgress progress)
+        internal async Task DispatchFromBusAsync(ChzzkNotification dto, NotificationDeliveryProgress progress)
         {
             NoticeType noticeType = dto.NoticeType switch
             {
-                Shared.Messages.ChzzkNoticeType.StartStream => NoticeType.StartStream,
-                Shared.Messages.ChzzkNoticeType.EndStream => NoticeType.EndStream,
+                ChzzkNoticeType.StartStream => NoticeType.StartStream,
+                ChzzkNoticeType.EndStream => NoticeType.EndStream,
                 _ => (NoticeType)(-1)
             };
             if ((int)noticeType < 0)
@@ -312,7 +312,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             await SendStreamMessageAsync(dto, noticeType, progress).ConfigureAwait(false);
         }
 
-        private ChzzkNotificationVariant BuildVariant(Shared.Messages.ChzzkNotification dto, NoticeType noticeType, string locale)
+        private ChzzkNotificationVariant BuildVariant(ChzzkNotification dto, NoticeType noticeType, string locale)
         {
             Embed embed = noticeType == NoticeType.StartStream
                 ? ChzzkEmbedBuilderFactory.CreateStreamStarted(dto, _localizer, locale).Build()
@@ -331,7 +331,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             return new ChzzkNotificationVariant(embed, component);
         }
 
-        internal async Task SendStreamMessageAsync(Shared.Messages.ChzzkNotification dto,
+        internal async Task SendStreamMessageAsync(ChzzkNotification dto,
             NoticeType noticeType, NotificationDeliveryProgress progress)
         {
             if (!Bot.IsConnect)
@@ -339,14 +339,14 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
 
             NotificationMetricEvent metricEvent = NotifierMetrics.ToMetricEvent(dto.NoticeType);
 
-//#if DEBUG || DEBUG_DONTREGISTERCOMMAND
-//            Log.New($"CHZZK 通知: {dto.ChannelId} - {dto.StreamTitle} ({noticeType})");
-//#else
+#if DEBUG || DEBUG_DONTREGISTERCOMMAND
+            Log.New($"CHZZK 通知: {dto.ChannelId} - {dto.StreamTitle} ({noticeType})");
+#else
             using (var db = _dbService.GetDbContext())
             {
                 var noticeGuildList = _noticeCache.Get()
                     .Where(x => x.NoticeChzzkChannelId == dto.ChannelId).ToList();
-                Log.New($"發送 CHZZK 通知 ({noticeGuildList.Count} / {noticeType}): ({dto.ChannelId}) - {dto.StreamTitle}");
+                Log.New($"發送 CHZZK 通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))} / {noticeType}): ({dto.ChannelId}) - {dto.StreamTitle}");
                 var variants = new Dictionary<string, Lazy<ChzzkNotificationVariant>>(StringComparer.Ordinal);
                 var guildsById = noticeGuildList
                     .Select(item => item.GuildId)
@@ -506,7 +506,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
                     }
                 }
             }
-//#endif
+#endif
         }
 
         /// <summary>沿用既有非平台專屬通知按鈕（開台訊息附帶）。</summary>

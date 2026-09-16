@@ -521,7 +521,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     noticeYoutubeStreamChannels.AddRange(allNotice.Where((x) => x.YouTubeChannelId == type));
                 }
 
-                Log.New($"發送 YouTube 通知 ({noticeYoutubeStreamChannels.Count} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
+                Log.New($"發送 YouTube 通知 ({noticeYoutubeStreamChannels.Count(x => Bot.IsServerOnThisShard(x.GuildId))} / {noticeType}): {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}");
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
                 return;

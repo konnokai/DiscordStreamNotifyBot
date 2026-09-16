@@ -424,7 +424,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             {
                 // 通知設定改讀記憶體快取（§12.3）
                 var noticeGuildList = _noticeCache.Get().Where((x) => x.NoticeTwitchUserId == dto.UserId).ToList();
-                Log.New($"發送 Twitch 通知 ({noticeGuildList.Count} / {noticeType}): ({dto.UserId}) - {dto.StreamTitle}");
+                Log.New($"發送 Twitch 通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))} / {noticeType}): ({dto.UserId}) - {dto.StreamTitle}");
                 var variants = new Dictionary<string, Lazy<TwitchNotificationVariant>>(StringComparer.Ordinal);
                 var guildsById = noticeGuildList
                     .Select(item => item.GuildId)
