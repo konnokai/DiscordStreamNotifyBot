@@ -139,10 +139,45 @@ Notifier 不會把非本 shard 的 guild 當成 delivery skip 計數，避免每
 
 1. 開啟 Grafana 的 **Dashboards -> New -> Import**。
 2. 上傳 `deploy/grafana/dashboards/coordinator-prometheus.json`。
-3. 選擇抓取四個角色的 Prometheus datasource。
-4. 依部署環境選擇 Coordinator、Scraper、Backend、Notifier 的 job / instance，必要時再選 Consumer Group。
+3. 選擇抓取四個角色的 Prometheus datasource、接收 log 的 Loki datasource，以及查詢 YouTube 配額的 Google Cloud Monitoring datasource。
+4. 在 **Google Cloud Project ID** 填入使用 YouTube API 的目標 Project ID；Google Cloud Monitoring 資料來源與目標專案皆為必填。
+5. 依部署環境選擇 Coordinator、Scraper、Backend、Notifier 的 job / instance，必要時再選 Consumer Group。
 
 Dashboard 預設每 30 秒更新、顯示最近 6 小時，涵蓋叢集與 Redis Streams、OAuth/token、YouTube 會員驗證、Twitch 訂閱驗證、三平台通知、Twitch spider/EventSub、Webhook、cleanup 與四個角色的程序資源使用量。
+
+### YouTube 官方每日配額
+
+「YouTube Queries per day（太平洋日）」折線圖位於「Google OAuth 與 YouTube 會員驗證」區塊內、現有會員驗證圖表下方，直接查詢 Google Cloud Monitoring，不使用 Bot 計數器或 exporter。匯入時將 `DS_GOOGLE_CLOUD_MONITORING` 對應到既有 `stackdriver` 類型資料來源，並填入 `GCP_PROJECT_ID`。圖中顯示日內累積用量與橘色每日上限參考線，底部圖例顯示最新數值。
+
+公開 JSON 不包含任何部署專用的 Project ID。Grafana 會將匯入參數保存為隱藏常數 `google_cloud_project`；兩個查詢的 `projectName`、MQL 的 `resource.project_id` 篩選與官方配額頁連結皆使用此常數。更換目標時，在 Dashboard settings → Variables 修改 `google_cloud_project`。若使用檔案 provisioning 而非匯入介面，須先替換 `__inputs` 的 datasource 與專案占位符。
+
+服務帳戶可以被授權讀取其他專案，因此帳戶 email 所屬專案不一定是 YouTube API 使用的專案。Google Cloud Monitoring 資料來源的 `defaultProject` 是另行保存的設定；本 dashboard 明確指定目標，不依賴空 `projectName` 的回退行為，也不從 email 推算。匯出供他人使用時，使用 repository 內的公開範本，不直接分享含部署值的線上 JSON。
+
+| 曲線 | 官方來源 |
+|---|---|
+| 已用配額 | `serviceruntime.googleapis.com/quota/rate/net_usage` 的 `DELTA` 增量加總 |
+| 每日上限 | `serviceruntime.googleapis.com/quota/limit`，`limit_name="defaultPerDayPerProject"` 的最新值，不寫死預設配額 |
+
+兩個查詢皆限定 `consumer_quota`、`service="youtube.googleapis.com"`、`quota_metric="youtube.googleapis.com/default"` 與目標 project。用量是配額單位，不是 HTTP 請求數。
+
+面板跟隨 dashboard 的時間範圍，不設定 `timeFrom` 或 `timeShift`，可查看多天歷史。每日配額在美國太平洋時間午夜重設；MQL 依每筆樣本的 `America/Los_Angeles` 日期分組，再以 `sliding(25h)` 加總同一天的增量。25 小時涵蓋夏令時間回撥的長日，只是聚合回看長度，不限制圖表範圍。以 `end() - 1ms` 判斷日期，讓午夜結束的前一分鐘增量歸前一天；聚合後再比對輸出日期，排除昨天的累積值在今天殘留，最後移除日期分組，呈現一條跨日重新累積的用量曲線。即使選擇日內短區間，仍會計入該日午夜至圖表起點的用量。
+
+Dashboard 的 `browser` 時區不變。兩個查詢使用 `every ${__interval}`，依時間範圍與圖表寬度調整取點間隔；面板最小間隔為官方取樣週期 `1m`。保留完整時間序列，不加 reduce transformation；圖例使用 `lastNotNull`，不可再對已累積的結果做 Total。
+
+`graphPeriod` 設為 `disabled`，避免 Grafana 額外取平均而改變累積終值。上限用 `next_older(1d)` 讀取最近回報值，涵蓋官方一天一次的取樣週期。未回報資料時顯示無資料／`N/A`，不補零；用量指標每 60 秒取樣，可有最多 240 秒的可見延遲。MQL 已結束 Google 客服支援，但仍可透過 Monitoring API 查詢；此處使用它原生的 IANA 時區轉換，避免自行維護 DST 公式。
+
+本地伺服器上的 Grafana 可使用服務帳戶驗證，帳戶需有目標專案的 `roles/monitoring.viewer`，並啟用 Monitoring API 與 Cloud Resource Manager API。私鑰只在 Grafana 資料來源設定頁提供，不加入 dashboard、repository 或對話。
+
+驗證時，從面板連結開啟目標專案的 [Google Cloud 配額頁](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas)，比對 `Queries per day`。亦可用 Builder 對同一 `quota/rate/net_usage` 指標選擇太平洋午夜至相同結束時間、`ALIGN_NONE`，依太平洋日加總原始增量並與 MQL 比對。歷史查詢應檢查多個太平洋日的累積終值，以及日內短範圍的第一點是否保留當日較早的用量；不要將測試專案的配額上限或用量寫死在範本中。
+
+參考：[Google 配額指標](https://docs.cloud.google.com/monitoring/alerts/using-quota-metrics)、[YouTube 配額與重設時間](https://developers.google.com/youtube/v3/determine_quota_cost)、[Grafana Google Cloud Monitoring 設定](https://grafana.com/docs/grafana/latest/datasources/google-cloud-monitoring/configure/)。
+
+修改面板後可先執行結構檢查，再比對上述官方資料：
+
+```powershell
+jq -e '.panels[] | select(.id == 54) | .type == "timeseries" and ((.transformations // []) | length) == 0 and .timeFrom == null and .timeShift == null and .interval == "1m" and all(.targets[]; .timeSeriesQuery.graphPeriod == "disabled" and (.timeSeriesQuery.query | contains("every ${__interval}")) and (.timeSeriesQuery.query | contains("${__to}") | not))' deploy/grafana/dashboards/coordinator-prometheus.json
+jq -e 'any(.__inputs[]; .name == "GCP_PROJECT_ID" and .type == "constant" and .value == "") and any(.templating.list[]; .name == "google_cloud_project" and .type == "constant" and .query == "${GCP_PROJECT_ID}") and all(.panels[] | select(.id == 54) | .targets[]; .timeSeriesQuery.projectName == "${google_cloud_project}" and (.timeSeriesQuery.query | contains("${google_cloud_project}")))' deploy/grafana/dashboards/coordinator-prometheus.json
+```
 
 ## 排障
 

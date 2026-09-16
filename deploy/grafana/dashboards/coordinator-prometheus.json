@@ -15,6 +15,21 @@
       "type": "datasource",
       "pluginId": "loki",
       "pluginName": "Loki"
+    },
+    {
+      "name": "DS_GOOGLE_CLOUD_MONITORING",
+      "label": "Google Cloud Monitoring",
+      "description": "請選擇可讀取目標專案官方 YouTube 配額指標的 Google Cloud Monitoring datasource（必選）。",
+      "type": "datasource",
+      "pluginId": "stackdriver",
+      "pluginName": "Google Cloud Monitoring"
+    },
+    {
+      "name": "GCP_PROJECT_ID",
+      "label": "Google Cloud Project ID",
+      "description": "請填入使用 YouTube API 的目標 Project ID，所選資料來源必須有該專案的 Monitoring Viewer 權限。",
+      "type": "constant",
+      "value": ""
     }
   ],
   "__requires": [
@@ -34,6 +49,12 @@
       "type": "datasource",
       "id": "loki",
       "name": "Loki",
+      "version": "1.0.0"
+    },
+    {
+      "type": "datasource",
+      "id": "stackdriver",
+      "name": "Google Cloud Monitoring",
       "version": "1.0.0"
     },
     {
@@ -836,8 +857,56 @@
       "type": "stat"
     },
     {
+      "datasource": { "type": "stackdriver", "uid": "${DS_GOOGLE_CLOUD_MONITORING}" },
+      "description": "目標 Google Cloud 專案的官方 Queries per day 配額，跟隨 dashboard 時間範圍展示歷史。quota/rate/net_usage 增量依 America/Los_Angeles 日期分組，計算每天午夜起的累積用量；不是 HTTP 請求數或滾動 24 小時。25 小時聚合回看涵蓋夏令時間回撥日，不限制圖表範圍。午夜結束的增量歸前一天，聚合後排除前一天殘留值。上限取各時間點的 defaultPerDayPerProject 回報值。官方用量可能延遲最多 240 秒；無樣本不視為 0。",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "decimals": 0,
+          "min": 0,
+          "noValue": "N/A",
+          "unit": "locale"
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "每日上限" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }, { "id": "custom.fillOpacity", "value": 0 }, { "id": "custom.lineWidth", "value": 1 }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 85 },
+      "id": 54,
+      "interval": "1m",
+      "links": [
+        { "targetBlank": true, "title": "Google Cloud 官方配額頁", "url": "https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas?project=${google_cloud_project:percentencode}" }
+      ],
+      "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        {
+          "aliasBy": "已用配額",
+          "queryType": "timeSeriesQuery",
+          "refId": "A",
+          "timeSeriesQuery": {
+            "graphPeriod": "disabled",
+            "projectName": "${google_cloud_project}",
+            "query": "fetch consumer_quota\n| metric 'serviceruntime.googleapis.com/quota/rate/net_usage'\n| filter resource.project_id == '${google_cloud_project}' && resource.service == 'youtube.googleapis.com' && metric.quota_metric == 'youtube.googleapis.com/default'\n| group_by [day: timestamp_to_string(end() - 1ms, '%Y-%m-%d', 'America/Los_Angeles')], sliding(25h), [used: sum(val())]\n| every ${__interval}\n| filter day == timestamp_to_string(end() - 1ms, '%Y-%m-%d', 'America/Los_Angeles')\n| group_by [], [used: sum(val())]"
+          }
+        },
+        {
+          "aliasBy": "每日上限",
+          "queryType": "timeSeriesQuery",
+          "refId": "B",
+          "timeSeriesQuery": {
+            "graphPeriod": "disabled",
+            "projectName": "${google_cloud_project}",
+            "query": "fetch consumer_quota\n| metric 'serviceruntime.googleapis.com/quota/limit'\n| filter resource.project_id == '${google_cloud_project}' && resource.service == 'youtube.googleapis.com' && metric.quota_metric == 'youtube.googleapis.com/default' && metric.limit_name == 'defaultPerDayPerProject'\n| align next_older(1d)\n| group_by [], [limit: min(val())]\n| every ${__interval}"
+          }
+        }
+      ],
+      "title": "YouTube Queries per day（太平洋日）",
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 85 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 93 },
       "id": 108,
       "panels": [],
       "title": "Twitch 訂閱驗證",
@@ -855,7 +924,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 86 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 94 },
       "id": 45,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -876,7 +945,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 86 },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 94 },
       "id": 46,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -899,7 +968,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 86 },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 94 },
       "id": 47,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -912,7 +981,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "description": "dashboard 時間範圍內 Twitch 訂閱重新驗證完整週期的 p95 耗時。",
       "fieldConfig": { "defaults": { "decimals": 1, "noValue": "N/A", "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 94 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 102 },
       "id": 48,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -925,7 +994,7 @@
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "description": "各 Notifier 等待寫入 MySQL 的 Twitch token rotation 數量，以及關機 drain 狀態。",
       "fieldConfig": { "defaults": { "decimals": 0, "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 94 },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 102 },
       "id": 49,
       "options": { "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "namePlacement": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true, "sizing": "auto", "valueMode": "color" },
       "targets": [
@@ -939,7 +1008,7 @@
       "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
       "description": "dashboard 時間範圍內 Notifier 關機等待 Twitch token rotation 寫入完成的 p95 耗時，取自關機完成 log。",
       "fieldConfig": { "defaults": { "decimals": 1, "noValue": "N/A", "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 94 },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 102 },
       "id": 50,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -950,7 +1019,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 102 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 110 },
       "id": 107,
       "panels": [],
       "title": "全平台通知",
@@ -968,7 +1037,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 103 },
+      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 111 },
       "id": 34,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -989,7 +1058,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 5, "x": 10, "y": 103 },
+      "gridPos": { "h": 8, "w": 5, "x": 10, "y": 111 },
       "id": 35,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "valueAndName", "wideLayout": true },
       "targets": [
@@ -1010,7 +1079,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 103 },
+      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 111 },
       "id": 36,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1031,7 +1100,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 111 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 119 },
       "id": 37,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1051,7 +1120,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 111 },
+      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 119 },
       "id": 38,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1072,7 +1141,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 111 },
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 119 },
       "id": 39,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1083,7 +1152,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 119 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 127 },
       "id": 109,
       "panels": [],
       "title": "CHZZK 偵測",
@@ -1096,7 +1165,7 @@
         "defaults": { "decimals": 0, "noValue": "0", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "unit": "short" },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 120 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 128 },
       "id": 51,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -1117,7 +1186,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 120 },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 128 },
       "id": 52,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1138,7 +1207,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 120 },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 128 },
       "id": 53,
       "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto", "wideLayout": true },
       "targets": [
@@ -1149,7 +1218,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 128 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 136 },
       "id": 105,
       "panels": [],
       "title": "程序資源",
@@ -1166,7 +1235,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 129 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 137 },
       "id": 27,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1189,7 +1258,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 129 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 137 },
       "id": 28,
       "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -1220,6 +1289,17 @@
   ],
   "templating": {
     "list": [
+      {
+        "current": { "text": "${GCP_PROJECT_ID}", "value": "${GCP_PROJECT_ID}" },
+        "description": "匯入時指定的 YouTube API 目標專案；更換專案時修改此常數，不從服務帳戶 email 推算。",
+        "hide": 2,
+        "label": "Google Cloud Project ID",
+        "name": "google_cloud_project",
+        "options": [{ "selected": true, "text": "${GCP_PROJECT_ID}", "value": "${GCP_PROJECT_ID}" }],
+        "query": "${GCP_PROJECT_ID}",
+        "skipUrlSync": true,
+        "type": "constant"
+      },
       {
         "current": {},
         "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
@@ -1372,6 +1452,6 @@
   "timezone": "browser",
   "title": "直播小幫手 - 整體服務",
   "uid": "discord-stream-coordinator",
-  "version": 4,
+  "version": 6,
   "weekStart": "monday"
 }
