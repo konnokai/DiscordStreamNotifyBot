@@ -1,6 +1,7 @@
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Scraper.Detection.Chzzk;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.HttpClients.Chzzk.Model;
 
 namespace DiscordStreamNotifyBot.Tests
 {
@@ -171,6 +172,56 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("테스트 채널", dto.ChannelName);
         }
 
+        [Theory]
+        [InlineData(null, false)]
+        [InlineData("WAIT", false)]
+        [InlineData(null, true)]
+        [InlineData("WAIT", true)]
+        public void UnknownObservationNeverEstablishesBaselineOrConfirmsClose(string status, bool initialized)
+        {
+            var spider = new ChzzkSpider
+            {
+                ChannelId = "channel-1", CurrentStreamKey = initialized ? Key1 : null,
+                InitializedAt = initialized ? Now.AddDays(-1) : null
+            };
+            var current = initialized ? new ChzzkStream
+            {
+                StreamKey = Key1, Status = ChzzkStreamStatus.PendingClose,
+                LastObservedAt = Now - ChzzkPollPolicy.CloseConfirmationDelay
+            } : null;
+
+            Assert.Equal(ChzzkPollAction.Unknown, ChzzkDetectionService.DecideObservation(spider, current,
+                new ChzzkLiveStatus { Status = status, OpenDate = "2026-09-15 13:41:52" }, Now, out _));
+        }
+
+        [Fact]
+        public void FirstCloseObservationWithoutOpenDateOnlyEstablishesBaseline()
+        {
+            Assert.Equal(ChzzkPollAction.BaselineOffline, ChzzkDetectionService.DecideObservation(
+                new ChzzkSpider { ChannelId = "channel-1" }, null,
+                new ChzzkLiveStatus { Status = "CLOSE" }, Now, out _));
+        }
+
+        [Theory]
+        [InlineData("OPEN", "2026-09-15 13:41:52", nameof(ChzzkPollAction.CancelPendingClose))]
+        [InlineData("OPEN", "2026-09-15 18:00:00", nameof(ChzzkPollAction.SupersedeAndTrack))]
+        [InlineData("CLOSE", "2026-09-15 18:00:00", nameof(ChzzkPollAction.Ignore))]
+        [InlineData("CLOSE", null, nameof(ChzzkPollAction.Unknown))]
+        [InlineData("CLOSE", "invalid", nameof(ChzzkPollAction.Unknown))]
+        [InlineData("OPEN", null, nameof(ChzzkPollAction.Unknown))]
+        public void PendingObservationUsesStatusAndValidSameSession(string status, string openDate, string expected)
+        {
+            var spider = new ChzzkSpider { ChannelId = "channel-1", CurrentStreamKey = Key1, InitializedAt = Now.AddDays(-1) };
+            var current = new ChzzkStream
+            {
+                StreamKey = Key1, Status = ChzzkStreamStatus.PendingClose,
+                LastObservedAt = Now - ChzzkPollPolicy.CloseConfirmationDelay
+            };
+
+            Assert.Equal(expected, ChzzkDetectionService.DecideObservation(spider, current,
+                new ChzzkLiveStatus { Status = status, OpenDate = openDate }, Now, out _).ToString());
+        }
+
         [Fact]
         public void NotificationFactoryLeavesMissingCloseTimeNull()
         {
@@ -187,6 +238,40 @@ namespace DiscordStreamNotifyBot.Tests
 
             Assert.NotNull(dto.StreamStartAt);
             Assert.Null(dto.StreamEndAt);
+        }
+
+        [Fact]
+        public async Task FailedClosePublishKeepsPendingStateAndCanRetryAfterFreshConfirmation()
+        {
+            var since = Now - ChzzkPollPolicy.CloseConfirmationDelay;
+            var spider = new ChzzkSpider { ChannelId = "channel-1", CurrentStreamKey = Key1, InitializedAt = since };
+            var current = new ChzzkStream
+            {
+                ChannelId = spider.ChannelId, StreamKey = Key1, OpenDateRaw = "2026-09-15 13:41:52",
+                Status = ChzzkStreamStatus.PendingClose, LastObservedAt = since
+            };
+            var status = new ChzzkLiveStatus
+            {
+                Status = "CLOSE", OpenDate = current.OpenDateRaw, CloseDate = "2026-09-15 15:20:00"
+            };
+
+            await Assert.ThrowsAsync<IOException>(() => ChzzkDetectionService.ConfirmCloseAsync(
+                spider, current, status.CloseDate, Now, _ => Task.FromException(new IOException("Redis unavailable"))));
+
+            Assert.Equal(ChzzkStreamStatus.PendingClose, current.Status);
+            Assert.Equal(since, current.LastObservedAt);
+            Assert.Equal(ChzzkPollAction.ConfirmClose,
+                ChzzkDetectionService.DecideObservation(spider, current, status, Now, out _));
+
+            await ChzzkDetectionService.ConfirmCloseAsync(spider, current, status.CloseDate, Now, dto =>
+            {
+                Assert.Equal(ChzzkStreamStatus.PendingClose, current.Status);
+                Assert.Equal(ChzzkNoticeType.EndStream, dto.NoticeType);
+                Assert.Equal(Key1, dto.StreamKey);
+                return Task.CompletedTask;
+            });
+            Assert.Equal(ChzzkStreamStatus.Closed, current.Status);
+            Assert.Equal(Now, current.LastObservedAt);
         }
     }
 }

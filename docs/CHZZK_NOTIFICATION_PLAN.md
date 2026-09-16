@@ -1,6 +1,6 @@
 # CHZZK 直播通知實作計畫
 
-建立日期：2026-09-15。本文為交接計畫，尚未實作。
+建立日期：2026-09-15。已實作，驗證現況見 §13，關台通知修正見 §14。
 
 ## 1. 目標與範圍
 
@@ -357,3 +357,12 @@ streamKey 的 openDate 正規化（使用者 2026-09-15 指定）：`2026-09-15 
 - 真實頻道長時間觀察：同頻道 OPEN→CLOSE→重開、斷線恢復、平台是否變更 openDate。
 - Web 端：實際 Backend＋Bot 連線下的表單操作與錯誤狀態顯示（未在瀏覽器實測）。
 - 已知限制：Web 前端新增爬蟲按鈕以 `count >= limit` 停用，官方 guild 的伺服器端豁免未反映在 snapshot（沿用 Twitch 現行表示方式）；場次存在不等於 Discord 已送達，DB→Redis 程序中斷仍可能漏送；同鍵場次列已存在時（例如移除爬蟲後重新加入）接回既有場次且不重發。
+
+## 14. 關台通知修正（2026-09-16）
+
+- 根因：`ApplyObservationAsync` 原本僅在 OPEN 時建立 streamKey，CLOSE 一律帶 null 進入狀態機，被判定為不同場而忽略，無法進入 PendingClose。既有測試直接提供正確 facts，未涵蓋這段轉換。
+- 修正：OPEN／CLOSE 共用原有正規化鍵；未知 status 先拒絕，不能落入 CLOSE 建立基線。保留首次 CLOSE 不補發、同場三分鐘確認、同鍵恢復取消、不同鍵為新場的政策。不改既有 DB 鍵或 schema。
+- 關台發布對齊 Twitch：Redis 發布成功才保存 Closed；發布失敗保留 PendingClose，下一輪必須重新確認同場 CLOSE 才重試。不新增 outbox；發布成功但 DB 保存失敗仍可能重投，沿用 Notifier 既有去重與 checkpoint。開台的 DB→Redis 中斷漏送風險維持不變。
+- 回歸測試使用使用者回報的頻道、時間與持久化鍵，經 HTTP stub 解析後走實際觀察轉換，覆蓋延遲邊界、還原待確認狀態、播放器 STARTED 不影響 CLOSE、通知 DTO／去重鍵、未知與無效資料、恢復與換場，以及發布失敗重試。
+- 驗證：修正前回歸測試重現同場 CLOSE 被 Ignore；修正後完整 solution Release build 為 0 警告／0 錯誤，Release test 為 697 passed／38 skipped／0 failed。測試程序清空 MySQL／Redis component 連線環境變數以避免碰觸外部服務；`git diff --check` 通過，僅有 Git 換行轉換提示。
+- 未執行部署、正式 DB 修改或 Discord 傳訊。真實 API 轉換、DB／Redis／多 shard／Discord 端到端行為仍需部署後驗證；離線測試不代表外部流程已驗收。

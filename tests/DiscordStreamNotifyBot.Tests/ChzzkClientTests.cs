@@ -1,5 +1,9 @@
 using DiscordStreamNotifyBot.HttpClients.Chzzk;
 using DiscordStreamNotifyBot.SharedService.Chzzk;
+using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Scraper.Detection.Chzzk;
+using DiscordStreamNotifyBot.Shared.Messages;
+using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 
@@ -70,6 +74,73 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("테스트 채널", result.Channel.ChannelName);
             Assert.Equal("https://example.invalid/avatar.png", result.Channel.ChannelImageUrl);
             Assert.Contains($"/service/v1/channels/{ChannelId}", handler.LastRequestUri.AbsolutePath);
+        }
+
+        [Fact]
+        public async Task ReportedCloseReachesDelayedConfirmationWithPersistedNormalizedKey()
+        {
+            const string channelId = "64d76089fba26b180d9c9e48a32600d9";
+            const string key = channelId + ":20260915_175844";
+            var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {"code":200,"content":{
+                      "channelId":"64d76089fba26b180d9c9e48a32600d9",
+                      "status":"CLOSE","openDate":"2026-09-15 17:58:44","closeDate":"2026-09-16 03:04:30",
+                      "livePollingStatusJson":"{\"status\":\"STARTED\",\"isPublishing\":true,\"playableStatus\":\"PLAYABLE\"}"
+                    }}
+                    """, Encoding.UTF8, "application/json")
+            });
+            var client = CreateClient(handler);
+            var now = new DateTime(2026, 9, 15, 18, 5, 0, DateTimeKind.Utc);
+            var spider = new ChzzkSpider { ChannelId = channelId, CurrentStreamKey = key, InitializedAt = now.AddDays(-1) };
+            var current = new ChzzkStream
+            {
+                StreamKey = key, ChannelId = channelId, OpenDateRaw = "2026-09-15 17:58:44",
+                Status = ChzzkStreamStatus.Open,
+                LastObservedAt = new DateTime(2026, 9, 15, 18, 4, 28, DateTimeKind.Utc)
+            };
+            var result = await client.GetLiveStatusAsync(channelId);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ChzzkPollAction.StartPendingClose,
+                ChzzkDetectionService.DecideObservation(spider, current, result.Status, now, out var observedKey));
+            Assert.Equal(key, observedKey);
+
+            current.Status = ChzzkStreamStatus.PendingClose;
+            current.LastObservedAt = now;
+            Assert.Equal(ChzzkPollAction.Ignore,
+                ChzzkDetectionService.DecideObservation(spider, current, result.Status,
+                    now + ChzzkPollPolicy.CloseConfirmationDelay - TimeSpan.FromTicks(1), out _));
+
+            // 重新讀取 API 並還原持久化場次，確認重啟不會重設等待起點。
+            current = JsonConvert.DeserializeObject<ChzzkStream>(JsonConvert.SerializeObject(current));
+            result = await client.GetLiveStatusAsync(channelId);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ChzzkPollAction.ConfirmClose,
+                ChzzkDetectionService.DecideObservation(spider, current, result.Status,
+                    now + ChzzkPollPolicy.CloseConfirmationDelay, out _));
+            Assert.Equal(now, current.LastObservedAt);
+
+            ChzzkNotification notification = null;
+            await ChzzkDetectionService.ConfirmCloseAsync(spider, current, result.Status.CloseDate,
+                now + ChzzkPollPolicy.CloseConfirmationDelay, dto =>
+                {
+                    Assert.Equal(ChzzkStreamStatus.PendingClose, current.Status);
+                    notification = dto;
+                    return Task.CompletedTask;
+                });
+            var payload = JsonConvert.SerializeObject(notification);
+            Assert.Equal(ChzzkNoticeType.EndStream, notification.NoticeType);
+            Assert.Equal(ChzzkStreamStatus.Closed, current.Status);
+            Assert.Equal("2026-09-16 03:04:30", current.CloseDateRaw);
+            Assert.Equal(key, notification.StreamKey);
+            Assert.Equal(new DateTime(2026, 9, 15, 8, 58, 44, DateTimeKind.Utc), notification.StreamStartAt);
+            Assert.Equal(new DateTime(2026, 9, 15, 18, 4, 30, DateTimeKind.Utc), notification.StreamEndAt);
+            Assert.Equal($"notified:0:cz:{key}:1", NotificationDedupPolicy.TryGetKey(0, NotifyType.Chzzk, payload));
+            Assert.Equal(ChzzkPollAction.Ignore,
+                ChzzkDetectionService.DecideObservation(spider, current, result.Status,
+                    now + ChzzkPollPolicy.CloseConfirmationDelay, out _));
         }
 
         [Theory]

@@ -119,21 +119,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                 current = await db.ChzzkStreams
                     .SingleOrDefaultAsync(x => x.StreamKey == spider.CurrentStreamKey);
 
-            string knownStatus = ChzzkClient.TryGetKnownStatus(status.Status);
-            string streamKey = null;
-            bool hasValidStreamKey = knownStatus == ChzzkLiveStatusValues.Open &&
-                ChzzkStreamIdentity.TryCreate(channelId, status.OpenDate, out streamKey);
-
             DateTime now = DateTime.UtcNow;
-            var action = ChzzkPollPolicy.Decide(new ChzzkPollFacts(
-                IsOpen: knownStatus == ChzzkLiveStatusValues.Open,
-                HasValidStreamKey: hasValidStreamKey,
-                StreamKey: streamKey,
-                IsInitialized: spider.InitializedAt != null,
-                CurrentStreamKey: spider.CurrentStreamKey,
-                CurrentStatus: current?.Status,
-                PendingCloseSinceUtc: current is { Status: ChzzkStreamStatus.PendingClose } ? current.LastObservedAt : null,
-                NowUtc: now));
+            var action = DecideObservation(spider, current, status, now, out string streamKey);
 
             // 需要目前場次的動作若找不到資料列（異常資料），不捏造場次，下一輪重新觀察。
             if (current == null && action is ChzzkPollAction.RefreshObserved or ChzzkPollAction.CancelPendingClose
@@ -146,7 +133,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
             switch (action)
             {
                 case ChzzkPollAction.Unknown:
-                    Log.Warn($"CHZZK 觀察資料無法識別，本輪不更新狀態：{channelId} / status={knownStatus ?? status.Status}");
+                    Log.Warn($"CHZZK 觀察資料無法識別，本輪不更新狀態：{channelId} / status={status.Status}");
                     return;
 
                 case ChzzkPollAction.Ignore:
@@ -179,11 +166,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                     return;
 
                 case ChzzkPollAction.ConfirmClose:
-                    current.Status = ChzzkStreamStatus.Closed;
-                    current.CloseDateRaw = status.CloseDate;
-                    current.LastObservedAt = now;
+                    await ConfirmCloseAsync(spider, current, status.CloseDate, now, PublishAsync);
                     await db.SaveChangesAsync();
-                    await PublishAsync(CreateNotification(spider, current, ChzzkNoticeType.EndStream));
                     return;
 
                 case ChzzkPollAction.TrackNewStream:
@@ -229,10 +213,48 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
             }
         }
 
+        /// <summary>將 API 觀察與持久化場次轉為決策；獨立於 I/O，讓測試涵蓋實際輪詢使用的場次鍵轉換。</summary>
+        internal static ChzzkPollAction DecideObservation(ChzzkSpider spider, ChzzkStream current,
+            ChzzkLiveStatus status, DateTime now, out string streamKey)
+        {
+            string knownStatus = ChzzkClient.TryGetKnownStatus(status.Status);
+            streamKey = null;
+            if (knownStatus == null)
+                return ChzzkPollAction.Unknown;
+
+            // OPEN 與 CLOSE 都需要相同的場次鍵；只有首次 CLOSE 建立離線基線時不需識別上一場。
+            bool hasValidStreamKey = ChzzkStreamIdentity.TryCreate(spider.ChannelId, status.OpenDate, out streamKey);
+            if (!hasValidStreamKey && (knownStatus == ChzzkLiveStatusValues.Open || spider.InitializedAt != null))
+                return ChzzkPollAction.Unknown;
+
+            return ChzzkPollPolicy.Decide(new ChzzkPollFacts(
+                IsOpen: knownStatus == ChzzkLiveStatusValues.Open,
+                HasValidStreamKey: hasValidStreamKey,
+                StreamKey: streamKey,
+                IsInitialized: spider.InitializedAt != null,
+                CurrentStreamKey: spider.CurrentStreamKey,
+                CurrentStatus: current?.Status,
+                PendingCloseSinceUtc: current is { Status: ChzzkStreamStatus.PendingClose } ? current.LastObservedAt : null,
+                NowUtc: now));
+        }
+
         private static void ApplySnapshot(ChzzkStream stream, ChzzkLiveStatus status)
         {
             stream.StreamTitle = status.LiveTitle;
             stream.CategoryName = status.LiveCategoryValue;
+        }
+
+        /// <summary>
+        /// 對齊 Twitch：發布成功才標記關台，失敗保留 PendingClose 供下一輪重新確認並重試。
+        /// 發布成功後若 DB 保存失敗仍可能重投，由既有 Notifier 去重；不提供跨系統交易保證。
+        /// </summary>
+        internal static async Task ConfirmCloseAsync(ChzzkSpider spider, ChzzkStream stream,
+            string closeDate, DateTime now, Func<ChzzkNotification, Task> publishAsync)
+        {
+            stream.CloseDateRaw = closeDate;
+            await publishAsync(CreateNotification(spider, stream, ChzzkNoticeType.EndStream));
+            stream.Status = ChzzkStreamStatus.Closed;
+            stream.LastObservedAt = now;
         }
 
         /// <summary>
@@ -269,15 +291,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                 ? $"CHZZK 開台：{notification.ChannelName} ({notification.StreamKey}) - {notification.StreamTitle}"
                 : $"CHZZK 關台：{notification.ChannelName} ({notification.StreamKey}) - {notification.StreamTitle}");
 
-            try
-            {
-                await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Chzzk, notification);
-            }
-            catch (Exception ex)
-            {
-                // 場次狀態已保存：發布失敗不會重發，屬計畫 §5 已接受的 DB→Redis 中斷風險。
-                Log.Error(ex.Demystify(), $"發布 CHZZK 通知失敗：{notification.StreamKey} / {notification.NoticeType}");
-            }
+            // 讓輪詢端處理失敗，關台不可因吞掉例外而保存為 Closed。
+            await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Chzzk, notification);
         }
     }
 }

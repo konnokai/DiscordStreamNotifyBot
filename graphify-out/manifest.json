@@ -2088,9 +2088,9 @@
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Chzzk/ChzzkDetectionService.cs": {
-    "mtime": 1789461220.6076086,
-    "seen": 1789461897.6857755,
-    "ast_hash": "fdc45fe04cfe93e3fc2b62de5e32de9e",
+    "mtime": 1789530366.9744427,
+    "seen": 1789530587.1348622,
+    "ast_hash": "a95137c5becf1a095219a935ad191390",
     "semantic_hash": ""
   },
   "src/DiscordStreamNotifyBot.Scraper/Detection/Chzzk/ChzzkStateDecisions.cs": {
@@ -2154,15 +2154,15 @@
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/ChzzkClientTests.cs": {
-    "mtime": 1789460864.4204032,
-    "seen": 1789461897.68589,
-    "ast_hash": "74f5c727847e32f519231fcc4ae9203d",
+    "mtime": 1789530366.9759643,
+    "seen": 1789530587.1349769,
+    "ast_hash": "3ebad65959c7f640ab2191bd6ec6e1a4",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/ChzzkPollPolicyTests.cs": {
-    "mtime": 1789461280.8417115,
-    "seen": 1789461897.685891,
-    "ast_hash": "37012e00f7441f88d2d0a6873eb4f470",
+    "mtime": 1789530366.976472,
+    "seen": 1789530587.1349778,
+    "ast_hash": "ff8753d3a0ec147453ad24f548b56717",
     "semantic_hash": ""
   },
   "tests/DiscordStreamNotifyBot.Tests/ChzzkStreamIdentityTests.cs": {
@@ -2190,9 +2190,9 @@
     "semantic_hash": ""
   },
   "docs/CHZZK_NOTIFICATION_PLAN.md": {
-    "mtime": 1789461260.0129485,
-    "seen": 1789461897.6859646,
-    "ast_hash": "00f4ef05e4c0159eaff4747c85e692d1",
+    "mtime": 1789530433.0882025,
+    "seen": 1789530587.1350527,
+    "ast_hash": "f0a42399e991caa208b39877fc68707f",
     "semantic_hash": ""
   }
 }
