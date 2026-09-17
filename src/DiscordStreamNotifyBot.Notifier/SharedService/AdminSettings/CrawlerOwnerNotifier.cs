@@ -1,14 +1,11 @@
 using DiscordStreamNotifyBot.Interaction;
-using DiscordStreamNotifyBot.SharedService.Chzzk;
 
 namespace DiscordStreamNotifyBot.SharedService.AdminSettings
 {
     internal enum CrawlerPlatform
     {
         Youtube,
-        Twitch,
-        Twitcasting,
-        Chzzk
+        Twitch
     }
 
     /// <summary>在爬蟲成功新增後私訊 Bot 擁有者，提供與 Slash 指令相同的維運按鈕。</summary>
@@ -58,16 +55,12 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             string platformName = platform switch
             {
                 CrawlerPlatform.Youtube => "YouTube",
-                CrawlerPlatform.Twitch => "Twitch",
-                CrawlerPlatform.Chzzk => "CHZZK",
-                _ => "TwitCasting"
+                _ => "Twitch"
             };
             string sourceUrl = platform switch
             {
                 CrawlerPlatform.Youtube => $"https://www.youtube.com/channel/{sourcePath}",
-                CrawlerPlatform.Twitch => $"https://twitch.tv/{sourcePath}",
-                CrawlerPlatform.Chzzk => ChzzkUrls.Channel(sourcePath),
-                _ => $"https://twitcasting.tv/{sourcePath}"
+                _ => $"https://twitch.tv/{sourcePath}"
             };
             var embed = new EmbedBuilder()
                 .WithOkColor()
@@ -79,28 +72,19 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
 
             if (platform == CrawlerPlatform.Youtube)
             {
-                embed.AddField("認可頻道", "否", true)
-                    .AddField("錄影頻道", "否", true);
+                embed.AddField("認可頻道", "否", true);
                 components
                     .WithButton("加入認可頻道", $"spider_youtube:trusted:{sourceId}", ButtonStyle.Success)
-                    .WithButton("移除認可頻道", $"spider_youtube:untrusted:{sourceId}", ButtonStyle.Danger)
-                    .WithButton("加入錄影頻道", $"spider_youtube:record:{sourceId}", ButtonStyle.Success, row: 1)
-                    .WithButton("移除錄影頻道", $"spider_youtube:unrecord:{sourceId}", ButtonStyle.Danger, row: 1);
-            }
-            else if (platform == CrawlerPlatform.Chzzk)
-            {
-                // 首版不含警告名單與錄影切換：不提供任何管理按鈕。
+                    .WithButton("移除認可頻道", $"spider_youtube:untrusted:{sourceId}", ButtonStyle.Danger);
             }
             else
             {
-                string buttonPrefix = platform == CrawlerPlatform.Twitch ? "spider_twitch" : "spider_tc";
-                if (platform == CrawlerPlatform.Twitch)
-                    embed.AddField("是否使用 OAuth 忽略人數要求", oauthBypass ? "是" : "否", false);
+                embed.AddField("是否使用 OAuth 忽略人數要求", oauthBypass ? "是" : "否", false);
                 embed.AddField("頻道狀態", "普通", true)
                     .AddField("頻道錄影", "關閉", true);
                 components
-                    .WithButton("切換頻道狀態", $"{buttonPrefix}:warning:{sourceId}", ButtonStyle.Danger)
-                    .WithButton("切換頻道錄影", $"{buttonPrefix}:record:{sourceId}", ButtonStyle.Success);
+                    .WithButton("切換頻道狀態", $"spider_twitch:warning:{sourceId}", ButtonStyle.Danger)
+                    .WithButton("切換頻道錄影", $"spider_twitch:record:{sourceId}", ButtonStyle.Success);
             }
 
             return (embed.Build(), components.Build());

@@ -151,15 +151,14 @@ namespace DiscordStreamNotifyBot.Interaction.Help
             if (string.IsNullOrWhiteSpace(module) && string.IsNullOrWhiteSpace(command))
             {
                 string modulesPath = CommandDisplayResolver.GetCommandPath(locale, "help", "get-all-modules");
-                string nowStreamingPath = CommandDisplayResolver.GetCommandPath(locale, "youtube", "now-streaming");
-                string recordPath = CommandDisplayResolver.GetCommandPath(locale, "youtube", "list-record-channel");
+                string commandsPath = CommandDisplayResolver.GetCommandPath(locale, "help", "get-all-commands");
                 string bannerPath = CommandDisplayResolver.GetCommandPath(locale, "youtube", "set-banner-change");
                 string bannerHelpPath = CommandDisplayResolver.GetCommandPath(locale, "help", "get-command-help");
                 var embed = new EmbedBuilder()
                     .WithOkColor()
                     .WithTitle(BotLocalizer.Format("Help.Overview.Title", locale, Program.Version))
                     .WithDescription(BotLocalizer.Format("Help.Overview.Description", locale,
-                        nowStreamingPath, recordPath, bannerPath, bannerHelpPath,
+                        modulesPath, commandsPath, bannerPath, bannerHelpPath,
                         Format.Url("ECPay", DiscordStreamNotifyBot.Utility.ECPayUrl),
                         Format.Url("PayPal", DiscordStreamNotifyBot.Utility.PaypalUrl)))
                     .WithFooter(BotLocalizer.Format("Help.Overview.Footer", locale, modulesPath));

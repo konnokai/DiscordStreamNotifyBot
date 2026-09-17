@@ -8,7 +8,6 @@ using DiscordStreamNotifyBot.SharedService.AdminSettings;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 using DiscordStreamNotifyBot.SharedService.Member;
 using Google.Apis.YouTube.v3;
-using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using Polly;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
@@ -40,16 +39,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             Delete
         }
 
-        public enum NowStreamingHost
-        {
-            [ChoiceDisplay("Holo")]
-            Holo,
-            //[ChoiceDisplay("彩虹社")]
-            //Niji
-        }
-
-        public bool IsRecord { get; set; } = true;
-
         /// <summary>YouTube API 用戶端，委派至 Shared 的 <see cref="Shared.YoutubeApiService"/>（單一來源）。</summary>
         public YouTubeService YouTubeService => _apiService.YouTubeService;
 
@@ -65,7 +54,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly GuildLocaleService _guildLocaleService;
         private readonly CommandDisplayResolver _commandDisplayResolver;
         private readonly EmojiService _emojiService;
-        private readonly NotifierMetrics _metrics;
         private readonly MemberOperationCoordinator _operationCoordinator;
         private readonly ClusterQueryService _clusterQuery;
 
@@ -73,7 +61,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
             Shared.YoutubeApiService apiService, BotLocalizer localizer,
             GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver,
-            NotifierMetrics metrics, MemberOperationCoordinator operationCoordinator,
+            MemberOperationCoordinator operationCoordinator,
             ClusterQueryService clusterQuery)
         {
             _client = client;
@@ -85,7 +73,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _guildLocaleService = guildLocaleService;
             _commandDisplayResolver = commandDisplayResolver;
             _emojiService = emojiService;
-            _metrics = metrics;
             _operationCoordinator = operationCoordinator;
             _clusterQuery = clusterQuery;
             _noticeCache = new NoticeCache<NoticeYoutubeStreamChannel>(dbService, db => db.NoticeYoutubeStreamChannel.AsNoTracking().ToList());
@@ -119,12 +106,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             {
                 sourceId = await GetChannelIdAsync(source);
                 using var db = _dbService.GetDbContext();
-                bool managed = await db.HoloVideos.AsNoTracking().AnyAsync(x => x.ChannelId == sourceId, cancellationToken) ||
-                    await db.NijisanjiVideos.AsNoTracking().AnyAsync(x => x.ChannelId == sourceId, cancellationToken);
-                if (managed && !await db.YoutubeChannelOwnedType.AsNoTracking()
-                    .AnyAsync(x => x.ChannelId == sourceId, cancellationToken))
-                    return AdminSettingsMutationResult.Rejected("crawler.source-ineligible");
-
                 int limit = await GetYoutubeCrawlerLimitAsync(db, guild.Id, cancellationToken);
                 var existing = await db.YoutubeChannelSpider.SingleOrDefaultAsync(
                     x => x.ChannelId == sourceId, cancellationToken);
@@ -241,8 +222,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
                 string sourceName = sourceId switch
                 {
-                    "holo" => "Hololive",
-                    "2434" => "Nijisanji",
                     "other" => "Other",
                     _ => await GetChannelTitle(sourceId)
                 };
@@ -347,45 +326,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         }
         #endregion
 
-        public async Task<Embed> GetNowStreamingChannel(NowStreamingHost host, string locale)
-        {
-            try
-            {
-                List<string> idList = new List<string>();
-                switch (host)
-                {
-                    case NowStreamingHost.Holo:
-                        {
-                            HtmlWeb htmlWeb = new HtmlWeb();
-                            HtmlDocument htmlDocument = htmlWeb.Load("https://schedule.hololive.tv/lives/all");
-                            idList.AddRange(htmlDocument.DocumentNode.Descendants()
-                                .Where((x) => x.Name == "a" &&
-                                    x.Attributes["href"].Value.StartsWith("https://www.youtube.com/watch") &&
-                                    x.Attributes["style"].Value.Contains("border: 3px"))
-                                .Select((x) => x.Attributes["href"].Value.Split("?v=")[1]));
-                        }
-                        break;
-                }
-
-                var video = YouTubeService.Videos.List("snippet");
-                video.Id = string.Join(",", idList);
-                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
-
-                EmbedBuilder embedBuilder = new EmbedBuilder().WithOkColor()
-                    .WithTitle(_localizer.Get("Youtube.NowStreaming.Title", locale))
-                    .WithThumbnailUrl("https://schedule.hololive.tv/dist/images/logo.png")
-                    .WithCurrentTimestamp()
-                    .WithDescription(string.Join("\n", videoResult.Items.Select((x) => $"{x.Snippet.ChannelTitle} - {Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}")}")));
-
-                return embedBuilder.Build();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"GetNowStreamingChannel: {host}");
-                return null;
-            }
-        }
-
         #region 通知匯流排消費端（重建 embed → 發送）
         /// <summary>通知匯流排消費端入口：將 scraper 發來的 DTO 還原為 embed 後送出。</summary>
         internal async Task DispatchFromBusAsync(YoutubeNotification dto, NotificationDeliveryProgress progress)
@@ -489,21 +429,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             if (!Bot.IsConnect)
                 throw new InvalidOperationException("Discord 尚未就緒，保留通知等待重試。");
 
-            NotificationMetricEvent metricEvent = NotifierMetrics.ToMetricEvent(dto.NoticeType);
-
-            string type;
-            switch (streamVideo.ChannelType)
-            {
-                case TableVideo.YTChannelType.Holo:
-                    type = "holo";
-                    break;
-                case TableVideo.YTChannelType.Nijisanji:
-                    type = "2434";
-                    break;
-                default:
-                    type = "other";
-                    break;
-            }
+            string type = "other";
 
             // 通知設定改讀記憶體快取（§12.3），降廣播 fan-out 下的 MySQL 壓力；快取為唯讀快照
             var allNotice = _noticeCache.Get();
@@ -514,7 +440,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 noticeYoutubeStreamChannels.AddRange(allNotice.Where((x) => x.YouTubeChannelId == streamVideo.ChannelId));
 
                 // 類型檢查：其他類型頻道必須未列入爬蟲清單，或已通過認可，才能加入類型通知。
-                if (type != "other" || db.YoutubeChannelSpider.AsNoTracking()
+                if (db.YoutubeChannelSpider.AsNoTracking()
                     .Where(x => x.ChannelId == streamVideo.ChannelId)
                     .Select(x => (bool?)x.IsTrustedChannel).FirstOrDefault() != false)
                 {
@@ -545,7 +471,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     if (progress.IsComplete(target))
                         continue;
                     NotificationDeliveryResult? deliveryResult = null;
-                    Stopwatch deliveryStopwatch = null;
                     bool primaryMessageSent = false;
                     bool retryRequired = false;
                     try
@@ -733,12 +658,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             continue;
                         }
 
-                        deliveryStopwatch = Stopwatch.StartNew();
                         await Policy.Handle<TimeoutException>()
                             .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                             .WaitAndRetryAsync(3, (retryAttempt) =>
                             {
-                                _metrics.RecordNotificationDeliveryRetry(metricEvent);
                                 var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
                                 Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {channel.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
@@ -813,15 +736,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     }
                     finally
                     {
-                        if (deliveryStopwatch != null)
-                        {
-                            deliveryStopwatch.Stop();
-                            _metrics.ObserveNotificationDeliveryDuration(metricEvent, deliveryStopwatch.Elapsed);
-                        }
-
                         if (deliveryResult.HasValue)
                         {
-                            _metrics.RecordNotificationDelivery(metricEvent, deliveryResult.Value);
                             if (!retryRequired)
                                 await progress.CompleteAsync(target);
                         }

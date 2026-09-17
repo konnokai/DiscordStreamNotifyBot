@@ -11,9 +11,7 @@ namespace DiscordStreamNotifyBot.Tests
         {
             Assert.Equal("youtube", NotifyType.Youtube);
             Assert.Equal("twitch", NotifyType.Twitch);
-            Assert.Equal("twitcasting", NotifyType.Twitcasting);
             Assert.Equal("banner", NotifyType.Banner);
-            Assert.Equal("youtube_member_video_log", NotifyType.YoutubeMemberVideoLog);
         }
 
         [Fact]
@@ -79,46 +77,19 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public void TwitcastingNotificationFieldsAndDefaultsMatchContract()
-        {
-            var json = JObject.FromObject(new TwitcastingNotification());
-
-            AssertFields(json,
-                "Category", "ChannelId", "ChannelTitle", "IsPrivate", "IsRecord", "StreamId",
-                "StreamStartAt", "StreamSubTitle", "StreamTitle", "ThumbnailUrl");
-            Assert.Equal(0, json.Value<int>("StreamId"));
-            Assert.Equal(default, json.Value<DateTime>("StreamStartAt"));
-            Assert.False(json.Value<bool>("IsPrivate"));
-            Assert.False(json.Value<bool>("IsRecord"));
-        }
-
-        [Fact]
         public void BannerChangeNotificationFieldsMatchContract()
         {
             AssertFields(JObject.FromObject(new BannerChangeNotification()), "ChannelId", "VideoId");
         }
 
         [Fact]
-        public void YoutubeMemberVideoLogFieldsAndDefaultsMatchContract()
-        {
-            var json = JObject.FromObject(new YoutubeMemberVideoLogNotification());
-
-            AssertFields(json,
-                "BotOwnerMessage", "CheckChannelId", "IsNeedRemove", "IsNeedSendToOwner",
-                "MessageArguments", "MessageCode");
-            Assert.True(json.Value<bool>("IsNeedRemove"));
-            Assert.True(json.Value<bool>("IsNeedSendToOwner"));
-            Assert.Equal(JTokenType.Null, json["MessageArguments"].Type);
-        }
-
-        [Fact]
         public void YoutubeChannelTypeValuesUsedByNotificationMatchContract()
         {
             Assert.Equal(
-                new[] { 0, 1, 2, 3 },
+                new[] { 0, 1 },
                 Enum.GetValues<Video.YTChannelType>().Select(value => (int)value));
             Assert.Equal(
-                new[] { "Holo", "Nijisanji", "Other", "NonApproved" },
+                new[] { "Other", "NonApproved" },
                 Enum.GetNames<Video.YTChannelType>());
         }
 

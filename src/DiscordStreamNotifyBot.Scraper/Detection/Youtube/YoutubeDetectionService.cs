@@ -2,7 +2,6 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
-using DiscordStreamNotifyBot.SharedService.Youtube.Json;
 using Google.Apis.YouTube.v3;
 using System.Collections.Concurrent;
 using Bot = DiscordStreamNotifyBot.Shared.BotState;
@@ -12,15 +11,13 @@ using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
 namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 {
     /// <summary>
-    /// YouTube 偵測服務（Scraper 專用）：排程爬取（Holo/Nijisanji/Other）、錄影程序 Redis 訂閱、
+    /// YouTube 偵測服務（Scraper 專用）：排程爬取（Other）、錄影程序 Redis 訂閱、
     /// PubSubHubbub 維護、到點提醒（reminder）排程，偵測到事件改 publish <see cref="YoutubeNotification"/> /
     /// <see cref="BannerChangeNotification"/> 至通知匯流排。YouTube API 一律經 Shared <see cref="Shared.YoutubeApiService"/>；
     /// 不碰 Discord gateway（發送、建立活動、換橫幅由 Notifier 消費匯流排後執行）。
     /// </summary>
     public partial class YoutubeDetectionService
     {
-        public bool IsRecord { get; set; } = true;
-        public ConcurrentBag<NijisanjiLiverJson> NijisanjiLiverContents { get; } = new ConcurrentBag<NijisanjiLiverJson>();
         public ConcurrentDictionary<string, ReminderItem> Reminders { get; } = new ConcurrentDictionary<string, ReminderItem>();
 
         public YouTubeService YouTubeService => _apiService.YouTubeService;
@@ -31,10 +28,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private readonly YoutubeVideoClaimCache _newStreamClaims = new(TimeProvider.System, NewStreamClaimTtl);
 
         private bool isSubscribing = false;
-        private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
+        private bool isFirstOther = true;
 
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly YoutubeTerminalEventRegistry _terminalEvents = new();
         private readonly MainDbService _dbService;
         private readonly Shared.YoutubeApiService _apiService;
@@ -44,9 +40,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
             _apiService = apiService;
-
-            _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
-            _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
 
             // 錄影程序 Redis 訂閱：偵測到事件改 publish DTO（不直接送 Discord）
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.startstream", RedisChannel.PatternMode.Literal), async (channel, videoData) =>
@@ -199,7 +192,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.429error", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
             {
                 Log.Info($"{channel} - {videoId}");
-                IsRecord = false;
 
                 try
                 {
@@ -266,9 +258,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             DataBase.Table.Video streamVideo;
                             var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
 
-                            if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) // 錄影頻道一律允許
-                                || db.NijisanjiVideos.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || // 可能是 2434 的頻道，允許
-                                (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel)) // 否則就確認這是不是允許的爬蟲
+                            if (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel) // 確認這是不是允許的爬蟲
                             {
                                 var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
                                 if (item == null)
@@ -372,13 +362,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             Log.Info("已建立 Redis 訂閱");
 
-            // 由 Bot 擁有者控制（取代原本的 Notifier 指令）：切換錄影 / 強制重新訂閱 PubSub
-            Bot.RedisSub.Subscribe(new RedisChannel("youtube.control.toggleRecord", RedisChannel.PatternMode.Literal), (channel, _) =>
-            {
-                IsRecord = !IsRecord;
-                Log.Info($"[控制] 直播錄影已{(IsRecord ? "開啟" : "關閉")}");
-            });
-
+            // 由 Bot 擁有者控制（取代原本的 Notifier 指令）：強制重新訂閱 PubSub
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), async (channel, _) =>
             {
                 Log.Info("[控制] 收到強制重新註冊 PubSub 要求");
@@ -414,8 +398,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             // 偵測排程（計畫 §12.1）：PeriodicRunner 以背景輪詢執行，支援 await、避免重入，並使用 CancellationToken。
             var token = GracefulShutdown.Token;
             PeriodicRunner.RunAsync("YT-reSchedule", TimeSpan.FromSeconds(5), TimeSpan.FromDays(1), () => { ReScheduleReminder(); return Task.CompletedTask; }, token);
-            PeriodicRunner.RunAsync("YT-holo", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5), HoloScheduleAsync, token);
-            PeriodicRunner.RunAsync("YT-niji", TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5), NijisanjiScheduleAsync, token);
             PeriodicRunner.RunAsync("YT-other", TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5), OtherScheduleAsync, token);
             PeriodicRunner.RunAsync("YT-checkSchedule", TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15), CheckScheduleTime, token);
             PeriodicRunner.RunAsync("YT-saveDb", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3), () =>
@@ -430,9 +412,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 #endif
 
             PeriodicRunner.RunAsync("YT-subscribePubSub", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30), SubscribePubSubAsync, token);
-
-            // 會限影片探索（原 Notifier 每 5 分鐘 Timer，搬來 Scraper 單例執行，避免多 shard 重複燒配額）
-            PeriodicRunner.RunAsync("YT-memberVideoCheck", TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5), CheckMemberShipOnlyVideoIdAsync, token);
 
             // 每日 00:00 定時檢查 YouTube 頻道名稱
             var now = DateTime.Now;
@@ -576,12 +555,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return false;
         }
 
-        private bool CanRecord(DataBase.Table.Video streamVideo)
-        {
-            using var db = _dbService.GetDbContext();
-            return IsRecord && db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
-        }
-
         internal async Task SubscribePubSubAsync()
         {
             if (isSubscribing)
@@ -679,45 +652,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"每日 YouTube 頻道名稱檢查任務失敗");
-            }
-        }
-
-        private async Task GetOrCreateNijisanjiLiverListAsync(string affiliation, bool forceRefresh = false)
-        {
-            if (!forceRefresh)
-            {
-                try
-                {
-                    if (await Bot.RedisDb.KeyExistsAsync($"youtube.nijisanji.liver.{affiliation}"))
-                    {
-                        var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(await Bot.RedisDb.StringGetAsync($"youtube.nijisanji.liver.{affiliation}"));
-                        foreach (var item in liver)
-                        {
-                            NijisanjiLiverContents.Add(item);
-                        }
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetRedisData-{affiliation}");
-                }
-            }
-
-            try
-            {
-                var json = await _nijisanjiApiHttpClient.GetStringAsync($"https://www.nijisanji.jp/api/livers?limit=300&orderKey=subscriber_count&order=asc&affiliation={affiliation}&locale=ja&includeAll=true");
-                var liver = JsonConvert.DeserializeObject<List<NijisanjiLiverJson>>(json);
-                await Bot.RedisDb.StringSetAsync($"youtube.nijisanji.liver.{affiliation}", JsonConvert.SerializeObject(liver), TimeSpan.FromDays(1));
-                foreach (var item in liver)
-                {
-                    NijisanjiLiverContents.Add(item);
-                }
-                Log.New($"GetOrCreateNijisanjiLiverListAsync: {affiliation} 已更新");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"GetOrCreateNijisanjiLiverListAsync-GetLiver-{affiliation}");
             }
         }
     }

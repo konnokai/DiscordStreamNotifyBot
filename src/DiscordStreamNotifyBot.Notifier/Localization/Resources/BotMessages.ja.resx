@@ -30,12 +30,6 @@
   <data name="Twitch.StreamStatus.Live" xml:space="preserve"><value>配信中</value></data>
   <data name="Twitch.StreamStatus.Offline" xml:space="preserve"><value>オフライン</value></data>
   <data name="Twitch.StreamStatus.Category" xml:space="preserve"><value>カテゴリー：{0}</value></data>
-  <data name="Twitcasting.PrivateStream.Yes" xml:space="preserve"><value>はい</value></data>
-  <data name="Twitcasting.PrivateStream.No" xml:space="preserve"><value>いいえ</value></data>
-  <data name="Twitcasting.Recording.Available" xml:space="preserve"><value>録画を視聴できます</value></data>
-  <data name="Member.CheckQueued" xml:space="preserve"><value>認証待ちに追加しました。完了まで最大 {0} 分かかる場合があります。</value></data>
-  <data name="Member.CheckSucceeded" xml:space="preserve"><value>メンバーシップ認証に成功しました。</value></data>
-  <data name="Member.CheckFailed" xml:space="preserve"><value>メンバーシップ認証に失敗しました。</value></data>
   <data name="Notifications.StartedAt" xml:space="preserve"><value>開始時刻：{0}</value></data>
   <data name="Notifications.EndedAt" xml:space="preserve"><value>終了時刻：{0}</value></data>
   <data name="Notifications.Duration" xml:space="preserve"><value>配信時間：{0}</value></data>
@@ -74,7 +68,6 @@
   <data name="Common.BotOwner" xml:space="preserve"><value>Bot の所有者</value></data>
   <data name="Common.LeftGuild" xml:space="preserve"><value>退出済みのサーバー</value></data>
   <data name="Common.Website" xml:space="preserve"><value>このウェブサイト</value></data>
-  <data name="Common.GoogleSecurity" xml:space="preserve"><value>Google アカウントの権限</value></data>
   <data name="Common.ChannelCountFooter" xml:space="preserve"><value>{0} / {1} チャンネル</value></data>
   <data name="Confirmation.TimeoutFooter" xml:space="preserve"><value>ボタンは 5 秒後に無効になります。すぐに選択するか、コマンドを再実行してください。</value></data>
   <data name="Components.NotAllowed" xml:space="preserve"><value>このコンポーネントを使用することはできません。</value></data>
@@ -85,7 +78,7 @@
   <data name="Help.Commands.Title" xml:space="preserve"><value>{0} のコマンド</value></data>
   <data name="Help.Commands.Footer" xml:space="preserve"><value>{0} でコマンドを選択し、詳細を表示できます。</value></data>
   <data name="Help.Overview.Title" xml:space="preserve"><value>直播小幫手 ビルド {0}</value></data>
-  <data name="Help.Overview.Description" xml:space="preserve"><value>konnokai が開発しています。&#10;&#10;直播小幫手は YouTube、Twitch、TwitCasting の配信通知、YouTube メンバーシップ認証、ロールの自動付与に対応しています。&#10;&#10;現在配信中のメンバーは {0}、録画対象チャンネルは {1} で確認できます。Boost レベル 2 のサーバーでは {2} で最新配信のサムネイルをサーバーバナーに設定できます。詳しい引数は {3} で確認してください。&#10;&#10;Bot を招待した後は通知専用チャンネルを作成し、チャンネルの表示、メッセージの送信、リンクの埋め込みを許可してください。設定ガイド：https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37&#10;&#10;{4} または {5} から直播小幫手を支援できます。</value></data>
+  <data name="Help.Overview.Description" xml:space="preserve"><value>konnokai が開発しています。&#10;&#10;直播小幫手は YouTube、Twitch の配信通知に対応しています。&#10;&#10;{0} と {1} で全コマンドモジュールとコマンドの説明を確認できます。Boost レベル 2 のサーバーでは {2} で最新配信のサムネイルをサーバーバナーに設定できます。詳しい引数は {3} で確認してください。&#10;&#10;Bot を招待した後は通知専用チャンネルを作成し、チャンネルの表示、メッセージの送信、リンクの埋め込みを許可してください。設定ガイド：https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37&#10;&#10;{4} または {5} から直播小幫手を支援できます。</value></data>
   <data name="Help.Overview.Footer" xml:space="preserve"><value>{0} ですべてのモジュールを表示できます。</value></data>
   <data name="Help.Errors.ModuleRequired" xml:space="preserve"><value>モジュールを選択してください。</value></data>
   <data name="Help.Errors.ModuleNotFound" xml:space="preserve"><value>モジュール `{0}` が見つからないか、その中に使用可能なコマンドがありません。</value></data>
@@ -100,17 +93,10 @@
   <data name="Help.CommandDetail.youtube.remove" xml:space="preserve"><value>YouTube の配信通知を削除します。&#10;`holo` は Holo 全体、`2434` はにじさんじ全体、`other` はその他の一部チャンネルの通知を削除します。&#10;`all` は YouTube の配信通知をすべて削除します。</value></data>
   <data name="Help.CommandDetail.youtube.set-message" xml:space="preserve"><value>通知メッセージを設定します。&#10;空欄にするとカスタム文を消去し、`-` を入力するとその通知種類を無効化します。&#10;先に配信通知を追加する必要があります。&#10;&#10;特定ロールへの通知に対応するため、Bot に全ロールへのメンション権限が必要です。</value></data>
   <data name="Help.CommandDetail.twitch.set-message" xml:space="preserve"><value>通知メッセージを設定します。&#10;空欄にするとカスタム文を消去し、`-` を入力するとその通知種類を無効化します。&#10;先に配信通知を追加する必要があります。&#10;&#10;特定ロールへの通知に対応するため、Bot に全ロールへのメンション権限が必要です。</value></data>
-  <data name="Help.CommandDetail.twitcasting.set-message" xml:space="preserve"><value>通知メッセージを設定します。&#10;空欄にするとカスタム文を消去します。&#10;先に配信通知を追加する必要があります。&#10;&#10;特定ロールへの通知に対応するため、Bot に全ロールへのメンション権限が必要です。</value></data>
   <data name="Help.CommandDetail.youtube-spider.add" xml:space="preserve"><value>組み込みグループ以外のチャンネル巡回を追加します。&#10;必要な場合は Bot の所有者へ問い合わせてください。</value></data>
   <data name="Help.CommandDetail.youtube-spider.remove" xml:space="preserve"><value>組み込みグループ以外のチャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
   <data name="Help.CommandDetail.twitch-spider.add" xml:space="preserve"><value>Twitch チャンネル巡回を追加します。&#10;サーバーのメンバー数が 200 人以上である必要があります。&#10;追加可能数は今後変更される場合があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
   <data name="Help.CommandDetail.twitch-spider.remove" xml:space="preserve"><value>Twitch チャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
-  <data name="Help.CommandDetail.twitcasting-spider.add" xml:space="preserve"><value>TwitCasting チャンネル巡回を追加します。&#10;サーバーのメンバー数が 500 人以上である必要があります。&#10;追加可能数は今後変更される場合があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
-  <data name="Help.CommandDetail.twitcasting-spider.remove" xml:space="preserve"><value>TwitCasting チャンネル巡回を削除します。&#10;追加したサーバーだけが削除できます。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.add-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを追加します。現在の上限は 5 チャンネルです。&#10;同じチャンネルを再追加すると付与ロールを変更できます。&#10;サーバーのメンバー数が 250 人以上である必要があります。必要な場合は Bot の所有者へ問い合わせてください。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.remove-member-check" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.set-check-video" xml:space="preserve"><value>メンバーシップ認証に使用する確認動画を手動指定します。&#10;複数の会員ランクがある場合は、低ランクの正規会員が失敗扱いにならないよう、最下位ランクで視聴できるメンバー限定動画を指定してください。&#10;自動探索は指定動画を上書きしません。動画が無効になると通知チャンネルに再設定の案内が送信されます。</value></data>
-  <data name="Help.CommandDetail.youtube-member-set.clear-check-video" xml:space="preserve"><value>メンバーシップ認証動画を自動選択に戻し、手動指定を解除します。</value></data>
   <data name="Utility.Ping" xml:space="preserve"><value>:ping_pong: レイテンシ：{0} ms</value></data>
   <data name="Utility.Invite" xml:space="preserve"><value>招待リンク：&lt;{0}&gt;</value></data>
   <data name="Utility.Status.Title" xml:space="preserve"><value>直播小幫手</value></data>
@@ -156,12 +142,8 @@
   <data name="Notifications.TypeDisabled" xml:space="preserve"><value>`{0}` の「{1}」通知を無効にしました。</value></data>
   <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>（この種類の通知は無効です）</value></data>
   <data name="Notifications.MessageListDescription" xml:space="preserve"><value>空欄はメッセージ未設定を表します。Embed 内のテキストはメンションを発生させません。</value></data>
-  <data name="Youtube.RecordList.Title" xml:space="preserve"><value>配信録画チャンネル一覧</value></data>
-  <data name="Youtube.RecordList.Empty" xml:space="preserve"><value>配信録画一覧にチャンネルがありません。</value></data>
-  <data name="Youtube.NowStreaming.Title" xml:space="preserve"><value>現在配信中</value></data>
-  <data name="Youtube.NowStreaming.Failed" xml:space="preserve"><value>現在の配信一覧を取得できませんでした。</value></data>
   <data name="Youtube.Upcoming.Title" xml:space="preserve"><value>今後の配信予定</value></data>
-  <data name="Youtube.Upcoming.Entry" xml:space="preserve"><value>{0}&#10;{1}&#10;配信時刻：{2}&#10;録画一覧：{3}</value></data>
+  <data name="Youtube.Upcoming.Entry" xml:space="preserve"><value>{0}&#10;{1}&#10;配信時刻：{2}</value></data>
   <data name="Youtube.MemberPlaylist" xml:space="preserve"><value>メンバー限定再生リスト：&lt;{0}&gt;</value></data>
   <data name="Youtube.Events.Enabled" xml:space="preserve"><value>`{0}` で新しい配信が予定されると、Bot が Discord イベントを作成します。</value></data>
   <data name="Youtube.Events.Disabled" xml:space="preserve"><value>`{0}` のイベント自動作成を無効にしました。</value></data>
@@ -197,10 +179,6 @@
   <data name="Youtube.Messages.ListTitle" xml:space="preserve"><value>YouTube 通知メッセージ一覧</value></data>
   <data name="YoutubeSpider.ManagedChannelRejected" xml:space="preserve"><value>このチャンネルは組み込みの取得元で管理されているため、巡回設定は不要です。</value></data>
   <data name="YoutubeSpider.TrustedChanged" xml:space="preserve"><value>`{0}` の承認チャンネル状態を「{1}」にしました。</value></data>
-  <data name="YoutubeSpider.AlreadyRecorded" xml:space="preserve"><value>このチャンネルはすでに録画一覧にあります。</value></data>
-  <data name="YoutubeSpider.RecordAdded" xml:space="preserve"><value>録画一覧に追加しました。</value></data>
-  <data name="YoutubeSpider.NotRecorded" xml:space="preserve"><value>このチャンネルは録画一覧にありません。</value></data>
-  <data name="YoutubeSpider.RecordRemoved" xml:space="preserve"><value>録画一覧から削除しました。</value></data>
   <data name="YoutubeSpider.ListTitle" xml:space="preserve"><value>YouTube 巡回一覧</value></data>
   <data name="YoutubeSpider.UntrustedListTitle" xml:space="preserve"><value>未承認の YouTube 巡回一覧</value></data>
   <data name="Spider.LimitReached" xml:space="preserve"><value>このサーバーにはすでに {0} 件の {1} 巡回設定があります。削除してから再試行してください。特別な要望は {2} で Bot の所有者へ連絡してください。</value></data>
@@ -231,103 +209,6 @@
   <data name="Twitch.Messages.ListTitle" xml:space="preserve"><value>Twitch 通知メッセージ一覧</value></data>
   <data name="TwitchSpider.MemberRequirement" xml:space="preserve"><value>このコマンドにはサーバーメンバーが `{0}` 人以上必要です。Bot が現在取得している人数は `{1}` 人です。Twitch 連携済みの本人が自分の承認済みチャンネルを追加する場合、この制限は適用されません。人数はキャッシュの影響を受ける場合があります。サポートが必要な場合は {2} を使用してください。</value></data>
   <data name="TwitchSpider.ListTitle" xml:space="preserve"><value>Twitch 配信巡回一覧</value></data>
-  <data name="Twitcasting.Errors.UserNotFound" xml:space="preserve"><value>TwitCasting ユーザーが見つかりません。正しい TwitCasting チャンネル URL または名前か確認してください。</value></data>
-  <data name="Twitcasting.Notifications.Added" xml:space="preserve"><value>`{0}` を TwitCasting 通知一覧に追加しました。{1}</value></data>
-  <data name="Twitcasting.Notifications.NoneConfigured" xml:space="preserve"><value>このサーバーには TwitCasting 配信通知が設定されていません。</value></data>
-  <data name="Twitcasting.Notifications.Empty" xml:space="preserve"><value>TwitCasting 配信通知一覧は空です。</value></data>
-  <data name="Twitcasting.Notifications.ListTitle" xml:space="preserve"><value>TwitCasting 配信通知一覧</value></data>
-  <data name="Twitcasting.Notifications.ConfigureFirst" xml:space="preserve"><value>`{0}` の TwitCasting 配信通知は設定されていません。先に {1} で追加してから通知メッセージを設定してください。</value></data>
-  <data name="Twitcasting.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>TwitCasting 配信通知が設定されていません。先に {0} で追加してください。</value></data>
-  <data name="Twitcasting.Messages.ListTitle" xml:space="preserve"><value>TwitCasting 通知メッセージ一覧</value></data>
-  <data name="TwitcastingSpider.ListTitle" xml:space="preserve"><value>TwitCasting 配信巡回一覧</value></data>
-  <data name="Member.Errors.Disabled" xml:space="preserve"><value>この Bot ではメンバーシップ認証が有効になっていません。{0} へ確認してください。</value></data>
-  <data name="Member.Errors.NotConfigured" xml:space="preserve"><value>このサーバーではメンバーシップ認証が設定されていません。サーバー管理者へ確認してください。</value></data>
-  <data name="Member.Errors.Initializing" xml:space="preserve"><value>初期化が完了していないチャンネルがあります。約 5 分後に再試行してください。</value></data>
-  <data name="Member.Errors.LoginRequired" xml:space="preserve"><value>{0} で Discord と Google にログインしてから、このコマンドをもう一度実行してください。</value></data>
-  <data name="Member.CheckQueuedWithDmNotice" xml:space="preserve"><value>認証待ちに追加しました。完了まで最大 {0} 分かかる場合があります。結果を受け取れるよう、このサーバーでサーバーメンバーからのダイレクトメッセージを許可してください。</value></data>
-  <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>チャンネルを選択</value></data>
-  <data name="Member.Select.Description" xml:space="preserve"><value>今回認証するチャンネルを選択してください。以前選択したチャンネルを今回選択しなかった場合、関連ロールを削除します。すぐに削除できない場合は Bot が自動で再試行します。</value></data>
-  <data name="Member.Select.SelectedCount" xml:space="preserve"><value>{0} チャンネルを選択済み</value></data>
-  <data name="Member.Select.Selected" xml:space="preserve"><value>選択済み</value></data>
-  <data name="Member.Select.Expired" xml:space="preserve"><value>このメンバーシップ認証メニューは期限切れです。`/youtube-member check` をもう一度実行してください。</value></data>
-  <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>このサーバーではまだメンバーシップ認証を実行していません。</value></data>
-  <data name="Member.CheckCancelled" xml:space="preserve"><value>このサーバーでのメンバーシップ認証と関連ロールを削除しました。</value></data>
-  <data name="Member.Errors.RoleCleanupPending" xml:space="preserve"><value>メンバーシップ認証は解除しましたが、一部の関連ロールがまだ削除されていません。Bot が自動で再試行します。</value></data>
-  <data name="Member.Errors.SaveFailed" xml:space="preserve"><value>データを保存できませんでした。{0} へ確認してください。</value></data>
-  <data name="Member.UnlinkPrompt" xml:space="preserve"><value>Discord と Google の連携を解除しますか？メンバーシップ認証ロールも削除されます。再取得するにはウェブサイトで再連携が必要です。</value></data>
-  <data name="Member.Unlinked" xml:space="preserve"><value>Discord と Google の連携を解除しました。</value></data>
-  <data name="Member.Errors.GoogleRevokeFailed" xml:space="preserve"><value>直播小幫手との連携は解除しましたが、Google 側の認可を取り消せませんでした。{0} で「直播小幫手會限確認」のアクセス権を削除してください。</value></data>
-  <data name="Member.Errors.UnlinkFailed" xml:space="preserve"><value>連携を解除できませんでした。{0} へ確認してください。</value></data>
-  <data name="Member.Errors.NothingToUnlink" xml:space="preserve"><value>解除できる連携データがありません。</value></data>
-  <data name="Member.Errors.ChannelListEmpty" xml:space="preserve"><value>現在、認証可能なメンバー限定チャンネルはありません。</value></data>
-  <data name="Member.ChannelList" xml:space="preserve"><value>現在認証可能なメンバー限定チャンネル：&#10;{0}</value></data>
-  <data name="Member.LinkedChannel" xml:space="preserve"><value>連携中の YouTube チャンネル：{0}</value></data>
-  <data name="Member.Errors.LinkedChannelUnavailable" xml:space="preserve"><value>連携中の YouTube チャンネルを取得できませんでした。ウェブサイトでの連携が完了し、Google アカウントに YouTube チャンネルがあることを確認してください。</value></data>
-  <data name="Member.Errors.LinkedChannelUnavailableWithOwner" xml:space="preserve"><value>連携中の YouTube チャンネルを取得できませんでした。ウェブサイトでの連携と YouTube チャンネルを確認してください。解決しない場合は {0} へ連絡してください。</value></data>
-  <data name="MemberSetting.LogChannelChanged" xml:space="preserve"><value>`{0}` をメンバーシップとサブスク認証のログチャンネルに設定しました。</value></data>
-  <data name="MemberSetting.Errors.ManageRolesRequired" xml:space="preserve"><value>Bot に「ロールの管理」権限が必要です。権限を付与してから再試行してください。</value></data>
-  <data name="MemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>everyone ロールをメンバーシップ認証用ロールに設定することはできません。</value></data>
-  <data name="MemberSetting.Errors.ManagedRole" xml:space="preserve"><value>連携サービスが管理するロールはメンバーシップ認証用ロールとして使用できません。</value></data>
-  <data name="MemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>このロールはすでに Twitch サブスク認証で使用されています。YouTube と Twitch の認証には異なるロールを使用してください。</value></data>
-  <data name="MemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>ロール `{0}` は Bot の最上位ロールより上にあります。Bot のロールを上へ移動してください。</value></data>
-  <data name="MemberSetting.Errors.DeletionPending" xml:space="preserve"><value>このチャンネルのメンバーシップ認証設定と関連ロールはまだ完全に削除されていないため、再設定できません。Bot に「ロールの管理」権限があり、関連ロールが Bot の最上位ロールより下にあることを確認してから、自動再試行が完了するまでお待ちください。</value></data>
-  <data name="MemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>前回のロール変更が完了していません。現在設定されているロールを指定して、同じ設定をもう一度実行してください。更新が完了すると、別のロールに変更できます。</value></data>
-  <data name="MemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定は保存されましたが、一部の認証済みメンバーへのロール変更が完了していません。Bot が変更前と変更後の両方のロールを管理できることを確認してください。権限とロールの順序に問題がなければ、しばらく待ってから同じロールを指定して、同じ設定をもう一度実行してください。</value></data>
-  <data name="MemberSetting.Errors.RemovePending" xml:space="preserve"><value>一部の関連ロールがまだ削除されていないため、このチャンネルのメンバーシップ認証設定の削除は完了していません。Bot が関連ロールを管理できることを確認してください。Bot が自動で再試行します。</value></data>
-  <data name="MemberSetting.Errors.SaveFailed" xml:space="preserve"><value>メンバーシップ認証設定の保存に失敗しました。しばらくしてから再試行してください。</value></data>
-  <data name="MemberSetting.Errors.ChannelLimit" xml:space="preserve"><value>このサーバーではすでに {0} 個のメンバーシップ認証チャンネルを使用しています。不要なチャンネルを削除してください。</value></data>
-  <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord の選択メニューは最大 {0} 項目です。不要なメンバーシップ認証チャンネルを削除してください。</value></data>
-  <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>このサーバーにはメンバーシップとサブスク認証のログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {0} を使用してください。ログチャンネルは必須です。</value></data>
-  <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>設定済みのメンバーシップとサブスク認証のログチャンネルが削除されました。新しいチャンネルを作成し、必要な権限を付与してから {0} を再実行してください。</value></data>
-  <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>`{0}` をメンバーシップ認証チャンネルに設定しました。認証成功時に `{1}` ロールを付与します。{2}</value></data>
-  <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>すぐに認証を開始できます。</value></data>
-  <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>約 5 分後に認証を開始してください。</value></data>
-  <data name="MemberSetting.Errors.ChannelNotConfigured" xml:space="preserve"><value>このチャンネルにはメンバーシップ認証が設定されていません。</value></data>
-  <data name="MemberSetting.ChannelRemoved" xml:space="preserve"><value>`{0}` のメンバーシップ認証設定を削除しました。</value></data>
-  <data name="MemberSetting.Errors.InvalidVideoId" xml:space="preserve"><value>動画 ID を解析できませんでした。正しい YouTube 動画 URL または 11 文字の動画 ID を入力してください。</value></data>
-  <data name="MemberSetting.Errors.ConfigureFirst" xml:space="preserve"><value>このチャンネルにはメンバーシップ認証が設定されていません。先に {0} で追加してください。</value></data>
-  <data name="MemberSetting.Errors.VideoNotMembersOnly" xml:space="preserve"><value>この動画はメンバー限定ではありません。認証用に使用すると全員が通過してしまいます。メンバー限定動画を指定してください。</value></data>
-  <data name="MemberSetting.Errors.CommentsDisabled" xml:space="preserve"><value>この動画はコメントが無効なため認証用に使用できません。別のメンバー限定動画を指定してください。</value></data>
-  <data name="MemberSetting.CheckVideoChanged" xml:space="preserve"><value>`{0}` の認証用動画を `{1}` に手動設定しました。自動探索では上書きされず、無効になった場合は再設定通知が送られます。</value></data>
-  <data name="MemberSetting.CheckVideoCleared" xml:space="preserve"><value>`{0}` を自動認証動画選択へ戻しました。約 {1} 分後に反映されます。</value></data>
-  <data name="MemberSetting.Errors.NoVerifiedMembers" xml:space="preserve"><value>認証に成功したメンバーはまだいません。</value></data>
-  <data name="MemberSetting.VerifiedListTitle" xml:space="preserve"><value>メンバーシップ認証済み一覧</value></data>
-  <data name="Member.Status.Channel" xml:space="preserve"><value>確認チャンネル</value></data>
-  <data name="Member.Status.State" xml:space="preserve"><value>状態</value></data>
-  <data name="Member.Status.DmUnavailable" xml:space="preserve"><value>&lt;@{0}&gt; にメッセージを送信できませんでした。サーバーメンバーからのダイレクトメッセージを許可するようユーザーに伝えてください。</value></data>
-  <data name="Member.Status.RoleMissing" xml:space="preserve"><value>{0} のメンバーシップ認証ロールが存在しません。再設定してください。</value></data>
-  <data name="Member.Status.ManageRolesMissing" xml:space="preserve"><value>メンバーシップ認証ロールを処理するには「ロールの管理」権限が必要です。権限を付与してから再試行してください。</value></data>
-  <data name="Member.Status.EveryoneRoleInvalid" xml:space="preserve"><value>everyone ロールはメンバーシップ認証ロールに設定できません。別のロールを設定してください。</value></data>
-  <data name="Member.Status.ManagedRoleInvalid" xml:space="preserve"><value>連携サービスが管理するロールはメンバーシップ認証に使用できません。この設定を削除しました。別のロールを設定してください。</value></data>
-  <data name="Member.Status.NotLoggedIn" xml:space="preserve"><value>未ログイン</value></data>
-  <data name="Member.Status.RefreshFailed" xml:space="preserve"><value>認証情報を更新できません</value></data>
-  <data name="Member.Status.CredentialExpired" xml:space="preserve"><value>Google 認証の有効期限切れ</value></data>
-  <data name="Member.Status.ManualVideoCommentsDisabled" xml:space="preserve"><value>手動指定したメンバー限定動画 `{0}` はコメントが無効になったため使用できません。{1} で下位プラン向けのメンバー限定動画を指定してください。</value></data>
-  <data name="Member.Status.ManualVideoDeleted" xml:space="preserve"><value>手動指定したメンバー限定動画 `{0}` は削除されました。{1} で下位プラン向けのメンバー限定動画を指定してください。</value></data>
-  <data name="Member.Status.RemoveRolePermissionMissing" xml:space="preserve"><value>Bot に「ロールの管理」権限がないためロールを削除できません。管理者が手動で削除し、Bot に必要な権限を付与してください。</value></data>
-  <data name="Member.Status.MembershipExpired" xml:space="preserve"><value>メンバーシップの有効期限切れ</value></data>
-  <data name="Member.Status.NotMember" xml:space="preserve"><value>メンバーシップを確認できません</value></data>
-  <data name="Member.Status.TimeCalculationError" xml:space="preserve"><value>Google 認証の時刻データが不正です</value></data>
-  <data name="Member.Status.GoogleInternalError" xml:space="preserve"><value>Google の内部エラーです。次回の実行時に再試行します</value></data>
-  <data name="Member.Status.GoogleBadRequest" xml:space="preserve"><value>Google へのリクエストが無効です。次回の実行時に再試行します</value></data>
-  <data name="Member.Status.QuotaExceeded" xml:space="preserve"><value>API クォータを使い切りました。明日再試行します</value></data>
-  <data name="Member.Status.UnknownError" xml:space="preserve"><value>認証中に不明なエラーが発生しました</value></data>
-  <data name="Member.Status.VerifiedRolePermissionFailed" xml:space="preserve"><value>認証には成功しましたが、権限不足のためロールを付与できません</value></data>
-  <data name="Member.Status.UnknownUser" xml:space="preserve"><value>ユーザーが見つかりません</value></data>
-  <data name="Member.Status.VerifiedRoleUnknownError" xml:space="preserve"><value>認証には成功しましたが、ロール付与中に不明なエラーが発生しました</value></data>
-  <data name="Member.Status.Verified" xml:space="preserve"><value>認証済み</value></data>
-  <data name="Member.Status.OldCheckComplete" xml:space="preserve"><value>既存メンバーの認証が完了しました</value></data>
-  <data name="Member.Status.NewCheckComplete" xml:space="preserve"><value>新規メンバーの認証が完了しました</value></data>
-  <data name="Member.Status.CheckSummary" xml:space="preserve"><value>認証チャンネル：{0}&#10;{1} 人を確認し、そのうち {2} 人が認証に成功しました。</value></data>
-  <data name="Member.Background.LoginRequired" xml:space="preserve"><value>ログインしていません。{0} でログインし、サーバーに戻って {1} を実行してください。</value></data>
-  <data name="Member.Background.RefreshFailed" xml:space="preserve"><value>Google 認証情報を更新できませんでした。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>
-  <data name="Member.Background.CredentialExpired" xml:space="preserve"><value>Google 認証の有効期限が切れています。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>
-  <data name="Member.Background.MembershipExpired" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップが失効しました。認証を取り消すには {2}、メンバーシップ更新後に再認証するには {3} を実行してください。</value></data>
-  <data name="Member.Background.NotMember" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップを確認できませんでした。{2} で連携チャンネルを確認し、メンバーシップを購入済みか確認してください。認証を取り消すには {3} を実行してください。問題がない場合は {4} にお問い合わせください。</value></data>
-  <data name="Member.Background.RetryLogin" xml:space="preserve"><value>Google 認証データに問題があります。{0} で「ライブ配信お知らせ Bot」のメンバーシップ確認へのアクセスを削除し、{1} で再ログインしてからサーバーに戻り、{2} を実行してください。</value></data>
-  <data name="Member.Background.UnknownError" xml:space="preserve"><value>現在アカウントを認証できません。Google の一時的な障害の可能性があります。後でもう一度試すか、{0} にお問い合わせください。</value></data>
-  <data name="Member.Background.VerifiedRoleFailed" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップ認証に成功しましたが、Bot がロールを付与できませんでした。サーバー管理者に対応を依頼してください。</value></data>
-  <data name="Member.Background.Verified" xml:space="preserve"><value>サーバー `{0}` の `{1}` メンバーシップ認証に成功しました。これでメンバー限定チャンネルを閲覧できます。</value></data>
   <data name="Notifications.Field.Status" xml:space="preserve"><value>配信状態</value></data>
   <data name="Notifications.Field.ScheduledStart" xml:space="preserve"><value>配信予定時刻</value></data>
   <data name="Notifications.Field.ChangedStart" xml:space="preserve"><value>変更後の配信予定時刻</value></data>
@@ -357,76 +238,4 @@
   <data name="Twitch.Notification.ClipEntry" xml:space="preserve"><value>{0}. [{1}]({2}) 作成者 `{3}`（`{4}` 回視聴）</value></data>
   <data name="Twitch.Notification.TitleChanged" xml:space="preserve"><value>タイトル変更：`{0}` → `{1}`</value></data>
   <data name="Twitch.Notification.CategoryChanged" xml:space="preserve"><value>カテゴリー変更：`{0}` → `{1}`</value></data>
-  <data name="Twitcasting.Notification.Private" xml:space="preserve"><value>パスワード付き非公開配信</value></data>
-  <data name="Twitcasting.Notification.Recording" xml:space="preserve"><value>録画状態</value></data>
-  <data name="Twitcasting.Recording.Unavailable" xml:space="preserve"><value>視聴可能な録画はありません</value></data>
-  <data name="Member.VideoLog.NoVideos" xml:space="preserve"><value>{0} には現在、コメントが有効で認証に使用できるメンバー限定動画がありません。条件を満たす新しい動画が公開されてから、メンバーシップ認証を再度お試しください。再生リストは {1} で確認できます。</value></data>
-  <data name="Member.VideoLog.NewProbeVideo" xml:space="preserve"><value>メンバーシップチャンネル `{0}` の新しい認証用動画として `{1}` を選択しました。</value></data>
-  <data name="Member.VideoLog.ChannelTitleChanged" xml:space="preserve"><value>メンバーシップチャンネル名が変更されました：`{0}` → `{1}`。</value></data>
-  <data name="Member.VideoLog.LogChannelMissing" xml:space="preserve"><value>また、`{0}` にはメンバーシップとサブスク認証のログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {1} で設定してください。</value></data>
-  <data name="Member.VideoLog.LogChannelPermissionMissing" xml:space="preserve"><value>また、`{0}` の `{1}` で Bot にチャンネル表示、メッセージ送信、またはリンク埋め込み権限がありません。</value></data>
-  <data name="TwitchMember.Errors.NotConfigured" xml:space="preserve"><value>このサーバーには Twitch サブスク認証チャンネルが設定されていません。</value></data>
-  <data name="TwitchMember.Errors.TooManyChannels" xml:space="preserve"><value>認証可能なチャンネル数が Discord のメニュー上限を超えています。管理者へお問い合わせください。</value></data>
-  <data name="TwitchMember.Errors.NoActiveCheck" xml:space="preserve"><value>このサーバーでは、あなたの Twitch サブスク認証記録が見つかりません。</value></data>
-  <data name="TwitchMember.Errors.AuthorizationMissing" xml:space="preserve"><value>Twitch アカウントが連携されていません。{0} で連携してから再試行してください。</value></data>
-  <data name="TwitchMember.Errors.AuthorizationInvalid" xml:space="preserve"><value>Twitch の認証が無効です。{0} でアカウントを再連携してください。</value></data>
-  <data name="TwitchMember.Errors.BroadcasterUnavailable" xml:space="preserve"><value>このチャンネルでは Twitch サブスク認証を利用できません。</value></data>
-  <data name="TwitchMember.Errors.TemporaryFailure" xml:space="preserve"><value>Twitch または Discord で一時的な問題が発生しました。既存のロールは変更されません。後でもう一度お試しください。</value></data>
-  <data name="TwitchMember.Select.Placeholder" xml:space="preserve"><value>認証する Twitch チャンネルを選択</value></data>
-  <data name="TwitchMember.Select.Description" xml:space="preserve"><value>複数のチャンネルを一度に選択して、Twitch のサブスク資格を認証できます。</value></data>
-  <data name="TwitchMember.Cancelled" xml:space="preserve"><value>このサーバーでの Twitch サブスク認証を解除し、関連ロールを削除しました。</value></data>
-  <data name="TwitchMember.LinkedAccount" xml:space="preserve"><value>連携中の Twitch アカウント：{0}</value></data>
-  <data name="TwitchMember.ChannelList" xml:space="preserve"><value>認証可能な Twitch チャンネル：&#10;{0}</value></data>
-  <data name="TwitchMember.Verified" xml:space="preserve"><value>`{0}` のサブスクを認証しました：`{1}` {2}</value></data>
-  <data name="TwitchMember.Gift" xml:space="preserve"><value>（ギフトサブスク）</value></data>
-  <data name="TwitchMember.NotSubscribed" xml:space="preserve"><value>Twitch の情報では、現在 `{0}` をサブスクしていません。関連ロールを削除しました。</value></data>
-  <data name="TwitchMember.Selection.Verified" xml:space="preserve"><value>✅ `{0}`：{1}</value></data>
-  <data name="TwitchMember.Selection.Failed" xml:space="preserve"><value>❌ `{0}`：{1}</value></data>
-  <data name="TwitchMember.Status.NotSubscribed" xml:space="preserve"><value>未サブスク</value></data>
-  <data name="TwitchMember.Status.AuthorizationMissing" xml:space="preserve"><value>Twitch 未連携</value></data>
-  <data name="TwitchMember.Status.AuthorizationInvalid" xml:space="preserve"><value>Twitch 認証無効</value></data>
-  <data name="TwitchMember.Status.BroadcasterUnavailable" xml:space="preserve"><value>チャンネル認証不可</value></data>
-  <data name="TwitchMember.Status.TemporaryFailure" xml:space="preserve"><value>一時的な失敗</value></data>
-  <data name="TwitchMemberSetting.RemovePrompt" xml:space="preserve"><value>`{0}` の Twitch サブスク認証設定とメンバーに付与された関連ロールを削除し、3 つのティアロールも削除しますか？</value></data>
-  <data name="TwitchMemberSetting.Configured" xml:space="preserve"><value>`{0}` の Twitch サブスク認証を設定しました。有効なサブスクライバーには `{1}` と対応するティアロールが付与されます。</value></data>
-  <data name="TwitchMemberSetting.Removed" xml:space="preserve"><value>`{0}` のサブスク認証設定とティアロールを削除しました。</value></data>
-  <data name="TwitchMemberSetting.CheckedMembersTitle" xml:space="preserve"><value>Twitch サブスク認証済みメンバー</value></data>
-  <data name="TwitchMemberSetting.Errors.ChannelNotFound" xml:space="preserve"><value>Twitch チャンネルが見つかりません。</value></data>
-  <data name="TwitchMemberSetting.Errors.IneligibleBroadcaster" xml:space="preserve"><value>この Twitch チャンネルはアフィリエイトまたはパートナーではないため、サブスク認証を利用できません。</value></data>
-  <data name="TwitchMemberSetting.Errors.TooManyChannels" xml:space="preserve"><value>1 つのサーバーに設定できる Twitch サブスク認証チャンネルは最大 25 件です。</value></data>
-  <data name="TwitchMemberSetting.Errors.InvalidCommonRole" xml:space="preserve"><value>共通ロール ID が無効です。</value></data>
-  <data name="TwitchMemberSetting.Errors.CommonRoleOverlapsTier" xml:space="preserve"><value>共通ロールに Twitch ティアロールは使用できません。</value></data>
-  <data name="TwitchMemberSetting.Errors.RolesMustBeDistinct" xml:space="preserve"><value>共通ロールと 3 つの Twitch ティアロールはすべて異なるロールである必要があります。</value></data>
-  <data name="TwitchMemberSetting.Errors.TierRoleOverlap" xml:space="preserve"><value>Twitch ティアロールを他の認証設定で使用中のロールと重複させることはできません。</value></data>
-  <data name="TwitchMemberSetting.Errors.MissingManageRoles" xml:space="preserve"><value>Bot にロール管理権限がありません。</value></data>
-  <data name="TwitchMemberSetting.Errors.EveryoneRole" xml:space="preserve"><value>@everyone ロールは使用できません。</value></data>
-  <data name="TwitchMemberSetting.Errors.ManagedRole" xml:space="preserve"><value>連携サービスが管理するロールは使用できません。</value></data>
-  <data name="TwitchMemberSetting.Errors.CrossPlatformRoleCollision" xml:space="preserve"><value>このロールはすでに YouTube メンバーシップ認証で使用されています。YouTube と Twitch の認証には異なるロールを使用してください。</value></data>
-  <data name="TwitchMemberSetting.Errors.RoleTooHigh" xml:space="preserve"><value>共通ロールは Bot の最高ロールより下に配置してください。</value></data>
-  <data name="TwitchMemberSetting.Errors.RepairPending" xml:space="preserve"><value>設定は保存されましたが、Discord ロールの同期が完了していません。権限の問題を修正するか、一時的なエラーが解消されてから、同じ設定を再実行してください。</value></data>
-  <data name="TwitchMemberSetting.Errors.DeletionPending" xml:space="preserve"><value>このチャンネルの設定と関連ロールが完全に削除されていないため、再設定できません。Bot は 1 時間ごとに再試行します。ロール権限を修正し、削除が完了してから追加してください。</value></data>
-  <data name="TwitchMemberSetting.Errors.SharedRoleRepairPending" xml:space="preserve"><value>前回の共通ロール更新が完全に同期されていません。現在保存されている共通ロールでもう一度設定を実行し、修復が完了してから別のロールに変更してください。</value></data>
-  <data name="TwitchMemberSetting.Errors.SaveFailed" xml:space="preserve"><value>ティアロールの作成または設定の保存に失敗しました。データベース設定は変更されていません。</value></data>
-  <data name="TwitchMemberSetting.Errors.NotConfigured" xml:space="preserve"><value>この Twitch チャンネルにはサブスク認証が設定されていません。</value></data>
-  <data name="TwitchMemberSetting.Errors.RemovePending" xml:space="preserve"><value>一部のロールを削除できなかったため、設定と後で再試行するために必要なデータを保持しました。</value></data>
-  <data name="TwitchMemberSetting.Errors.NoCheckedMembers" xml:space="preserve"><value>現在、認証済みの Twitch サブスクライバーはいません。</value></data>
-  <data name="TwitchMember.StatusLog.Verified" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク認証に成功しました（`{2}`）。</value></data>
-  <data name="TwitchMember.StatusLog.Removed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` をサブスクしていないため、関連ロールを削除しました。</value></data>
-  <data name="TwitchMember.StatusLog.RoleFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` の Twitch サブスク確認に成功しましたが、Discord ロールの同期に失敗しました。後で再試行します。</value></data>
-  <data name="TwitchMember.StatusLog.RemovalFailed" xml:space="preserve"><value>&lt;@{0}&gt; は `{1}` のサブスク条件を満たしていませんが、Discord ロールの削除に失敗しました。後で再試行します。</value></data>
-  <data name="TwitchMember.StatusLog.AuthorizationInvalid" xml:space="preserve"><value>&lt;@{0}&gt; の Twitch 認証が無効になったため、`{1}` の認証ロールを削除しました。</value></data>
-  <data name="Chzzk.StreamStatus.Live" xml:space="preserve"><value>配信中</value></data>
-  <data name="Chzzk.StreamStatus.Offline" xml:space="preserve"><value>オフライン</value></data>
-  <data name="Chzzk.Notification.UnknownTitle" xml:space="preserve"><value>（配信タイトルを取得できません）</value></data>
-  <data name="Chzzk.NoticeType.Start" xml:space="preserve"><value>配信開始</value></data>
-  <data name="Chzzk.NoticeType.End" xml:space="preserve"><value>配信終了</value></data>
-  <data name="Chzzk.Messages.ListTitle" xml:space="preserve"><value>CHZZK 通知メッセージ一覧</value></data>
-  <data name="Chzzk.Messages.ListValue" xml:space="preserve"><value>配信開始：{0}&#10;配信終了：{1}</value></data>
-  <data name="Chzzk.Notifications.Added" xml:space="preserve"><value>`{0}` を CHZZK 通知一覧に追加しました。{1}</value></data>
-  <data name="Chzzk.Notifications.Empty" xml:space="preserve"><value>CHZZK 配信通知一覧は空です。</value></data>
-  <data name="Chzzk.Notifications.ListTitle" xml:space="preserve"><value>CHZZK 配信通知一覧</value></data>
-  <data name="Chzzk.Notifications.ConfigureFirst" xml:space="preserve"><value>`{0}` の CHZZK 配信通知は設定されていません。先に {1} で追加してから通知メッセージを設定してください。</value></data>
-  <data name="Chzzk.Notifications.ConfigureAnyFirst" xml:space="preserve"><value>CHZZK 配信通知が設定されていません。先に {0} で追加してください。</value></data>
-  <data name="Chzzk.Errors.ChannelNotFound" xml:space="preserve"><value>指定された CHZZK チャンネルが見つかりません。チャンネル URL またはチャンネル ID を確認してください。</value></data>
-  <data name="ChzzkSpider.ListTitle" xml:space="preserve"><value>CHZZK チャンネルクローラー一覧</value></data>
 </root>

@@ -47,17 +47,11 @@ services:
     <<: *app-common
     environment:
       ROLE: coordinator
-    ports:
-      # Prometheus metrics endpoint；若 Prometheus 與本 stack 共用 Docker network，可改成只 expose 9464。
-      - "9464:9464"
 
   scraper:
     <<: *app-common
     environment:
       ROLE: scraper
-    ports:
-      # Prometheus metrics endpoint；若 Prometheus 與本 stack 共用 Docker network，可改成只 expose 9465。
-      - "9465:9465"
     depends_on: [coordinator]
 
   # 方式 A：固定 shard，每個 shard 一個服務。ShardId 寫死於 command 第一參數；
@@ -71,9 +65,6 @@ services:
     environment:
       ROLE: notifier
     command: ["0", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
-    ports:
-      # Notifier 容器內皆使用 9466；固定 shard 以不同宿主機 port 供 Prometheus 抓取。
-      - "9466:9466"
     depends_on: [coordinator]
 
   notifier-1:
@@ -83,6 +74,4 @@ services:
     environment:
       ROLE: notifier
     command: ["1", "${TOTAL_SHARDS:?請在 .env 設定 TOTAL_SHARDS}"]
-    ports:
-      - "9467:9466"
     depends_on: [coordinator]

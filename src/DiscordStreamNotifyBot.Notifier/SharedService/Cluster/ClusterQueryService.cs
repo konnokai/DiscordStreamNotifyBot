@@ -188,7 +188,7 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
             return map;
         }
 
-        /// <summary>從合併後的全叢集清單篩出「未設定任何通知/會限、且非官方白名單」的伺服器（依人數遞減）。</summary>
+        /// <summary>從合併後的全叢集清單篩出「未設定任何通知、且非官方白名單」的伺服器（依人數遞減）。</summary>
         public List<GuildSnapshot> FilterNoNotifyGuilds(List<GuildSnapshot> guilds)
         {
             var configured = new HashSet<ulong>();
@@ -197,10 +197,6 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
                 foreach (var id in db.NoticeYoutubeStreamChannel.AsNoTracking().Select((x) => x.GuildId).Distinct())
                     configured.Add(id);
                 foreach (var id in db.NoticeTwitchStreamChannels.AsNoTracking().Select((x) => x.GuildId).Distinct())
-                    configured.Add(id);
-                foreach (var id in db.NoticeTwitcastingStreamChannels.AsNoTracking().Select((x) => x.GuildId).Distinct())
-                    configured.Add(id);
-                foreach (var id in db.GuildYoutubeMemberConfig.AsNoTracking().Select((x) => x.GuildId).Distinct())
                     configured.Add(id);
             }
 
@@ -441,9 +437,6 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
 
                             foreach (var item in db.NoticeTwitchStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
                                 AddTarget(guilds[item.GuildId], "Twitch", "直播", item.DiscordChannelId);
-
-                            foreach (var item in db.NoticeTwitcastingStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
-                                AddTarget(guilds[item.GuildId], "TwitCasting", "直播", item.DiscordChannelId);
                         }
 
                         response.CheckedCount = targets.Count;

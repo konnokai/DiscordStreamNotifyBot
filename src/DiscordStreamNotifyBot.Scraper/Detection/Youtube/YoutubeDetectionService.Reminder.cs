@@ -3,7 +3,6 @@ using DiscordStreamNotifyBot.Shared.Messages;
 using Google;
 using Polly;
 using System.Collections.Concurrent;
-using Bot = DiscordStreamNotifyBot.Shared.BotState;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
 
@@ -151,7 +150,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             YTApiVideo videoResult,
             MainDbContext db)
         {
-            bool isRecord = false;
             streamVideo.VideoTitle = videoResult.Snippet.Title;
             var video = GetDbVideoByType(db, streamVideo);
             try
@@ -175,37 +173,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播標題變更儲存失敗：{streamVideo.VideoId}");
             }
 
-#if RELEASE
-            try
-            {
-                if (CanRecord(streamVideo))
-                {
-                    if (Bot.Redis != null)
-                    {
-                        if (await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.record", RedisChannel.PatternMode.Literal), streamVideo.VideoId) != 0)
-                        {
-                            Log.Info($"已發送 YouTube 錄影請求：{streamVideo.VideoId}");
-                            isRecord = true;
-                        }
-                        else
-                        {
-                            Log.Warn($"Redis Sub 頻道不存在，請開啟錄影工具：{streamVideo.VideoId}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"ReminderTimerAction-Record: {streamVideo.VideoId}\n{ex}");
-            }
-#endif
-
             await PublishBannerAsync(streamVideo.ChannelId, streamVideo.VideoId);
 
-            if (!isRecord)
-            {
-                await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
-            }
+            await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
 
         }
 
@@ -363,8 +333,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         {
             return streamVideo.ChannelType switch
             {
-                TableVideo.YTChannelType.Holo => db.HoloVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId),
-                TableVideo.YTChannelType.Nijisanji => db.NijisanjiVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId),
                 TableVideo.YTChannelType.Other => db.OtherVideos.FirstOrDefault((x) => x.VideoId == streamVideo.VideoId),
                 _ => null
             };

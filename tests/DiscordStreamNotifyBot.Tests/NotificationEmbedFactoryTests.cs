@@ -2,7 +2,6 @@ using Discord;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared.Messages;
-using DiscordStreamNotifyBot.SharedService.Twitcasting;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YoutubeEmbedBuilderFactory = DiscordStreamNotifyBot.SharedService.Youtube.EmbedBuilderFactory;
@@ -205,52 +204,6 @@ namespace DiscordStreamNotifyBot.Tests
             AssertColor(OkColor, embed);
         }
 
-        [Theory]
-        [InlineData(true, true, 40, 40, 40, "Yes", "Recording available")]
-        [InlineData(true, false, 40, 40, 40, "Yes", "No recording available")]
-        [InlineData(false, true, 255, 0, 0, "No", "Recording available")]
-        [InlineData(false, false, 0, 229, 132, "No", "No recording available")]
-        public void TwitcastingStreamStartedUsesPrivateThenRecordingColorPrecedence(
-            bool isPrivate, bool isRecord, byte red, byte green, byte blue,
-            string expectedPrivate, string expectedRecording)
-        {
-            TwitcastingStream stream = CreateTwitcastingStream("Subtitle", "Music");
-
-            Embed embed = TwitcastingEmbedBuilderFactory
-                .CreateStreamStarted(stream, isPrivate, isRecord, Localizer, Locale)
-                .Build();
-
-            AssertColor(new Color(red, green, blue), embed);
-            AssertField(embed, "Password-protected private stream", expectedPrivate);
-            AssertField(embed, "Recording status", expectedRecording);
-            AssertField(embed, "Started at", DiscordTimestamp(stream.StreamStartAt));
-        }
-
-        [Theory]
-        [InlineData("Subtitle", "Music", true)]
-        [InlineData("", "", false)]
-        public void TwitcastingStreamStartedOnlyIncludesOptionalFieldsWhenProvided(
-            string subtitle, string category, bool expectedOptionalFields)
-        {
-            TwitcastingStream stream = CreateTwitcastingStream(subtitle, category);
-
-            Embed embed = TwitcastingEmbedBuilderFactory
-                .CreateStreamStarted(stream, false, false, Localizer, Locale)
-                .Build();
-
-            Assert.Equal(stream.StreamTitle, embed.Title);
-            Assert.Equal("https://twitcasting.tv/example_channel/movie/24680", embed.Url);
-            Assert.Equal("[Example Channel](https://twitcasting.tv/example_channel)", embed.Description);
-            Assert.Equal(stream.ThumbnailUrl, embed.Image?.Url);
-            Assert.Equal(expectedOptionalFields, embed.Fields.Any(field => field.Name == "Subtitle"));
-            Assert.Equal(expectedOptionalFields, embed.Fields.Any(field => field.Name == "Category"));
-            if (expectedOptionalFields)
-            {
-                AssertField(embed, "Subtitle", subtitle);
-                AssertField(embed, "Category", category);
-            }
-        }
-
         private static TableVideo CreateYoutubeVideo()
         {
             return new TableVideo
@@ -275,21 +228,6 @@ namespace DiscordStreamNotifyBot.Tests
                 UserName = "Example User",
                 GameName = gameName,
                 ThumbnailUrl = "https://example.com/stream.jpg"
-            };
-        }
-
-        private static TwitcastingStream CreateTwitcastingStream(string subtitle, string category)
-        {
-            return new TwitcastingStream
-            {
-                ChannelId = "example_channel",
-                ChannelTitle = "Example Channel",
-                StreamId = 24680,
-                StreamTitle = "TwitCasting stream title",
-                StreamSubTitle = subtitle,
-                Category = category,
-                ThumbnailUrl = "https://example.com/twitcasting.jpg",
-                StreamStartAt = UtcDate(2026, 7, 20, 1, 2, 3)
             };
         }
 

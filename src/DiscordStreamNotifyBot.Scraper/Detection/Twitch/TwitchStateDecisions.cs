@@ -3,6 +3,24 @@ using DiscordStreamNotifyBot.Shared.Messages;
 
 namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 {
+    /// <summary>Twitch spider 移除原因；決定最終防線允許移除的條件。</summary>
+    public enum TwitchSpiderRemovalReason
+    {
+        AuthorizationRevoked,
+        AuthorizationInvalid,
+        GuildIneligible,
+        GuildMissing
+    }
+
+    /// <summary>Twitch EventSub 清理延後原因；供關台流程判斷延後是否源自直播中。</summary>
+    public enum TwitchEventSubCleanupDeferredReason
+    {
+        StreamLive,
+        TwitchApiFailure,
+        GuildSnapshotUnavailable,
+        NotifierUnavailable
+    }
+
     internal enum TwitchReconcileAction
     {
         RejectClientIdMismatch,
@@ -175,7 +193,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         bool GuildBindingMatches,
         bool HasValidAuthorization,
         bool HasClientIdMismatch,
-        TwitchSpiderRemovalMetricReason Reason,
+        TwitchSpiderRemovalReason Reason,
         TwitchGuildEligibilityStatus? LatestEligibility);
 
     internal static class TwitchSpiderRemovalPolicy
@@ -195,9 +213,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
             bool removalAllowed = facts.Reason switch
             {
-                TwitchSpiderRemovalMetricReason.GuildIneligible =>
+                TwitchSpiderRemovalReason.GuildIneligible =>
                     facts.LatestEligibility == TwitchGuildEligibilityStatus.Ineligible,
-                TwitchSpiderRemovalMetricReason.GuildMissing =>
+                TwitchSpiderRemovalReason.GuildMissing =>
                     facts.LatestEligibility == TwitchGuildEligibilityStatus.MissingConfirmed,
                 _ => false
             };

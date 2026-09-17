@@ -5,7 +5,6 @@ namespace DiscordStreamNotifyBot.Scraper
     internal class Program
     {
         private const BotRole Role = BotRole.Scraper;
-        private const int MetricsPort = 9465;
 
         private static async Task<int> Main(string[] args)
         {
@@ -29,14 +28,9 @@ namespace DiscordStreamNotifyBot.Scraper
                     return 1;
                 }
 
-                var metrics = new ScraperMetrics();
-                using var metricServer = new Prometheus.KestrelMetricServer(port: MetricsPort);
                 try
                 {
-                    metricServer.Start();
-                    Log.Info($"Prometheus 指標已啟動：http://0.0.0.0:{MetricsPort}/metrics");
-
-                    var service = new ScraperService(config, metrics);
+                    var service = new ScraperService(config);
                     return await service.RunAsync(GracefulShutdown.Token);
                 }
                 catch (OperationCanceledException)
@@ -47,10 +41,6 @@ namespace DiscordStreamNotifyBot.Scraper
                 {
                     Log.Error(ex.Demystify(), "Scraper 執行失敗");
                     return 1;
-                }
-                finally
-                {
-                    await metricServer.StopAsync();
                 }
             }
             finally

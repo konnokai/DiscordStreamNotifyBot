@@ -61,7 +61,7 @@ namespace DiscordStreamNotifyBot.Tests
 
             var json = JObject.Parse(JsonConvert.SerializeObject(snapshot));
             Assert.Equal(
-                ["capabilities", "common", "contractVersion", "crawlers", "guild", "health", "notifications", "resources", "verification"],
+                ["capabilities", "common", "contractVersion", "crawlers", "guild", "health", "notifications", "resources"],
                 json.Properties().Select(x => x.Name).OrderBy(x => x, StringComparer.Ordinal));
             Assert.Equal(JTokenType.String, json["guild"]!["id"]!.Type);
             Assert.Equal(JTokenType.String, json["resources"]!["channels"]![0]!["id"]!.Type);
@@ -99,30 +99,41 @@ namespace DiscordStreamNotifyBot.Tests
         [InlineData("settings.snapshot", "Snapshot")]
         [InlineData("guild.set-locale", "Command")]
         [InlineData("guild.set-global-notice-channel", "Command")]
-        [InlineData("guild.set-verification-log-channel", "Command")]
         [InlineData("youtube-notification.upsert", "Command")]
         [InlineData("youtube-notification.remove", "Command")]
         [InlineData("twitch-notification.upsert", "Command")]
         [InlineData("twitch-notification.remove", "Command")]
-        [InlineData("twitcasting-notification.upsert", "Command")]
-        [InlineData("twitcasting-notification.remove", "Command")]
         [InlineData("youtube-crawler.add", "Command")]
         [InlineData("youtube-crawler.remove", "Command")]
         [InlineData("twitch-crawler.add", "Command")]
         [InlineData("twitch-crawler.remove", "Command")]
-        [InlineData("twitcasting-crawler.add", "Command")]
-        [InlineData("twitcasting-crawler.remove", "Command")]
-        [InlineData("youtube-verification.upsert", "Command")]
-        [InlineData("youtube-verification.remove", "Command")]
-        [InlineData("youtube-verification.set-probe-video", "Command")]
-        [InlineData("youtube-verification.use-automatic-probe", "Command")]
-        [InlineData("twitch-verification.upsert", "Command")]
-        [InlineData("twitch-verification.remove", "Command")]
         public void SupportedActionDispatchesToExpectedRoute(string action, string expected)
         {
             var request = Request(action);
 
             Assert.Equal(expected, AdminSettingsService.Classify(request, _ => true, _ => true, out _, out _).ToString());
+        }
+
+        [Theory]
+        [InlineData("guild.set-verification-log-channel")]
+        [InlineData("twitcasting-notification.upsert")]
+        [InlineData("twitcasting-notification.remove")]
+        [InlineData("chzzk-notification.upsert")]
+        [InlineData("chzzk-notification.remove")]
+        [InlineData("twitcasting-crawler.add")]
+        [InlineData("twitcasting-crawler.remove")]
+        [InlineData("chzzk-crawler.add")]
+        [InlineData("chzzk-crawler.remove")]
+        [InlineData("youtube-verification.upsert")]
+        [InlineData("youtube-verification.remove")]
+        [InlineData("youtube-verification.set-probe-video")]
+        [InlineData("youtube-verification.use-automatic-probe")]
+        [InlineData("twitch-verification.upsert")]
+        [InlineData("twitch-verification.remove")]
+        public void RemovedFeatureActionsAreUnsupported(string action)
+        {
+            Assert.Equal(AdminSettingsService.RequestRoute.UnsupportedAction,
+                AdminSettingsService.Classify(Request(action), _ => true, _ => true, out _, out _));
         }
 
         [Fact]
@@ -217,20 +228,14 @@ namespace DiscordStreamNotifyBot.Tests
                 CrawlerPlatform.Youtube, "source", "Channel", "source", "Guild", "Actor");
             var twitch = CrawlerOwnerNotifier.BuildAddedMessage(
                 CrawlerPlatform.Twitch, "source", "Channel", "source", "Guild", "Actor");
-            var twitcasting = CrawlerOwnerNotifier.BuildAddedMessage(
-                CrawlerPlatform.Twitcasting, "source", "Channel", "source", "Guild", "Actor");
             Assert.Equal("已新增 YouTube 頻道爬蟲", youtube.Embed.Title);
             Assert.Contains(youtube.Embed.Fields, field => field.Name == "認可頻道");
             Assert.Equal(
-                ["spider_youtube:trusted:source", "spider_youtube:untrusted:source",
-                    "spider_youtube:record:source", "spider_youtube:unrecord:source"],
+                ["spider_youtube:trusted:source", "spider_youtube:untrusted:source"],
                 ButtonIds(youtube.Components));
             Assert.Equal(
                 ["spider_twitch:warning:source", "spider_twitch:record:source"],
                 ButtonIds(twitch.Components));
-            Assert.Equal(
-                ["spider_tc:warning:source", "spider_tc:record:source"],
-                ButtonIds(twitcasting.Components));
         }
 
         private static string[] ButtonIds(MessageComponent components)
@@ -244,11 +249,10 @@ namespace DiscordStreamNotifyBot.Tests
         [InlineData("youtube-crawler.add", "{\"source\":\"UC1\"}", true)]
         [InlineData("youtube-crawler.remove", "{\"sourceId\":\"UC1\"}", true)]
         [InlineData("youtube-crawler.remove", "{\"sourceId\":1}", false)]
-        [InlineData("youtube-verification.upsert", "{\"source\":\"UC1\",\"roleId\":\"123\"}", true)]
-        [InlineData("youtube-verification.upsert", "{\"source\":\"UC1\",\"roleId\":123}", false)]
-        [InlineData("youtube-verification.set-probe-video", "{\"sourceId\":\"UC1\",\"video\":\"abc\"}", true)]
-        public void NewPayloadShapesRequireStringIdentifiers(string action, string json, bool expected)
-            => Assert.Equal(expected, AdminSettingsService.ValidCrawlerOrVerificationPayload(action, JObject.Parse(json)));
+        [InlineData("twitch-crawler.add", "{\"source\":\"tw1\"}", true)]
+        [InlineData("twitch-crawler.remove", "{\"sourceId\":\"tw1\"}", true)]
+        public void NewCrawlerPayloadShapesRequireStringIdentifiers(string action, string json, bool expected)
+            => Assert.Equal(expected, AdminSettingsService.ValidCrawlerPayload(action, JObject.Parse(json)));
 
         [Theory]
         [InlineData(true, false, false, 9, 10, true)]
@@ -262,7 +266,7 @@ namespace DiscordStreamNotifyBot.Tests
                 AdminSettingsService.CanManageRole(permission, everyone, managed, position, botPosition));
 
         [Fact]
-        public void ExpandedSnapshotKeepsRoleAndNullableIdsAsStrings()
+        public void ExpandedSnapshotKeepsRoleAndCrawlerIdsAsStrings()
         {
             var snapshot = new AdminSettingsSnapshot
             {
@@ -279,24 +283,11 @@ namespace DiscordStreamNotifyBot.Tests
                         Limit = 3,
                         Items = [new AdminSettingsCrawlerItem { SourceId = "UC1", SourceName = "channel" }]
                     }
-                },
-                Verification = new AdminSettingsVerification
-                {
-                    Youtube =
-                    [
-                        new AdminSettingsYoutubeVerification
-                        {
-                            SourceId = "UC1",
-                            RoleId = Snowflake,
-                            PreviousRoleId = null
-                        }
-                    ]
                 }
             };
 
             JObject json = JObject.Parse(JsonConvert.SerializeObject(snapshot));
             Assert.Equal(JTokenType.String, json["resources"]!["roles"]![0]!["id"]!.Type);
-            Assert.Equal(JTokenType.Null, json["verification"]!["youtube"]![0]!["previousRoleId"]!.Type);
             Assert.Equal(3, json["crawlers"]!["youtube"]!["limit"]!.Value<int>());
         }
 

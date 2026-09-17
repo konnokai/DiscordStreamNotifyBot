@@ -11,29 +11,14 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public const string SnapshotAction = "settings.snapshot";
         public const string SetLocaleAction = "guild.set-locale";
         public const string SetGlobalNoticeChannelAction = "guild.set-global-notice-channel";
-        public const string SetVerificationLogChannelAction = "guild.set-verification-log-channel";
         public const string YoutubeUpsertAction = "youtube-notification.upsert";
         public const string YoutubeRemoveAction = "youtube-notification.remove";
         public const string TwitchUpsertAction = "twitch-notification.upsert";
         public const string TwitchRemoveAction = "twitch-notification.remove";
-        public const string TwitcastingUpsertAction = "twitcasting-notification.upsert";
-        public const string TwitcastingRemoveAction = "twitcasting-notification.remove";
-        public const string ChzzkUpsertAction = "chzzk-notification.upsert";
-        public const string ChzzkRemoveAction = "chzzk-notification.remove";
         public const string YoutubeCrawlerAddAction = "youtube-crawler.add";
         public const string YoutubeCrawlerRemoveAction = "youtube-crawler.remove";
         public const string TwitchCrawlerAddAction = "twitch-crawler.add";
         public const string TwitchCrawlerRemoveAction = "twitch-crawler.remove";
-        public const string TwitcastingCrawlerAddAction = "twitcasting-crawler.add";
-        public const string TwitcastingCrawlerRemoveAction = "twitcasting-crawler.remove";
-        public const string ChzzkCrawlerAddAction = "chzzk-crawler.add";
-        public const string ChzzkCrawlerRemoveAction = "chzzk-crawler.remove";
-        public const string YoutubeVerificationUpsertAction = "youtube-verification.upsert";
-        public const string YoutubeVerificationRemoveAction = "youtube-verification.remove";
-        public const string YoutubeVerificationSetProbeVideoAction = "youtube-verification.set-probe-video";
-        public const string YoutubeVerificationAutomaticProbeAction = "youtube-verification.use-automatic-probe";
-        public const string TwitchVerificationUpsertAction = "twitch-verification.upsert";
-        public const string TwitchVerificationRemoveAction = "twitch-verification.remove";
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -131,9 +116,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("crawlers")]
         public AdminSettingsCrawlers Crawlers { get; set; } = new();
-
-        [JsonProperty("verification")]
-        public AdminSettingsVerification Verification { get; set; } = new();
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -221,9 +203,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("globalNoticeChannelId")]
         public string GlobalNoticeChannelId { get; set; } = "";
-
-        [JsonProperty("verificationLogChannelId")]
-        public string VerificationLogChannelId { get; set; } = "";
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -234,12 +213,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("twitch")]
         public List<AdminSettingsTwitchNotification> Twitch { get; set; } = [];
-
-        [JsonProperty("twitcasting")]
-        public List<AdminSettingsTwitcastingNotification> Twitcasting { get; set; } = [];
-
-        [JsonProperty("chzzk")]
-        public List<AdminSettingsChzzkNotification> Chzzk { get; set; } = [];
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -322,54 +295,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     }
 
     [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminSettingsTwitcastingNotification
-    {
-        [JsonProperty("sourceId")]
-        public string SourceId { get; set; } = "";
-
-        [JsonProperty("sourceName")]
-        public string SourceName { get; set; } = "";
-
-        [JsonProperty("channelId")]
-        public string ChannelId { get; set; } = "";
-
-        [JsonProperty("startMessage")]
-        public string StartMessage { get; set; } = "";
-
-        [JsonProperty("detectionEnabled")]
-        public bool DetectionEnabled { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminSettingsChzzkNotification
-    {
-        [JsonProperty("sourceId")]
-        public string SourceId { get; set; } = "";
-
-        [JsonProperty("sourceName")]
-        public string SourceName { get; set; } = "";
-
-        [JsonProperty("channelId")]
-        public string ChannelId { get; set; } = "";
-
-        [JsonProperty("messages")]
-        public AdminSettingsChzzkMessages Messages { get; set; } = new();
-
-        [JsonProperty("detectionEnabled")]
-        public bool DetectionEnabled { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminSettingsChzzkMessages
-    {
-        [JsonProperty("start")]
-        public string Start { get; set; } = "";
-
-        [JsonProperty("end")]
-        public string End { get; set; } = "";
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
     public sealed class AdminSettingsCrawlers
     {
         [JsonProperty("youtube")]
@@ -377,12 +302,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("twitch")]
         public AdminSettingsCrawlerPlatform Twitch { get; set; } = new();
-
-        [JsonProperty("twitcasting")]
-        public AdminSettingsCrawlerPlatform Twitcasting { get; set; } = new();
-
-        [JsonProperty("chzzk")]
-        public AdminSettingsCrawlerPlatform Chzzk { get; set; } = new();
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -409,78 +328,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("sourceName")]
         public string SourceName { get; set; } = "";
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminSettingsVerification
-    {
-        [JsonProperty("youtube")]
-        public List<AdminSettingsYoutubeVerification> Youtube { get; set; } = [];
-
-        [JsonProperty("twitch")]
-        public List<AdminSettingsTwitchVerification> Twitch { get; set; } = [];
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminSettingsYoutubeVerification
-    {
-        [JsonProperty("sourceId")]
-        public string SourceId { get; set; } = "";
-
-        [JsonProperty("sourceName")]
-        public string SourceName { get; set; } = "";
-
-        [JsonProperty("roleId")]
-        public string RoleId { get; set; } = "";
-
-        [JsonProperty("previousRoleId")]
-        public string? PreviousRoleId { get; set; }
-
-        [JsonProperty("deletionPending")]
-        public bool DeletionPending { get; set; }
-
-        [JsonProperty("probeMode")]
-        public string ProbeMode { get; set; } = "automatic";
-
-        [JsonProperty("probeVideoId")]
-        public string ProbeVideoId { get; set; } = "-";
-
-        [JsonProperty("verifiedMemberCount")]
-        public int VerifiedMemberCount { get; set; }
-
-        [JsonProperty("pendingRoleRemovalCount")]
-        public int PendingRoleRemovalCount { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminSettingsTwitchVerification
-    {
-        [JsonProperty("sourceId")]
-        public string SourceId { get; set; } = "";
-
-        [JsonProperty("sourceLogin")]
-        public string SourceLogin { get; set; } = "";
-
-        [JsonProperty("sourceName")]
-        public string SourceName { get; set; } = "";
-
-        [JsonProperty("subscriberRoleId")]
-        public string SubscriberRoleId { get; set; } = "";
-
-        [JsonProperty("previousSubscriberRoleId")]
-        public string? PreviousSubscriberRoleId { get; set; }
-
-        [JsonProperty("tierRoleIds")]
-        public Dictionary<string, string> TierRoleIds { get; set; } = [];
-
-        [JsonProperty("deletionPending")]
-        public bool DeletionPending { get; set; }
-
-        [JsonProperty("verifiedMemberCount")]
-        public int VerifiedMemberCount { get; set; }
-
-        [JsonProperty("pendingRoleRemovalCount")]
-        public int PendingRoleRemovalCount { get; set; }
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -565,42 +412,6 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     }
 
     [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminTwitcastingUpsertPayload
-    {
-        [JsonProperty("source")]
-        public string? Source { get; set; }
-
-        [JsonProperty("channelId")]
-        public string? ChannelId { get; set; }
-
-        [JsonProperty("startMessage")]
-        public string? StartMessage { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminChzzkUpsertPayload
-    {
-        [JsonProperty("source")]
-        public string? Source { get; set; }
-
-        [JsonProperty("channelId")]
-        public string? ChannelId { get; set; }
-
-        [JsonProperty("messages")]
-        public AdminChzzkMessagesPayload? Messages { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminChzzkMessagesPayload
-    {
-        [JsonProperty("start")]
-        public string? Start { get; set; }
-
-        [JsonProperty("end")]
-        public string? End { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
     public sealed class AdminRemoveNotificationPayload
     {
         [JsonProperty("source")]
@@ -619,25 +430,5 @@ namespace DiscordStreamNotifyBot.Shared.Messages
     {
         [JsonProperty("sourceId")]
         public string? SourceId { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminVerificationUpsertPayload
-    {
-        [JsonProperty("source")]
-        public string? Source { get; set; }
-
-        [JsonProperty("roleId")]
-        public string? RoleId { get; set; }
-    }
-
-    [JsonObject(MemberSerialization.OptIn)]
-    public sealed class AdminProbeVideoPayload
-    {
-        [JsonProperty("sourceId")]
-        public string? SourceId { get; set; }
-
-        [JsonProperty("video")]
-        public string? Video { get; set; }
     }
 }

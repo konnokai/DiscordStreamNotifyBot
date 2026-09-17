@@ -166,18 +166,11 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
             SocketGuild guild,
             ulong channelId,
             CancellationToken cancellationToken)
-            => SetChannelAsync(guild, channelId, false, cancellationToken);
-
-        public Task<AdminSettingsMutationResult> SetVerificationLogChannelAsync(
-            SocketGuild guild,
-            ulong channelId,
-            CancellationToken cancellationToken)
-            => SetChannelAsync(guild, channelId, true, cancellationToken);
+            => SetChannelAsync(guild, channelId, cancellationToken);
 
         private async Task<AdminSettingsMutationResult> SetChannelAsync(
             SocketGuild guild,
             ulong channelId,
-            bool verificationLog,
             CancellationToken cancellationToken)
         {
             if (channelId != 0)
@@ -196,10 +189,7 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
                 db.GuildConfig.Add(config);
             }
 
-            if (verificationLog)
-                config.VerificationLogChannelId = channelId;
-            else
-                config.NoticeChannelId = channelId;
+            config.NoticeChannelId = channelId;
 
             await db.SaveChangesAsync(cancellationToken);
             return AdminSettingsMutationResult.Applied(arguments: new JObject

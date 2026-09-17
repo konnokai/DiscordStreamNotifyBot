@@ -98,107 +98,6 @@ namespace DiscordStreamNotifyBot.Interaction
             }
         }
 
-        protected async Task SendVerificationResultAsync(
-            AdminSettingsMutationResult result,
-            string source,
-            bool twitch = false,
-            string roleName = "")
-        {
-            string locale = await GetLocaleAsync(true);
-            string setLogPath = CommandDisplayResolver.GetCommandPath(locale, "server-admin", "set-verification-log-channel");
-            string contactPath = CommandDisplayResolver.GetCommandPath(locale, "server-admin", "send-message-to-bot-owner");
-            switch (result.Code)
-            {
-                case "verification.configured":
-                    await SendLocalizedConfirmAsync(
-                        twitch ? "TwitchMemberSetting.Configured" : "MemberSetting.ChannelConfigured",
-                        true,
-                        true,
-                        result.Arguments.Value<string>("sourceName") ?? source,
-                        roleName,
-                        BotLocalizer.Get("MemberSetting.ReadyLater", locale));
-                    break;
-                case "verification.removed":
-                    await SendLocalizedConfirmAsync(
-                        twitch ? "TwitchMemberSetting.Removed" : "MemberSetting.ChannelRemoved",
-                        true, false, source);
-                    break;
-                case "verification.cleanup-pending":
-                    await SendLocalizedErrorAsync(
-                        twitch ? "TwitchMemberSetting.Errors.RemovePending" : "MemberSetting.Errors.RemovePending",
-                        true);
-                    break;
-                case "verification.not-configured":
-                    await SendLocalizedErrorAsync(
-                        twitch ? "TwitchMemberSetting.Errors.NotConfigured" : "MemberSetting.Errors.ChannelNotConfigured",
-                        true);
-                    break;
-                case "verification.log-channel-required":
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelRequired", true, true, setLogPath);
-                    break;
-                case "verification.log-channel-missing":
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelDeleted", true, true, setLogPath);
-                    break;
-                case "verification.manage-roles-required":
-                    await SendLocalizedErrorAsync(
-                        twitch ? "TwitchMemberSetting.Errors.MissingManageRoles" : "MemberSetting.Errors.ManageRolesRequired",
-                        true);
-                    break;
-                case "verification.role-too-high":
-                    await SendLocalizedErrorAsync(
-                        twitch ? "TwitchMemberSetting.Errors.RoleTooHigh" : "MemberSetting.Errors.RoleTooHigh",
-                        true, true, roleName);
-                    break;
-                case "verification.role-collision":
-                    await SendLocalizedErrorAsync(
-                        twitch ? "TwitchMemberSetting.Errors.CrossPlatformRoleCollision" : "MemberSetting.Errors.CrossPlatformRoleCollision",
-                        true);
-                    break;
-                case "verification.limit-reached":
-                    if (twitch)
-                        await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.TooManyChannels", true);
-                    else
-                        await SendLocalizedErrorAsync("MemberSetting.Errors.ChannelLimit", true, true,
-                            result.Arguments.Value<int?>("limit") ?? 0);
-                    break;
-                case "verification.guild-member-requirement":
-                    await SendLocalizedErrorAsync("Preconditions.GuildMemberCount", true, true,
-                        result.Arguments.Value<int?>("requiredMemberCount") ?? 0,
-                        result.Arguments.Value<int?>("memberCount") ?? Context.Guild.MemberCount,
-                        contactPath);
-                    break;
-                case "verification.source-not-found":
-                    await SendLocalizedErrorAsync(
-                        twitch ? "TwitchMemberSetting.Errors.ChannelNotFound" : "Errors.InvalidYoutubeChannel",
-                        true);
-                    break;
-                case "verification.source-ineligible":
-                    await SendLocalizedErrorAsync("TwitchMemberSetting.Errors.IneligibleBroadcaster", true);
-                    break;
-                case "verification.deletion-pending":
-                    await SendLocalizedErrorAsync(
-                        twitch ? "TwitchMemberSetting.Errors.RepairPending" : "MemberSetting.Errors.RepairPending",
-                        true);
-                    break;
-                case "verification.probe-video-set":
-                    await SendLocalizedConfirmAsync("MemberSetting.CheckVideoChanged", true, false,
-                        source, result.Arguments.Value<string>("videoId") ?? "");
-                    break;
-                case "verification.probe-automatic":
-                    await SendLocalizedConfirmAsync("MemberSetting.CheckVideoCleared", true, false, source, 5);
-                    break;
-                case "verification.probe-video-invalid":
-                    await SendLocalizedErrorAsync("MemberSetting.Errors.InvalidVideoId", true);
-                    break;
-                case "verification.platform-disabled":
-                    await SendLocalizedErrorAsync("Errors.FeatureDisabled", true);
-                    break;
-                default:
-                    await SendLocalizedErrorAsync("Errors.SaveFailed", true);
-                    break;
-            }
-        }
-
         public async Task<bool> PromptUserConfirmAsync(string resourceKey, params object[] arguments)
         {
             string guid = Guid.NewGuid().ToString().Replace("-", "");
@@ -278,16 +177,13 @@ namespace DiscordStreamNotifyBot.Interaction
             ulong guildId = Context.Guild.Id;
             bool hasNoYoutubeNotice = !await dbContext.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
             bool hasNoTwitchNotice = !await dbContext.NoticeTwitchStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
-            bool hasNoTwitcastingNotice = !await dbContext.NoticeTwitcastingStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
-            bool hasNoChzzkNotice = !await dbContext.NoticeChzzkStreamChannels.AsNoTracking().AnyAsync(x => x.GuildId == guildId);
             var initialized = await GuildLocaleService.InitializeAsync(
                 dbContext,
                 guildId,
                 Context.Interaction.GuildLocale,
                 Context.Interaction.UserLocale);
 
-            bool hasNoVerificationLog = initialized.GuildConfig.VerificationLogChannelId == 0;
-            if (hasNoYoutubeNotice && hasNoTwitchNotice && hasNoTwitcastingNotice && hasNoChzzkNotice && hasNoVerificationLog)
+            if (hasNoYoutubeNotice && hasNoTwitchNotice)
             {
                 string responseLocale = LocaleResolver.ResolvePrivate(
                     Context.Interaction.UserLocale,

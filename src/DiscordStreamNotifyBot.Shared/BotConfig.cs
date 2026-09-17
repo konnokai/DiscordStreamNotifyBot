@@ -18,9 +18,6 @@ public class BotConfig
     public string GoogleClientId { get; set; } = "";
     public string GoogleClientSecret { get; set; } = "";
 
-    public string TwitCastingClientId { get; set; } = "";
-    public string TwitCastingClientSecret { get; set; } = "";
-
     // https://streamlink.github.io/cli/plugins/twitch.html#authentication
     // 先放著，未來可能會用到
     public string TwitchCookieAuthToken { get; set; } = "";
@@ -30,13 +27,6 @@ public class BotConfig
     public ulong YouTubeEmoteId { get; set; } = 1265158558299848827;
     public ulong PayPalEmoteId { get; set; } = 1265158658015236107;
     public ulong ECPayEmoteId { get; set; } = 1379272194210795622;
-
-    /// <summary>
-    /// 是否啟用 GuildMembers 特權 intent（會員重新加入時立即回補會限身分組，並對帳回收孤兒身分組）。
-    /// <para>預設為 false：未在 Discord 開發者後台啟用 Server Members Intent 時，務必保持關閉；否則 Bot 會因
-    /// disallowed intent（4014）而登入失敗。啟用特權並通過審核後才設為 true（或設定環境變數 ENABLE_GUILD_MEMBERS_INTENT）。</para>
-    /// </summary>
-    public bool EnableGuildMembersIntent { get; set; } = false;
 
     #region 水平擴展（三層拆分）設定（計畫 §3）
     /// <summary>
@@ -103,8 +93,6 @@ public class BotConfig
             WebHookUrl = config.WebHookUrl;
             GoogleApiKey = config.GoogleApiKey;
             TestSlashCommandGuildIds = config.TestSlashCommandGuildIds ?? [];
-            TwitCastingClientId = config.TwitCastingClientId;
-            TwitCastingClientSecret = config.TwitCastingClientSecret;
             TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;
             TwitchClientSecret = config.TwitchClientSecret;
@@ -115,7 +103,6 @@ public class BotConfig
             YouTubeEmoteId = config.YouTubeEmoteId;
             PayPalEmoteId = config.PayPalEmoteId;
             ECPayEmoteId = config.ECPayEmoteId;
-            EnableGuildMembersIntent = config.EnableGuildMembersIntent;
             TotalShards = config.TotalShards;
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
@@ -143,7 +130,6 @@ public class BotConfig
         SetIfPresent("GOOGLE_API_KEY", v => GoogleApiKey = v);
         SetIfPresent("LOKI_URL", v => LokiUrl = v);
         SetIfPresentInt("TOTAL_SHARDS", v => TotalShards = v);
-        SetIfPresentBool("ENABLE_GUILD_MEMBERS_INTENT", v => EnableGuildMembersIntent = v);
     }
 
     private static void SetIfPresent(string envName, Action<string> setter)
@@ -157,13 +143,6 @@ public class BotConfig
     {
         var value = Environment.GetEnvironmentVariable(envName);
         if (!string.IsNullOrWhiteSpace(value) && int.TryParse(value, out var parsed))
-            setter(parsed);
-    }
-
-    private static void SetIfPresentBool(string envName, Action<bool> setter)
-    {
-        var value = Environment.GetEnvironmentVariable(envName);
-        if (!string.IsNullOrWhiteSpace(value) && bool.TryParse(value, out var parsed))
             setter(parsed);
     }
 

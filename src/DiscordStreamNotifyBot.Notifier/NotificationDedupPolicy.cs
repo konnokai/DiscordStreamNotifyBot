@@ -30,13 +30,7 @@ namespace DiscordStreamNotifyBot
                     NotifyType.Twitch => string.IsNullOrEmpty(jo.Value<string>("StreamId"))
                         ? null
                         : $"notified:{shardId}:tw:{jo.Value<string>("StreamId")}:{jo.Value<int?>("NoticeType")}",
-                    NotifyType.Twitcasting => $"notified:{shardId}:tc:{jo.Value<string>("ChannelId")}:{jo.Value<int?>("StreamId")}",
-                    // CHZZK 以場次鍵去重（開台／關台各一鍵，互不覆蓋）。
-                    NotifyType.Chzzk => string.IsNullOrEmpty(jo.Value<string>("StreamKey"))
-                        ? null
-                        : $"notified:{shardId}:cz:{jo.Value<string>("StreamKey")}:{jo.Value<int?>("NoticeType")}",
                     NotifyType.Banner => $"notified:{shardId}:banner:{jo.Value<string>("ChannelId")}:{jo.Value<string>("VideoId")}",
-                    NotifyType.YoutubeMemberVideoLog => $"notified:{shardId}:ytmv:{jo.Value<string>("CheckChannelId")}:{StableHash(json)}",
                     _ => null,
                 };
             }

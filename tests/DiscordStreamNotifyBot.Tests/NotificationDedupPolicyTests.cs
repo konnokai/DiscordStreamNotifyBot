@@ -96,20 +96,6 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public void TwitcastingKeyUsesChannelAndStream()
-        {
-            var json = JsonConvert.SerializeObject(new TwitcastingNotification
-            {
-                ChannelId = "channel-1",
-                StreamId = 42,
-            });
-
-            Assert.Equal(
-                "notified:4:tc:channel-1:42",
-                NotificationDedupPolicy.TryGetKey(4, NotifyType.Twitcasting, json));
-        }
-
-        [Fact]
         public void BannerKeyUsesChannelAndVideo()
         {
             var json = JsonConvert.SerializeObject(new BannerChangeNotification
@@ -121,58 +107,6 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal(
                 "notified:5:banner:channel-1:video-1",
                 NotificationDedupPolicy.TryGetKey(5, NotifyType.Banner, json));
-        }
-
-        [Fact]
-        public void MemberVideoLogKeyIncludesCodeArgumentsAndSideEffects()
-        {
-            var notification = new YoutubeMemberVideoLogNotification
-            {
-                CheckChannelId = "channel-1",
-                MessageCode = "NewProbeVideo",
-                MessageArguments = ["channel-1", "video-1"],
-            };
-            string Key() => NotificationDedupPolicy.TryGetKey(6, NotifyType.YoutubeMemberVideoLog,
-                JsonConvert.SerializeObject(notification));
-
-            string first = Key();
-            Assert.Equal(first, Key());
-            Assert.StartsWith("notified:6:ytmv:channel-1:", first);
-            notification.MessageArguments[1] = "video-2";
-            string second = Key();
-            Assert.NotEqual(first, second);
-            notification.IsNeedRemove = !notification.IsNeedRemove;
-            Assert.NotEqual(second, Key());
-        }
-
-        [Fact]
-        public void ChzzkKeyUsesStreamKeyAndNoticeType()
-        {
-            var start = NotificationDedupPolicy.TryGetKey(2, NotifyType.Chzzk,
-                JsonConvert.SerializeObject(new ChzzkNotification
-                {
-                    StreamKey = "channel-1:2026-09-15 13:41:52",
-                }));
-            var end = NotificationDedupPolicy.TryGetKey(2, NotifyType.Chzzk,
-                JsonConvert.SerializeObject(new ChzzkNotification
-                {
-                    StreamKey = "channel-1:2026-09-15 13:41:52",
-                    NoticeType = ChzzkNoticeType.EndStream,
-                }));
-
-            Assert.Equal("notified:2:cz:channel-1:2026-09-15 13:41:52:0", start);
-            Assert.Equal("notified:2:cz:channel-1:2026-09-15 13:41:52:1", end);
-        }
-
-        [Fact]
-        public void ChzzkWithoutStreamKeyDoesNotDeduplicate()
-        {
-            var json = JsonConvert.SerializeObject(new ChzzkNotification
-            {
-                NoticeType = ChzzkNoticeType.StartStream,
-            });
-
-            Assert.Null(NotificationDedupPolicy.TryGetKey(2, NotifyType.Chzzk, json));
         }
 
         [Fact]

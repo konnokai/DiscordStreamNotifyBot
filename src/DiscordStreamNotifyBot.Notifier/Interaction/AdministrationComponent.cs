@@ -26,7 +26,7 @@ namespace DiscordStreamNotifyBot.Interaction
             }
 
             platform = platform.ToLowerInvariant();
-            if (platform is not ("youtube" or "twitch" or "twitcasting"))
+            if (platform is not ("youtube" or "twitch"))
             {
                 await button.RespondAsync("無效的平台");
                 return;
@@ -63,8 +63,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 string sql = string.Join(Environment.NewLine, issues.Select(issue => platform switch
                 {
                     "youtube" => $"DELETE FROM `notice_youtube_stream_channel` WHERE `guild_id` = {issue.GuildId.ToString(CultureInfo.InvariantCulture)} AND (`discord_notice_stream_channel_id` = {issue.ChannelId.ToString(CultureInfo.InvariantCulture)} OR `discord_notice_video_channel_id` = {issue.ChannelId.ToString(CultureInfo.InvariantCulture)});",
-                    "twitch" => $"DELETE FROM `notice_twitch_stream_channels` WHERE `guild_id` = {issue.GuildId.ToString(CultureInfo.InvariantCulture)} AND `discord_channel_id` = {issue.ChannelId.ToString(CultureInfo.InvariantCulture)};",
-                    _ => $"DELETE FROM `notice_twitcasting_stream_channels` WHERE `guild_id` = {issue.GuildId.ToString(CultureInfo.InvariantCulture)} AND `discord_channel_id` = {issue.ChannelId.ToString(CultureInfo.InvariantCulture)};"
+                    _ => $"DELETE FROM `notice_twitch_stream_channels` WHERE `guild_id` = {issue.GuildId.ToString(CultureInfo.InvariantCulture)} AND `discord_channel_id` = {issue.ChannelId.ToString(CultureInfo.InvariantCulture)};"
                 }));
 
                 if (responded < expected)

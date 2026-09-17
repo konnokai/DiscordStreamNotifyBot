@@ -3,8 +3,8 @@ namespace DiscordStreamNotifyBot.Shared
     /// <summary>
     /// 集中管理 Redis Pub/Sub 頻道與控制平面鍵。
     /// <para>
-    /// 錄影 IPC 頻道（<see cref="Youtube"/> / <see cref="Twitch"/> / <see cref="Twitcasting"/> / <see cref="Member"/>）
-    /// 為與外部錄影工具 <c>YoutubeStreamRecord</c> 的既有契約，<b>不可單方面更改字串</b>。
+    /// 頻道（<see cref="Youtube"/> / <see cref="Twitch"/>）為與外部錄影工具 <c>YoutubeStreamRecord</c>
+    /// 及後端的既有契約，<b>不可單方面更改字串</b>。
     /// </para>
     /// <para>
     /// 控制平面鍵（<see cref="Cluster"/>）是為水平擴展新增的鍵（心跳 / leader 鎖 / shard 租約），詳見計畫 §4.2。
@@ -12,7 +12,7 @@ namespace DiscordStreamNotifyBot.Shared
     /// </summary>
     public static class RedisChannels
     {
-        /// <summary>YouTube 錄影 IPC 頻道（與錄影工具共用契約）。</summary>
+        /// <summary>YouTube Pub/Sub 與通知相關頻道（部分與後端共用契約）。</summary>
         public static class Youtube
         {
             public const string StartStream = "youtube.startstream";
@@ -21,7 +21,6 @@ namespace DiscordStreamNotifyBot.Shared
             public const string DeleteStream = "youtube.deletestream";
             public const string Unarchived = "youtube.unarchived";
             public const string MemberOnly = "youtube.memberonly";
-            public const string Record = "youtube.record";
             public const string Error429 = "youtube.429error";
             public const string Test = "youtube.test";
 
@@ -33,9 +32,6 @@ namespace DiscordStreamNotifyBot.Shared
             public const string PubSubCreateOrUpdate = "youtube.pubsub.CreateOrUpdate";
             public const string PubSubDeleted = "youtube.pubsub.Deleted";
             public const string PubSubNeedRegister = "youtube.pubsub.NeedRegister";
-
-            /// <summary>彩虹社成員頻道（<c>{affiliation}</c> 為所屬團體）。</summary>
-            public const string NijisanjiLiverTemplate = "youtube.nijisanji.liver.{affiliation}";
         }
 
         /// <summary>Twitch IPC 頻道與設定鍵（與錄影工具 / 後端共用契約）。</summary>
@@ -51,21 +47,6 @@ namespace DiscordStreamNotifyBot.Shared
 
             public static string StreamData(string userId) => $"twitch:stream_data:{userId}";
             public static string StreamNotification(string streamId) => $"twitch:stream_notified:{streamId}";
-        }
-
-        /// <summary>TwitCasting IPC 頻道（與後端 / 錄影工具共用契約）。</summary>
-        public static class Twitcasting
-        {
-            public const string PubSubStartLive = "twitcasting.pubsub.startlive";
-
-            /// <summary>TwitCasting 錄影 IPC 頻道（與錄影工具共用契約）。</summary>
-            public const string Record = "twitcasting.record";
-        }
-
-        /// <summary>YouTube 會限 OAuth Token IPC 頻道（與後端共用契約）。</summary>
-        public static class Member
-        {
-            public const string RevokeToken = "member.revokeToken";
         }
 
         /// <summary>跨 shard 共享狀態鍵（計畫階段 5）。</summary>
@@ -139,9 +120,6 @@ namespace DiscordStreamNotifyBot.Shared
             public const int DatabaseNumber = 1;
 
             public static string TwitchRefreshLock(string twitchUserId) => $"twitch:oauth:refresh-lock:{twitchUserId}";
-
-            public static string GoogleOperationLock(ulong discordUserId)
-                => $"google:oauth:operation-lock:{discordUserId}";
         }
     }
 }

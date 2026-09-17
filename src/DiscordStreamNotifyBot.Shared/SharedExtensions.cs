@@ -24,32 +24,11 @@ namespace DiscordStreamNotifyBot.Interaction
             return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
         }
 
-        public static DataBase.Table.Video.YTChannelType GetProductionType(this DataBase.Table.Video streamVideo)
-        {
-            using (var db = BotState.DbService.GetDbContext())
-            {
-                DataBase.Table.Video.YTChannelType type;
-                var channel = db.YoutubeChannelOwnedType.AsNoTracking().FirstOrDefault((x) => x.ChannelId == streamVideo.ChannelId);
-
-                if (channel != null)
-                    type = channel.ChannelType;
-                else
-                    type = streamVideo.ChannelType;
-
-                return type;
-            }
-        }
-
-        public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
-                channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
-
         public static bool HasStreamVideoByVideoId(string videoId)
         {
             videoId = videoId.Trim();
 
             using var db = BotState.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
             if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
 
@@ -61,10 +40,6 @@ namespace DiscordStreamNotifyBot.Interaction
             videoId = videoId.Trim();
 
             using var db = BotState.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
             if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
                 return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
@@ -79,10 +54,6 @@ namespace DiscordStreamNotifyBot.Interaction
             channelId = channelId.Trim();
 
             using var db = BotState.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.HoloVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NijisanjiVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
             if (db.OtherVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
                 return db.OtherVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
@@ -96,8 +67,6 @@ namespace DiscordStreamNotifyBot.Interaction
             channelId = channelId.Trim();
 
             using var db = BotState.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
             if (db.OtherVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
             if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
 

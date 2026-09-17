@@ -16,16 +16,14 @@ namespace DiscordStreamNotifyBot.Scraper
     public class ScraperService
     {
         private readonly BotConfig _config;
-        private readonly ScraperMetrics _metrics;
         private readonly ClusterService _cluster;
         private readonly string _instanceId;
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _leaderTtl;
 
-        public ScraperService(BotConfig config, ScraperMetrics metrics)
+        public ScraperService(BotConfig config)
         {
             _config = config;
-            _metrics = metrics;
             _cluster = new ClusterService();
             _instanceId = $"{Environment.MachineName}:{Environment.ProcessId}";
             _heartbeatInterval = TimeSpan.FromSeconds(Math.Max(1, config.HeartbeatIntervalSeconds));
@@ -47,7 +45,7 @@ namespace DiscordStreamNotifyBot.Scraper
             Log.Info($"[Scraper] 已取得 leader 鎖（{_instanceId}）");
 
             // 取得 leader 後才啟動偵測（叢集單例保證：同時只有一個程序在偵測與發布）
-            var detectionHost = new DetectionHost(_metrics);
+            var detectionHost = new DetectionHost();
             detectionHost.Start(_config);
 
             int exitCode = 0;

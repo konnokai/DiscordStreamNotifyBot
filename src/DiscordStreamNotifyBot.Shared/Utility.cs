@@ -11,19 +11,6 @@ namespace DiscordStreamNotifyBot
         //static Regex videoIdRegex = new Regex(@"youtube_(?'ChannelId'[\w\-]{24})_(?'Date'[\d]{8})_(?'Time'[\d]{6})_(?'VideoId'[\w\-]{11}).mp4.part");
         public static HashSet<ulong> OfficialGuildList { get; set; } = new HashSet<ulong>();
 
-        public static List<string> GetNowRecordStreamList()
-        {
-            try
-            {
-                return BotState.RedisDb.SetMembers("youtube.nowRecord").Select((x) => x.ToString()).ToList();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.ToString());
-                return new List<string>();
-            }
-        }
-
         public static int GetDbStreamCount()
         {
             try
@@ -31,8 +18,6 @@ namespace DiscordStreamNotifyBot
                 int total = 0;
 
                 using var db = BotState.DbService.GetDbContext();
-                total += db.HoloVideos.AsNoTracking().Count();
-                total += db.NijisanjiVideos.AsNoTracking().Count();
                 total += db.OtherVideos.AsNoTracking().Count();
 
                 return total;

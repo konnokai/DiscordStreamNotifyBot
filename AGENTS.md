@@ -1,6 +1,8 @@
 # AGENTS.md
 
-**「直播小幫手」(Discord Stream Notify Bot)** — 通知 Discord 伺服器 Vtuber 直播的機器人（YouTube / Twitch / TwitCasting）。Discord.Net、.NET 8.0、MySQL (EF Core + Pomelo)、Redis (StackExchange.Redis)。
+**「直播小幫手」(Discord Stream Notify Bot)** — 通知 Discord 伺服器 Vtuber 直播的機器人（YouTube / Twitch）。Discord.Net、.NET 8.0、MySQL (EF Core + Pomelo)、Redis (StackExchange.Redis)。
+
+> **本分支（`feat/bloodk1n`）為特定伺服器特規版**：已移除 TwitCasting／CHZZK 平台、YouTube 會員驗證、Twitch 訂閱驗證、Holo・Nijisanji 分類、YouTube 錄影委派、全服廣播與 Prometheus metrics 等功能與模組；主分支新增的同類功能不回收。
 
 > **語言規範**：程式碼註解、Log 訊息與 commit 訊息使用**繁體中文**；一般使用者介面透過資源支援 `zh-TW`、`en-US`、`ja`，owner/admin 與營運訊息維持繁體中文。
 
@@ -10,14 +12,12 @@
 
 - 通知補送：三平台共用 `NotificationDeliveryProgress`，以 `notification:delivery:{shardId}:{entryId}` HASH 保存逐目標訊息／crosspost checkpoint；暫時失敗保留 PEL，ACK 與 checkpoint 刪除使用同一段 Lua。checkpoint 不設 TTL，已修剪事件於 XAUTOCLAIM 回報刪除時清理；仍是 at-least-once，Discord 成功與 Redis 保存之間的程序中斷可能重複。已移除舊版通知 payload fallback，不支援混版部署。
 - 程式碼 = 多專案（`DiscordStreamNotifyBot.sln`）：`src/DiscordStreamNotifyBot.Shared`（共用基礎，含 `DataBase/`+`Migrations/`、`Auth/`、`BotState`、`StartupPreflight`、`GracefulShutdown`、`RedisChannels`、`NotificationBus`(Redis Streams)、`Messages/` DTO、`*ApiService`、`ClusterService`、`SharedExtensions`）+ `src/DiscordStreamNotifyBot.Scraper`（叢集唯一偵測宿主：`Detection/` + leader 鎖，publish `bot:notify`）+ `src/DiscordStreamNotifyBot.Notifier`（連 Discord、指令系統、消費 `bot:notify` 發送，輸出 `DiscordStreamNotifyBot.dll`）+ `src/DiscordStreamNotifyBot.Coordinator`（主控層：`CoordinatorService` 心跳/leader/TOTAL_SHARDS 公告/匯流排 pending 監控）。
-- 本地化第一階段的程式實作已完成，待手動 Discord 驗證：Slash group／command／parameter／choice 名稱固定使用英文 canonical，description 支援 `zh-TW`／`en-US`／`ja`；一般互動、Help、三平台背景通知與會限訊息維持三語，通知事件對本 shard guild 批次讀取 locale，通知 DTO 不攜帶 locale；`/utility` 僅保留一般工具，共用管理指令集中於 `/server-admin`。
+- 本地化第一階段的程式實作已完成，待手動 Discord 驗證：Slash group／command／parameter／choice 名稱固定使用英文 canonical，description 支援 `zh-TW`／`en-US`／`ja`；一般互動、Help 與 YouTube／Twitch 背景通知維持三語，通知事件對本 shard guild 批次讀取 locale，通知 DTO 不攜帶 locale；`/utility` 僅保留一般工具，共用管理指令集中於 `/server-admin`。
 - 自動化測試第一至四批已完成，第五批 Redis／MySQL component tests 已實跑通過；多 shard guild ownership 與外部 API request contract 待完成。細節見 [docs/TESTING_PLAN.md](docs/TESTING_PLAN.md)。
-- Twitch 訂閱驗證 Bot 端已實作：共用 MySQL OAuth token、provider secret 金鑰、跨程序 refresh lock、rotation 關閉 drain、Helix 訂閱查詢、可重試的設定刪除、Tier 角色、三語 Slash 指令及每小時複驗；正式 Twitch／Discord 行為仍需依計畫手動驗收。
-- YouTube 會員驗證已重構為 `/youtube-member`／`/youtube-member-set`、durable pending cleanup、role migration/deletion checkpoint、typed provider result 與可 drain 的 `PeriodicRunner`；Google callback/refresh/revoke 以 Redis DB1 per-user lease 加 MySQL unlink intent fence 跨 Bot/Backend 協調，SDK 不直接寫刪 authoritative token；YouTube/Twitch 共用 operation coordinator 與跨平台 role ownership 保護。Backend/Frontend 已同步 cleanup-pending contract，正式 MySQL migration 與 Discord acceptance 尚待維護窗口人工執行。
-- 網頁管理設定 Bot 端首版已實作：Notifier owning shard 透過固定 Redis request/reply 契約提供 guild/common/三平台通知快照，並由既有 Utility/YouTube/Twitch/TwitCasting 服務執行明確 desired-state mutation；跨專案契約與後續驗證設定擴充見 [docs/WEB_ADMIN_SETTINGS_PLAN.md](docs/WEB_ADMIN_SETTINGS_PLAN.md)。
-- 網頁管理設定的三平台爬蟲與 YouTube／Twitch 驗證已接上共用 domain service、expanded snapshot 與 Web 表單；正式 Discord／Redis／MySQL／多 shard 驗收仍依 [docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md](docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md) 執行。
-- 網頁管理設定 latency follow-up 已完成：Backend 三個 endpoint 共用 30 秒 absolute deadline，Bot envelope 傳遞 `deadlineUnixMs`，Redis reply／unavailable／deadline exceeded 分流，驗證刪除先 durable pending 再由既有週期清理；正式整合驗收仍待執行。
-- CHZZK 直播通知 Bot 端已實作（計畫見 [docs/CHZZK_NOTIFICATION_PLAN.md](docs/CHZZK_NOTIFICATION_PLAN.md)）：網站匿名 live-status 輪詢（30 秒常數、僅 Scraper leader）、`streamKey = channelId + ":" + 正規化 openDate`（移除冒號與減號、空格改底線，如 `20260915_124110`；KST 固定 UTC+9 轉 UTC）、三張新表＋`GuildConfig.MaxChzzkSpiderCount`（預設 3）、`/chzzk` 與 `/chzzk-spider` 三語指令、AdminSettings 快照與 action（capability `chzzk-notification`／`chzzk-crawler`）；不含 OAuth、全站輪詢 fallback、錄影與 IsWarningUser。Backend 為 pass-through 無需改動，Frontend 已同步表單與型別。Release build 0 警告、681 tests passed；正式 Discord／Redis／MySQL／多 shard 驗收與 migration 套用尚待人工執行。
+- 網頁管理設定 Bot 端已實作：Notifier owning shard 透過固定 Redis request/reply 契約提供 guild/common 與 YouTube／Twitch 通知快照，並由既有 Utility/YouTube/Twitch 服務執行明確 desired-state mutation；跨專案契約見 [docs/WEB_ADMIN_SETTINGS_PLAN.md](docs/WEB_ADMIN_SETTINGS_PLAN.md)。
+- 網頁管理設定的 YouTube／Twitch 爬蟲已接上共用 domain service、expanded snapshot 與 Web 表單；正式 Discord／Redis／MySQL／多 shard 驗收仍依 [docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md](docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md) 執行。
+- 網頁管理設定 latency follow-up 已完成：Backend 三個 endpoint 共用 30 秒 absolute deadline，Bot envelope 傳遞 `deadlineUnixMs`，Redis reply／unavailable／deadline exceeded 分流；正式整合驗收仍待執行。
+- 特規版精簡（`feat/bloodk1n`）：移除 TwitCasting／CHZZK 平台、YouTube 會員驗證（YoutubeMember）、Twitch 訂閱驗證（TwitchSubscription）、Holo・Nijisanji 分類與影片表（`YTChannelType` 僅剩 `Other`/`NonApproved`）、YouTube 錄影委派（RecordYoutubeChannel）、`/youtube now-streaming` 與 `/youtube list-record-channel`、全服廣播與 `/server-admin set-verification-log-channel`、Prometheus metrics 與 `deploy/grafana`。EF 實體與 `GuildConfig` 欄位已自模型移除但**未產生新 migration**（比照舊特規版；正式 DB 變更交由維護窗口處理），MySQL component test `FullMigrationSetIsAppliedAndModelHasNoPendingChanges` 因此會回報 pending model changes。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run
@@ -61,14 +61,14 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 
 ## 架構要點（現行樹）
 
-- Notifier 進入點 `Program.cs` → `Bot.cs`：init 設定/DB/Redis → DiscordSocketClient（手動 shard 參數）→ DI 後明確啟動 `AdminSettingsService` 與驗證服務 → 指令註冊 → 啟動 `NotificationBusConsumer`（消費 `bot:notify`）→ 阻塞至關閉。Scraper 進入點 `Program.cs` → `ScraperService`（搶 leader 鎖）→ `DetectionHost`（`Detection/` 偵測、publish DTO，不連 Discord）。
+- Notifier 進入點 `Program.cs` → `Bot.cs`：init 設定/DB/Redis → DiscordSocketClient（手動 shard 參數）→ DI 後明確啟動 `AdminSettingsService` → 指令註冊 → 啟動 `NotificationBusConsumer`（消費 `bot:notify`）→ 阻塞至關閉。Scraper 進入點 `Program.cs` → `ScraperService`（搶 leader 鎖）→ `DetectionHost`（`Detection/` 偵測、publish DTO，不連 Discord）。
 - 全域靜態狀態在 Shared 的 `BotState`（`Redis/RedisSub/RedisDb`、`DbService`、`IsConnect`、`ShardId/TotalShardCount`、`IsServerOnThisShard`/`ShouldDeleteMissingGuild`）；Notifier 的 `Bot` 靜態成員委派至此。
 - **雙指令系統**（目錄結構對稱）：`Command/` = `s!` 前綴（擁有者/管理用）；`Interaction/` = Slash（一般使用者）。
 - **DI 反射自動載入**：實作 `IInteractionService` / `ICommandService` 的類別自動註冊 Singleton（`Interaction|Command/Extensions.cs`），新增服務不需手動登記。
-- DB：`MainDbService.GetDbContext()` 取短生命週期 context（`using var db = ...`），讀取一律 `.AsNoTracking()`。YouTube 影片四表（Holo/Nijisanji/Other/NonApproved）繼承 `Video`，依 videoId 查詢需依序探查四表。
-- 偵測與發送已拆分（計畫階段 3）：偵測（Timer/排程爬取/webhook 訂閱）在 **Scraper** `Detection/`，publish DTO 到 `bot:notify`；發送（`_client.GetGuild` + embed）在 **Notifier** `SharedService/`，消費匯流排後 `DispatchFromBusAsync` 重建 embed。跨層 DTO 在 `Shared/Messages/`。會限**逐使用者驗證**仍留 Notifier（shard 守衛天然分區）；但**會限影片探索**（頻道層級）在 Scraper，log 走 `YoutubeMemberVideoLog` 匯流排。會員重加入即時回補/孤兒身分組對帳需 `EnableGuildMembersIntent`（預設關，未開特權前勿設 true 以免 login 4014）。
+- DB：`MainDbService.GetDbContext()` 取短生命週期 context（`using var db = ...`），讀取一律 `.AsNoTracking()`。YouTube 影片兩表（Other/NonApproved）繼承 `Video`，依 videoId 查詢需依序探查兩表。
+- 偵測與發送已拆分（計畫階段 3）：偵測（Timer/排程爬取/webhook 訂閱）在 **Scraper** `Detection/`，publish DTO 到 `bot:notify`；發送（`_client.GetGuild` + embed）在 **Notifier** `SharedService/`，消費匯流排後 `DispatchFromBusAsync` 重建 embed。跨層 DTO 在 `Shared/Messages/`。
 - Twitch 偵測採雙模式：有效 broadcaster OAuth 由 Scraper 永久維持 `stream.online`/`channel.update`/`stream.offline` 三種 EventSub並低頻補償；未授權頻道維持 30 秒 polling、直播期間暫時 update/offline。授權失效時先以 Helix確認離線，直播中禁止刪 EventSub，離線後依 Shared guild snapshot/Notifier健康守衛決定保留或移除 spider；通知設定不隨 spider 自動刪除。
-- **Coordinator**（階段 4）：`CoordinatorService` 心跳/leader 觀察/`TOTAL_SHARDS` 公告/`XINFO GROUPS` pending 監控，不負責重啟（交 Compose）；Prometheus endpoint 為 Coordinator `:9464`、Scraper `:9465`、各 Notifier `:9466`，scrape 只讀既有快照與 counter，不查 Redis/MySQL。**跨 shard 指令**（階段 5，計畫 §7）：`Notifier/SharedService/Cluster/ClusterQueryService`（合併快照 + request-reply）+ `AdministrationService` 廣播；`OfficialGuildList` 存 Redis SET；狀態列計數走 `cluster:stats:*` HASH 彙總。部署見根目錄 `Dockerfile`/`docker-compose.yml`（方式 A）。
+- **Coordinator**（階段 4）：`CoordinatorService` 心跳/leader 觀察/`TOTAL_SHARDS` 公告/`XINFO GROUPS` pending 監控，不負責重啟（交 Compose）。**跨 shard 指令**（階段 5，計畫 §7）：`Notifier/SharedService/Cluster/ClusterQueryService`（合併快照 + request-reply）+ `AdministrationService` 廣播；`OfficialGuildList` 存 Redis SET；狀態列計數走 `cluster:stats:*` HASH 彙總。部署見根目錄 `Dockerfile`/`docker-compose.yml`（方式 A）。
 - Logging：Shared 的 Serilog pipeline 接管 console、非容器 general/error/stream 檔案與 Grafana Loki 主動推送；既有靜態 `Log` facade、四個低 cardinality labels 與有限時間 flush 契約維持不變。
 
 ## 外部契約（不可片面更改）
@@ -77,12 +77,10 @@ dotnet ef database update --project src/DiscordStreamNotifyBot.Shared    # 僅�
 
 | 分類 | 頻道 |
 |------|------|
-| YouTube | `youtube.startstream` `youtube.endstream` `youtube.addstream` `youtube.deletestream` `youtube.unarchived` `youtube.memberonly` `youtube.record` `youtube.429error` `youtube.pubsub.{CreateOrUpdate,Deleted,NeedRegister}` |
+| YouTube | `youtube.startstream` `youtube.endstream` `youtube.addstream` `youtube.deletestream` `youtube.unarchived` `youtube.memberonly` `youtube.429error` `youtube.pubsub.{CreateOrUpdate,Deleted,NeedRegister}` |
 | Twitch | `twitch.record` `twitch:stream_online` `twitch:channel_update` `twitch:stream_offline` `twitch:authorization_changed` |
-| TwitCasting | `twitcasting.pubsub.startlive` `twitcasting.record` |
-| 會限 | `member.revokeToken` |
 
-改名 = 破壞另外兩個 repo。`Auth/`（TokenManager，AES-CBC+HMAC，金鑰 `ProviderTokenEncryptionKey`）與後端共享，同屬契約；金鑰只由部署 secret 提供，不透過 Redis 傳輸。
+本特規版已移除 TwitCasting（`twitcasting.*`）、會限（`member.revokeToken`）與 `youtube.record`（錄影委派）相關頻道。改名 = 破壞另外兩個 repo。`Auth/`（TokenManager，AES-CBC+HMAC，金鑰 `ProviderTokenEncryptionKey`）與後端共享，同屬契約；金鑰只由部署 secret 提供，不透過 Redis 傳輸。
 
 ## Conventions
 

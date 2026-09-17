@@ -16,8 +16,6 @@
   <data name="server-admin.send-message-to-bot-owner.description" xml:space="preserve"><value>Bot の所有者へメッセージを送ります</value></data>
   <data name="server-admin.set-global-notice-channel.description" xml:space="preserve"><value>Bot の所有者からのお知らせを受信するチャンネルを設定します</value></data>
   <data name="server-admin.set-global-notice-channel.channel.description" xml:space="preserve"><value>お知らせを受信するテキストまたはアナウンスチャンネル</value></data>
-  <data name="server-admin.set-verification-log-channel.description" xml:space="preserve"><value>YouTube メンバーシップと Twitch サブスク認証のログチャンネルを設定します</value></data>
-  <data name="server-admin.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>メンバーシップとサブスク認証ログを受信するテキストチャンネル</value></data>
 
   <data name="help.description" xml:space="preserve"><value>コマンドと使い方を確認します</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>利用可能なコマンドモジュールをすべて表示します</value></data>
@@ -28,10 +26,6 @@
   <data name="help.get-command-help.command.description" xml:space="preserve"><value>確認するコマンド</value></data>
 
   <data name="youtube.description" xml:space="preserve"><value>YouTube の配信と動画の通知設定</value></data>
-  <data name="youtube.list-record-channel.description" xml:space="preserve"><value>現在録画対象になっているチャンネルを表示します</value></data>
-  <data name="youtube.list-record-channel.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="youtube.now-streaming.description" xml:space="preserve"><value>現在配信中のメンバーを表示します</value></data>
-  <data name="youtube.now-streaming.host.description" xml:space="preserve"><value>確認する所属グループ</value></data>
   <data name="youtube.coming-soon-stream.description" xml:space="preserve"><value>今後予定されている配信を表示します</value></data>
   <data name="youtube.coming-soon-stream.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
   <data name="youtube.get-member-only-playlist.description" xml:space="preserve"><value>チャンネル URL をメンバー限定再生リストの URL に変換します</value></data>
@@ -92,82 +86,7 @@
   <data name="twitch-spider.list-not-trusted.description" xml:space="preserve"><value>警告対象の Twitch 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
   <data name="twitch-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 
-  <data name="twitcasting.description" xml:space="preserve"><value>TwitCasting の配信通知設定</value></data>
-  <data name="twitcasting.add.description" xml:space="preserve"><value>TwitCasting の配信通知を追加します</value></data>
-  <data name="twitcasting.add.streamer.description" xml:space="preserve"><value>TwitCasting のユーザー名または URL</value></data>
-  <data name="twitcasting.add.notification-channel.description" xml:space="preserve"><value>配信通知を受信するテキストまたはアナウンスチャンネル</value></data>
-  <data name="twitcasting.remove.description" xml:space="preserve"><value>TwitCasting の配信通知を削除します</value></data>
-  <data name="twitcasting.remove.channel.description" xml:space="preserve"><value>通知を削除する TwitCasting チャンネル</value></data>
-  <data name="twitcasting.list.description" xml:space="preserve"><value>設定済みの TwitCasting 配信通知を表示します</value></data>
-  <data name="twitcasting.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="twitcasting.set-message.description" xml:space="preserve"><value>TwitCasting 通知のメッセージを設定します</value></data>
-  <data name="twitcasting.set-message.channel.description" xml:space="preserve"><value>通知設定済みの TwitCasting チャンネル</value></data>
-  <data name="twitcasting.set-message.message.description" xml:space="preserve"><value>通知文。空欄にすると設定を消去します</value></data>
-  <data name="twitcasting.list-message.description" xml:space="preserve"><value>設定済みの TwitCasting 通知メッセージを表示します</value></data>
-  <data name="twitcasting.list-message.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 
-  <data name="twitcasting-spider.description" xml:space="preserve"><value>TwitCasting チャンネルの監視設定</value></data>
-  <data name="twitcasting-spider.add.description" xml:space="preserve"><value>TwitCasting チャンネルの監視を追加します</value></data>
-  <data name="twitcasting-spider.add.channel.description" xml:space="preserve"><value>監視する TwitCasting チャンネル</value></data>
-  <data name="twitcasting-spider.remove.description" xml:space="preserve"><value>TwitCasting チャンネルの監視を削除します</value></data>
-  <data name="twitcasting-spider.remove.channel.description" xml:space="preserve"><value>監視を停止する TwitCasting チャンネル</value></data>
-  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>警告のない TwitCasting 監視チャンネルを表示します</value></data>
-  <data name="twitcasting-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>警告対象の TwitCasting 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
-  <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 
-  <data name="youtube-member.description" xml:space="preserve"><value>YouTube メンバーシップの認証</value></data>
-  <data name="youtube-member.check.description" xml:space="preserve"><value>サイト連携を確認してメンバーシップ認証を開始します</value></data>
-  <data name="youtube-member.cancel-member-check.description" xml:space="preserve"><value>このサーバーの認証を取り消してロールを削除します</value></data>
-  <data name="youtube-member.unlink.description" xml:space="preserve"><value>Discord と Google の連携を解除して認可を取り消します</value></data>
-  <data name="youtube-member.list-can-check-channel.description" xml:space="preserve"><value>現在認証できるメンバー限定チャンネルを表示します</value></data>
-  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>現在連携している YouTube チャンネルを表示します</value></data>
 
-  <data name="youtube-member-set.description" xml:space="preserve"><value>YouTube メンバーシップ認証の設定</value></data>
-  <data name="youtube-member-set.add-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルと付与ロールを追加します</value></data>
-  <data name="youtube-member-set.add-member-check.channel-url.description" xml:space="preserve"><value>メンバーシップを認証する YouTube チャンネル</value></data>
-  <data name="youtube-member-set.add-member-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール</value></data>
-  <data name="youtube-member-set.remove-member-check.description" xml:space="preserve"><value>メンバーシップ認証チャンネルを削除します</value></data>
-  <data name="youtube-member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>認証対象から削除する YouTube チャンネル</value></data>
-  <data name="youtube-member-set.set-check-video.description" xml:space="preserve"><value>認証に使うメンバー限定動画を手動で指定します</value></data>
-  <data name="youtube-member-set.set-check-video.channel.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
-  <data name="youtube-member-set.set-check-video.video.description" xml:space="preserve"><value>メンバー限定動画の URL または 11 文字の動画 ID</value></data>
-  <data name="youtube-member-set.clear-check-video.description" xml:space="preserve"><value>認証動画を自動選択へ戻します</value></data>
-  <data name="youtube-member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>メンバーシップ認証設定済みの YouTube チャンネル</value></data>
-  <data name="youtube-member-set.list-checked-member.description" xml:space="preserve"><value>認証に成功したメンバーを表示します</value></data>
-  <data name="youtube-member-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-	  <data name="twitch-subscription.description" xml:space="preserve"><value>Twitch サブスク認証</value></data>
-  <data name="twitch-subscription.check.description" xml:space="preserve"><value>Twitch サブスクを今すぐ認証します</value></data>
-  <data name="twitch-subscription.cancel-subscription-check.description" xml:space="preserve"><value>このサーバーの Twitch サブスク認証を解除します</value></data>
-  <data name="twitch-subscription.show-my-twitch-account.description" xml:space="preserve"><value>現在連携中の Twitch アカウントを表示します</value></data>
-  <data name="twitch-subscription.list-can-check-channel.description" xml:space="preserve"><value>認証可能な Twitch チャンネルを表示します</value></data>
-  <data name="twitch-subscription-set.description" xml:space="preserve"><value>Twitch サブスク認証設定</value></data>
-  <data name="twitch-subscription-set.add-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを追加または更新します</value></data>
-  <data name="twitch-subscription-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch チャンネル URL または login</value></data>
-  <data name="twitch-subscription-set.add-subscription-check.role.description" xml:space="preserve"><value>認証成功後に付与するロール（対応するティアロールも追加で付与）</value></data>
-  <data name="twitch-subscription-set.remove-subscription-check.description" xml:space="preserve"><value>Twitch サブスク認証チャンネルを削除します</value></data>
-  <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>設定済み Twitch チャンネル</value></data>
-  <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>認証済み Twitch サブスクメンバーを表示します</value></data>
-  <data name="twitch-subscription-set.list-checked-member.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="chzzk.description" xml:space="preserve"><value>CHZZK 配信通知設定</value></data>
-  <data name="chzzk.add.description" xml:space="preserve"><value>CHZZK 配信通知を追加します</value></data>
-  <data name="chzzk.add.streamer.description" xml:space="preserve"><value>チャンネル URL</value></data>
-  <data name="chzzk.add.notification-channel.description" xml:space="preserve"><value>通知を送信するチャンネル</value></data>
-  <data name="chzzk.remove.description" xml:space="preserve"><value>CHZZK 配信通知を削除します</value></data>
-  <data name="chzzk.remove.channel.description" xml:space="preserve"><value>削除する CHZZK チャンネル</value></data>
-  <data name="chzzk.list.description" xml:space="preserve"><value>通知設定済みの CHZZK チャンネルを表示します</value></data>
-  <data name="chzzk.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="chzzk.set-message.description" xml:space="preserve"><value>CHZZK 通知メッセージを設定します</value></data>
-  <data name="chzzk.set-message.channel.description" xml:space="preserve"><value>通知設定済みの CHZZK チャンネル</value></data>
-  <data name="chzzk.set-message.notification-type.description" xml:space="preserve"><value>設定する配信イベント</value></data>
-  <data name="chzzk.set-message.message.description" xml:space="preserve"><value>カスタムメッセージ。空欄で解除、- で通知を無効化します</value></data>
-  <data name="chzzk.list-message.description" xml:space="preserve"><value>設定済みの CHZZK 通知メッセージを表示します</value></data>
-  <data name="chzzk.list-message.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="chzzk-spider.description" xml:space="preserve"><value>CHZZK チャンネルクローラー設定</value></data>
-  <data name="chzzk-spider.add.description" xml:space="preserve"><value>CHZZK チャンネルクローラーを追加します</value></data>
-  <data name="chzzk-spider.add.channel.description" xml:space="preserve"><value>追加する CHZZK チャンネル</value></data>
-  <data name="chzzk-spider.remove.description" xml:space="preserve"><value>CHZZK チャンネルクローラーを削除します</value></data>
-  <data name="chzzk-spider.remove.channel.description" xml:space="preserve"><value>削除する CHZZK チャンネル</value></data>
-  <data name="chzzk-spider.list.description" xml:space="preserve"><value>登録済みの CHZZK チャンネルクローラーを表示します</value></data>
-  <data name="chzzk-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 </root>

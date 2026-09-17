@@ -1,5 +1,4 @@
 using Discord.Interactions;
-using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Utility.Service;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
@@ -13,17 +12,10 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
     [Group("server-admin", "伺服器管理")]
     public sealed class ServerAdministration : TopLevelModule<UtilityService>
     {
-        private readonly DiscordSocketClient _client;
-        private readonly MainDbService _dbService;
         private readonly BotLocalizer _botLocalizer;
 
-        public ServerAdministration(
-            DiscordSocketClient client,
-            MainDbService dbService,
-            BotLocalizer botLocalizer)
+        public ServerAdministration(BotLocalizer botLocalizer)
         {
-            _client = client;
-            _dbService = dbService;
             _botLocalizer = botLocalizer;
         }
 
@@ -72,49 +64,6 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
         [RequireContext(ContextType.Guild)]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [RequireUserPermission(GuildPermission.Administrator)]
-        [SlashCommand("set-verification-log-channel", "設定會員與訂閱驗證紀錄頻道")]
-        public async Task SetVerificationLogChannelAsync(
-            [Summary("log-channel", "紀錄頻道")] ITextChannel textChannel)
-        {
-            await DeferAsync(true);
-
-            using var db = _dbService.GetDbContext();
-            var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-            string locale = await GetLocaleAsync(true);
-            if (!permissions.ViewChannel || !permissions.SendMessages)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                        BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                        BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
-                return;
-            }
-
-            if (!permissions.EmbedLinks)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
-                return;
-            }
-
-            await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
-
-            var result = await _service.SetVerificationLogChannelAsync(
-                Context.Guild,
-                textChannel.Id,
-                GracefulShutdown.Token);
-            if (result.State != "applied")
-            {
-                await SendLocalizedErrorAsync("Errors.OperationFailed", true, true);
-                return;
-            }
-
-            await SendLocalizedConfirmAsync("MemberSetting.LogChannelChanged", true, false, textChannel);
-        }
-
-        [RequireContext(ContextType.Guild)]
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
-        [RequireUserPermission(GuildPermission.Administrator)]
         [SlashCommand("set-global-notice-channel", "設定要接收 Bot 擁有者發送的訊息頻道")]
         public async Task SetGlobalNoticeChannel(
             [Summary("channel", "接收通知的頻道"), ChannelTypes(ChannelType.Text, ChannelType.News)] IChannel channel)
@@ -123,7 +72,7 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
             {
                 string locale = await GetLocaleAsync(true);
                 var textChannel = channel as IGuildChannel;
-                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
+                var permissions = Context.Guild.GetUser(Context.Client.CurrentUser.Id).GetPermissions(textChannel);
                 if (!permissions.ViewChannel || !permissions.SendMessages)
                 {
                     await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", false, true,

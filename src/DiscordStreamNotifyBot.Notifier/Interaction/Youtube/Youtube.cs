@@ -53,54 +53,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             _dbService = dbService;
         }
 
-        [RequireContext(ContextType.Guild)]
-        [RequireUserPermission(GuildPermission.ManageMessages)]
-        [DefaultMemberPermissions(GuildPermission.ManageMessages)]
-        [SlashCommand("list-record-channel", "顯示直播記錄頻道")]
-        public async Task ListRecordChannel([Summary("page", "頁數")] int page = 0)
-        {
-            string locale = await GetLocaleAsync(false);
-            using (var db = _dbService.GetDbContext())
-            {
-                if (db.RecordYoutubeChannel.Any())
-                {
-                    var list = new List<string>();
-
-                    foreach (var item in db.RecordYoutubeChannel.ToList().Chunk(50))
-                    {
-                        list.AddRange(await _service.GetChannelTitle(item.Select((x) => x.YoutubeChannelId), true));
-                    }
-
-                    list.Sort();
-                    await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
-                    {
-                        return new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle(BotLocalizer.Get("Youtube.RecordList.Title", locale))
-                            .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                            .WithFooter(BotLocalizer.Format("Common.ChannelCountFooter", locale,
-                                Math.Min(list.Count, (page + 1) * 20), list.Count));
-                    }, list.Count, 20, false);
-                }
-                else await SendLocalizedErrorAsync("Youtube.RecordList.Empty").ConfigureAwait(false);
-            }
-        }
-
-        [SlashCommand("now-streaming", "取得現在直播的成員")]
-        public async Task NowStreaming(YoutubeStreamService.NowStreamingHost host)
-        {
-            string locale = await GetLocaleAsync(false);
-            var embed = await _service.GetNowStreamingChannel(host, locale).ConfigureAwait(false);
-
-            if (embed == null)
-            {
-                await SendLocalizedErrorAsync("Youtube.NowStreaming.Failed").ConfigureAwait(false);
-                return;
-            }
-
-            await Context.Interaction.RespondAsync(embed: embed).ConfigureAwait(false);
-        }
-
         [SlashCommand("coming-soon-stream", "顯示接下來直播的清單")]
         public async Task ComingSoonStream([Summary("page", "頁數")] int page = 0)
         {
@@ -113,8 +65,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                 List<string> videoIds = new List<string>();
                 using (var reminderDb = _dbService.GetDbContext())
                 {
-                    videoIds.AddRange(reminderDb.HoloVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate).Select((x) => x.VideoId));
-                    videoIds.AddRange(reminderDb.NijisanjiVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate).Select((x) => x.VideoId));
                     videoIds.AddRange(reminderDb.OtherVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate).Select((x) => x.VideoId));
                 }
 
@@ -137,9 +87,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                            .Select((x) => BotLocalizer.Format("Youtube.Upcoming.Entry", locale,
                                Format.Url(x.Snippet.Title, $"https://www.youtube.com/watch?v={x.Id}"),
                                Format.Url(x.Snippet.ChannelTitle, $"https://www.youtube.com/channel/{x.Snippet.ChannelId}"),
-                               TimestampTag.FromDateTimeOffset(x.LiveStreamingDetails.ScheduledStartTimeDateTimeOffset.Value, TimestampTagStyles.LongDateTime),
-                               BotLocalizer.Get(db.RecordYoutubeChannel.Any(x2 => x2.YoutubeChannelId.Trim() == x.Snippet.ChannelId)
-                                   ? "Common.Yes" : "Common.No", locale)))));
+                               TimestampTag.FromDateTimeOffset(x.LiveStreamingDetails.ScheduledStartTimeDateTimeOffset.Value, TimestampTagStyles.LongDateTime)))));
                     }, result.Count, 7).ConfigureAwait(false);
                 }
             }
@@ -796,11 +744,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                 {
                     result += BotLocalizer.Format("Notifications.MessageSet", locale, channelTitle, noticeTypeString, message);
 
-                    if (noticeType == YoutubeStreamService.NoticeType.End && !db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId))
-                    {
-                        result += BotLocalizer.Get("Youtube.Notifications.NoEndWarning", locale);
-                    }
-                    else if (!db.YoutubeChannelSpider.FirstOrDefault((x) => x.IsTrustedChannel)?.IsTrustedChannel ?? false &&
+                    if (!db.YoutubeChannelSpider.FirstOrDefault((x) => x.IsTrustedChannel)?.IsTrustedChannel ?? false &&
                         (channelId != "holo" && channelId != "2434" && channelId != "other"))
                     {
                         result += BotLocalizer.Get("Youtube.Notifications.VideoOnlyWarning", locale);

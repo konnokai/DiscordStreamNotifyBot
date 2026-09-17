@@ -1,4 +1,3 @@
-using DiscordStreamNotifyBot.Scraper;
 using DiscordStreamNotifyBot.Scraper.Detection.Twitch;
 
 namespace DiscordStreamNotifyBot.Tests
@@ -191,10 +190,10 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Theory]
-        [InlineData(TwitchSpiderRemovalMetricReason.GuildIneligible, "Ineligible")]
-        [InlineData(TwitchSpiderRemovalMetricReason.GuildMissing, "MissingConfirmed")]
+        [InlineData(TwitchSpiderRemovalReason.GuildIneligible, "Ineligible")]
+        [InlineData(TwitchSpiderRemovalReason.GuildMissing, "MissingConfirmed")]
         public void FinalRemovalRequiresMatchingLatestEligibility(
-            TwitchSpiderRemovalMetricReason reason,
+            TwitchSpiderRemovalReason reason,
             string eligibility)
         {
             var action = TwitchSpiderRemovalPolicy.Decide(RemovalFacts(
@@ -274,7 +273,7 @@ namespace DiscordStreamNotifyBot.Tests
             bool guildMatches = true,
             bool hasValidAuthorization = false,
             bool hasClientIdMismatch = false,
-            TwitchSpiderRemovalMetricReason reason = TwitchSpiderRemovalMetricReason.GuildIneligible,
+            TwitchSpiderRemovalReason reason = TwitchSpiderRemovalReason.GuildIneligible,
             TwitchGuildEligibilityStatus? eligibility = null) => new(
                 streamLookupSucceeded,
                 isLive,

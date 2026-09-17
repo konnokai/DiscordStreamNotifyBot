@@ -47,13 +47,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         private readonly NoticeCache<DataBase.Table.NoticeTwitchStreamChannel> _noticeCache;
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
-        private readonly NotifierMetrics _metrics;
         private readonly MemberOperationCoordinator _operationCoordinator;
         private readonly ClusterQueryService _clusterQuery;
 
         public TwitchService(DiscordSocketClient client, TwitchApiService apiService, BotConfig botConfig,
             EmojiService emojiService, MainDbService dbService, BotLocalizer localizer,
-            GuildLocaleService guildLocaleService, NotifierMetrics metrics,
+            GuildLocaleService guildLocaleService,
             MemberOperationCoordinator operationCoordinator, ClusterQueryService clusterQuery)
         {
             _client = client;
@@ -63,7 +62,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             _botConfig = botConfig;
             _localizer = localizer;
             _guildLocaleService = guildLocaleService;
-            _metrics = metrics;
             _operationCoordinator = operationCoordinator;
             _clusterQuery = clusterQuery;
             _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitchStreamChannel>(dbService, db => db.NoticeTwitchStreamChannels.AsNoTracking().ToList());
@@ -415,8 +413,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             if (!Bot.IsConnect)
                 throw new InvalidOperationException("Discord 尚未就緒，保留通知等待重試。");
 
-            NotificationMetricEvent metricEvent = NotifierMetrics.ToMetricEvent(dto.NoticeType);
-
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             Log.New($"Twitch 通知: {dto.UserId} - {dto.StreamTitle} ({noticeType})");
 #else
@@ -440,7 +436,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     if (progress.IsComplete(target))
                         continue;
                     NotificationDeliveryResult? deliveryResult = null;
-                    Stopwatch deliveryStopwatch = null;
                     bool primaryMessageSent = false;
                     bool retryRequired = false;
                     try
@@ -497,12 +492,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             continue;
                         }
 
-                        deliveryStopwatch = Stopwatch.StartNew();
                         await Policy.Handle<TimeoutException>()
                             .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
                             .WaitAndRetryAsync(3, (retryAttempt) =>
                             {
-                                _metrics.RecordNotificationDeliveryRetry(metricEvent);
                                 var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
                                 Log.Warn($"Twitch 通知 ({dto.UserId}) | {item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                                 return timeSpan;
@@ -577,15 +570,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     }
                     finally
                     {
-                        if (deliveryStopwatch != null)
-                        {
-                            deliveryStopwatch.Stop();
-                            _metrics.ObserveNotificationDeliveryDuration(metricEvent, deliveryStopwatch.Elapsed);
-                        }
-
                         if (deliveryResult.HasValue)
                         {
-                            _metrics.RecordNotificationDelivery(metricEvent, deliveryResult.Value);
                             if (!retryRequired)
                                 await progress.CompleteAsync(target);
                         }

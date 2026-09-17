@@ -2,21 +2,12 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 {
     /// <summary>
     /// Redis Streams 通知匯流排（<c>bot:notify</c>）的訊息 <c>type</c> 欄位值（計畫 §4.1）。
-    /// <para>
-    /// 註：會限身分組的<b>逐使用者驗證</b>（member role 檢查）<b>不走匯流排</b> —— 經 shard 守衛後天然按 shard 分區
-    /// （各 shard 只檢查自己持有伺服器的成員，OAuth quota 自動分攤），role 操作為 REST 不綁 gateway。
-    /// 但「會限影片探索」由 Scraper 偵測，並透過 <see cref="YoutubeMemberVideoLogNotification"/>
-    /// 將結果寫入對應的紀錄頻道（<see cref="YoutubeMemberVideoLog"/>）。
-    /// </para>
     /// </summary>
     public static class NotifyType
     {
         public const string Youtube = "youtube";
         public const string Twitch = "twitch";
-        public const string Twitcasting = "twitcasting";
-        public const string Chzzk = "chzzk";
         public const string Banner = "banner";
-        public const string YoutubeMemberVideoLog = "youtube_member_video_log";
     }
 
     /// <summary>
@@ -123,90 +114,10 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public string NewCategory { get; set; }
     }
 
-    /// <summary>
-    /// CHZZK 通知事件的「通知類型」線路列舉。與 UI 用的 <c>ChzzkService.NoticeType</c>
-    /// （帶 Discord <c>[ChoiceDisplay]</c>）分離，僅作跨層傳遞契約，成員順序須對應。
-    /// </summary>
-    public enum ChzzkNoticeType
-    {
-        StartStream,
-        EndStream
-    }
-
-    /// <summary>
-    /// 跨層 CHZZK 通知事件（計畫 §7）。原始時間字串（KST，不帶 offset）供識別與診斷，
-    /// 另帶偵測端轉換後的 UTC 時間供消費端直接顯示；無法解析的欄位為 null，不得捏造。
-    /// </summary>
-    public class ChzzkNotification
-    {
-        public ChzzkNoticeType NoticeType { get; set; }
-        public string ChannelId { get; set; }
-        public string ChannelName { get; set; }
-        public string ChannelImageUrl { get; set; }
-
-        /// <summary>場次鍵：<c>channelId + ":" + 正規化 openDate</c>（如 <c>20260915_124110</c>）；消費端以此去重。</summary>
-        public string StreamKey { get; set; }
-
-        /// <summary>API 原始開台時間字串。</summary>
-        public string OpenDate { get; set; }
-
-        /// <summary>API 回報的關台時間原始字串；確認前或未提供時為 null。</summary>
-        public string CloseDate { get; set; }
-
-        /// <summary>轉換後的開台時間（UTC）；顯示用。</summary>
-        public DateTime? StreamStartAt { get; set; }
-
-        /// <summary>轉換後的關台時間（UTC）；未確認或無法解析時為 null。</summary>
-        public DateTime? StreamEndAt { get; set; }
-
-        public string StreamTitle { get; set; }
-        public string Category { get; set; }
-    }
-
-    /// <summary>跨層 TwitCasting 開台通知事件（欄位對應 DataBase.Table.TwitcastingStream）。</summary>
-    public class TwitcastingNotification
-    {
-        public string ChannelId { get; set; }
-        public string ChannelTitle { get; set; }
-        public int StreamId { get; set; }
-        public string StreamTitle { get; set; }
-        public string StreamSubTitle { get; set; }
-        public string Category { get; set; }
-        public string ThumbnailUrl { get; set; }
-        public DateTime StreamStartAt { get; set; }
-        public bool IsPrivate { get; set; }
-        public bool IsRecord { get; set; }
-    }
-
     /// <summary>跨層伺服器橫幅變更事件（開台時換 banner，需 notifier 端 GetGuild）。</summary>
     public class BannerChangeNotification
     {
         public string ChannelId { get; set; }
         public string VideoId { get; set; }
-    }
-
-    /// <summary>
-    /// 跨層：Scraper 探索會限影片後，通知 Notifier 將結果寫入對應紀錄頻道的事件。
-    /// Notifier 消費後依 shard 守衛發送，對應原 <c>YoutubeMemberService.SendMsgToLogChannelAsync</c> 的參數。
-    /// </summary>
-    public class YoutubeMemberVideoLogNotification
-    {
-        /// <summary>會限頻道 Id（= SendMsgToLogChannelAsync 的 checkChannelId，用來反查各 guild 的 log channel）。</summary>
-        public string CheckChannelId { get; set; }
-
-        /// <summary>由 Notifier 依 guild locale 排版的穩定訊息代碼。</summary>
-        public string MessageCode { get; set; }
-
-        /// <summary>訊息代碼的語言中立參數；不包含 locale。</summary>
-        public string[] MessageArguments { get; set; }
-
-        /// <summary>送出後是否移除該會限頻道設定（沿用 SendMsgToLogChannelAsync 語意，各 shard 依守衛刪自己的）。</summary>
-        public bool IsNeedRemove { get; set; } = true;
-
-        /// <summary>是否同時私訊 guild owner（沿用 SendMsgToLogChannelAsync 語意）。</summary>
-        public bool IsNeedSendToOwner { get; set; } = true;
-
-        /// <summary>非空時，Notifier shard 0 額外私訊 Bot 擁有者（ApplicatonOwner）此診斷訊息。</summary>
-        public string BotOwnerMessage { get; set; }
     }
 }

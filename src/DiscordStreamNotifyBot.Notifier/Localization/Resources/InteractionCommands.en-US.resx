@@ -16,8 +16,6 @@
   <data name="server-admin.send-message-to-bot-owner.description" xml:space="preserve"><value>Send a message to the bot owner</value></data>
   <data name="server-admin.set-global-notice-channel.description" xml:space="preserve"><value>Set the channel for announcements from the bot owner</value></data>
   <data name="server-admin.set-global-notice-channel.channel.description" xml:space="preserve"><value>The text or announcement channel that receives announcements</value></data>
-  <data name="server-admin.set-verification-log-channel.description" xml:space="preserve"><value>Set the YouTube membership and Twitch subscription verification log channel</value></data>
-  <data name="server-admin.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>The text channel for membership and subscription verification logs</value></data>
 
   <data name="help.description" xml:space="preserve"><value>Browse commands and usage information</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>Show every available command module</value></data>
@@ -28,10 +26,6 @@
   <data name="help.get-command-help.command.description" xml:space="preserve"><value>The command to look up</value></data>
 
   <data name="youtube.description" xml:space="preserve"><value>YouTube stream and video notification settings</value></data>
-  <data name="youtube.list-record-channel.description" xml:space="preserve"><value>List channels currently recorded by the bot</value></data>
-  <data name="youtube.list-record-channel.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="youtube.now-streaming.description" xml:space="preserve"><value>Show members who are live now</value></data>
-  <data name="youtube.now-streaming.host.description" xml:space="preserve"><value>The creator group to query</value></data>
   <data name="youtube.coming-soon-stream.description" xml:space="preserve"><value>Show upcoming scheduled streams</value></data>
   <data name="youtube.coming-soon-stream.page.description" xml:space="preserve"><value>The page to display</value></data>
   <data name="youtube.get-member-only-playlist.description" xml:space="preserve"><value>Convert a channel URL into its members-only playlist URL</value></data>
@@ -92,82 +86,7 @@
   <data name="twitch-spider.list-not-trusted.description" xml:space="preserve"><value>List Twitch channels with warnings; may include creators' personal or former channels</value></data>
   <data name="twitch-spider.list-not-trusted.page.description" xml:space="preserve"><value>The page to display</value></data>
 
-  <data name="twitcasting.description" xml:space="preserve"><value>TwitCasting stream notification settings</value></data>
-  <data name="twitcasting.add.description" xml:space="preserve"><value>Add TwitCasting stream notifications</value></data>
-  <data name="twitcasting.add.streamer.description" xml:space="preserve"><value>A TwitCasting user name or URL</value></data>
-  <data name="twitcasting.add.notification-channel.description" xml:space="preserve"><value>The text or announcement channel for stream notifications</value></data>
-  <data name="twitcasting.remove.description" xml:space="preserve"><value>Remove TwitCasting stream notifications</value></data>
-  <data name="twitcasting.remove.channel.description" xml:space="preserve"><value>The TwitCasting channel whose notifications will be removed</value></data>
-  <data name="twitcasting.list.description" xml:space="preserve"><value>List configured TwitCasting stream notifications</value></data>
-  <data name="twitcasting.list.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="twitcasting.set-message.description" xml:space="preserve"><value>Set a custom TwitCasting notification message</value></data>
-  <data name="twitcasting.set-message.channel.description" xml:space="preserve"><value>A TwitCasting channel with notifications configured</value></data>
-  <data name="twitcasting.set-message.message.description" xml:space="preserve"><value>Custom notification text; leave empty to clear it</value></data>
-  <data name="twitcasting.list-message.description" xml:space="preserve"><value>List custom TwitCasting notification messages</value></data>
-  <data name="twitcasting.list-message.page.description" xml:space="preserve"><value>The page to display</value></data>
 
-  <data name="twitcasting-spider.description" xml:space="preserve"><value>TwitCasting channel monitoring settings</value></data>
-  <data name="twitcasting-spider.add.description" xml:space="preserve"><value>Add a TwitCasting channel monitor</value></data>
-  <data name="twitcasting-spider.add.channel.description" xml:space="preserve"><value>The TwitCasting channel to monitor</value></data>
-  <data name="twitcasting-spider.remove.description" xml:space="preserve"><value>Remove a TwitCasting channel monitor</value></data>
-  <data name="twitcasting-spider.remove.channel.description" xml:space="preserve"><value>The TwitCasting channel to stop monitoring</value></data>
-  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>List monitored TwitCasting channels without warnings</value></data>
-  <data name="twitcasting-spider.list.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>List TwitCasting channels with warnings; may include creators' personal or former channels</value></data>
-  <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>The page to display</value></data>
 
-  <data name="youtube-member.description" xml:space="preserve"><value>YouTube membership verification</value></data>
-  <data name="youtube-member.check.description" xml:space="preserve"><value>Confirm website linking and start membership verification</value></data>
-  <data name="youtube-member.cancel-member-check.description" xml:space="preserve"><value>Cancel verification in this server and remove membership roles</value></data>
-  <data name="youtube-member.unlink.description" xml:space="preserve"><value>Unlink Discord from Google and revoke authorization</value></data>
-  <data name="youtube-member.list-can-check-channel.description" xml:space="preserve"><value>List channels available for membership verification</value></data>
-  <data name="youtube-member.show-my-youtube-account.description" xml:space="preserve"><value>Show the currently linked YouTube channel</value></data>
 
-  <data name="youtube-member-set.description" xml:space="preserve"><value>YouTube membership verification settings</value></data>
-  <data name="youtube-member-set.add-member-check.description" xml:space="preserve"><value>Add a membership channel and the role it grants</value></data>
-  <data name="youtube-member-set.add-member-check.channel-url.description" xml:space="preserve"><value>The YouTube channel whose memberships will be verified</value></data>
-  <data name="youtube-member-set.add-member-check.role.description" xml:space="preserve"><value>The role granted after successful verification</value></data>
-  <data name="youtube-member-set.remove-member-check.description" xml:space="preserve"><value>Remove a membership verification channel</value></data>
-  <data name="youtube-member-set.remove-member-check.channel-url.description" xml:space="preserve"><value>The YouTube channel to remove from verification</value></data>
-  <data name="youtube-member-set.set-check-video.description" xml:space="preserve"><value>Manually select the members-only video used for verification</value></data>
-  <data name="youtube-member-set.set-check-video.channel.description" xml:space="preserve"><value>A YouTube channel configured for membership verification</value></data>
-  <data name="youtube-member-set.set-check-video.video.description" xml:space="preserve"><value>A members-only video URL or 11-character video ID</value></data>
-  <data name="youtube-member-set.clear-check-video.description" xml:space="preserve"><value>Return to automatic selection of the verification video</value></data>
-  <data name="youtube-member-set.clear-check-video.channel-url.description" xml:space="preserve"><value>A YouTube channel configured for membership verification</value></data>
-  <data name="youtube-member-set.list-checked-member.description" xml:space="preserve"><value>List members who have completed verification</value></data>
-  <data name="youtube-member-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="twitch-subscription.description" xml:space="preserve"><value>Twitch subscription verification</value></data>
-  <data name="twitch-subscription.check.description" xml:space="preserve"><value>Verify your Twitch subscription now</value></data>
-  <data name="twitch-subscription.cancel-subscription-check.description" xml:space="preserve"><value>Cancel Twitch subscription verification in this server</value></data>
-  <data name="twitch-subscription.show-my-twitch-account.description" xml:space="preserve"><value>Show your currently linked Twitch account</value></data>
-  <data name="twitch-subscription.list-can-check-channel.description" xml:space="preserve"><value>List Twitch channels available for verification</value></data>
-  <data name="twitch-subscription-set.description" xml:space="preserve"><value>Configure Twitch subscription verification</value></data>
-  <data name="twitch-subscription-set.add-subscription-check.description" xml:space="preserve"><value>Add or update a Twitch subscription channel</value></data>
-  <data name="twitch-subscription-set.add-subscription-check.channel-url.description" xml:space="preserve"><value>Twitch channel URL</value></data>
-  <data name="twitch-subscription-set.add-subscription-check.role.description" xml:space="preserve"><value>Role granted after verification (the corresponding Tier role is also granted)</value></data>
-  <data name="twitch-subscription-set.remove-subscription-check.description" xml:space="preserve"><value>Remove a Twitch subscription channel</value></data>
-  <data name="twitch-subscription-set.remove-subscription-check.channel.description" xml:space="preserve"><value>A configured Twitch channel</value></data>
-  <data name="twitch-subscription-set.list-checked-member.description" xml:space="preserve"><value>List verified Twitch subscribers</value></data>
-  <data name="twitch-subscription-set.list-checked-member.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="chzzk.description" xml:space="preserve"><value>CHZZK stream notification settings</value></data>
-  <data name="chzzk.add.description" xml:space="preserve"><value>Add a CHZZK stream notification</value></data>
-  <data name="chzzk.add.streamer.description" xml:space="preserve"><value>Channel URL</value></data>
-  <data name="chzzk.add.notification-channel.description" xml:space="preserve"><value>Channel to send notifications to</value></data>
-  <data name="chzzk.remove.description" xml:space="preserve"><value>Remove a CHZZK stream notification</value></data>
-  <data name="chzzk.remove.channel.description" xml:space="preserve"><value>CHZZK channel to remove</value></data>
-  <data name="chzzk.list.description" xml:space="preserve"><value>Show CHZZK channels with notifications</value></data>
-  <data name="chzzk.list.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="chzzk.set-message.description" xml:space="preserve"><value>Set the CHZZK notification message</value></data>
-  <data name="chzzk.set-message.channel.description" xml:space="preserve"><value>A CHZZK channel with notifications configured</value></data>
-  <data name="chzzk.set-message.notification-type.description" xml:space="preserve"><value>Stream event to configure</value></data>
-  <data name="chzzk.set-message.message.description" xml:space="preserve"><value>Custom message text; leave empty to clear, use - to disable the notification</value></data>
-  <data name="chzzk.list-message.description" xml:space="preserve"><value>List configured CHZZK notification messages</value></data>
-  <data name="chzzk.list-message.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="chzzk-spider.description" xml:space="preserve"><value>CHZZK channel crawler settings</value></data>
-  <data name="chzzk-spider.add.description" xml:space="preserve"><value>Add a CHZZK channel crawler</value></data>
-  <data name="chzzk-spider.add.channel.description" xml:space="preserve"><value>CHZZK channel to add</value></data>
-  <data name="chzzk-spider.remove.description" xml:space="preserve"><value>Remove a CHZZK channel crawler</value></data>
-  <data name="chzzk-spider.remove.channel.description" xml:space="preserve"><value>CHZZK channel to remove</value></data>
-  <data name="chzzk-spider.list.description" xml:space="preserve"><value>Show CHZZK channel crawlers</value></data>
-  <data name="chzzk-spider.list.page.description" xml:space="preserve"><value>The page to display</value></data>
 </root>

@@ -9,101 +9,27 @@ namespace DiscordStreamNotifyBot.DataBase
         }
 
         public DbSet<BannerChange> BannerChange { get; set; }
-        public DbSet<ChzzkSpider> ChzzkSpider { get; set; }
-        public DbSet<ChzzkStream> ChzzkStreams { get; set; }
         public DbSet<GuildConfig> GuildConfig { get; set; }
-        public DbSet<GuildTwitchSubscriptionConfig> GuildTwitchSubscriptionConfig { get; set; }
-        public DbSet<GuildYoutubeMemberConfig> GuildYoutubeMemberConfig { get; set; }
-        public DbSet<GoogleOAuthUnlinkIntent> GoogleOAuthUnlinkIntent { get; set; }
-        public DbSet<NoticeChzzkStreamChannel> NoticeChzzkStreamChannels { get; set; }
-        public DbSet<NoticeTwitcastingStreamChannel> NoticeTwitcastingStreamChannels { get; set; }
         public DbSet<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels { get; set; }
         public DbSet<NoticeYoutubeStreamChannel> NoticeYoutubeStreamChannel { get; set; }
-        public DbSet<RecordYoutubeChannel> RecordYoutubeChannel { get; set; }
-        public DbSet<TwitcastingSpider> TwitcastingSpider { get; set; }
         public DbSet<TwitchBroadcasterAuthorization> TwitchBroadcasterAuthorization { get; set; }
         public DbSet<TwitchSpider> TwitchSpider { get; set; }
-        public DbSet<TwitchSubscriptionCheck> TwitchSubscriptionCheck { get; set; }
         public DbSet<YoutubeChannelNameToId> YoutubeChannelNameToId { get; set; }
-        public DbSet<YoutubeChannelOwnedType> YoutubeChannelOwnedType { get; set; }
         public DbSet<YoutubeChannelSpider> YoutubeChannelSpider { get; set; }
-        public DbSet<YoutubeMemberAccessToken> YoutubeMemberAccessToken { get; set; }
-        public DbSet<YoutubeMemberCheck> YoutubeMemberCheck { get; set; }
 
         #region Video
-        public DbSet<HoloVideos> HoloVideos { get; set; }
-        public DbSet<NijisanjiVideos> NijisanjiVideos { get; set; }
         public DbSet<OtherVideos> OtherVideos { get; set; }
         public DbSet<NonApprovedVideos> NonApprovedVideos { get; set; }
-        public DbSet<TwitcastingStream> TwitcastingStreams { get; set; }
         public DbSet<TwitchStream> TwitchStreams { get; set; }
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ChzzkStream>(entity =>
-            {
-                entity.Property(x => x.StreamKey).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired();
-                entity.Property(x => x.ChannelId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
-                entity.Property(x => x.OpenDateRaw).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
-                entity.Property(x => x.CloseDateRaw).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired(false);
-                entity.Property(x => x.StreamTitle).HasColumnType("varchar(256)").HasMaxLength(256).IsRequired(false);
-                entity.Property(x => x.CategoryName).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired(false);
-                entity.Property(x => x.LastObservedAt).HasColumnType("datetime(6)");
-                entity.HasIndex(x => x.StreamKey).IsUnique();
-                entity.HasIndex(x => x.ChannelId);
-            });
-
-            modelBuilder.Entity<NoticeChzzkStreamChannel>(entity =>
-            {
-                entity.Property(x => x.NoticeChzzkChannelId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
-                entity.HasIndex(x => new { x.GuildId, x.NoticeChzzkChannelId }).IsUnique();
-            });
-
-            modelBuilder.Entity<ChzzkSpider>(entity =>
-            {
-                entity.Property(x => x.ChannelName).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired(false);
-                entity.Property(x => x.ChannelImageUrl).HasColumnType("varchar(512)").HasMaxLength(512).IsRequired(false);
-                entity.Property(x => x.CurrentStreamKey).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired(false);
-                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
-                entity.Property(x => x.InitializedAt).HasColumnType("datetime(6)");
-            });
-
             modelBuilder.Entity<GuildConfig>()
                 .Property(x => x.Locale)
                 .HasColumnType("varchar(16)")
                 .HasMaxLength(16)
                 .IsRequired(false);
-
-            modelBuilder.Entity<GuildYoutubeMemberConfig>(entity =>
-            {
-                entity.Property(x => x.MemberCheckChannelId).HasColumnType("longtext").IsRequired();
-                entity.HasIndex(x => new { x.GuildId, x.MemberCheckChannelId })
-                    .IsUnique()
-                    .HasPrefixLength(0, 24);
-                entity.HasIndex(x => new { x.DeletionPending, x.GuildId });
-            });
-
-            modelBuilder.Entity<GoogleOAuthUnlinkIntent>(entity =>
-            {
-                entity.ToTable("google_oauth_unlink_intent");
-                entity.Property(x => x.ExpectedEncryptedToken).HasColumnType("longtext").IsRequired(false);
-                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
-            });
-
-            modelBuilder.Entity<YoutubeMemberCheck>(entity =>
-            {
-                entity.Property(x => x.CheckYTChannelId).HasColumnType("longtext").IsRequired();
-                entity.HasIndex(x => new { x.GuildId, x.UserId, x.CheckYTChannelId })
-                    .IsUnique()
-                    .HasPrefixLength(0, 0, 24);
-                entity.HasIndex(x => new { x.PendingRoleRemoval, x.GuildId });
-                entity.HasIndex(x => new { x.UserId, x.PendingRoleRemoval });
-                entity.Property(x => x.Locale)
-                    .HasColumnType("varchar(16)")
-                    .HasMaxLength(16)
-                    .IsRequired(false);
-            });
 
             modelBuilder.Entity<TwitchBroadcasterAuthorization>(entity =>
             {
@@ -121,36 +47,12 @@ namespace DiscordStreamNotifyBot.DataBase
                 entity.Property(x => x.RevokedAt).HasColumnType("datetime(6)");
                 entity.Property(x => x.DateUpdated).HasColumnType("datetime(6)");
             });
-
-            modelBuilder.Entity<GuildTwitchSubscriptionConfig>(entity =>
-            {
-                entity.HasIndex(x => new { x.GuildId, x.BroadcasterId }).IsUnique();
-                entity.Property(x => x.BroadcasterId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
-                entity.Property(x => x.BroadcasterLogin).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
-                entity.Property(x => x.BroadcasterDisplayName).HasColumnType("varchar(128)").HasMaxLength(128).IsRequired();
-                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
-            });
-
-            modelBuilder.Entity<TwitchSubscriptionCheck>(entity =>
-            {
-                entity.HasIndex(x => new { x.GuildId, x.DiscordUserId, x.BroadcasterId }).IsUnique();
-                entity.Property(x => x.BroadcasterId).HasColumnType("varchar(64)").HasMaxLength(64).IsRequired();
-                entity.Property(x => x.Locale).HasColumnType("varchar(16)").HasMaxLength(16).IsRequired(false);
-                entity.Property(x => x.Tier).HasColumnType("varchar(4)").HasMaxLength(4).IsRequired(false);
-                entity.Property(x => x.LastCheckTime).HasColumnType("datetime(6)");
-                entity.Property(x => x.DateAdded).HasColumnType("datetime(6)");
-                entity.ToTable(table => table.HasCheckConstraint(
-                    "ck_twitch_subscription_check_tier",
-                    "`tier` IS NULL OR `tier` IN ('1000', '2000', '3000')"));
-            });
         }
 
         public bool UpdateAndSave(Table.Video video)
         {
             Table.Video updatedVideo = video switch
             {
-                { ChannelType: Table.Video.YTChannelType.Holo } => video as HoloVideos,
-                { ChannelType: Table.Video.YTChannelType.Nijisanji } => video as NijisanjiVideos,
                 { ChannelType: Table.Video.YTChannelType.Other } => video as OtherVideos,
                 { ChannelType: Table.Video.YTChannelType.NonApproved } => video as NonApprovedVideos,
                 _ => null

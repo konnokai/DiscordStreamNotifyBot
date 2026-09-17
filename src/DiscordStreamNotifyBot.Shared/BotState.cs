@@ -23,8 +23,6 @@ namespace DiscordStreamNotifyBot.Shared
         public static bool IsDisconnect { get; set; } = false;
 
         // 爬蟲執行中旗標（偵測再入防護）
-        public static bool IsHoloChannelSpider { get; set; } = false;
-        public static bool IsNijisanjiChannelSpider { get; set; } = false;
         public static bool IsOtherChannelSpider { get; set; } = false;
 
         // Shard
