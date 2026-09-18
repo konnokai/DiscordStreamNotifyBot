@@ -1,62 +1,139 @@
-# 直播小幫手 [點我邀請到你的 Discord 內](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
+# 直播小幫手
 
-![DiscordStreamNotifyBot](https://socialify.git.ci/konnokai/DiscordStreamNotifyBot/image?description=1&descriptionEditable=%E4%B8%80%E5%80%8B%E5%8F%AF%E4%BB%A5%E8%AE%93%E4%BD%A0%E5%9C%A8%20Discord%20%E4%B8%8A%E9%80%9A%E7%9F%A5%20Vtuber%20%E7%9B%B4%E6%92%AD%E7%9A%84%E5%B0%8F%E5%B9%AB%E6%89%8B&font=Inter&language=1&name=1&owner=1&pattern=Plus&stargazers=1&theme=Auto)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonnokai%2FDiscordStreamNotifyBot.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonnokai%2FDiscordStreamNotifyBot?ref=badge_shield)
+[![邀請機器人](https://img.shields.io/badge/Discord-邀請機器人-5865F2)](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
+[![網站](https://img.shields.io/website-up-down-green-red/https/stream-bot.konnokai.me.svg)](https://stream-bot.konnokai.me/)
 
-[![Website stream-bot.konnokai.me](https://img.shields.io/website-up-down-green-red/https/stream-bot.konnokai.me.svg)](https://stream-bot.konnokai.me/)
-[![GitHub commits](https://badgen.net/github/commits/konnokai/DiscordStreamNotifyBot)](https://GitHub.com/konnokai/DiscordStreamNotifyBot/commit/)
-[![GitHub latest commit](https://badgen.net/github/last-commit/konnokai/DiscordStreamNotifyBot)](https://GitHub.com/konnokai/DiscordStreamNotifyBot/commit/)
+直播小幫手會偵測 YouTube、Twitch、TwitCasting 與 CHZZK 直播，並將開台、更新及關台通知送到 Discord。這個儲存庫是 Bot 本體，包含直播偵測、Discord 通知、會員／訂閱驗證與叢集協調服務。
 
-自行運行所需環境與參數
--
-- .NET 8.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
-- MySQL Server，用於儲存直播與設定資料 (連線字串請填入 `bot_config.json` 的 `MySqlConnectionString`)
-- Redis Server ([Windows 下載網址](https://github.com/MicrosoftArchive/redis)，Linux 可直接透過 apt 或 yum 安裝)
-- Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
-- Discord Channel WebHook，做紀錄用
-- Google Console API 金鑰並確保已於程式庫開啟 Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
-- 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/YoutubeStreamRecord) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台) \*
-- Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用 \*\*
-- ApiServerDomain，搭配上面的網站後端做 YouTube 影片上傳接收 & Twitch 狀態更新使用，僅需填寫後端域名就好 (Ex: api.example.me) ([Google PubSubHubbub](https://pubsubhubbub.appspot.com)) ([Twitch Webhook Callback](https://dev.twitch.tv/docs/eventsub/handling-webhook-events/))
-- Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
-- [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認 PATH 環境變數是否有設定正確的路徑)
-- Twitch App Client Id & Client Secret ([Twitch Develpers](https://dev.twitch.tv/console/apps)) \*\*
-- TwitCasting Client Id & Client Secret ([TwitCasting Develpers](https://twitcasting.tv/developer.php)) \*\*
+只想使用官方服務，可以直接點上方邀請連結，不需要自行部署。自行架設與開發方式請往下看。
 
-備註
--
-請使用 Release 組態進行編譯，Debug 組態有忽略掉不少東西會導致功能出現異常等錯誤
+## 服務組成
 
-如需要自行改程式碼也記得確認 Debug 組態下的 `#if` 是否會導致偵錯問題
+程式分成三個可獨立執行的服務：
 
-網頁管理設定中心的跨專案契約與實作邊界見 [docs/WEB_ADMIN_SETTINGS_PLAN.md](docs/WEB_ADMIN_SETTINGS_PLAN.md)。
+- `DiscordStreamNotifyBot.Coordinator`：追蹤各服務與 Discord shard 的存活狀態。
+- `DiscordStreamNotifyBot.Scraper`：偵測直播狀態，將通知事件寫入 Redis Streams。
+- `DiscordStreamNotifyBot.Notifier`：連線 Discord，處理指令並送出通知。
 
-\* 未錄影的話則是固定在排定開台時間的前一分鐘通知，若有開啟錄影則會在錄影環境偵測到開始錄影時一併發送開台通知
+三個服務共用 MySQL、Redis 與同一份 `bot_config.json`。
 
-\*\* 未設定的話則僅該功能無法使用，在使用該功能的時會有錯誤提示
+## 系統需求
 
-建置 & 測試環境
-- 
-- Visual Studio 2026
-- .NET SDK 8.0
-- Windows 11 Pro
-- Debian 13
-- MariaDB 10.11
-- Redis 8.4.0
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- MySQL 或 MariaDB
+- Redis
+- [Discord Application](https://discord.com/developers/applications) 的 Bot Token
+- 已啟用 YouTube Data API v3 的 [Google API Key](https://console.cloud.google.com/apis/library/youtube.googleapis.com)
+- Discord Webhook，用來接收程式紀錄
+- 可公開連線的 Backend 主機名稱，供直播平台 webhook 使用
+- 啟用對應功能時所需的 Google、Twitch 與 TwitCasting OAuth 應用程式
 
-參考專案
--
-- [NadekoBot](https://gitlab.com/Kwoth/nadekobot)
-- [LivestreamRecorderService](https://github.com/Recorder-moe/LivestreamRecorderService)
-- [Discord .NET](https://github.com/discord-net/Discord.Net)
-- [TwitchLib](https://github.com/TwitchLib/TwitchLib)
-- [twspace-crawler](https://github.com/HitomaruKonpaku/twspace-crawler)
-- 其餘參考附於程式碼內
+若要使用網站帳號連結功能，還需要部署 [DiscordStreamBotBackend](https://github.com/konnokai/DiscordStreamBotBackend) 與 [前端](https://github.com/konnokai/discord-stream-bot-frontend)。
 
-授權
--
-- 此專案採用 [MIT](https://github.com/konnokai/DiscordStreamNotifyBot/blob/master/LICENSE.txt) 授權
+## 第一次設定
 
+1. 複製設定範例：
 
-## License
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkonnokai%2FDiscordStreamNotifyBot.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkonnokai%2FDiscordStreamNotifyBot?ref=badge_large)
+```powershell
+Copy-Item bot_config_example.json bot_config.json
+```
+
+Linux 或 macOS：
+
+```sh
+cp bot_config_example.json bot_config.json
+```
+
+2. 編輯 `bot_config.json`。至少確認下列欄位：
+
+| 欄位 | 說明 |
+|---|---|
+| `MySqlConnectionString` | Bot 使用的 MySQL 連線字串 |
+| `RedisOption` | Redis 連線設定 |
+| `ProviderTokenEncryptionKey` | 加密 OAuth token 的金鑰，至少 64 個字元；若有部署 Backend，兩邊必須相同 |
+| `ApiServerDomain` | Backend 主機名稱，例如 `api.example.com`；不要加 `https://`、路徑或結尾 `/` |
+| `DiscordToken` | Discord Bot Token |
+| `WebHookUrl` | 接收程式紀錄的 Discord Webhook |
+| `GoogleApiKey` | YouTube Data API v3 金鑰 |
+| `GoogleClientId`、`GoogleClientSecret` | 啟用 YouTube 會員驗證時填入 |
+| `TwitchClientId`、`TwitchClientSecret` | 啟用 Twitch 功能時填入 |
+| `TwitCastingClientId`、`TwitCastingClientSecret` | 啟用 TwitCasting 功能時填入 |
+| `TestSlashCommandGuildIds` | Debug 模式下註冊指令的測試伺服器 ID |
+
+`bot_config.json` 可能包含機密，請勿提交到 Git。
+
+3. 建立資料庫，並匯入完整 migration SQL：
+
+```sh
+mysql -u root -p discord_stream_bot < migrate_sql/all.sql
+```
+
+請依實際資料庫名稱與帳號調整指令。程式不會替正式環境自動建立或更新資料表。
+
+## 本機建置與執行
+
+先建置及測試整個 solution：
+
+```powershell
+dotnet build DiscordStreamNotifyBot.sln -c Release
+dotnet test DiscordStreamNotifyBot.sln -c Release
+```
+
+單一 shard 環境要同時啟動三個服務。請分別在三個終端機執行：
+
+```powershell
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Coordinator
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Scraper
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier
+```
+
+多 shard 的 Notifier 啟動格式為：
+
+```powershell
+dotnet run -c Release --project src/DiscordStreamNotifyBot.Notifier -- <ShardId> <TotalShards>
+```
+
+正式環境請使用 `Release`。`Debug` 只會將 Slash 指令註冊到 `TestSlashCommandGuildIds`，方便開發時測試。
+
+## Docker Compose 部署
+
+Compose 只啟動 Bot 的三種服務，不會建立 MySQL、Redis 或資料表。
+
+1. 準備可讓容器連線的 MySQL 與 Redis。
+2. 建立並填好 `bot_config.json`。
+3. 複製 `.env.example`：
+
+```sh
+cp .env.example .env
+```
+
+4. 確認 `.env` 的 `TOTAL_SHARDS` 與 `docker-compose.yml` 內的 `notifier-*` 服務數量相同。範例 Compose 目前提供兩個 shard。
+5. 啟動服務：
+
+```sh
+docker compose up -d --build
+docker compose logs -f
+```
+
+Linux 透過 Compose 的 `host-gateway` 使用 `host.docker.internal` 連回主機。若 MySQL 或 Redis 位於其他主機，請直接修改連線字串。
+
+## 設定與安全提醒
+
+- Discord Developer Portal 的 Bot 頁面必須啟用程式實際使用的 intents。
+- `EnableGuildMembersIntent` 預設為 `false`。只有在 Developer Portal 已啟用 Server Members Intent 時才可開啟。
+- `ProviderTokenEncryptionKey` 一旦用來加密 token 就不能任意更換，否則既有資料將無法解密。
+- 不要提交 `bot_config.json`、`.env`、Token、API Key 或 Webhook URL。
+- MySQL migration 由本儲存庫管理；Backend 不會另外建立相同資料表。
+- 錄影委派需要另外部署 [StreamRecordTools](https://github.com/konnokai/StreamRecordTools)，並讓兩邊連線到相同的 Redis。
+
+## 相關文件
+
+- [網站管理設定契約](docs/WEB_ADMIN_SETTINGS_PLAN.md)
+- [測試說明](docs/TESTING_PLAN.md)
+- [Log 與 Loki](docs/LOGGING.md)
+- [CHZZK 通知設計](docs/CHZZK_NOTIFICATION_PLAN.md)
+- [Discord 指令說明](https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37)
+
+## 授權
+
+本專案採用 [MIT License](LICENSE.txt)。
