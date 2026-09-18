@@ -1,15 +1,19 @@
 using Discord.Interactions;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService.Chzzk;
 
 namespace DiscordStreamNotifyBot.Interaction
 {
     public class SpiderManagementComponent : TopLevelModule
     {
         private readonly MainDbService _dbService;
+        private readonly ChzzkRecordService _chzzkRecordService;
 
-        public SpiderManagementComponent(MainDbService dbService)
+        public SpiderManagementComponent(MainDbService dbService, ChzzkRecordService chzzkRecordService)
         {
             _dbService = dbService;
+            _chzzkRecordService = chzzkRecordService;
         }
 
         [ComponentInteraction("spider_youtube:*:*", true)]
@@ -39,7 +43,8 @@ namespace DiscordStreamNotifyBot.Interaction
 
                 if (action.Contains("trusted"))
                 {
-                    youtubeChannelSpider.IsTrustedChannel = action == "trusted";
+                    // 切換語意（對齊 Twitch／TwitCasting 的切換按鈕），不是加入／移除。
+                    youtubeChannelSpider.IsTrustedChannel = !youtubeChannelSpider.IsTrustedChannel;
                     db.YoutubeChannelSpider.Update(youtubeChannelSpider);
                     db.SaveChanges();
 
@@ -49,29 +54,17 @@ namespace DiscordStreamNotifyBot.Interaction
                 }
                 else if (action.Contains("record"))
                 {
-                    if (action == "record")
+                    if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
                     {
-                        if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
-                        {
-                            await button.SendErrorAsync(BotLocalizer, locale, "YoutubeSpider.AlreadyRecorded", true, true);
-                            return;
-                        }
-
-                        db.RecordYoutubeChannel.Add(new DataBase.Table.RecordYoutubeChannel() { YoutubeChannelId = channelId });
-                        db.SaveChanges();
-                        await button.SendConfirmAsync(BotLocalizer, locale, "YoutubeSpider.RecordAdded", true, true);
-                    }
-                    else if (action == "unrecord")
-                    {
-                        if (!db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId))
-                        {
-                            await button.SendErrorAsync(BotLocalizer, locale, "YoutubeSpider.NotRecorded", true, true);
-                            return;
-                        }
-
                         db.RecordYoutubeChannel.Remove(db.RecordYoutubeChannel.First((x) => x.YoutubeChannelId == channelId));
                         db.SaveChanges();
                         await button.SendConfirmAsync(BotLocalizer, locale, "YoutubeSpider.RecordRemoved", true, true);
+                    }
+                    else
+                    {
+                        db.RecordYoutubeChannel.Add(new DataBase.Table.RecordYoutubeChannel() { YoutubeChannelId = channelId });
+                        db.SaveChanges();
+                        await button.SendConfirmAsync(BotLocalizer, locale, "YoutubeSpider.RecordAdded", true, true);
                     }
                 }
 
@@ -262,6 +255,87 @@ namespace DiscordStreamNotifyBot.Interaction
                     Log.Error(responseException.Demystify(), "回覆 TwitCasting 爬蟲管理按鈕未知錯誤時失敗");
                 }
             }
+        }
+
+        [ComponentInteraction("spider_chzzk:*:*", true)]
+        public async Task HandleChzzkAsync(string action, string channelId)
+        {
+            try
+            {
+                var button = (SocketMessageComponent)Context.Interaction;
+                if (Context.User.Id != Bot.ApplicatonOwner.Id)
+                {
+                    string ownerLocale = await GetLocaleAsync(true);
+                    await button.SendErrorAsync(BotLocalizer, ownerLocale, "Permissions.BotOwnerOnly", false, true);
+                    return;
+                }
+
+                Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
+                await button.DeferAsync(false);
+
+                // 切換語意（對齊 Twitch／TwitCasting 的切換按鈕），不是盲目反轉加入／移除；
+                // 每次操作都重新檢查擁有者與爬蟲是否存在，舊訊息不得繞過權限或重建已刪除的爬蟲。
+                if (!action.Contains("record"))
+                {
+                    await button.SendErrorAsync("不支援的操作", true);
+                    return;
+                }
+
+                var result = await _chzzkRecordService.ToggleAutoRecordAsync(channelId, GracefulShutdown.Token);
+                if (result.Code == "record.not-configured")
+                {
+                    string locale = await GetLocaleAsync(true);
+                    await button.SendErrorAsync(BotLocalizer, locale, "Components.ChannelRemoved", true, true);
+                    return;
+                }
+
+                bool isRecord = result.Arguments.Value<bool>("enabled");
+                string channelName = result.Arguments.Value<string>("sourceName") ?? channelId;
+                string confirmLocale = await GetLocaleAsync(true);
+                await button.SendConfirmAsync(BotLocalizer, confirmLocale, "Spider.RecordingChanged", true, true,
+                    channelName,
+                    BotLocalizer.Get(isRecord ? "Common.Enabled" : "Common.Disabled", confirmLocale));
+                await UpdateChzzkSpiderMessageAsync(button, channelId, channelName, isRecord);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "處理 CHZZK 爬蟲管理按鈕時失敗");
+                try
+                {
+                    string locale = await GetLocaleAsync(true);
+                    await Context.Interaction.SendErrorAsync(BotLocalizer, locale, "Errors.Unknown",
+                        Context.Interaction.HasResponded, true);
+                }
+                catch (Exception responseException)
+                {
+                    Log.Error(responseException.Demystify(), "回覆 CHZZK 爬蟲管理按鈕未知錯誤時失敗");
+                }
+            }
+        }
+
+        private static Task UpdateChzzkSpiderMessageAsync(
+            SocketMessageComponent button, string channelId, string channelName, bool isRecord)
+        {
+            var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
+            var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
+            var embed = new EmbedBuilder()
+                .WithOkColor()
+                .WithTitle("已新增 CHZZK 頻道爬蟲")
+                .AddField("頻道", Format.Url(string.IsNullOrEmpty(channelName) ? channelId : channelName,
+                    ChzzkUrls.Channel(channelId)), false)
+                .AddField("伺服器", guild, false)
+                .AddField("執行者", user, false)
+                .AddField("錄影頻道", isRecord ? "開啟" : "關閉", true)
+                .Build();
+            var components = new ComponentBuilder()
+                .WithButton("切換自動錄影", $"spider_chzzk:record:{channelId}", ButtonStyle.Success)
+                .Build();
+
+            return button.ModifyOriginalResponseAsync((func) =>
+            {
+                func.Embed = embed;
+                func.Components = components;
+            });
         }
     }
 }

@@ -280,6 +280,7 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()
                 .AddSingleton<SharedService.Twitch.TwitchService>()
                 .AddSingleton<SharedService.Chzzk.ChzzkService>()
+                .AddSingleton<SharedService.Chzzk.ChzzkRecordService>()
                 .AddSingleton<SharedService.TwitchSubscription.TwitchSubscriptionApiClient>()
                 .AddSingleton<SharedService.Member.MemberOperationCoordinator>()
                 .AddSingleton<SharedService.Member.MemberRoleOwnershipService>()

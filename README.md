@@ -126,6 +126,16 @@ Linux 透過 Compose 的 `host-gateway` 使用 `host.docker.internal` 連回主�
 - MySQL migration 由本儲存庫管理；Backend 不會另外建立相同資料表。
 - 錄影委派需要另外部署 [StreamRecordTools](https://github.com/konnokai/StreamRecordTools)，並讓兩邊連線到相同的 Redis。
 
+## CHZZK 錄影
+
+CHZZK 錄影委派需要另外部署 [StreamRecordTools](https://github.com/konnokai/StreamRecordTools)，並讓兩邊連線到相同的 Redis。錄影端需要可執行 `streamlink` 且支援 CHZZK plugin。
+
+- 在伺服器使用 `/chzzk-spider add` 新增爬蟲後，Bot 擁有者會收到私訊，附「切換自動錄影」按鈕。
+- Bot 擁有者也可在私訊使用 `s!ChzzkAutoRecord <頻道網址或 ID> <on/off>` 設定，`s!ChzzkRecordList` 列出已開啟自動錄影的頻道。
+- 需要補錄目前場次時使用 `s!ChzzkRecord <頻道網址或 ID>`。自動錄影只委派之後偵測到的新場次；已發過開台通知的場次不會補錄。
+- `s!` 指令需要 Bot 擁有者權限，且只在私訊中有效。
+- `s!ChzzkRecord` 送出請求不代表已經開始錄影，錄影端是否在線與 Streamlink 是否正常啟動需以錄影端紀錄為準。
+
 ## 相關文件
 
 - [網站管理設定契約](docs/WEB_ADMIN_SETTINGS_PLAN.md)

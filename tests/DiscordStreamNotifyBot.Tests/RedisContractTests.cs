@@ -35,6 +35,7 @@ namespace DiscordStreamNotifyBot.Tests
 
             Assert.Equal("twitcasting.pubsub.startlive", RedisChannels.Twitcasting.PubSubStartLive);
             Assert.Equal("twitcasting.record", RedisChannels.Twitcasting.Record);
+            Assert.Equal("chzzk.record", RedisChannels.Chzzk.Record);
             Assert.Equal("member.revokeToken", RedisChannels.Member.RevokeToken);
 
             Assert.Equal("DiscordStreamBot:OfficialGuildList", RedisChannels.SharedState.OfficialGuildList);

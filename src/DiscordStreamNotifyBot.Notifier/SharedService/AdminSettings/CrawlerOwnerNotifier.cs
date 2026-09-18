@@ -82,14 +82,14 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 embed.AddField("認可頻道", "否", true)
                     .AddField("錄影頻道", "否", true);
                 components
-                    .WithButton("加入認可頻道", $"spider_youtube:trusted:{sourceId}", ButtonStyle.Success)
-                    .WithButton("移除認可頻道", $"spider_youtube:untrusted:{sourceId}", ButtonStyle.Danger)
-                    .WithButton("加入錄影頻道", $"spider_youtube:record:{sourceId}", ButtonStyle.Success, row: 1)
-                    .WithButton("移除錄影頻道", $"spider_youtube:unrecord:{sourceId}", ButtonStyle.Danger, row: 1);
+                    .WithButton("切換認可頻道", $"spider_youtube:trusted:{sourceId}", ButtonStyle.Danger)
+                    .WithButton("切換錄影頻道", $"spider_youtube:record:{sourceId}", ButtonStyle.Success);
             }
             else if (platform == CrawlerPlatform.Chzzk)
             {
-                // 首版不含警告名單與錄影切換：不提供任何管理按鈕。
+                embed.AddField("錄影頻道", "關閉", true);
+                components
+                    .WithButton("切換自動錄影", $"spider_chzzk:record:{sourceId}", ButtonStyle.Success);
             }
             else
             {

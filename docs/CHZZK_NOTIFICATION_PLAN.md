@@ -10,7 +10,7 @@
 
 計畫涵蓋 API 存取、場次狀態、通知去重與補送、Discord Slash 設定，以及網站設定中心的跨專案整合。網站部分可分階段交付，但不得顯示尚未接通的假功能。
 
-首版不加入錄影、會員驗證、聊天、斗內、Drops、Discord 活動、橫幅變更或標題變更通知。不另外建立通用平台框架，也不改寫既有三平台。
+首版不加入錄影、會員驗證、聊天、斗內、Drops、Discord 活動、橫幅變更或標題變更通知。不另外建立通用平台框架，也不改寫既有三平台。錄影已由後續的 `CHZZK_RECORDING_PLAN.md` 另行加入，範圍以該文件為準。
 
 使用者已決定基本對齊 Twitch 架構，但不加入 `IsWarningUser` 欄位、警告清單、狀態切換按鈕或相關指令。非 CHZZK API 的管理、通知及網站流程優先沿用 Twitch；本文件明訂的 CHZZK 特例優先。
 
@@ -138,7 +138,7 @@ streamKey = channelId + ":" + 正規化 openDate
 
 `GuildId = 0` 代表 Bot Owner 管理，不代表無效或遺失 guild。guild 離開、刪除及孤兒清理流程不得因找不到 guild 0 而刪除該來源。既有來源的管理歸屬變更沿用現行 owner 權限流程，不因一般 guild 新增通知設定而覆寫。
 
-`GuildId` 不是通知訂閱者清單；訂閱關係由 `NoticeChzzkStreamChannel` 表達。不另建頻道名稱／頭像表，也不加入首版未使用的錄影欄位。
+`GuildId` 不是通知訂閱者清單；訂閱關係由 `NoticeChzzkStreamChannel` 表達。不另建頻道名稱／頭像表。自動錄影開關 `IsRecord` 由後續的 `CHZZK_RECORDING_PLAN.md` 加入，預設關閉，語意以該文件為準。
 
 ### 5.3 ChzzkStream
 
@@ -238,7 +238,7 @@ streamKey = channelId + ":" + 正規化 openDate
 - 爬蟲原登記 guild 或 Bot Owner 可移除來源；移除爬蟲停止偵測，但保留其他 guild 的通知設定，snapshot 顯示 detectionEnabled=false。移除通知設定則不連帶刪除共用爬蟲、場次或匯流排內待補送事件。
 - 通知設定不要求來源已有爬蟲；可以先設定並顯示尚未偵測。通知訊息沿用 Twitch：空字串只發 Embed，`-` 停用該類型通知，不另加 Enabled 欄位。
 - 沿用 Twitch 的通知快取失效、guild 語言、shard 守衛、逐目標 checkpoint、官方公告頻道 crosspost 與既有非平台專屬通知按鈕。以已存來源 ID 刪除通知或爬蟲不應依賴 CHZZK API 可用性。
-- 沿用爬蟲列表、自動完成、Owner 新增成功私訊與管理操作；不複製 IsWarningUser、警告清單、警告切換、錄影按鈕或 Twitch API 專用操作。
+- 沿用爬蟲列表、自動完成、Owner 新增成功私訊與管理操作；不複製 IsWarningUser、警告清單、警告切換或 Twitch API 專用操作。Owner 新增成功私訊的自動錄影按鈕由後續的 `CHZZK_RECORDING_PLAN.md` 加入。
 - 若全域已在追蹤某頻道，新 guild 加入通知設定不立即重播全域舊事件；若需目前直播補發，另外定義功能。
 
 網站整合目錄：

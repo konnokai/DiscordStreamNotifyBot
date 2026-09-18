@@ -3,7 +3,7 @@ namespace DiscordStreamNotifyBot.Shared
     /// <summary>
     /// 集中管理 Redis Pub/Sub 頻道與控制平面鍵。
     /// <para>
-    /// 錄影 IPC 頻道（<see cref="Youtube"/> / <see cref="Twitch"/> / <see cref="Twitcasting"/> / <see cref="Member"/>）
+    /// 錄影 IPC 頻道（<see cref="Youtube"/> / <see cref="Twitch"/> / <see cref="Twitcasting"/> / <see cref="Chzzk"/> / <see cref="Member"/>）
     /// 為與外部錄影工具 <c>YoutubeStreamRecord</c> 的既有契約，<b>不可單方面更改字串</b>。
     /// </para>
     /// <para>
@@ -60,6 +60,13 @@ namespace DiscordStreamNotifyBot.Shared
 
             /// <summary>TwitCasting 錄影 IPC 頻道（與錄影工具共用契約）。</summary>
             public const string Record = "twitcasting.record";
+        }
+
+        /// <summary>CHZZK IPC 頻道（與錄影工具共用契約）。</summary>
+        public static class Chzzk
+        {
+            /// <summary>CHZZK 錄影請求；payload 為 <see cref="Messages.ChzzkRecordRequest"/> 的 JSON。</summary>
+            public const string Record = "chzzk.record";
         }
 
         /// <summary>YouTube 會限 OAuth Token IPC 頻道（與後端共用契約）。</summary>

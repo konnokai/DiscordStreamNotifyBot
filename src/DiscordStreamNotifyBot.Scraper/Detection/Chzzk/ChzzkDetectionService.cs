@@ -208,7 +208,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                     spider.CurrentStreamKey = streamKey;
                     spider.InitializedAt ??= now;
                     await db.SaveChangesAsync();
-                    await PublishAsync(CreateNotification(spider, stream, ChzzkNoticeType.StartStream));
+                    await DelegateRecordThenPublishAsync(action, spider, stream, PublishRecordAsync, PublishAsync);
                     return;
             }
         }
@@ -256,6 +256,49 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
             stream.Status = ChzzkStreamStatus.Closed;
             stream.LastObservedAt = now;
         }
+
+        /// <summary>
+        /// 建立新場次後的兩個獨立副作用：先依 <see cref="ChzzkSpider.IsRecord"/> 委派錄影，再發布開台通知。
+        /// 只有新場次（<see cref="ChzzkPollAction.TrackNewStream"/> / <see cref="ChzzkPollAction.SupersedeAndTrack"/>）
+        /// 會委派；同場 OPEN、接回既有場次、PendingClose 恢復與關台都不補錄，也不依啟用時間排除。
+        /// 錄影發布失敗只記錄、不阻擋開台通知；通知發布失敗也不影響已完成的錄影嘗試，維持既有通知重送政策。
+        /// </summary>
+        internal static async Task<bool> DelegateRecordThenPublishAsync(
+            ChzzkPollAction action,
+            ChzzkSpider spider,
+            ChzzkStream stream,
+            Func<string, string, Task<long>> publishRecordAsync,
+            Func<ChzzkNotification, Task> publishNotificationAsync)
+        {
+            bool recordDelegated = false;
+            bool isNewStream = action is ChzzkPollAction.TrackNewStream or ChzzkPollAction.SupersedeAndTrack;
+            if (isNewStream && spider.IsRecord)
+            {
+                try
+                {
+                    long receiverCount = await publishRecordAsync(stream.ChannelId, stream.StreamKey);
+                    recordDelegated = receiverCount > 0;
+                    if (recordDelegated)
+                        Log.Info($"已發送 CHZZK 錄影請求：{stream.StreamKey}");
+                    else
+                        Log.Warn($"Redis 訂閱頻道不存在，請啟動錄影工具：{stream.StreamKey}");
+                }
+                catch (Exception ex)
+                {
+                    // 不補送：需要時由 Bot 擁有者使用立即錄影指令重試。
+                    Log.Error(ex.Demystify(), $"CHZZK 錄影請求發布失敗（不影響開台通知）：{stream.StreamKey}");
+                }
+            }
+
+            await publishNotificationAsync(CreateNotification(spider, stream, ChzzkNoticeType.StartStream));
+            return recordDelegated;
+        }
+
+        /// <summary>委派錄影給錄影工具；沒有訂閱者或 Redis 未就緒時回傳 0，由呼叫端記錄但不重試。</summary>
+        internal static Task<long> PublishRecordAsync(string channelId, string streamKey)
+            => Bot.RedisSub == null
+                ? Task.FromResult(0L)
+                : ChzzkRecordBus.PublishAsync(Bot.RedisSub, channelId, streamKey);
 
         /// <summary>
         /// 建立通知 DTO：原始字串供識別與診斷，UTC 時間在偵測端轉換一次，消費端不重複解析。

@@ -18,6 +18,12 @@ namespace DiscordStreamNotifyBot.DataBase.Table
         public ulong GuildId { get; set; }
         public DateTime? DateAdded { get; set; } = DateTime.UtcNow;
 
+        /// <summary>
+        /// 是否對之後偵測到的新場次委派自動錄影。預設關閉，既有資料 migration 後不會自動開始錄影；
+        /// 開啟前已發布開台通知的場次不會補錄。
+        /// </summary>
+        public bool IsRecord { get; set; } = false;
+
         /// <summary>首次有效基線建立時間（UTC）；null 表示尚未初始化，不得據以發布關台。</summary>
         public DateTime? InitializedAt { get; set; }
 

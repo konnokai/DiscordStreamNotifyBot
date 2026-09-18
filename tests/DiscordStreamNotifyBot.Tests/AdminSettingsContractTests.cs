@@ -222,8 +222,7 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("已新增 YouTube 頻道爬蟲", youtube.Embed.Title);
             Assert.Contains(youtube.Embed.Fields, field => field.Name == "認可頻道");
             Assert.Equal(
-                ["spider_youtube:trusted:source", "spider_youtube:untrusted:source",
-                    "spider_youtube:record:source", "spider_youtube:unrecord:source"],
+                ["spider_youtube:trusted:source", "spider_youtube:record:source"],
                 ButtonIds(youtube.Components));
             Assert.Equal(
                 ["spider_twitch:warning:source", "spider_twitch:record:source"],

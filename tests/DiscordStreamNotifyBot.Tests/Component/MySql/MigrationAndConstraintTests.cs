@@ -95,6 +95,43 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
         }
 
         [MySqlComponentFact]
+        public async Task ChzzkSpiderAutoRecordColumnDefaultsToDisabled()
+        {
+            await using var db = _fixture.DbService.GetDbContext();
+
+            int matchingColumns = await db.Database.SqlQueryRaw<int>(
+                """
+                SELECT COUNT(*) AS `Value`
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'chzzk_spider'
+                  AND column_name = 'is_record'
+                  AND is_nullable = 'NO'
+                  AND data_type = 'tinyint'
+                  AND column_default = '0'
+                """).SingleAsync();
+
+            Assert.Equal(1, matchingColumns);
+
+            // 以不含 is_record 的原始 INSERT 驗證 DB 預設值，確保既有資料列不會自動開始錄影。
+            string channelId = $"component{Guid.NewGuid():N}"[..32];
+            await db.Database.ExecuteSqlRawAsync(
+                "INSERT INTO `chzzk_spider` (`channel_id`, `channel_name`, `guild_id`, `date_added`) VALUES ({0}, {1}, {2}, {3})",
+                channelId, "Component Channel", 0UL, DateTime.UtcNow);
+
+            try
+            {
+                var spider = await db.ChzzkSpider.AsNoTracking().SingleAsync(x => x.ChannelId == channelId);
+                Assert.False(spider.IsRecord);
+            }
+            finally
+            {
+                await db.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM `chzzk_spider` WHERE `channel_id` = {0}", channelId);
+            }
+        }
+
+        [MySqlComponentFact]
         public async Task YoutubeMembershipTablesPersistDurableStateAndRejectDuplicateNaturalKeys()
         {
             ulong guildId = NextUserId();
