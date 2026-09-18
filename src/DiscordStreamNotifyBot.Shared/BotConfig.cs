@@ -15,8 +15,6 @@ public class BotConfig
     public string WebHookUrl { get; set; } = "";
 
     public string GoogleApiKey { get; set; } = "";
-    public string GoogleClientId { get; set; } = "";
-    public string GoogleClientSecret { get; set; } = "";
 
     // https://streamlink.github.io/cli/plugins/twitch.html#authentication
     // 先放著，未來可能會用到
@@ -96,8 +94,6 @@ public class BotConfig
             TwitchCookieAuthToken = config.TwitchCookieAuthToken;
             TwitchClientId = config.TwitchClientId;
             TwitchClientSecret = config.TwitchClientSecret;
-            GoogleClientId = config.GoogleClientId;
-            GoogleClientSecret = config.GoogleClientSecret;
             UptimeKumaPushUrl = config.UptimeKumaPushUrl;
             LokiUrl = config.LokiUrl;
             YouTubeEmoteId = config.YouTubeEmoteId;

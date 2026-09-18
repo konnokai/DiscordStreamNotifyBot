@@ -7,6 +7,8 @@
 [![GitHub commits](https://badgen.net/github/commits/konnokai/DiscordStreamNotifyBot)](https://GitHub.com/konnokai/DiscordStreamNotifyBot/commit/)
 [![GitHub latest commit](https://badgen.net/github/last-commit/konnokai/DiscordStreamNotifyBot)](https://GitHub.com/konnokai/DiscordStreamNotifyBot/commit/)
 
+> 本分支（`feat/bloodk1n`）為特定伺服器特規版：僅保留 YouTube／Twitch 通知；已移除 TwitCasting／CHZZK、會員與訂閱驗證、YouTube 錄影委派與 Prometheus 指標。
+
 自行運行所需環境與參數
 -
 - .NET 8.0 Runtime 或 SDK ([微軟網址](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
@@ -15,13 +17,11 @@
 - Discord Bot Token ([Discord Dev網址](https://discord.com/developers/applications))
 - Discord Channel WebHook，做紀錄用
 - Google Console API 金鑰並確保已於程式庫開啟 Youtube Data API v3 ([Google Console網址](https://console.cloud.google.com/apis/library/youtube.googleapis.com))
-- 錄影功能需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/YoutubeStreamRecord) 使用 (如無搭配錄影的話則不會有關台通知，且不能即時的通知開台) \*
-- Discord & Google 的 OAuth Client ID 跟 Client Secret，用於 YouTube 會限驗證，需搭配 [網站後端](https://github.com/konnokai/Discord-Stream-Bot-Backend) 使用 \*\*
 - ApiServerDomain，搭配上面的網站後端做 YouTube 影片上傳接收 & Twitch 狀態更新使用，僅需填寫後端域名就好 (Ex: api.example.me) ([Google PubSubHubbub](https://pubsubhubbub.appspot.com)) ([Twitch Webhook Callback](https://dev.twitch.tv/docs/eventsub/handling-webhook-events/))
 - Uptime Kuma Push 監測器的網址，如果不需要上線監測則可為空，需搭配 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 使用
-- [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，原則上不裝的話就只是不會錄影 (裝完記得確認 PATH 環境變數是否有設定正確的路徑)
+- Twitch 錄影委派（可選）需搭配隔壁 [Youtube Stream Record](https://github.com/konnokai/YoutubeStreamRecord) 使用；未搭配時仍會正常發送開台/關台通知。本特規版已移除 YouTube 錄影委派
+- [ffmpeg](https://ffmpeg.org/download.html), [streamlink](https://streamlink.github.io/install.html)，錄影工具需要，不裝的話就只是不會錄影 (裝完記得確認 PATH 環境變數是否有設定正確的路徑)
 - Twitch App Client Id & Client Secret ([Twitch Develpers](https://dev.twitch.tv/console/apps)) \*\*
-- TwitCasting Client Id & Client Secret ([TwitCasting Develpers](https://twitcasting.tv/developer.php)) \*\*
 
 備註
 -
@@ -30,8 +30,6 @@
 如需要自行改程式碼也記得確認 Debug 組態下的 `#if` 是否會導致偵錯問題
 
 網頁管理設定中心的跨專案契約與實作邊界見 [docs/WEB_ADMIN_SETTINGS_PLAN.md](docs/WEB_ADMIN_SETTINGS_PLAN.md)。
-
-\* 未錄影的話則是固定在排定開台時間的前一分鐘通知，若有開啟錄影則會在錄影環境偵測到開始錄影時一併發送開台通知
 
 \*\* 未設定的話則僅該功能無法使用，在使用該功能的時會有錯誤提示
 
