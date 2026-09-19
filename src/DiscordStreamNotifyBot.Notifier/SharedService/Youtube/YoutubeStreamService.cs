@@ -68,13 +68,16 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly NotifierMetrics _metrics;
         private readonly MemberOperationCoordinator _operationCoordinator;
         private readonly ClusterQueryService _clusterQuery;
+        private readonly SharedService.Youtube.YoutubeWebSubService _webSubService;
+        private readonly SharedService.Youtube.IYoutubeAtomValidatorStore _atomValidators;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory,
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
             Shared.YoutubeApiService apiService, BotLocalizer localizer,
             GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver,
             NotifierMetrics metrics, MemberOperationCoordinator operationCoordinator,
-            ClusterQueryService clusterQuery)
+            ClusterQueryService clusterQuery, SharedService.Youtube.YoutubeWebSubService webSubService,
+            SharedService.Youtube.IYoutubeAtomValidatorStore atomValidators)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
@@ -88,6 +91,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _metrics = metrics;
             _operationCoordinator = operationCoordinator;
             _clusterQuery = clusterQuery;
+            _webSubService = webSubService;
+            _atomValidators = atomValidators;
             _noticeCache = new NoticeCache<NoticeYoutubeStreamChannel>(dbService, db => db.NoticeYoutubeStreamChannel.AsNoTracking().ToList());
         }
 
@@ -103,7 +108,38 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
 
         public Task<YTApiVideo> GetVideoAsync(string videoId) => _apiService.GetVideoAsync(videoId);
 
-        public Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true) => _apiService.PostSubscribeRequestAsync(channelId, subscribe);
+        /// <summary>
+        /// WebSub subscribe／unsubscribe；unsubscribe 代表爬蟲已被移除，順手清掉 Atom validator，
+        /// 避免同一頻道之後重新加入時被舊 ETag 誤導成 304。
+        /// <para>
+        /// 一律不回傳例外：取消訂閱失敗或清理失敗都只記錄，不阻止使用者移除本地 crawler（best-effort 語意）。
+        /// </para>
+        /// </summary>
+        public async Task<SharedService.Youtube.YoutubeWebSubRequestResult> PostSubscribeRequestAsync(string channelId, bool subscribe = true)
+        {
+            try
+            {
+                var result = await _webSubService.RequestAsync(channelId, subscribe).ConfigureAwait(false);
+                if (!subscribe)
+                {
+                    try
+                    {
+                        await _atomValidators.RemoveAsync(channelId).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn($"移除 YouTube 爬蟲後清除 Atom validator 失敗: {channelId} / {ex.GetType().Name}");
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"YouTube WebSub 要求失敗: {channelId} / subscribe={subscribe}");
+                return SharedService.Youtube.YoutubeWebSubRequestResult.Transient(null, null, ex.GetType().Name);
+            }
+        }
 
         public void InvalidateNoticeCache() => _noticeCache.Invalidate();
 

@@ -38,6 +38,36 @@ namespace DiscordStreamNotifyBot.Shared
             public const string NijisanjiLiverTemplate = "youtube.nijisanji.liver.{affiliation}";
         }
 
+        /// <summary>
+        /// YouTube WebSub（PubSubHubbub）與 Atom fallback 的共享鍵（與 Backend 共用契約）。
+        /// <para>
+        /// pending action 與 HMAC secret 位於 Redis logical database <see cref="DatabaseNumber"/>，
+        /// 與 Backend 的 <c>RedisService</c> 相同；Atom validator 只是一次性快取，留在預設 database 0，
+        /// 遺失只會造成下一輪重新下載完整 feed。
+        /// </para>
+        /// </summary>
+        public static class YoutubeWebSub
+        {
+            /// <summary>pending action 與 HMAC secret 使用的 Redis logical database，需與 Backend 契約一致。</summary>
+            public const int DatabaseNumber = 1;
+
+            /// <summary>每頻道一筆的未完成訂閱要求（JSON，見計畫 §7.1）。</summary>
+            public static string PendingKey(string channelId) => $"youtube:websub:pending:{channelId}";
+
+            /// <summary>每頻道固定的 HMAC secret（沿用既有鍵名，切換版本時不讓既有訂閱失效）。</summary>
+            public static string HmacSecretKey(string channelId) => $"youtube.pubsub.HMACSecret:{channelId}";
+
+            /// <summary>
+            /// 同一頻道送出 WebSub 要求的跨程序互斥鎖（Bot 專用協調鍵，不屬 Backend 共用契約）。
+            /// Scraper 續訂與 Notifier 取消訂閱可能同時發生，程序內 semaphore 擋不住。
+            /// </summary>
+            public static string InFlightKey(string channelId) => $"youtube:websub:inflight:{channelId}";
+
+            public static string AtomEtagKey(string channelId) => $"youtube:atom:etag:{channelId}";
+
+            public static string AtomLastModifiedKey(string channelId) => $"youtube:atom:last-modified:{channelId}";
+        }
+
         /// <summary>Twitch IPC 頻道與設定鍵（與錄影工具 / 後端共用契約）。</summary>
         public static class Twitch
         {

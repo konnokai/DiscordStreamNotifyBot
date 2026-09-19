@@ -10,22 +10,19 @@ using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
 namespace DiscordStreamNotifyBot.Shared
 {
     /// <summary>
-    /// 無狀態 YouTube API 封裝（計畫 §2.1）：頻道 / 影片查詢、PubSubHubbub 訂閱請求。
+    /// 無狀態 YouTube API 封裝（計畫 §2.1）：頻道 / 影片查詢。
     /// 不依賴 Discord 或 <c>Bot</c> 靜態狀態，偵測層（Scraper）與指令層（Notifier）皆可直接使用。
+    /// <para>WebSub 訂閱與 pending 狀態見 <see cref="SharedService.Youtube.YoutubeWebSubService"/>。</para>
     /// </summary>
     public class YoutubeApiService
     {
         public YouTubeService YouTubeService { get; }
 
         private readonly MainDbService _dbService;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly string _apiServerUrl;
 
-        public YoutubeApiService(BotConfig botConfig, MainDbService dbService, IHttpClientFactory httpClientFactory)
+        public YoutubeApiService(BotConfig botConfig, MainDbService dbService)
         {
             _dbService = dbService;
-            _httpClientFactory = httpClientFactory;
-            _apiServerUrl = botConfig.ApiServerDomain;
 
             YouTubeService = new YouTubeService(new BaseClientService.Initializer
             {
@@ -250,10 +247,11 @@ namespace DiscordStreamNotifyBot.Shared
             });
         }
 
-        public async Task<IEnumerable<YTApiVideo>> GetVideosAsync(IEnumerable<string> videoIds)
+        public async Task<IEnumerable<YTApiVideo>> GetVideosAsync(IEnumerable<string> videoIds, CancellationToken cancellationToken = default)
         {
+            // 只有「自己的 token 被取消」才不重試；HttpClient timeout 造成的 TaskCanceledException 仍要退避重試。
             var pBreaker = Policy<IEnumerable<YTApiVideo>>
-                .Handle<Exception>()
+                .Handle<Exception>((ex) => ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
                 .WaitAndRetryAsync(3, (retryAttempt) =>
                 {
                     var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
@@ -265,51 +263,10 @@ namespace DiscordStreamNotifyBot.Shared
             {
                 var video = YouTubeService.Videos.List("snippet,liveStreamingDetails");
                 video.Id = string.Join(',', videoIds);
-                var videoResult = await video.ExecuteAsync().ConfigureAwait(false);
+                var videoResult = await video.ExecuteAsync(cancellationToken).ConfigureAwait(false);
                 if (videoResult.Items.Count == 0) return null;
                 return videoResult.Items;
             });
-        }
-
-        //https://github.com/JulianusIV/PubSubHubBubReciever/blob/master/DefaultPlugins/YouTubeConsumer/YouTubeConsumerPlugin.cs
-        public async Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true)
-        {
-            try
-            {
-                var httpClient = _httpClientFactory.CreateClient();
-                using var request = new HttpRequestMessage();
-
-                request.RequestUri = new("https://pubsubhubbub.appspot.com/subscribe");
-                request.Method = HttpMethod.Post;
-                string guid = Guid.NewGuid().ToString();
-
-                var formList = new Dictionary<string, string>()
-                {
-                    { "hub.mode", subscribe ? "subscribe" : "unsubscribe" },
-                    { "hub.topic", $"https://www.youtube.com/xml/feeds/videos.xml?channel_id={channelId}" },
-                    { "hub.callback", $"https://{_apiServerUrl}/NotificationCallback" },
-                    { "hub.verify", "async" },
-                    { "hub.secret", guid },
-                    { "hub.verify_token", guid },
-                    { "hub.lease_seconds", "864000"}
-                };
-
-                request.Content = new FormUrlEncodedContent(formList);
-                var response = await httpClient.SendAsync(request);
-                var result = response.StatusCode == HttpStatusCode.Accepted;
-                if (!result)
-                {
-                    Log.Error($"{channelId} PubSub 註冊失敗");
-                    Log.Error(response.StatusCode + " - " + await response.Content.ReadAsStringAsync());
-                    return false;
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"{channelId} PubSub 註冊失敗");
-                return false;
-            }
         }
     }
 }

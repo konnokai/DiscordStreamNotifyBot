@@ -124,6 +124,8 @@ Linux 透過 Compose 的 `host-gateway` 使用 `host.docker.internal` 連回主�
 - `ProviderTokenEncryptionKey` 一旦用來加密 token 就不能任意更換，否則既有資料將無法解密。
 - 不要提交 `bot_config.json`、`.env`、Token、API Key 或 Webhook URL。
 - MySQL migration 由本儲存庫管理；Backend 不會另外建立相同資料表。
+- Redis 的 logical database 1 保存 Bot 與 Backend 共用的暫存狀態（OAuth 流程狀態、refresh／操作鎖、YouTube WebSub 訂閱 pending 與 HMAC secret）；兩邊必須連線到同一個 Redis，且不要清空該資料庫，否則進行中的授權流程會中斷、WebSub 訂閱需要重新建立（頻道設定本身在 MySQL，不會被刪除）。
+- YouTube 即時通知需要 Backend 的 `/NotificationCallback`，且 Backend 必須是支援 WebSub pending action 的版本；訂閱失效期間由 Bot 內建的 Atom 補償輪詢接手，兩者都不使用 `search.list`。
 - 錄影委派需要另外部署 [StreamRecordTools](https://github.com/konnokai/StreamRecordTools)，並讓兩邊連線到相同的 Redis。
 
 ## CHZZK 錄影

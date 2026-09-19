@@ -490,8 +490,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     {
                         try
                         {
-                            await AddOtherDataAsync(item);
-                            claims.Complete(item.Id);
+                            if (await AddOtherDataAsync(item))
+                                claims.Complete(item.Id);
+                            else
+                                Log.Warn($"通知發布失敗，保留重試：{item.Id}");
                         }
                         catch (Exception ex)
                         {
@@ -637,13 +639,17 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
         }
 
-        public async Task AddOtherDataAsync(Video item, bool isFromRNRS = false)
+        /// <summary>
+        /// 既有影片分類與通知入口；回傳 false 代表通知發布失敗（影片已分類但未成功送入匯流排），
+        /// 讓呼叫端（Atom fallback）保留舊 validator，下一輪可重新處理。
+        /// </summary>
+        public async Task<bool> AddOtherDataAsync(Video item, bool isFromRNRS = false)
         {
             var decision = await ClassifyApiVideoAsync(item);
             if (decision.Action == YoutubeApiVideoAction.IgnoreFakePost)
             {
                 Log.Error($"（新偽裝貼文） | {item.Snippet.ChannelTitle} ({item.Id})");
-                return;
+                return true;
             }
 
             if (decision.Action == YoutubeApiVideoAction.NewVideo)
@@ -654,7 +660,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 Log.New($"（新影片） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFirstOther && !isFromRNRS && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
-                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false);
+                {
+                    if (!await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false))
+                    {
+                        addNewStreamVideo.TryRemove(streamVideo.VideoId, out _);
+                        return false;
+                    }
+                }
             }
             else if (decision.Action == YoutubeApiVideoAction.Started)
             {
@@ -664,7 +676,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 Log.New($"（已開台） | {streamVideo.ScheduledStartTime} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
 
                 if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && item.Snippet.LiveBroadcastContent == "live" && !isFromRNRS)
-                    await ReminderTimerActionAsync(streamVideo);
+                {
+                    if (!await ReminderTimerActionAsync(streamVideo).ConfigureAwait(false))
+                    {
+                        addNewStreamVideo.TryRemove(streamVideo.VideoId, out _);
+                        return false;
+                    }
+                }
             }
             else if (decision.Action == YoutubeApiVideoAction.Scheduled)
             {
@@ -678,7 +696,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 {
                     if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && !isFromRNRS)
                     {
-                        if (!isFirstOther) await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewStream).ConfigureAwait(false);
+                        if (!isFirstOther
+                            && !await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewStream).ConfigureAwait(false))
+                        {
+                            addNewStreamVideo.TryRemove(streamVideo.VideoId, out _);
+                            return false;
+                        }
+
                         StartReminder(streamVideo, streamVideo.ChannelType);
                     }
                 }
@@ -696,6 +720,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 Log.New($"（僅偵測到直播聊天室的影片） {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
                 addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo);
             }
+
+            return true;
         }
 
         private async Task<YoutubeApiVideoDecision> ClassifyApiVideoAsync(Video item, bool probeFakePost = true)

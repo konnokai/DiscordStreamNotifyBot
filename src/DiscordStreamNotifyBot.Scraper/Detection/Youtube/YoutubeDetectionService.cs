@@ -2,6 +2,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.Youtube;
 using DiscordStreamNotifyBot.SharedService.Youtube.Json;
 using Google.Apis.YouTube.v3;
 using System.Collections.Concurrent;
@@ -30,7 +31,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private readonly YoutubeVideoClaimCache _newStreamClaims = new(TimeProvider.System, NewStreamClaimTtl);
 
-        private bool isSubscribing = false;
         private bool isFirstHolo = true, isFirst2434 = true, isFirstOther = true;
 
         private readonly IHttpClientFactory _httpClientFactory;
@@ -39,11 +39,15 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private readonly MainDbService _dbService;
         private readonly Shared.YoutubeApiService _apiService;
 
-        public YoutubeDetectionService(IHttpClientFactory httpClientFactory, BotConfig botConfig, MainDbService dbService, Shared.YoutubeApiService apiService)
+        public YoutubeDetectionService(IHttpClientFactory httpClientFactory, BotConfig botConfig, MainDbService dbService,
+            Shared.YoutubeApiService apiService, SharedService.Youtube.YoutubeWebSubService webSubService,
+            SharedService.Youtube.IYoutubeAtomValidatorStore atomValidators)
         {
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
             _apiService = apiService;
+            _webSubService = webSubService;
+            _atomFallback = new YoutubeAtomFallback(httpClientFactory, atomValidators, ListAtomChannelIdsAsync, ProcessAtomVideoIdsAsync);
 
             _nijisanjiApiHttpClient = _httpClientFactory.CreateClient();
             _nijisanjiApiHttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
@@ -253,69 +257,41 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.CreateOrUpdate", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
             {
-                YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
+                YoutubePubSubNotification youtubePubSubNotification;
+                try
+                {
+                    youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), $"PubSub-CreateOrUpdate-Deserialize: {youtubeNotificationJson}");
+                    return;
+                }
+
+                if (youtubePubSubNotification == null || string.IsNullOrWhiteSpace(youtubePubSubNotification.VideoId))
+                {
+                    Log.Warn($"{channel} - 收到沒有 videoId 的 PubSub payload");
+                    return;
+                }
+
+                // 與 Atom fallback 共用同一組 claim 與同一個處置入口，兩邊不會各自查 API 後重複通知（計畫 §5.6、§9.4）。
+                using var claims = _newStreamClaims.CreateBatch();
 
                 try
                 {
-                    using (var db = _dbService.GetDbContext())
+                    if (ClaimUnknownVideo(youtubePubSubNotification.VideoId, claims) != UnknownVideoClaim.Claimed)
                     {
-                        if (!addNewStreamVideo.ContainsKey(youtubePubSubNotification.VideoId) && !SharedExtensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
-                        {
-                            Log.Info($"{channel} - （新影片） {youtubePubSubNotification.ChannelId}：{youtubePubSubNotification.VideoId}");
+                        Log.Info($"{channel} - （已知或處理中） {youtubePubSubNotification.ChannelId}：{youtubePubSubNotification.VideoId}");
+                        return;
+                    }
 
-                            DataBase.Table.Video streamVideo;
-                            var youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == youtubePubSubNotification.ChannelId);
-
-                            if (db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == youtubePubSubNotification.ChannelId) // 錄影頻道一律允許
-                                || db.NijisanjiVideos.Any((x) => x.ChannelId == youtubePubSubNotification.ChannelId) || // 可能是 2434 的頻道，允許
-                                (youtubeChannelSpider != null && youtubeChannelSpider.IsTrustedChannel)) // 否則就確認這是不是允許的爬蟲
-                            {
-                                var item = await GetVideoAsync(youtubePubSubNotification.VideoId).ConfigureAwait(false);
-                                if (item == null)
-                                {
-                                    Log.Warn($"找不到影片：{youtubePubSubNotification.VideoId}");
-                                    return;
-                                }
-
-                                try
-                                {
-                                    await AddOtherDataAsync(item);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Error(ex.Demystify(), $"PubSub_AddData_CreateOrUpdate: {item.Id}");
-                                }
-                            }
-                            else
-                            {
-                                var videoContent = await GetVideoDurationAsync(youtubePubSubNotification.VideoId);
-                                if (videoContent.ContentDetails.Duration == "PT15S")
-                                {
-                                    var isCommentDisabled = await GetCommentThreadsIsDisabledAsync(youtubePubSubNotification.VideoId);
-                                    if (isCommentDisabled)
-                                    {
-                                        Log.Error($"（新偽裝貼文） | {db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId)} ({youtubePubSubNotification.VideoId})");
-                                        return;
-                                    }
-                                }
-
-                                streamVideo = new DataBase.Table.Video()
-                                {
-                                    ChannelId = youtubePubSubNotification.ChannelId,
-                                    ChannelTitle = db.GetNonApprovedChannelTitleByChannelId(youtubePubSubNotification.ChannelId),
-                                    VideoId = youtubePubSubNotification.VideoId,
-                                    VideoTitle = youtubePubSubNotification.Title,
-                                    ScheduledStartTime = youtubePubSubNotification.Published,
-                                    ChannelType = DataBase.Table.Video.YTChannelType.NonApproved
-                                };
-
-                                Log.New($"（非已認可的新影片） | {youtubePubSubNotification.Published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({streamVideo.VideoId})");
-
-                                if (addNewStreamVideo.TryAdd(streamVideo.VideoId, streamVideo) && streamVideo.ScheduledStartTime > DateTime.Now.AddDays(-2))
-                                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false);
-                            }
-                        }
-                        else Log.Info($"{channel} - （編輯或關台） {youtubePubSubNotification.ChannelId}：{youtubePubSubNotification.VideoId}");
+                    if (await ProcessDiscoveredVideoAsync(
+                            youtubePubSubNotification.VideoId,
+                            youtubePubSubNotification.ChannelId,
+                            youtubePubSubNotification.Title,
+                            youtubePubSubNotification.Published).ConfigureAwait(false))
+                    {
+                        claims.Complete(youtubePubSubNotification.VideoId);
                     }
                 }
                 catch (Exception ex)
@@ -349,24 +325,29 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), async (channel, channelId) =>
             {
-                using (var db = _dbService.GetDbContext())
+                // 這個 callback 是 async void（StackExchange.Redis 的 Action overload）：任何例外都會逃到程序層，
+                // 因此解析、DB 查詢與送出全部包在例外邊界內。
+                try
                 {
-                    if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId.ToString()))
-                    {
-                        var youtubeChannelSpider = db.YoutubeChannelSpider.Single((x) => x.ChannelId == channelId.ToString());
+                    string id = channelId.ToString();
 
-                        if (await PostSubscribeRequestAsync(channelId.ToString()))
+                    using (var db = _dbService.GetDbContext())
+                    {
+                        if (db.YoutubeChannelSpider.Any((x) => x.ChannelId == id))
                         {
-                            Log.Info($"已重新註冊 YT PubSub：{youtubeChannelSpider.ChannelTitle} ({channelId})");
-                            youtubeChannelSpider.LastSubscribeTime = DateTime.Now;
-                            db.Update(youtubeChannelSpider);
-                            db.SaveChanges();
+                            // Backend 找不到 HMAC secret 時的補送；LastSubscribeTime 一律等 challenge 成功才由 Backend 更新。
+                            var result = await RequestWebSubSubscribeAsync(id, force: false, renewDue: false);
+                            LogWebSubResult(id, result, "NeedRegister");
+                        }
+                        else
+                        {
+                            Log.Error($"後端要求重新註冊，但資料庫中沒有 ChannelId 為 {id} 的資料。");
                         }
                     }
-                    else
-                    {
-                        Log.Error($"後端要求重新註冊，但資料庫中沒有 ChannelId 為 {channelId} 的資料。");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), $"PubSub-NeedRegister: {channelId}");
                 }
             });
 
@@ -382,7 +363,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), async (channel, _) =>
             {
                 Log.Info("[控制] 收到強制重新註冊 PubSub 要求");
-                await SubscribePubSubAsync();
+                await SubscribePubSubAsync(force: true);
             });
 
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.control.addVideo", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
@@ -429,7 +410,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return;
 #endif
 
-            PeriodicRunner.RunAsync("YT-subscribePubSub", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30), SubscribePubSubAsync, token);
+            PeriodicRunner.RunAsync("YT-subscribePubSub", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(30), () => SubscribePubSubAsync(), token);
+
+            // Atom 補償輪詢（計畫 §6.4）：WebSub 仍是主要來源，這裡只補「續訂沒有被確認」的頻道，不另建分類或通知邏輯。
+            PeriodicRunner.RunAsync("YT-atom", TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(15), AtomFallbackAsync, token);
 
             // 會限影片探索（原 Notifier 每 5 分鐘 Timer，搬來 Scraper 單例執行，避免多 shard 重複燒配額）
             PeriodicRunner.RunAsync("YT-memberVideoCheck", TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5), CheckMemberShipOnlyVideoIdAsync, token);
@@ -441,8 +425,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         }
 
         #region 匯流排發布 helper
-        /// <summary>偵測端：由 <see cref="TableVideo"/> 建立 DTO 並 publish 至通知匯流排。</summary>
-        internal async Task PublishYoutubeNotificationAsync(TableVideo streamVideo, YoutubeNoticeType noticeType,
+        /// <summary>
+        /// 偵測端：由 <see cref="TableVideo"/> 建立 DTO 並 publish 至通知匯流排。
+        /// 回傳 false 代表發布失敗（已記錄），呼叫端可據此保留補償用的狀態（例如 Atom validator）。
+        /// </summary>
+        internal async Task<bool> PublishYoutubeNotificationAsync(TableVideo streamVideo, YoutubeNoticeType noticeType,
             DateTime? actualStart = null, DateTime? actualEnd = null, bool isMemberOnly = false,
             DateTime? previousScheduledStartTime = null, bool isUnarchived = false)
         {
@@ -475,14 +462,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     {
                         Log.Warn($"YouTube 終止事件重複通知，略過：{streamVideo.VideoId} / {terminalKind}，已處理 {decision.ClaimedKind}");
                     }
-                    return;
+                    return true;
                 }
 
                 await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Youtube, dto).ConfigureAwait(false);
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"PublishYoutubeNotificationAsync: {streamVideo.VideoId} / {noticeType}");
+                return false;
             }
         }
 
@@ -554,26 +543,149 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         #region API 委派（Shared.YoutubeApiService 單一來源）
         public Task<YTApiVideo> GetVideoAsync(string videoId) => _apiService.GetVideoAsync(videoId);
-        private Task<IEnumerable<YTApiVideo>> GetVideosAsync(IEnumerable<string> videoIds) => _apiService.GetVideosAsync(videoIds);
+        private Task<IEnumerable<YTApiVideo>> GetVideosAsync(IEnumerable<string> videoIds, CancellationToken cancellationToken = default)
+            => _apiService.GetVideosAsync(videoIds, cancellationToken);
         public Task<string> GetChannelIdAsync(string channelUrl) => _apiService.GetChannelIdAsync(channelUrl);
         public string GetVideoId(string videoUrl) => _apiService.GetVideoId(videoUrl);
         public Task<string> GetChannelTitle(string channelId) => _apiService.GetChannelTitle(channelId);
-        public Task<bool> PostSubscribeRequestAsync(string channelId, bool subscribe = true) => _apiService.PostSubscribeRequestAsync(channelId, subscribe);
+
+        /// <summary>對 Google Hub 送出單一頻道的 WebSub subscribe；<paramref name="force"/> 供 owner 強制重新訂閱（可清除 denied）。</summary>
+        private Task<YoutubeWebSubRequestResult> RequestWebSubSubscribeAsync(string channelId, bool force, bool renewDue)
+            => _webSubService.RequestAsync(channelId, subscribe: true, force: force, renewDue: renewDue);
+
+        private static void LogWebSubResult(string channelId, YoutubeWebSubRequestResult result, string source)
+        {
+            switch (result.Outcome)
+            {
+                case YoutubeWebSubRequestOutcome.Accepted:
+                    Log.Info($"已送出 YT WebSub 訂閱要求，等待 challenge：{channelId}（{source}）");
+                    break;
+                case YoutubeWebSubRequestOutcome.Suppressed:
+                    Log.Warn($"YT WebSub 訂閱先前已被 Hub 拒絕，未重送：{channelId}（{source}）");
+                    break;
+                case YoutubeWebSubRequestOutcome.PermanentFailure:
+                    Log.Error($"YT WebSub 訂閱被永久拒絕，略過該頻道：{channelId} / HTTP {(int?)result.StatusCode} / {result.DiagnosticSummary}（{source}）");
+                    break;
+                case YoutubeWebSubRequestOutcome.TransientFailure:
+                    Log.Warn($"YT WebSub 訂閱暫時失敗：{channelId} / HTTP {(int?)result.StatusCode} / {result.DiagnosticSummary}（{source}）");
+                    break;
+            }
+        }
         #endregion
+
+        /// <summary>取得未知影片 claim 的結果；呼叫端必須區分「別人正在處理」與「已知」。</summary>
+        private enum UnknownVideoClaim
+        {
+            /// <summary>已取得 claim，可以繼續查詢與處理。</summary>
+            Claimed,
+
+            /// <summary>已存在於待寫入集合或資料庫，不需要再處理。</summary>
+            AlreadyKnown,
+
+            /// <summary>其他排程持有 claim，結果尚未確定。</summary>
+            Busy,
+        }
 
         /// <summary>
         /// 依序使用程序內 claim、待寫入集合與資料庫判斷影片是否需要進一步處理。
+        /// <para>
+        /// 已完成的 claim 會留在快取直到 TTL 到期，因此「已知」必須先於 claim 判斷，否則剛處理過的影片
+        /// 會被下一個排程當成「處理中」，讓 Atom 的 validator 整整一天無法前進（每輪重抓完整 feed）。
+        /// </para>
+        /// <para>
+        /// WebSub 與 Atom 都必須經過這裡，才會收斂到同一條去重路徑（計畫 §5.6、§9.4）。
+        /// </para>
         /// </summary>
-        private bool TryClaimUnknownVideo(string videoId, YoutubeVideoClaimCache.Batch claims)
+        private UnknownVideoClaim ClaimUnknownVideo(string videoId, YoutubeVideoClaimCache.Batch claims)
         {
-            if (!claims.TryClaim(videoId))
-                return false;
+            if (addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId))
+                return UnknownVideoClaim.AlreadyKnown;
 
-            if (!addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId))
+            return claims.TryClaim(videoId) ? UnknownVideoClaim.Claimed : UnknownVideoClaim.Busy;
+        }
+
+        private bool TryClaimUnknownVideo(string videoId, YoutubeVideoClaimCache.Batch claims)
+            => ClaimUnknownVideo(videoId, claims) == UnknownVideoClaim.Claimed;
+
+        /// <summary>
+        /// WebSub 與 Atom 共用的影片處置入口（計畫 §5.6）：先判斷頻道是否已認可
+        /// （錄影頻道／2434／trusted crawler），已認可走既有分類 <see cref="AddOtherDataAsync"/>，
+        /// 否則走非認可影片（偽裝貼文判定＋<c>NonApproved</c>）流程。
+        /// </summary>
+        /// <param name="prefetched">呼叫端已取得的 API 資料；Atom 批次查詢後直接沿用，避免重複查詢。</param>
+        /// <returns>false 代表尚未成功處理，呼叫端必須釋放 claim 並保留補償狀態。</returns>
+        private async Task<bool> ProcessDiscoveredVideoAsync(
+            string videoId, string channelId, string title, DateTime published, YTApiVideo prefetched = null)
+        {
+            bool isApprovedChannel;
+            using (var db = _dbService.GetDbContext())
+            {
+                isApprovedChannel = db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId) // 錄影頻道一律允許
+                    || db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId) // 可能是 2434 的頻道，允許
+                    || (db.YoutubeChannelSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId)?.IsTrustedChannel ?? false);
+            }
+
+            if (isApprovedChannel)
+            {
+                YTApiVideo item = prefetched ?? await GetVideoAsync(videoId).ConfigureAwait(false);
+                if (item == null)
+                {
+                    Log.Warn($"找不到影片：{videoId}");
+                    return false;
+                }
+
+                try
+                {
+                    return await AddOtherDataAsync(item).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex.Demystify(), $"ProcessDiscoveredVideo: {videoId}");
+                    return false;
+                }
+            }
+
+            var videoContent = await GetVideoDurationAsync(videoId).ConfigureAwait(false);
+            string duration = videoContent?.ContentDetails?.Duration;
+            if (duration == null)
+            {
+                // API 沒回傳就不建立假資料；claim 由呼叫端釋放，之後可重試（計畫 §9.4）。
+                Log.Warn($"取得影片長度失敗，暫不建立非認可影片：{videoId}");
+                return false;
+            }
+
+            if (duration == "PT15S" && await GetCommentThreadsIsDisabledAsync(videoId).ConfigureAwait(false))
+            {
+                Log.Error($"（新偽裝貼文） | {GetNonApprovedChannelTitle(channelId)} ({videoId})");
+                return true;
+            }
+
+            var streamVideo = new DataBase.Table.Video()
+            {
+                ChannelId = channelId,
+                ChannelTitle = GetNonApprovedChannelTitle(channelId),
+                VideoId = videoId,
+                VideoTitle = title,
+                ScheduledStartTime = published,
+                ChannelType = DataBase.Table.Video.YTChannelType.NonApproved
+            };
+
+            Log.New($"（非已認可的新影片） | {published} | {streamVideo.ChannelTitle} - {streamVideo.VideoTitle} ({videoId})");
+
+            if (!addNewStreamVideo.TryAdd(videoId, streamVideo) || published <= DateTime.Now.AddDays(-2))
                 return true;
 
-            claims.Complete(videoId);
+            if (await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.NewVideo).ConfigureAwait(false))
+                return true;
+
+            addNewStreamVideo.TryRemove(videoId, out _);
             return false;
+        }
+
+        private string GetNonApprovedChannelTitle(string channelId)
+        {
+            using var db = _dbService.GetDbContext();
+            return db.GetNonApprovedChannelTitleByChannelId(channelId);
         }
 
         private bool CanRecord(DataBase.Table.Video streamVideo)
@@ -582,48 +694,69 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return IsRecord && db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
         }
 
-        internal async Task SubscribePubSubAsync()
+        /// <summary>
+        /// 定期續訂（計畫 §8.3）：以既有 7 天政策加上「HMAC secret 缺失或 TTL 已接近緩衝」挑出需要續訂的頻道，
+        /// 逐一送出 subscribe。暫時性失敗停止本輪（交給下一個週期），永久性失敗只略過該頻道。
+        /// </summary>
+        internal async Task SubscribePubSubAsync(bool force = false)
         {
-            if (isSubscribing)
-                return;
-
-            isSubscribing = true;
-
             try
             {
-                using var db = _dbService.GetDbContext();
-                var list = await db.YoutubeChannelSpider
-                    .AsNoTracking()
-                    .Where(x => x.LastSubscribeTime < DateTime.Now.AddDays(-7))
-                    .ToListAsync();
-
-                if (list.Count != 0)
+                List<ChannelSubscriptionState> channels;
+                using (var db = _dbService.GetDbContext())
                 {
-                    int i = 0;
-                    foreach (var item in list)
+                    channels = await db.YoutubeChannelSpider
+                        .AsNoTracking()
+                        .Select((x) => new ChannelSubscriptionState(x.ChannelId, x.LastSubscribeTime))
+                        .ToListAsync();
+                }
+
+                if (channels.Count == 0)
+                    return;
+
+                int renewed = 0;
+                foreach (var item in channels)
+                {
+                    if (Bot.IsDisconnect)
+                        break;
+
+                    bool renewDue;
+                    try
                     {
-                        i++;
-                        if (await PostSubscribeRequestAsync(item.ChannelId))
-                        {
-                            Log.Info($"已註冊 YT PubSub：{item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})");
-                        }
-                        else
-                        {
-                            Log.Warn($"註冊 YT PubSub 失敗：{item.ChannelTitle} ({item.ChannelId}) ({i}/{list.Count})，停止本輪註冊，等待下次執行");
-                            break;
-                        }
+                        renewDue = force || await _webSubService.IsRenewalDueAsync(item.ChannelId, item.LastSubscribeTime, DateTime.Now);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), $"檢查 YT WebSub 訂閱狀態失敗，略過該頻道：{item.ChannelId}");
+                        continue;
+                    }
+
+                    if (!renewDue)
+                        continue;
+
+                    var result = await RequestWebSubSubscribeAsync(item.ChannelId, force, renewDue: true);
+                    renewed++;
+                    LogWebSubResult(item.ChannelId, result, "定期續訂");
+
+                    // 429／5xx／網路錯誤代表 Hub 端有狀況，停止本輪避免無意義的重試。
+                    if (result.Outcome == YoutubeWebSubRequestOutcome.TransientFailure)
+                    {
+                        Log.Warn($"YT WebSub 續訂暫時失敗，停止本輪（已處理 {renewed}/{channels.Count} 個頻道）");
+                        break;
                     }
                 }
+
+                if (renewed != 0)
+                    Log.Info($"YT WebSub 續訂本輪結束：已送出 {renewed} 個頻道（共 {channels.Count} 個）");
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), "SubscribePubSubAsync 發生錯誤");
             }
-            finally
-            {
-                isSubscribing = false;
-            }
         }
+
+        /// <summary>續訂篩選所需的最小欄位，避免把整個 entity 拉進記憶體。</summary>
+        private sealed record ChannelSubscriptionState(string ChannelId, DateTime LastSubscribeTime);
 
         /// <summary>每天 00:00 檢查所有 YoutubeChannelSpider 的頻道名稱，若有異動則自動更新。</summary>
         private async Task CheckAndUpdateYoutubeChannelTitlesAsync()

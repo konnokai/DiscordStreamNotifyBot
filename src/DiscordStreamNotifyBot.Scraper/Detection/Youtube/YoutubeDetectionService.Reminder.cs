@@ -75,7 +75,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
         }
 
-        private async Task ReminderTimerActionAsync(TableVideo streamVideo, ReminderItem owner = null)
+        /// <summary>
+        /// 執行到點提醒；回傳 false 代表通知發布失敗或處理中發生例外，呼叫端可據此保留補償狀態。
+        /// </summary>
+        private async Task<bool> ReminderTimerActionAsync(TableVideo streamVideo, ReminderItem owner = null)
         {
             using var db = _dbService.GetDbContext();
 
@@ -87,34 +90,38 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     if (isDeleted)
                     {
                         if (TryClaimReminderAction(streamVideo, owner))
-                            await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
+                            return await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
+
+                        return true;
                     }
-                    else
-                        ScheduleReminderRetry(streamVideo, owner);
-                    return;
+
+                    ScheduleReminderRetry(streamVideo, owner);
+                    return true;
                 }
 
                 if (!TryGetStartTime(videoResult, out DateTime startTime))
                 {
                     Log.Error($"無法解析影片開始時間：{streamVideo.VideoId}");
                     ScheduleReminderRetry(streamVideo, owner);
-                    return;
+                    return true;
                 }
 
                 if (!TryClaimReminderAction(streamVideo, owner))
-                    return;
+                    return true;
 
                 if (YoutubeReminderPolicy.DecideApiRecheck(startTime, DateTime.Now) ==
                     YoutubeReminderApiAction.TreatAsStarted)
                 {
-                    await HandleStreamStartAsync(streamVideo, videoResult, db);
+                    return await HandleStreamStartAsync(streamVideo, videoResult, db);
                 }
-                else
-                {
-                    await HandleStreamTimeChangedAsync(streamVideo, videoResult, db, startTime);
-                }
+
+                return await HandleStreamTimeChangedAsync(streamVideo, videoResult, db, startTime);
             }
-            catch (Exception ex) { Log.Error(ex.Demystify(), $"ReminderAction: {streamVideo.VideoId}"); }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"ReminderAction: {streamVideo.VideoId}");
+                return false;
+            }
         }
 
         private async Task<(YTApiVideo Video, bool IsDeleted)> TryGetVideoResult(TableVideo streamVideo)
@@ -146,7 +153,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return false;
         }
 
-        private async Task HandleStreamStartAsync(
+        private async Task<bool> HandleStreamStartAsync(
             TableVideo streamVideo,
             YTApiVideo videoResult,
             MainDbContext db)
@@ -202,14 +209,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             await PublishBannerAsync(streamVideo.ChannelId, streamVideo.VideoId);
 
-            if (!isRecord)
-            {
-                await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
-            }
+            if (isRecord)
+                return true;
 
+            return await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
         }
 
-        private async Task HandleStreamTimeChangedAsync(
+        private async Task<bool> HandleStreamTimeChangedAsync(
             TableVideo streamVideo,
             YTApiVideo videoResult,
             MainDbContext db,
@@ -241,10 +247,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 Log.Error(ex.Demystify(), $"({streamVideo.ChannelType}) 直播時間變更儲存失敗：{streamVideo.VideoId}");
             }
 
-            await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
+            bool published = await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
                 previousScheduledStartTime: previousScheduledStartTime).ConfigureAwait(false);
 
             StartReminder(streamVideo, streamVideo.ChannelType);
+            return published;
         }
 
         private bool TryClaimReminderAction(TableVideo streamVideo, ReminderItem owner)
