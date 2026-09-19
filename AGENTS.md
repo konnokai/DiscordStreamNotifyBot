@@ -15,6 +15,25 @@ dotnet test DiscordStreamNotifyBot.sln -c Release
 - 自動化測試位於 `tests/DiscordStreamNotifyBot.Tests`。
 - 外部 Discord、MySQL、Redis 與各直播平台整合無法由單元測試完整覆蓋；涉及整合流程時要明確標示未驗證部分。
 
+### Component tests（Redis／MySQL）
+
+需要真實 Redis／MySQL 的測試預設會被 skip。本機要實跑時，**只有在該機器存在 `tests/component.local.runsettings` 才加上 `--settings`**（該檔案在 `.gitignore` 內，不進版控，內容是該機器的服務位置與測試帳號）：
+
+```powershell
+if (Test-Path tests/component.local.runsettings) {
+    dotnet test DiscordStreamNotifyBot.sln -c Release --settings tests/component.local.runsettings
+} else {
+    dotnet test DiscordStreamNotifyBot.sln -c Release   # 沒有本機設定，component tests 會 skip
+}
+```
+
+- 這個檔案不是每個環境都有，不要當成固定步驟；不存在時硬加 `--settings` 會直接失敗（找不到設定檔），不是 skip。
+- 檔案以 `RunConfiguration/EnvironmentVariables` 注入 `REDIS_COMPONENT_OPTION`（Redis component tests）與 `MYSQL_TEST_CONNECTION_STRING`（MySQL component tests）。
+- Redis 必須指定 `defaultDatabase=2` 以上且該資料庫為空：fixture 會拒絕碰觸生產 DB 0 與 token DB 1，也拒絕覆寫既有資料。
+- 有設定環境變數但服務不可連時，測試會以連線例外**失敗**（不是 skip）。
+- MySQL component tests 會在該主機建立並刪除 `discord_stream_bot_component_<guid>` 測試資料庫，測試帳號需要 `CREATE`／`DROP` 權限；權限不足會出現 `Access denied for user ...`。
+- 只跑其中一類時加 `--filter "FullyQualifiedName~Component.Redis"`（MySQL 用 `~Component.MySql`）。
+
 ## 執行方式
 
 程式分成三個服務：

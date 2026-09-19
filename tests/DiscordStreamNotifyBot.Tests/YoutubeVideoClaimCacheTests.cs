@@ -102,5 +102,33 @@ namespace DiscordStreamNotifyBot.Tests
 
             Assert.True(cache.TryClaim("video-id"));
         }
+
+        /// <summary>
+        /// 已完成的 claim 會留在快取直到 TTL 到期，後續排程只看 claim 會把它當成「處理中」。
+        /// 這是呼叫端必須先判斷影片是否已知、再搶 claim 的原因（避免 Atom validator 卡住一天）。
+        /// </summary>
+        [Fact]
+        public void CompletedClaimStillBlocksLaterBatchesUntilTtl()
+        {
+            var timeProvider = new FakeTimeProvider();
+            var cache = new YoutubeVideoClaimCache(timeProvider, Ttl);
+
+            using (var batch = cache.CreateBatch())
+            {
+                Assert.True(batch.TryClaim("completed"));
+                batch.Complete("completed");
+            }
+
+            using (var laterBatch = cache.CreateBatch())
+            {
+                Assert.False(laterBatch.TryClaim("completed"));
+            }
+
+            timeProvider.Advance(Ttl);
+            using (var expiredBatch = cache.CreateBatch())
+            {
+                Assert.True(expiredBatch.TryClaim("completed"));
+            }
+        }
     }
 }
