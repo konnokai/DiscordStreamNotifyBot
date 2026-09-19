@@ -80,7 +80,7 @@ namespace DiscordStreamNotifyBot.Tests
                 new StubHttpClientFactory(handler),
                 validators,
                 _ => Task.FromResult<IReadOnlyList<string>>([ChannelA]),
-                (ids, _) => Task.FromResult<IReadOnlyCollection<string>>(["dQw4w9WgXcQ"]));
+                (ids, _) => Task.FromResult(new YoutubeAtomProcessResult(["dQw4w9WgXcQ"], ids.Count, 1)));
 
             await runner.RunAsync(CancellationToken.None);
 
@@ -236,7 +236,7 @@ namespace DiscordStreamNotifyBot.Tests
                 (ids, _) =>
                 {
                     processed.AddRange(ids);
-                    return Task.FromResult<IReadOnlyCollection<string>>([]);
+                    return Task.FromResult(new YoutubeAtomProcessResult([], ids.Count, ids.Count == 0 ? 0 : 1));
                 });
 
         internal static string Feed(string channelId)

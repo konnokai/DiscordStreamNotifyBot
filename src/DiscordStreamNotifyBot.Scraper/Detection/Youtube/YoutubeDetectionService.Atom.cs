@@ -40,12 +40,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         /// <summary>
         /// 先以既有 claim 過濾，再每 50 筆呼叫 <c>videos.list</c>，逐筆交給 <see cref="AddOtherDataAsync"/>。
-        /// 回傳未能完成處理的 video ID，讓呼叫端保留舊 validator 並在下輪重試。
+        /// 回傳未能完成處理的 video ID（呼叫端保留舊 validator）與實際查詢規模。
         /// <para>
         /// 「其他排程正在處理」不算完成：結果尚未確定時必須保留舊 validator，否則該影片可能永遠被跳過。
         /// </para>
         /// </summary>
-        private async Task<IReadOnlyCollection<string>> ProcessAtomVideoIdsAsync(
+        private async Task<YoutubeAtomProcessResult> ProcessAtomVideoIdsAsync(
             IReadOnlyList<string> videoIds, CancellationToken cancellationToken)
         {
             using var claims = _newStreamClaims.CreateBatch();
@@ -66,6 +66,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
             }
 
+            int batches = 0;
             for (int offset = 0; offset < claimed.Count; offset += AtomVideoBatchSize)
             {
                 if (cancellationToken.IsCancellationRequested || Bot.IsDisconnect)
@@ -75,6 +76,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
 
                 List<string> batch = claimed.GetRange(offset, Math.Min(AtomVideoBatchSize, claimed.Count - offset));
+                batches++;
                 IEnumerable<YTApiVideo> videos;
                 try
                 {
@@ -132,7 +134,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
             }
 
-            return failed;
+            return new YoutubeAtomProcessResult(failed, claimed.Count, batches);
         }
     }
 }
