@@ -360,7 +360,8 @@ Backend 必須：
 
 規則：
 
-- feed／entry channel ID 必須與請求 channel 相符；不符時整份視為無效。
+- feed 本身（根節點 `yt:channelId` 或 self link）必須與請求 channel 相符；不符時整份視為無效。
+- entry 的 `yt:channelId` 若屬其他頻道（實測 YouTube 會夾帶合作／翻唱影片，見 §17.3）逐筆略過並記錄，**不因此丟棄整份 feed**；只有該頻道自己的 entry 進入後續處理。
 - 缺少或格式錯誤的單一 entry 可略過並記錄，不因一筆壞資料放棄其他合法 entry。
 - 同一 feed 重複 video ID 只保留一次。
 - 禁止 DTD 與外部 entity。
@@ -648,12 +649,13 @@ git diff --check                                     # 無輸出（僅既有 LF/
 
 - **端點不支援條件式 GET**：回應只有 `Content-Type: text/xml; charset=UTF-8`、`Date`、`Expires`、`Cache-Control: public, max-age=900`、`Server: YouTube RSS Feeds server`，**沒有 `ETag` 也沒有 `Last-Modified`**；帶 `If-None-Match`（正確值或亂數值）都回 200。因此 validator 永遠不會被寫入，每輪都會無條件下載完整 feed（實測該頻道 25,720 bytes、15 筆 entry）。以 300 個頻道、每 5 分鐘一輪估算，約每天 2.2 GB 與 86,400 次請求；這是頻寬與對外流量，不消耗 YouTube Data API 配額。**這也是 2026-09-19 改為「只補疑似失效頻道 + 15 分鐘間隔」的依據（§5.2）。**
 - **伺服器端快取 15 分鐘**：`max-age=900` 代表新影片出現在 feed 的時間可能比上傳晚最多約 15 分鐘，Atom 的實際發現延遲上限因此高於「5 分鐘排程」。
-- **根節點 `yt:channelId` 省略 `UC` 前綴**：實測值為 `YxLMfeX1CbMBll9MsGlzmw`（22 字元），而 `self` link、`<id>yt:channel:...`、author uri 與 **entry 的 `yt:channelId`** 都是完整的 24 字元 `UCYxLMfeX1CbMBll9MsGlzmw`。parser 只在根節點是完整 channel ID 時採用，否則改用 self link；`IsFeedForChannel` 仍以「self link + 全部去重前 entry」核對請求的頻道。
+- **根節點 `yt:channelId` 省略 `UC` 前綴**：實測值為 `YxLMfeX1CbMBll9MsGlzmw`（22 字元），而 `self` link、`<id>yt:channel:...`、author uri 與 **entry 的 `yt:channelId`** 都是完整的 24 字元 `UCYxLMfeX1CbMBll9MsGlzmw`。parser 只在根節點是完整 channel ID 時採用，否則改用 self link。
+- **頻道 feed 會夾帶其他頻道的 entry**（由實際 log `feed channel 不符` 追查）：`UCqe0-vqZwAvZUb22wCMu1fA` 的 feed 有 15 筆 entry，其中 2 筆（`QlaGDL69HjY`、`CjXemr360js`）的 `yt:channelId` 是 `UCsGWiDe1iLkhvbBGurUP2tg`（合作／翻唱），且這兩筆也存在於該頻道自己的 feed。因此 feed 本身的 channel 必須相符，但 entry 必須逐筆過濾；「任一 entry 不符就整份丟棄」會讓這類頻道的 Atom 永久失效（validator 永遠無法前進、每輪全量重抓）。
 - feed 其餘結構與 parser 預期一致（`yt:videoId`、entry `published`／`updated` 帶 `+00:00`、根節點 `link rel="self"`）。
 
-新增測試：`YoutubeAtomFeedParserTests.IgnoresFeedLevelChannelIdWithoutUcPrefix`、`ParsesRealYoutubeFeedShapeWithUnprefixedRootChannelId`。
+新增測試：`YoutubeAtomFeedParserTests.IgnoresFeedLevelChannelIdWithoutUcPrefix`、`ParsesRealYoutubeFeedShapeWithUnprefixedRootChannelId`、`YoutubeAtomFallbackTests.SkipsEntriesOwnedByAnotherChannelButKeepsItsOwn`。
 
-尚未實測：其他頻道是否都缺 `ETag`／`Last-Modified`（只測了一個頻道）、以及 validator 程式碼在端點未來支援時的行為。
+尚未實測：其他頻道是否都缺 `ETag`／`Last-Modified`（只測了兩個頻道）、以及 validator 程式碼在端點未來支援時的行為。
 
 ## 18. 實作後審查與修正
 
@@ -673,7 +675,7 @@ git diff --check                                     # 無輸出（僅既有 LF/
 - Atom 只有 429／有效 `Retry-After` 才停止本輪，其餘 5xx 與單一頻道例外只記錄並繼續下一個頻道。
 - Atom 改用預設 completion mode，讓 `HttpClient.Timeout` 涵蓋 body 讀取；`GetVideosAsync` 接受 `CancellationToken` 且取消不重試，批次間與逐筆處理前都檢查取消。
 - 帶 query 的 POST 必須同時提供 `channelId` 與 `token`（只有兩者皆無才算舊格式），且先用 query channel 驗 token／HMAC 再解析 XML；GET 的 challenge 一律要求 `channelId` 與 topic 一致。
-- Atom parser 另外回傳去重前的 entry channel 集合，重複 ID 不會掩蓋 channel 不符。
+- feed 本身的 channel 必須相符，但 entry 逐筆過濾（見 §17.3 的實測）：會夾帶其他頻道影片的 feed 不再被整份丟棄。
 - Atom validator store 固定使用 Redis DB 0，不再跟著連線的 `defaultDatabase`。
 - Bot 送出要求的診斷摘要會先移除 secret／token（含 URL-encoded 形式）再截短。
 - README 對 Redis DB 1 的說明改為實際用途與影響。

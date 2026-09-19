@@ -733,6 +733,14 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 });
                             }
                         }
+                        catch (Exception ex) when (NotificationTargetFailure.IsPermanent(ex))
+                        {
+                            // 活動權限不足或目標已不存在：關閉此設定的建立活動並繼續發送通知，不讓事件無限重試。
+                            Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動被拒，關閉此設定的建立活動");
+                            db.NoticeYoutubeStreamChannel.Where((x) => x.Id == item.Id)
+                                .ExecuteUpdate((s) => s.SetProperty((p) => p.IsCreateEventForNewStream, false));
+                            _noticeCache.Invalidate();
+                        }
                         catch (Exception ex)
                         {
                             retryRequired = true;
@@ -800,15 +808,36 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             throw;
                         }
 
-                        if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
+                        if (NotificationTargetFailure.IsPermanent(httpEx))
                         {
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.MissingPermission;
-                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 遺失權限");
-                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == item.DiscordNoticeVideoChannelId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
+
+                            // 真正送不出去的是這次實際使用的目的地頻道（新影片用影片頻道，其餘用直播頻道）。
+                            ulong failedChannelId = noticeType == NoticeType.NewVideo
+                                ? item.DiscordNoticeVideoChannelId
+                                : item.DiscordNoticeStreamChannelId;
+                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {failedChannelId} 永久失敗（權限或目標不存在）：{httpEx.DiscordCode}");
+
+                            // 伺服器已不存在時清除整個伺服器的設定（與上方 MissingGuild 相同的跨 shard 防護）；
+                            // 其餘永久失敗清除所有指向這個送不到的目的地頻道的設定。
+                            if (NotificationTargetFailure.IsUnknownGuild(httpEx))
+                            {
+                                if (Bot.ShouldDeleteMissingGuild(item.GuildId))
+                                {
+                                    db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
+                                    db.SaveChanges();
+                                    _noticeCache.Invalidate();
+                                }
+                            }
+                            else
+                            {
+                                db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where(
+                                    (x) => x.DiscordNoticeVideoChannelId == failedChannelId || x.DiscordNoticeStreamChannelId == failedChannelId));
+                                db.SaveChanges();
+                                _noticeCache.Invalidate();
+                            }
                         }
                         else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
                         {

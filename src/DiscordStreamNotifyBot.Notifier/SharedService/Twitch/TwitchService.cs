@@ -528,12 +528,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                             throw;
                         }
 
-                        if (httpEx.DiscordCode.HasValue && (httpEx.DiscordCode.Value == DiscordErrorCode.InsufficientPermissions || httpEx.DiscordCode.Value == DiscordErrorCode.MissingPermissions))
+                        if (NotificationTargetFailure.IsPermanent(httpEx))
                         {
                             deliveryResult = primaryMessageSent
                                 ? NotificationDeliveryResult.Sent
                                 : NotificationDeliveryResult.MissingPermission;
-                            Log.Warn($"Twitch 通知 ({dto.UserId}) | 遺失權限 {item.GuildId} / {item.DiscordChannelId}");
+                            Log.Warn($"Twitch 通知 ({dto.UserId}) | 永久失敗（權限或目標不存在）{item.GuildId} / {item.DiscordChannelId}：{httpEx.DiscordCode}");
                             db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
                             db.SaveChanges();
                             _noticeCache.Invalidate();

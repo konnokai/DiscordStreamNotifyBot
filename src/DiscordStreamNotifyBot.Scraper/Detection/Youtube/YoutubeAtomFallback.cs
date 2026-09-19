@@ -193,30 +193,31 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 return ChannelFetch.Failed();
             }
 
-            IReadOnlyList<string> videoIds = parsed.Entries.Select(static x => x.VideoId).ToArray();
+            // YouTube 的頻道 feed 會夾帶其他頻道的合作／翻唱影片（實測：15 筆中有 2 筆屬於另一個頻道），
+            // 逐筆過濾即可；整份丟棄會讓該頻道的 validator 永遠無法前進。
+            YoutubeAtomEntry[] ownEntries = parsed.Entries.Where((x) => x.ChannelId == channelId).ToArray();
+            if (ownEntries.Length != parsed.Entries.Count)
+            {
+                IEnumerable<string> foreignChannels = parsed.Entries
+                    .Where((x) => x.ChannelId != channelId)
+                    .Select(static x => x.ChannelId)
+                    .Distinct();
+                Log.Warn($"Atom fallback 略過 {parsed.Entries.Count - ownEntries.Length} 筆其他頻道的 entry：{channelId} / {string.Join(", ", foreignChannels)}");
+            }
+
+            IReadOnlyList<string> videoIds = ownEntries.Select(static x => x.VideoId).ToArray();
             string newEtag = response.Headers.ETag?.Tag;
             string newLastModified = response.Content.Headers.LastModified?.ToString("R");
 
             return ChannelFetch.Modified(videoIds, newEtag, newLastModified, parsed.SkippedEntryCount);
         }
 
-        /// <summary>feed self link 與**去重前**每個 entry 的 channel ID 都必須與請求的頻道相同。</summary>
+        /// <summary>
+        /// feed 本身（根節點 <c>yt:channelId</c> 或 self link）必須是請求的頻道；
+        /// entry 的 channel 不在此判斷，由呼叫端逐筆過濾。
+        /// </summary>
         private static bool IsFeedForChannel(YoutubeAtomParseResult parsed, string channelId)
-        {
-            if (!string.IsNullOrEmpty(parsed.FeedChannelId) && parsed.FeedChannelId != channelId)
-                return false;
-
-            if (string.IsNullOrEmpty(parsed.FeedChannelId) && parsed.ChannelIds.Count == 0)
-                return false;
-
-            foreach (string declaredChannelId in parsed.ChannelIds)
-            {
-                if (declaredChannelId != channelId)
-                    return false;
-            }
-
-            return true;
-        }
+            => parsed.FeedChannelId == channelId;
 
         private static TimeSpan? ParseRetryAfter(System.Net.Http.Headers.RetryConditionHeaderValue retryAfter)
         {

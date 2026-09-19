@@ -151,9 +151,10 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public async Task RejectsFeedWhoseDuplicateVideoIdComesFromAnotherChannel()
+        public async Task SkipsEntriesOwnedByAnotherChannelButKeepsItsOwn()
         {
-            // 第二筆是同一個 video ID 但 channel 不符：去重若先發生，就會吃掉這個不符而整份被接受。
+            // 實測形狀：頻道 feed 會夾帶其他頻道的合作／翻唱影片（15 筆中有 2 筆屬於別的頻道），
+            // 這些 entry 要逐筆略過，不能因此丟棄整份 feed。
             string feed = $"""
                 <?xml version="1.0" encoding="UTF-8"?>
                 <feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns="http://www.w3.org/2005/Atom">
@@ -165,7 +166,7 @@ namespace DiscordStreamNotifyBot.Tests
                     <updated>2026-09-19T03:00:00+00:00</updated>
                   </entry>
                   <entry>
-                    <yt:videoId>dQw4w9WgXcQ</yt:videoId>
+                    <yt:videoId>QlaGDL69HjY</yt:videoId>
                     <yt:channelId>{ChannelB}</yt:channelId>
                     <published>2026-09-18T12:00:00+00:00</published>
                     <updated>2026-09-19T03:00:00+00:00</updated>
@@ -183,8 +184,8 @@ namespace DiscordStreamNotifyBot.Tests
             var runner = CreateRunner(handler, validators, [ChannelA], processed);
             await runner.RunAsync(CancellationToken.None);
 
-            Assert.Empty(processed);
-            Assert.Null(validators.Get(ChannelA).ETag);
+            Assert.Equal(["dQw4w9WgXcQ"], processed);
+            Assert.Equal("\"new\"", validators.Get(ChannelA).ETag);
         }
 
         [Fact]

@@ -13,14 +13,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         DateTime? Updated);
 
     /// <summary>
-    /// 解析結果；<see cref="FeedChannelId"/> 來自 feed 的 self link，<see cref="ChannelIds"/> 是**去重前**所有
-    /// entry 宣告的 channel，呼叫端據此判斷整份 feed 是否屬於請求的頻道（重複 ID 不會掩蓋 channel 不符）。
+    /// 解析結果；<see cref="FeedChannelId"/> 來自根節點 <c>yt:channelId</c>（完整 ID 才採用）或 feed 的 self link，
+    /// 呼叫端據此核對是否為請求的頻道。
     /// </summary>
     internal sealed class YoutubeAtomParseResult
     {
         public bool Success { get; init; }
         public string FeedChannelId { get; init; }
-        public IReadOnlySet<string> ChannelIds { get; init; } = new HashSet<string>(StringComparer.Ordinal);
         public IReadOnlyList<YoutubeAtomEntry> Entries { get; init; } = [];
         public int SkippedEntryCount { get; init; }
         public string Error { get; init; }
@@ -77,17 +76,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 var entries = new List<YoutubeAtomEntry>();
                 var seen = new HashSet<string>(StringComparer.Ordinal);
-                var channelIds = new HashSet<string>(StringComparer.Ordinal);
                 int skipped = 0;
 
                 foreach (XElement entry in root.Elements(Atom + "entry"))
                 {
                     string videoId = (string)entry.Element(Youtube + "videoId");
                     string channelId = (string)entry.Element(Youtube + "channelId");
-
-                    // channel 一致性要在去重之前記錄，否則重複 ID 會讓不符的 channel 被吃掉。
-                    if (!string.IsNullOrWhiteSpace(channelId))
-                        channelIds.Add(channelId);
 
                     if (string.IsNullOrWhiteSpace(videoId) || string.IsNullOrWhiteSpace(channelId) || !seen.Add(videoId))
                     {
@@ -106,7 +100,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 {
                     Success = true,
                     FeedChannelId = feedChannelId,
-                    ChannelIds = channelIds,
                     Entries = entries,
                     SkippedEntryCount = skipped,
                 };
