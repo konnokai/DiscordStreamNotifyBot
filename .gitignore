@@ -376,7 +376,5 @@ tests/component.local.runsettings
 # 參考用外部專案（非本專案程式碼，見 AGENTS.md）
 /nadekobot/
 
-# graphify
-/graphify-out/cost.json
-/graphify-out/cache
-/graphify-out/20*/
+# graphify（產物不進版控）
+/graphify-out/

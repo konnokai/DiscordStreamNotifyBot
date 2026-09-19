@@ -125,4 +125,4 @@ dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Sh
 - 關係查詢使用 `graphify path "<A>" "<B>"`，單一概念使用 `graphify explain "<概念>"`。
 - 查詢不足時再讀 `graphify-out/wiki/index.md` 或 `graphify-out/GRAPH_REPORT.md`。
 - 修改後不要自動執行 `graphify update .`；提醒使用者自行更新。
-- 使用者要求提交時，相關 `graphify-out/` 變更必須一起提交。
+- `graphify-out/` 已列入 `.gitignore`，不進版控；提交時不需理會它的變更。
