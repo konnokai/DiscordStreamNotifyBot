@@ -10,33 +10,14 @@ namespace DiscordStreamNotifyBot.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<uint>(
-                name: "max_twitcasting_spider_count",
-                table: "guild_config",
-                type: "int unsigned",
-                nullable: false,
-                defaultValue: 3u);
-
+            // 特規版已移除 TwitCasting、Twitter Space 與 YouTube 會員驗證，
+            // 僅保留仍在使用的 Twitch／YouTube 爬蟲數量上限欄位。
             migrationBuilder.AddColumn<uint>(
                 name: "max_twitch_spider_count",
                 table: "guild_config",
                 type: "int unsigned",
                 nullable: false,
                 defaultValue: 3u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "max_twitter_space_spider_count",
-                table: "guild_config",
-                type: "int unsigned",
-                nullable: false,
-                defaultValue: 3u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "max_you_tube_member_check_count",
-                table: "guild_config",
-                type: "int unsigned",
-                nullable: false,
-                defaultValue: 5u);
 
             migrationBuilder.AddColumn<uint>(
                 name: "max_you_tube_spider_count",
@@ -50,19 +31,7 @@ namespace DiscordStreamNotifyBot.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "max_twitcasting_spider_count",
-                table: "guild_config");
-
-            migrationBuilder.DropColumn(
                 name: "max_twitch_spider_count",
-                table: "guild_config");
-
-            migrationBuilder.DropColumn(
-                name: "max_twitter_space_spider_count",
-                table: "guild_config");
-
-            migrationBuilder.DropColumn(
-                name: "max_you_tube_member_check_count",
                 table: "guild_config");
 
             migrationBuilder.DropColumn(

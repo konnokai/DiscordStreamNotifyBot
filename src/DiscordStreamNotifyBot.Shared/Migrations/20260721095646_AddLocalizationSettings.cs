@@ -10,14 +10,7 @@ namespace DiscordStreamNotifyBot.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "locale",
-                table: "youtube_member_check",
-                type: "varchar(16)",
-                maxLength: 16,
-                nullable: true)
-                .Annotation("MySql:CharSet", "utf8mb4");
-
+            // 特規版已移除 YouTube 會員驗證，僅保留 guild_config 的 locale 欄位。
             migrationBuilder.AddColumn<string>(
                 name: "locale",
                 table: "guild_config",
@@ -30,10 +23,6 @@ namespace DiscordStreamNotifyBot.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "locale",
-                table: "youtube_member_check");
-
             migrationBuilder.DropColumn(
                 name: "locale",
                 table: "guild_config");

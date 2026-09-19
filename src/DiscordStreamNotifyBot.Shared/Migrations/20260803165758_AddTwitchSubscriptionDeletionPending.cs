@@ -10,20 +10,13 @@ namespace DiscordStreamNotifyBot.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "deletion_pending",
-                table: "guild_twitch_subscription_config",
-                type: "tinyint(1)",
-                nullable: false,
-                defaultValue: false);
+            // 特規版已移除 Twitch 訂閱驗證，不再變更 guild_twitch_subscription_config；
+            // 保留空 migration 以維持正式 DB 的 __EFMigrationsHistory 歷史。
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "deletion_pending",
-                table: "guild_twitch_subscription_config");
         }
     }
 }

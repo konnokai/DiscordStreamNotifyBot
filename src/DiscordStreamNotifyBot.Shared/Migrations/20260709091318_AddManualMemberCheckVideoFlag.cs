@@ -10,20 +10,13 @@ namespace DiscordStreamNotifyBot.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "is_manual_video_id",
-                table: "guild_youtube_member_config",
-                type: "tinyint(1)",
-                nullable: false,
-                defaultValue: false);
+            // 特規版已移除 YouTube 會員驗證，不再變更 guild_youtube_member_config；
+            // 保留空 migration 以維持正式 DB 的 __EFMigrationsHistory 歷史。
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "is_manual_video_id",
-                table: "guild_youtube_member_config");
         }
     }
 }

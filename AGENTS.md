@@ -18,6 +18,7 @@
 - 網頁管理設定的 YouTube／Twitch 爬蟲已接上共用 domain service、expanded snapshot 與 Web 表單；正式 Discord／Redis／MySQL／多 shard 驗收仍依 [docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md](docs/WEB_ADMIN_CRAWLER_VERIFICATION_PLAN.md) 執行。
 - 網頁管理設定 latency follow-up 已完成：Backend 三個 endpoint 共用 30 秒 absolute deadline，Bot envelope 傳遞 `deadlineUnixMs`，Redis reply／unavailable／deadline exceeded 分流；正式整合驗收仍待執行。
 - 特規版精簡（`feat/bloodk1n`）：移除 TwitCasting／CHZZK 平台、YouTube 會員驗證（YoutubeMember）、Twitch 訂閱驗證（TwitchSubscription）、Holo・Nijisanji 分類與影片表（`YTChannelType` 僅剩 `Other`/`NonApproved`）、YouTube 錄影委派（RecordYoutubeChannel）、`/youtube now-streaming` 與 `/youtube list-record-channel`、全服廣播與 `/server-admin set-verification-log-channel`、Prometheus metrics 與 `deploy/grafana`。EF 實體與 `GuildConfig` 欄位已自模型移除但**未產生新 migration**（比照舊特規版；正式 DB 變更交由維護窗口處理），MySQL component test `FullMigrationSetIsAppliedAndModelHasNoPendingChanges` 因此會回報 pending model changes。
+- 特規版 schema 清理：`migrate_sql/all.sql` 與 13 筆 migration `.cs` 已同步移除上述已下架功能的 DDL／欄位操作（建表、索引、ALTER、rename），保留原 migration ID 與 `__EFMigrationsHistory` 記錄不變；`SyncModelDrift` 的 Twitter Space `DROP TABLE IF EXISTS` 保留。裁切後以 EF 重生的 script 與 `migrate_sql/all.sql` 一致（僅檔頭說明註解不同），`all.sql` 可直接重生。
 - 開始任何重構工作前，先讀 [docs/LETTER_TO_FUTURE_SESSIONS.md](docs/LETTER_TO_FUTURE_SESSIONS.md)。
 
 ## Build & Run

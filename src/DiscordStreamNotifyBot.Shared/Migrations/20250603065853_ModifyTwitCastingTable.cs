@@ -10,30 +10,12 @@ namespace DiscordStreamNotifyBot.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "channel_id",
-                table: "notice_twitcasting_stream_channels",
-                newName: "screen_id");
-
-            migrationBuilder.AddColumn<string>(
-                name: "screen_id",
-                table: "twitcasting_spider",
-                type: "longtext",
-                nullable: true)
-                .Annotation("MySql:CharSet", "utf8mb4");
+            // 特規版已移除 TwitCasting，不再變更相關資料表；保留空 migration 以維持正式 DB 的 __EFMigrationsHistory 歷史。
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "screen_id",
-                table: "twitcasting_spider");
-
-            migrationBuilder.RenameColumn(
-                name: "screen_id",
-                table: "notice_twitcasting_stream_channels",
-                newName: "channel_id");
         }
     }
 }

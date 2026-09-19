@@ -10,19 +10,13 @@ namespace DiscordStreamNotifyBot.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "log_member_status_channel_id",
-                table: "guild_config",
-                newName: "verification_log_channel_id");
+            // 特規版已移除會員驗證記錄頻道，guild_config 自基線即不含 log_member_status_channel_id；
+            // 保留空 migration 以維持正式 DB 的 __EFMigrationsHistory 歷史。
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "verification_log_channel_id",
-                table: "guild_config",
-                newName: "log_member_status_channel_id");
         }
     }
 }
