@@ -17,14 +17,18 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         {
             using (var db = _dbService.GetDbContext())
             {
-                foreach (var streamVideo in db.HoloVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                // 兩大箱停用時不再為既有 Holo／彩虹社影片建立到點提醒。
+                if (!_botConfig.DisableHoloNijisanji)
                 {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
-                }
+                    foreach (var streamVideo in db.HoloVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                    {
+                        StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Holo);
+                    }
 
-                foreach (var streamVideo in db.NijisanjiVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
-                {
-                    StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
+                    foreach (var streamVideo in db.NijisanjiVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))
+                    {
+                        StartReminder(streamVideo, DataBase.Table.Video.YTChannelType.Nijisanji);
+                    }
                 }
 
                 foreach (var streamVideo in db.OtherVideos.AsNoTracking().Where((x) => x.ScheduledStartTime > DateTime.Now && !x.IsPrivate))

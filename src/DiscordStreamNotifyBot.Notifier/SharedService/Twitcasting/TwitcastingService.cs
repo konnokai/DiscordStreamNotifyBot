@@ -26,6 +26,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 
         private readonly DiscordSocketClient _client;
         private readonly TwitcastingClient _twitcastingClient;
+        private readonly BotConfig _botConfig;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
         private readonly NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel> _noticeCache;
@@ -45,11 +46,19 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             _clusterQuery = clusterQuery;
             _client = client;
             _twitcastingClient = twitcastingClient;
+            _botConfig = botConfig;
             _emojiService = emojiService;
             _dbService = dbService;
             _localizer = localizer;
             _guildLocaleService = guildLocaleService;
             _noticeCache = new NoticeCache<DataBase.Table.NoticeTwitcastingStreamChannel>(dbService, db => db.NoticeTwitcastingStreamChannels.AsNoTracking().ToList());
+
+            if (botConfig.DisableTwitcasting)
+            {
+                Log.Warn("TwitCasting 功能已由 bot_config.json 的 DisableTwitcasting 停用");
+                IsEnable = false;
+                return;
+            }
 
             if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
@@ -309,7 +318,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
         /// 通知匯流排消費端入口：還原 TwitcastingStream 後實際發送。
         /// </summary>
         internal Task DispatchFromBusAsync(Shared.Messages.TwitcastingNotification dto, NotificationDeliveryProgress progress)
-            => SendStreamMessageAsync(new TwitcastingStream
+        {
+            // 功能停用時即使匯流排殘留事件也不發送（Scraper 端已不再發布）。
+            if (_botConfig.DisableTwitcasting)
+                return Task.CompletedTask;
+
+            return SendStreamMessageAsync(new TwitcastingStream
             {
                 ChannelId = dto.ChannelId,
                 ChannelTitle = dto.ChannelTitle,
@@ -320,6 +334,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 ThumbnailUrl = dto.ThumbnailUrl,
                 StreamStartAt = dto.StreamStartAt,
             }, dto.IsPrivate, dto.IsRecord, progress);
+        }
 
         private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate, bool isRecord,
             NotificationDeliveryProgress progress)
@@ -376,14 +391,16 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                             {
                                 Embed embed = TwitcastingEmbedBuilderFactory.CreateStreamStarted(
                                     twitcastingStream, isPrivate, isRecord, _localizer, locale).Build();
-                                MessageComponent component = new ComponentBuilder()
-                                    .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale),
-                                        style: ButtonStyle.Link, emote: _emojiService.ECPayEmote,
-                                        url: Utility.ECPayUrl, row: 1)
-                                    .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale),
-                                        style: ButtonStyle.Link, emote: _emojiService.PayPalEmote,
-                                        url: Utility.PaypalUrl, row: 1)
-                                    .Build();
+                                MessageComponent component = _botConfig.DisableNotificationsAds
+                                    ? null
+                                    : new ComponentBuilder()
+                                        .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale),
+                                            style: ButtonStyle.Link, emote: _emojiService.ECPayEmote,
+                                            url: Utility.ECPayUrl, row: 1)
+                                        .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale),
+                                            style: ButtonStyle.Link, emote: _emojiService.PayPalEmote,
+                                            url: Utility.PaypalUrl, row: 1)
+                                        .Build();
                                 return new TwitcastingNotificationVariant(embed, component);
                             }, LazyThreadSafetyMode.ExecutionAndPublication);
                             variants.Add(locale, variantValue);

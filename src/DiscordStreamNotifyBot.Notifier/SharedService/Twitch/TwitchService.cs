@@ -395,7 +395,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     throw new ArgumentOutOfRangeException(nameof(noticeType));
             }
 
-            MessageComponent component = noticeType == NoticeType.StartStream
+            MessageComponent component = noticeType == NoticeType.StartStream && !_botConfig.DisableNotificationsAds
                 ? new ComponentBuilder()
                     .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
                         emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")

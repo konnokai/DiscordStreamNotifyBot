@@ -13,13 +13,15 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         private readonly SharedService.Youtube.YoutubeStreamService _service;
         private readonly MainDbService _dbService;
         private readonly SharedService.Cluster.ClusterQueryService _clusterQuery;
+        private readonly BotConfig _botConfig;
 
-        public YoutubeStream(DiscordSocketClient client, SharedService.Youtube.YoutubeStreamService service, MainDbService dbService, SharedService.Cluster.ClusterQueryService clusterQuery)
+        public YoutubeStream(DiscordSocketClient client, SharedService.Youtube.YoutubeStreamService service, MainDbService dbService, SharedService.Cluster.ClusterQueryService clusterQuery, BotConfig botConfig)
         {
             _client = client;
             _service = service;
             _dbService = dbService;
             _clusterQuery = clusterQuery;
+            _botConfig = botConfig;
         }
 
         [RequireContext(ContextType.DM)]
@@ -30,6 +32,12 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         public async Task RightNowRecordStream(string videoId)
         {
             await Context.Channel.TriggerTypingAsync();
+
+            if (_botConfig.DisableRecording)
+            {
+                await Context.Channel.SendErrorAsync("錄影功能已由 bot_config.json 的 DisableRecording 停用").ConfigureAwait(false);
+                return;
+            }
 
             if (videoId.Length != 11)
             {

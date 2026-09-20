@@ -37,6 +37,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private readonly HttpClient _nijisanjiApiHttpClient;
         private readonly YoutubeTerminalEventRegistry _terminalEvents = new();
         private readonly MainDbService _dbService;
+        private readonly BotConfig _botConfig;
         private readonly Shared.YoutubeApiService _apiService;
 
         public YoutubeDetectionService(IHttpClientFactory httpClientFactory, BotConfig botConfig, MainDbService dbService,
@@ -45,6 +46,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         {
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;
+            _botConfig = botConfig;
             _apiService = apiService;
             _webSubService = webSubService;
             _atomFallback = new YoutubeAtomFallback(httpClientFactory, atomValidators, ListAtomChannelIdsAsync, ProcessAtomVideoIdsAsync);
@@ -395,8 +397,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             // 偵測排程（計畫 §12.1）：PeriodicRunner 以背景輪詢執行，支援 await、避免重入，並使用 CancellationToken。
             var token = GracefulShutdown.Token;
             PeriodicRunner.RunAsync("YT-reSchedule", TimeSpan.FromSeconds(5), TimeSpan.FromDays(1), () => { ReScheduleReminder(); return Task.CompletedTask; }, token);
-            PeriodicRunner.RunAsync("YT-holo", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5), HoloScheduleAsync, token);
-            PeriodicRunner.RunAsync("YT-niji", TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5), NijisanjiScheduleAsync, token);
+            if (!_botConfig.DisableHoloNijisanji)
+            {
+                PeriodicRunner.RunAsync("YT-holo", TimeSpan.FromSeconds(15), TimeSpan.FromMinutes(5), HoloScheduleAsync, token);
+                PeriodicRunner.RunAsync("YT-niji", TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5), NijisanjiScheduleAsync, token);
+            }
             PeriodicRunner.RunAsync("YT-other", TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(5), OtherScheduleAsync, token);
             PeriodicRunner.RunAsync("YT-checkSchedule", TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15), CheckScheduleTime, token);
             PeriodicRunner.RunAsync("YT-saveDb", TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(3), () =>
@@ -416,7 +421,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             PeriodicRunner.RunAsync("YT-atom", TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(15), AtomFallbackAsync, token);
 
             // 會限影片探索（原 Notifier 每 5 分鐘 Timer，搬來 Scraper 單例執行，避免多 shard 重複燒配額）
-            PeriodicRunner.RunAsync("YT-memberVideoCheck", TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5), CheckMemberShipOnlyVideoIdAsync, token);
+            if (!_botConfig.DisableYoutubeMember)
+                PeriodicRunner.RunAsync("YT-memberVideoCheck", TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5), CheckMemberShipOnlyVideoIdAsync, token);
 
             // 每日 00:00 定時檢查 YouTube 頻道名稱
             var now = DateTime.Now;
@@ -690,6 +696,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private bool CanRecord(DataBase.Table.Video streamVideo)
         {
+            if (_botConfig.DisableRecording)
+                return false;
+
             using var db = _dbService.GetDbContext();
             return IsRecord && db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId.Trim() == streamVideo.ChannelId.Trim());
         }

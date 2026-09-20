@@ -399,7 +399,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 await SetStreamStateAsync(twitchStream);
                 await MaintainLiveSubscriptionsAsync(spider, authorization, stream.StartedAt);
 
-                bool isRecord = spider.IsRecord && await RecordTwitchAsync(twitchStream);
+                bool isRecord = !_botConfig.DisableRecording && spider.IsRecord && await RecordTwitchAsync(twitchStream);
                 RedisValue messageId = await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Twitch,
                     TwitchStreamNotificationFactory.CreateStart(twitchStream, isRecord));
                 await MarkStreamNotificationPublishedAsync(stream.Id, messageId);

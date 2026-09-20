@@ -615,18 +615,26 @@ namespace DiscordStreamNotifyBot
                         {
                             using var db = DbService.GetDbContext();
 
-                            List<DataBase.Table.Video> list = null;
-                            switch (new Random().Next(0, 2))
+                            List<DataBase.Table.Video> list;
+                            if (_botConfig.DisableHoloNijisanji)
                             {
-                                case 0:
-                                    list = db.HoloVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
-                                    break;
-                                case 1:
-                                    list = db.NijisanjiVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
-                                    break;
-                                case 2:
-                                    list = db.OtherVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
-                                    break;
+                                list = db.OtherVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
+                            }
+                            else
+                            {
+                                list = null;
+                                switch (new Random().Next(0, 2))
+                                {
+                                    case 0:
+                                        list = db.HoloVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
+                                        break;
+                                    case 1:
+                                        list = db.NijisanjiVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
+                                        break;
+                                    case 2:
+                                        list = db.OtherVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();
+                                        break;
+                                }
                             }
 
                             var item = list[new Random().Next(0, list.Count)];

@@ -40,6 +40,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
 
         private readonly DiscordSocketClient _client;
         private readonly ChzzkClient _chzzkClient;
+        private readonly BotConfig _botConfig;
         private readonly EmojiService _emojiService;
         private readonly MainDbService _dbService;
         private readonly NoticeCache<DataBase.Table.NoticeChzzkStreamChannel> _noticeCache;
@@ -49,12 +50,14 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
         private readonly MemberOperationCoordinator _operationCoordinator;
         private readonly ClusterQueryService _clusterQuery;
 
-        public ChzzkService(DiscordSocketClient client, ChzzkClient chzzkClient, EmojiService emojiService,
+        public ChzzkService(DiscordSocketClient client, ChzzkClient chzzkClient, BotConfig botConfig,
+            EmojiService emojiService,
             MainDbService dbService, BotLocalizer localizer, GuildLocaleService guildLocaleService,
             NotifierMetrics metrics, MemberOperationCoordinator operationCoordinator, ClusterQueryService clusterQuery)
         {
             _client = client;
             _chzzkClient = chzzkClient;
+            _botConfig = botConfig;
             _emojiService = emojiService;
             _dbService = dbService;
             _localizer = localizer;
@@ -318,7 +321,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
                 ? ChzzkEmbedBuilderFactory.CreateStreamStarted(dto, _localizer, locale).Build()
                 : ChzzkEmbedBuilderFactory.CreateStreamEnded(dto, _localizer, locale).Build();
             // 沿用既有非平台專屬通知按鈕（僅開台訊息附帶）。
-            MessageComponent component = noticeType == NoticeType.StartStream
+            MessageComponent component = noticeType == NoticeType.StartStream && !_botConfig.DisableNotificationsAds
                 ? new ComponentBuilder()
                     .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
                         emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")

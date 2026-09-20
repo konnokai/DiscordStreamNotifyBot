@@ -63,6 +63,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             _googleOperationLock = googleOperationLock;
             _lifecycleCancellation = CancellationTokenSource.CreateLinkedTokenSource(GracefulShutdown.Token);
 
+            if (_botConfig.DisableYoutubeMember)
+            {
+                Log.Warn("YouTube 會限驗證已由 bot_config.json 的 DisableYoutubeMember 停用");
+                IsEnable = false;
+            }
+
             if (!_authorizationService.IsConfigured)
             {
                 Log.Warn($"{nameof(BotConfig.GoogleClientId)} 或 {nameof(BotConfig.GoogleClientSecret)} 空白，無法使用會限驗證系統");
@@ -76,6 +82,13 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         {
             if (Interlocked.Exchange(ref _started, 1) != 0)
                 return;
+
+            // 功能停用時不訂閱事件、不啟動任何會限背景工作。
+            if (_botConfig.DisableYoutubeMember)
+            {
+                Log.Warn("YouTube 會限驗證已停用，不啟動背景檢查");
+                return;
+            }
 
             CancellationToken cancellationToken = _lifecycleCancellation.Token;
             Bot.RedisSub.Subscribe(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal),
@@ -598,6 +611,10 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         /// </summary>
         public async Task DispatchMemberVideoLogFromBusAsync(Shared.Messages.YoutubeMemberVideoLogNotification dto)
         {
+            // 功能停用時即使匯流排殘留事件也不發送（Scraper 端已不再探索）。
+            if (_botConfig.DisableYoutubeMember)
+                return;
+
             if (!string.IsNullOrEmpty(dto.BotOwnerMessage) && Bot.ShardId == 0 && Bot.ApplicatonOwner != null)
             {
                 try { await Bot.ApplicatonOwner.SendMessageAsync(dto.BotOwnerMessage); } catch { }

@@ -38,6 +38,36 @@ public class BotConfig
     /// </summary>
     public bool EnableGuildMembersIntent { get; set; } = false;
 
+    /// <summary>
+    /// 停用開台通知中的廣告／贊助按鈕（隨機影片、贊助綠界／PayPal）。
+    /// <para>預設 false（保留按鈕）。設為 true 時通知仍會發送，只是不附帶按鈕。</para>
+    /// </summary>
+    public bool DisableNotificationsAds { get; set; } = false;
+
+    /// <summary>
+    /// 停用直播錄影委派（YouTube／Twitch／TwitCasting／CHZZK 不再發布錄影請求給錄影工具）。
+    /// <para>預設 false（保留錄影）。既有錄影頻道清單與錄影開關設定不會被清除，只是不再觸發錄影。</para>
+    /// </summary>
+    public bool DisableRecording { get; set; } = false;
+
+    /// <summary>
+    /// 停用 YouTube 會限驗證系統（指令、背景檢查與會限影片探索）。
+    /// <para>預設 false（保留會限驗證）。</para>
+    /// </summary>
+    public bool DisableYoutubeMember { get; set; } = false;
+
+    /// <summary>
+    /// 停用 TwitCasting 平台功能（偵測、通知與指令）。
+    /// <para>預設 false（保留 TwitCasting）。</para>
+    /// </summary>
+    public bool DisableTwitcasting { get; set; } = false;
+
+    /// <summary>
+    /// 停用 Hololive／彩虹社（兩大箱）主動排程爬取與其到點提醒。
+    /// <para>預設 false（保留兩大箱）。其他類型頻道不受影響。</para>
+    /// </summary>
+    public bool DisableHoloNijisanji { get; set; } = false;
+
     #region 水平擴展（三層拆分）設定（計畫 §3）
     /// <summary>
     /// 叢集 shard 總數，供 Coordinator 公告 TOTAL_SHARDS 並比對存活 notifier 數（可由環境變數 TOTAL_SHARDS 覆寫）。
@@ -119,6 +149,11 @@ public class BotConfig
             TotalShards = config.TotalShards;
             HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
             HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
+            DisableNotificationsAds = config.DisableNotificationsAds;
+            DisableRecording = config.DisableRecording;
+            DisableYoutubeMember = config.DisableYoutubeMember;
+            DisableTwitcasting = config.DisableTwitcasting;
+            DisableHoloNijisanji = config.DisableHoloNijisanji;
 
             if (needsDiscord)
                 ValidateProviderTokenEncryptionKey(ProviderTokenEncryptionKey);

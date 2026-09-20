@@ -498,7 +498,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         }
 
         private MessageComponent BuildMessageComponent(string locale)
-            => new ComponentBuilder()
+        {
+            if (_botConfig.DisableNotificationsAds)
+                return null;
+
+            return new ComponentBuilder()
                 .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
                     emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
                 .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
@@ -506,6 +510,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
                     emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1)
                 .Build();
+        }
 
         private static NoticeType? MapNoticeType(YoutubeNoticeType busNoticeType)
             => busNoticeType switch

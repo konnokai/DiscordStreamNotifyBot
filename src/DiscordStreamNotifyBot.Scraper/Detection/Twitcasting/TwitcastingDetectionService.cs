@@ -18,6 +18,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         public bool IsEnable { get; private set; } = true;
 
         private readonly TwitcastingClient _twitcastingClient;
+        private readonly BotConfig _botConfig;
         private readonly MainDbService _dbService;
         private readonly SemaphoreSlim _startLiveLock = new(1, 1);
 
@@ -25,6 +26,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
 
         public TwitcastingDetectionService(TwitcastingClient twitcastingClient, BotConfig botConfig, MainDbService dbService)
         {
+            if (botConfig.DisableTwitcasting)
+            {
+                Log.Warn("TwitCasting 功能已由 bot_config.json 的 DisableTwitcasting 停用，不執行偵測");
+                IsEnable = false;
+                return;
+            }
+
             if (string.IsNullOrEmpty(botConfig.TwitCastingClientId) || string.IsNullOrEmpty(botConfig.TwitCastingClientSecret))
             {
                 Log.Warn($"{nameof(botConfig.TwitCastingClientId)} 或 {nameof(botConfig.TwitCastingClientSecret)} 未設定，無法執行 TwitCasting 偵測");
@@ -33,6 +41,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             }
 
             _twitcastingClient = twitcastingClient;
+            _botConfig = botConfig;
             _dbService = dbService;
 
             // 偵測排程（計畫 §12.1）：PeriodicRunner 以背景輪詢執行，支援 await、避免重入，並使用 CancellationToken。
@@ -70,7 +79,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                 var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
                     startEvent,
                     streamAlreadyExists,
-                    isRecordingEnabled,
+                    isRecordingEnabled && !_botConfig.DisableRecording,
                     TwitcastingLiveStartPlanner.ResolveCategoryName(startEvent.CategoryId, categories)));
 
                 if (plan.Action == TwitcastingLiveStartAction.IgnoreDuplicate)

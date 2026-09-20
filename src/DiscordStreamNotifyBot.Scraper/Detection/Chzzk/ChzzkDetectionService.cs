@@ -25,16 +25,18 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
 
         private readonly ChzzkClient _client;
         private readonly MainDbService _dbService;
+        private readonly BotConfig _botConfig;
         private readonly ScraperMetrics _metrics;
         // 無法取得狀態的頻道只警告一次，避免每輪洗版；恢復正常後移除。
         private readonly ConcurrentDictionary<string, byte> _unavailableChannels = new(StringComparer.Ordinal);
         // 429 的 Retry-After 生效期間跳過輪詢。
         private DateTime _retryAfterUtc = DateTime.MinValue;
 
-        public ChzzkDetectionService(ChzzkClient client, MainDbService dbService, ScraperMetrics metrics)
+        public ChzzkDetectionService(ChzzkClient client, MainDbService dbService, BotConfig botConfig, ScraperMetrics metrics)
         {
             _client = client;
             _dbService = dbService;
+            _botConfig = botConfig;
             _metrics = metrics;
 
             PeriodicRunner.RunAsync("Chzzk-live-status-poll", TimeSpan.FromSeconds(5), PollInterval,
@@ -208,7 +210,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                     spider.CurrentStreamKey = streamKey;
                     spider.InitializedAt ??= now;
                     await db.SaveChangesAsync();
-                    await DelegateRecordThenPublishAsync(action, spider, stream, PublishRecordAsync, PublishAsync);
+                    await DelegateRecordThenPublishAsync(action, spider, stream, PublishRecordAsync, PublishAsync,
+                        recordingDisabled: _botConfig.DisableRecording);
                     return;
             }
         }
@@ -268,11 +271,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
             ChzzkSpider spider,
             ChzzkStream stream,
             Func<string, string, Task<long>> publishRecordAsync,
-            Func<ChzzkNotification, Task> publishNotificationAsync)
+            Func<ChzzkNotification, Task> publishNotificationAsync,
+            bool recordingDisabled = false)
         {
             bool recordDelegated = false;
             bool isNewStream = action is ChzzkPollAction.TrackNewStream or ChzzkPollAction.SupersedeAndTrack;
-            if (isNewStream && spider.IsRecord)
+            if (isNewStream && spider.IsRecord && !recordingDisabled)
             {
                 try
                 {
