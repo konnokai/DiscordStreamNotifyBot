@@ -179,6 +179,44 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
+        public void TwitchStreamEndedDropsClipsBeyondFieldLimit()
+        {
+            DateTime endAt = UtcDate(2026, 7, 20, 1, 2, 3);
+            var clips = Enumerable.Range(1, 20).Select(i => new TwitchClipInfo
+            {
+                Title = new string('T', 100),
+                Url = $"https://clips.twitch.tv/{new string('u', 60)}{i}",
+                CreatorName = new string('C', 25),
+                ViewCount = 1234567
+            }).ToArray();
+
+            Embed embed = TwitchEmbedBuilderFactory.CreateStreamEnded(
+                "Example User", "example_login", null, null, endAt, clips, null, null, Localizer, Locale).Build();
+
+            string value = FieldValue(embed, "Most-viewed clips");
+            Assert.True(value.Length <= EmbedFieldBuilder.MaxFieldValueLength);
+            Assert.StartsWith("1. [", value);
+            Assert.EndsWith("views)", value);
+        }
+
+        [Fact]
+        public void TwitchChannelUpdateDropsUpdatesBeyondDescriptionLimit()
+        {
+            var updates = Enumerable.Range(1, 50).Select(i => new TwitchChannelUpdateInfo
+            {
+                ElapsedSeconds = i * 60,
+                OldTitle = new string('O', 140),
+                NewTitle = new string('N', 140)
+            }).ToArray();
+
+            Embed embed = TwitchEmbedBuilderFactory.CreateChannelUpdate(
+                "Example User", "example_login", updates, null, Localizer, Locale).Build();
+
+            Assert.True(embed.Description.Length <= EmbedBuilder.MaxDescriptionLength);
+            Assert.StartsWith("`0h 1m 0s`", embed.Description);
+        }
+
+        [Fact]
         public void TwitchChannelUpdateClampsNegativeElapsedAndFormatsEmptyCategoryAsNone()
         {
             var updates = new[]
