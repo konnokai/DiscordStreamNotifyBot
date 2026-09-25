@@ -80,9 +80,33 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
         {
             if (clips == null || clips.Count == 0)
                 return null;
-            return string.Join('\n', clips.Select((clip, index) => localizer.Format(
+            // 片段標題、網址、作者一長，整欄就會超過 Discord 的 1024 字上限，整則通知會被擋下
+            return JoinWithinLimit(clips.Select((clip, index) => localizer.Format(
                 "Twitch.Notification.ClipEntry", locale, index + 1, clip.Title, clip.Url, clip.CreatorName,
-                clip.ViewCount.ToString("N0", SupportedLocale.GetCulture(locale)))));
+                clip.ViewCount.ToString("N0", SupportedLocale.GetCulture(locale)))),
+                "\n", EmbedFieldBuilder.MaxFieldValueLength);
+        }
+
+        // 以整筆為單位捨棄，避免把 Markdown 連結切一半；連第一筆都放不下才硬切
+        private static string JoinWithinLimit(IEnumerable<string> entries, string separator, int maxLength)
+        {
+            var kept = new List<string>();
+            int length = 0;
+            foreach (string entry in entries)
+            {
+                int needed = kept.Count == 0 ? entry.Length : separator.Length + entry.Length;
+                if (length + needed > maxLength)
+                {
+                    if (kept.Count == 0)
+                        return entry[..maxLength];
+                    break;
+                }
+
+                kept.Add(entry);
+                length += needed;
+            }
+
+            return string.Join(separator, kept);
         }
 
         private static string FormatUpdates(IReadOnlyCollection<TwitchChannelUpdateInfo> updates,
@@ -91,7 +115,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             if (updates == null || updates.Count == 0)
                 return null;
 
-            return string.Join("\n\n", updates.Select(update =>
+            // 一場直播改很多次標題時，description 同樣會超過 4096 字上限
+            return JoinWithinLimit(updates.Select(update =>
             {
                 var lines = new List<string>
                 {
@@ -106,7 +131,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     lines.Add(localizer.Format("Twitch.Notification.CategoryChanged", locale, oldCategory, newCategory));
                 }
                 return string.Join('\n', lines);
-            }));
+            }), "\n\n", EmbedBuilder.MaxDescriptionLength);
         }
 
         private static string FormatDuration(TimeSpan duration, BotLocalizer localizer, string locale)
