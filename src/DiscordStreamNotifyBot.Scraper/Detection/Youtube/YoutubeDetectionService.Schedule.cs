@@ -385,20 +385,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                 continue;
                             }
 
-                            Regex regex;
-                            if (response.Contains("window[\"ytInitialData\"]"))
-                                regex = OldYtInitialDataRegex();
-                            else
-                                regex = NewYtInitialDataRegex();
-
-                            var match = regex.Match(response);
-                            if (!match.Success || string.IsNullOrWhiteSpace(match.Groups[1].Value))
+                            var initialData = ExtractYtInitialData(response);
+                            if (initialData == null)
                             {
                                 Log.Warn($"OtherSchedule {item.ChannelId} - {type}: {responseStatus}，ytInitialData regex 未命中，回應長度 {response.Length}");
                                 continue;
                             }
 
-                            var jObject = JObject.Parse(match.Groups[1].Value);
+                            var jObject = JObject.Parse(initialData);
                             var alerts = jObject["alerts"];
 
                             if (alerts != null)
@@ -832,10 +826,31 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return saved;
         }
 
+        /// <summary>從頻道頁 HTML 取出 ytInitialData 的 JSON 字串；三種格式都找不到時回傳 null。</summary>
+        internal static string ExtractYtInitialData(string html)
+        {
+            if (string.IsNullOrEmpty(html))
+                return null;
+
+            // 同一頁 YouTube 會隨機回不同版本（2026-09 實測 30 次有 1 次是 <script id="yt-initial-data"> 的 JSON 版），
+            // 只認一種格式就會偶發「regex 未命中」。
+            foreach (var regex in new[] { NewYtInitialDataRegex(), JsonScriptYtInitialDataRegex(), OldYtInitialDataRegex() })
+            {
+                var match = regex.Match(html);
+                if (match.Success && !string.IsNullOrWhiteSpace(match.Groups[1].Value))
+                    return match.Groups[1].Value;
+            }
+
+            return null;
+        }
+
         [GeneratedRegex("window\\[\"ytInitialData\"\\] = (.*);")]
         private static partial Regex OldYtInitialDataRegex();
 
         [GeneratedRegex(">var ytInitialData = (.*?);</script>")]
         private static partial Regex NewYtInitialDataRegex();
+
+        [GeneratedRegex("<script[^>]*\\bid=\"yt-initial-data\"[^>]*>(.*?)</script>")]
+        private static partial Regex JsonScriptYtInitialDataRegex();
     }
 }
