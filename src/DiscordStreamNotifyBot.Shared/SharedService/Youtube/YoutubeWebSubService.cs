@@ -163,6 +163,19 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
 
+        /// <summary>
+        /// Hub 以 Retry-After 要求等待的到期時間（UTC）；沒有或已過期時為 null。
+        /// 只記在本程序記憶體，續訂排程用它整輪略過，避免每輪都拿第一個頻道去撞。
+        /// </summary>
+        public DateTimeOffset? RetryAfterUntilUtc
+        {
+            get
+            {
+                long ticks = Volatile.Read(ref _notBeforeUtcTicks);
+                return ticks > DateTimeOffset.UtcNow.UtcTicks ? new DateTimeOffset(ticks, TimeSpan.Zero) : null;
+            }
+        }
+
         /// <summary>以 Bot 慣例建立服務：WebSub 共享狀態固定使用 <see cref="RedisChannels.YoutubeWebSub.DatabaseNumber"/>。</summary>
         public static YoutubeWebSubService Create(BotConfig botConfig, IHttpClientFactory httpClientFactory, IConnectionMultiplexer connection)
         {

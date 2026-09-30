@@ -586,7 +586,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     Log.Error($"YT WebSub 訂閱被永久拒絕，略過該頻道：{channelId} / HTTP {(int?)result.StatusCode} / {result.DiagnosticSummary}（{source}）");
                     break;
                 case YoutubeWebSubRequestOutcome.TransientFailure:
-                    Log.Warn($"YT WebSub 訂閱暫時失敗：{channelId} / HTTP {(int?)result.StatusCode} / {result.DiagnosticSummary}（{source}）");
+                    // 沒有狀態碼代表根本沒送到 Hub（Retry-After 未到期、鎖被占用、網路錯誤），不要印出空白的 HTTP。
+                    string status = result.StatusCode is { } code ? $"HTTP {(int)code}" : "未送出";
+                    Log.Warn($"YT WebSub 訂閱暫時失敗：{channelId} / {status} / {result.DiagnosticSummary}（{source}）");
                     break;
             }
         }
@@ -761,6 +763,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         {
             try
             {
+                // Retry-After 期間每個頻道都會被擋下，整輪直接略過，不讓第一個頻道被算成已處理。
+                if (_webSubService.RetryAfterUntilUtc is { } retryUntil)
+                {
+                    Log.Warn($"YT WebSub Hub 要求稍後再試，略過本輪{source}：等到 {retryUntil.ToLocalTime():HH:mm:ss}"
+                        + $"（還有 {Math.Ceiling((retryUntil - DateTimeOffset.UtcNow).TotalSeconds):0} 秒）");
+                    return;
+                }
+
                 List<ChannelSubscriptionState> channels;
                 using (var db = _dbService.GetDbContext())
                 {
@@ -773,12 +783,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 if (channels.Count == 0)
                     return;
 
-                int renewed = 0;
+                // 分開計數：檢查過幾個、其中到期要送幾個、Hub 實際受理幾個；
+                // 舊的單一計數把「被擋下的那一個」也算進去，看起來像已經送出。
+                int checkedCount = 0, dueCount = 0, acceptedCount = 0;
+                bool stoppedByTransient = false;
                 foreach (var item in channels)
                 {
                     if (Bot.IsDisconnect)
                         break;
 
+                    checkedCount++;
                     bool renewDue;
                     try
                     {
@@ -793,20 +807,33 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     if (!renewDue)
                         continue;
 
+                    dueCount++;
                     var result = await RequestWebSubSubscribeAsync(item.ChannelId, force, renewDue: true);
-                    renewed++;
                     LogWebSubResult(item.ChannelId, result, source);
+
+                    if (result.Outcome == YoutubeWebSubRequestOutcome.Accepted)
+                        acceptedCount++;
 
                     // 429／5xx／網路錯誤代表 Hub 端有狀況，停止本輪避免無意義的重試。
                     if (result.Outcome == YoutubeWebSubRequestOutcome.TransientFailure)
                     {
-                        Log.Warn($"YT WebSub 續訂暫時失敗，停止本輪（已處理 {renewed}/{channels.Count} 個頻道）");
+                        stoppedByTransient = true;
                         break;
                     }
                 }
 
-                if (renewed != 0)
-                    Log.Info($"YT WebSub 續訂本輪結束：已送出 {renewed} 個頻道（共 {channels.Count} 個）");
+                string summary = $"檢查 {checkedCount}/{channels.Count} 個頻道，其中到期 {dueCount} 個，Hub 受理 {acceptedCount} 個";
+                if (stoppedByTransient)
+                {
+                    string retryHint = _webSubService.RetryAfterUntilUtc is { } until
+                        ? $"，Hub 要求等到 {until.ToLocalTime():HH:mm:ss} 再試"
+                        : "，下一輪排程再試";
+                    Log.Warn($"YT WebSub {source}遇到暫時失敗，提前停止本輪：{summary}{retryHint}");
+                }
+                else if (dueCount != 0)
+                {
+                    Log.Info($"YT WebSub {source}本輪結束：{summary}");
+                }
             }
             catch (Exception ex)
             {

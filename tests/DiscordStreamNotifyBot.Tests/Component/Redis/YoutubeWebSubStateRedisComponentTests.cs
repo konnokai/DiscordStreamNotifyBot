@@ -277,7 +277,48 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
             }
         }
 
-        private sealed class CountingHandler(HttpStatusCode statusCode = HttpStatusCode.Accepted) : HttpMessageHandler
+        [RedisComponentFact]
+        public async Task RetryAfterWindowIsExposedAndBlocksNextRequestWithoutSending()
+        {
+            IDatabase db = _fixture.Database;
+            RedisKey pendingKey = RedisChannels.YoutubeWebSub.PendingKey(ChannelId);
+            RedisKey secretKey = RedisChannels.YoutubeWebSub.HmacSecretKey(ChannelId);
+            RedisKey lockKey = RedisChannels.YoutubeWebSub.InFlightKey(ChannelId);
+            await RedisComponentFixture.AssertKeysAbsentAsync(db, pendingKey, secretKey, lockKey);
+            var handler = new CountingHandler(HttpStatusCode.ServiceUnavailable, TimeSpan.FromSeconds(120));
+            var service = new YoutubeWebSubService(
+                new BotConfig { ApiServerDomain = "api.example.com" },
+                new StubHttpClientFactory(handler),
+                new YoutubeWebSubState(db));
+
+            try
+            {
+                Assert.Null(service.RetryAfterUntilUtc);
+
+                DateTimeOffset before = DateTimeOffset.UtcNow;
+                YoutubeWebSubRequestResult first = await service.RequestAsync(ChannelId, subscribe: true, renewDue: true);
+                Assert.Equal(YoutubeWebSubRequestOutcome.TransientFailure, first.Outcome);
+                Assert.Equal(HttpStatusCode.ServiceUnavailable, first.StatusCode);
+
+                DateTimeOffset? until = service.RetryAfterUntilUtc;
+                Assert.NotNull(until);
+                Assert.InRange(until.Value, before.AddSeconds(119), DateTimeOffset.UtcNow.AddSeconds(121));
+
+                // 等待期間的要求不會送到 Hub，也沒有狀態碼（log 據此顯示「未送出」而不是空白的 HTTP）。
+                YoutubeWebSubRequestResult second = await service.RequestAsync(ChannelId, subscribe: true, renewDue: true);
+                Assert.Equal(YoutubeWebSubRequestOutcome.TransientFailure, second.Outcome);
+                Assert.Null(second.StatusCode);
+                Assert.Equal(1, handler.RequestCount);
+            }
+            finally
+            {
+                await db.KeyDeleteAsync(pendingKey);
+                await db.KeyDeleteAsync(secretKey);
+                await db.KeyDeleteAsync(lockKey);
+            }
+        }
+
+        private sealed class CountingHandler(HttpStatusCode statusCode = HttpStatusCode.Accepted, TimeSpan? retryAfter = null) : HttpMessageHandler
         {
             public int RequestCount { get; private set; }
 
@@ -290,7 +331,10 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
 
                 // 讓併發呼叫有機會重疊，驗證相同要求只送一次。
                 await Task.Delay(50, cancellationToken);
-                return new HttpResponseMessage(statusCode);
+                var response = new HttpResponseMessage(statusCode);
+                if (retryAfter.HasValue)
+                    response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(retryAfter.Value);
+                return response;
             }
         }
 
