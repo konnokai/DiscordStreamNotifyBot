@@ -368,10 +368,17 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 Log.Info($"[控制] 直播錄影已{(IsRecord ? "開啟" : "關閉")}");
             });
 
-            Bot.RedisSub.Subscribe(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), async (channel, _) =>
+            Bot.RedisSub.Subscribe(new RedisChannel(RedisChannels.Youtube.ControlSubscribePubSub, RedisChannel.PatternMode.Literal), async (channel, message) =>
             {
+                if (message == RedisChannels.Youtube.ControlSubscribePubSubDuePayload)
+                {
+                    Log.Info("[控制] 收到手動觸發續訂要求（依到期規則）");
+                    await SubscribePubSubAsync(force: false, source: "手動觸發續訂");
+                    return;
+                }
+
                 Log.Info("[控制] 收到強制重新註冊 PubSub 要求");
-                await SubscribePubSubAsync(force: true);
+                await SubscribePubSubAsync(force: true, source: "強制重新註冊");
             });
 
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.control.addVideo", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
@@ -713,14 +720,15 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// 定期續訂（計畫 §8.3）：以既有 7 天政策加上「HMAC secret 缺失或 TTL 已接近緩衝」挑出需要續訂的頻道，
         /// 逐一送出 subscribe。暫時性失敗停止本輪（交給下一個週期），永久性失敗只略過該頻道。
         /// </summary>
-        internal async Task SubscribePubSubAsync(bool force = false)
+        /// <param name="source">log 用的來源標籤，區分定期續訂、手動觸發與強制重新註冊。</param>
+        internal async Task SubscribePubSubAsync(bool force = false, string source = "定期續訂")
         {
             if (!force)
             {
-                // 正在跑的那輪不論是哪一種都會涵蓋到期頻道，定期續訂直接等下個週期。
+                // 正在跑的那輪不論是哪一種都會涵蓋到期頻道，這次直接略過。
                 if (!await _subscribePubSubGate.WaitAsync(0).ConfigureAwait(false))
                 {
-                    Log.Info("YT WebSub 已有一輪註冊在執行，略過本次定期續訂");
+                    Log.Info($"YT WebSub 已有一輪註冊在執行，略過本次{source}");
                     return;
                 }
             }
@@ -741,7 +749,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             try
             {
-                await SubscribePubSubCoreAsync(force).ConfigureAwait(false);
+                await SubscribePubSubCoreAsync(force, source).ConfigureAwait(false);
             }
             finally
             {
@@ -749,7 +757,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
         }
 
-        private async Task SubscribePubSubCoreAsync(bool force)
+        private async Task SubscribePubSubCoreAsync(bool force, string source)
         {
             try
             {
@@ -787,7 +795,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                     var result = await RequestWebSubSubscribeAsync(item.ChannelId, force, renewDue: true);
                     renewed++;
-                    LogWebSubResult(item.ChannelId, result, "定期續訂");
+                    LogWebSubResult(item.ChannelId, result, source);
 
                     // 429／5xx／網路錯誤代表 Hub 端有狀況，停止本輪避免無意義的重試。
                     if (result.Outcome == YoutubeWebSubRequestOutcome.TransientFailure)

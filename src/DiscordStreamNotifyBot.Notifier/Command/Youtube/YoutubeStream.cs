@@ -176,7 +176,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [Command("ForceReSubscribeSpider")]
         [Summary("強制重新註冊爬蟲（all、trigger 或 channelUrl）\n" +
             "all：清空全部爬蟲的最後註冊時間再重新註冊\n" +
-            "trigger：不動最後註冊時間，只觸發一輪重新註冊")]
+            "trigger：不動最後註冊時間，立即照到期規則跑一輪續訂（等同提早跑一次排程）")]
         [Alias("frss")]
         [CommandExample("all", "trigger", "998rrr", "UCs5FNYPHeZz5f7N1BDExxfg")]
         [RequireOwner]
@@ -187,11 +187,13 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             // trigger 不經過 GetChannelIdAsync：那邊的特殊關鍵字是其他指令共用的，不在那裡加。
             if (string.Equals(channelUrl?.Trim(), "trigger", StringComparison.OrdinalIgnoreCase))
             {
-                if (!await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("要觸發所有爬蟲重新註冊嗎？（不更新最後註冊時間）")))
+                if (!await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("要依到期規則立即跑一輪爬蟲續訂嗎？（不更新最後註冊時間）")))
                     return;
 
-                await Context.Channel.SendConfirmAsync("已觸發爬蟲重新註冊…");
-                await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), "");
+                await Context.Channel.SendConfirmAsync("已觸發爬蟲續訂，只會重送已到期或尚未確認的頻道…");
+                await Bot.RedisSub.PublishAsync(
+                    new RedisChannel(Shared.RedisChannels.Youtube.ControlSubscribePubSub, RedisChannel.PatternMode.Literal),
+                    Shared.RedisChannels.Youtube.ControlSubscribePubSubDuePayload);
                 return;
             }
 
@@ -242,7 +244,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             await Context.Channel.SendConfirmAsync("已更新設定，等待爬蟲重新註冊…");
             // PubSub 重新註冊由 Scraper 偵測器負責；發送控制訊息觸發
-            await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), "");
+            await Bot.RedisSub.PublishAsync(new RedisChannel(Shared.RedisChannels.Youtube.ControlSubscribePubSub, RedisChannel.PatternMode.Literal), "");
         }
 
         [RequireContext(ContextType.DM)]

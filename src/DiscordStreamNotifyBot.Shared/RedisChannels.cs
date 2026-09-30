@@ -34,6 +34,15 @@ namespace DiscordStreamNotifyBot.Shared
             public const string PubSubDeleted = "youtube.pubsub.Deleted";
             public const string PubSubNeedRegister = "youtube.pubsub.NeedRegister";
 
+            /// <summary>owner 指令觸發 Scraper 重新註冊 WebSub（Bot 內部控制訊息）。</summary>
+            public const string ControlSubscribePubSub = "youtube.control.subscribePubSub";
+
+            /// <summary>
+            /// <see cref="ControlSubscribePubSub"/> 的 payload 為此值時，照定期續訂的到期規則跑一輪；
+            /// 其他值（含舊版送的空字串）維持強制重送全部頻道。
+            /// </summary>
+            public const string ControlSubscribePubSubDuePayload = "due";
+
             /// <summary>彩虹社成員頻道（<c>{affiliation}</c> 為所屬團體）。</summary>
             public const string NijisanjiLiverTemplate = "youtube.nijisanji.liver.{affiliation}";
         }
