@@ -16,13 +16,17 @@ namespace DiscordStreamNotifyBot.Tests
         private const string OtherChannelId = "UCzyxwvutsrqponmlkjihgfe";
 
         [Fact]
-        public void CanonicalTopicUsesOfficialFeedUrlWithoutLegacyXmlPath()
+        public void CanonicalTopicUsesXmlFeedsPathThatYoutubePublishesTo()
         {
-            string topic = YoutubeWebSubContract.CanonicalTopic(ChannelId);
-
-            Assert.Equal("https://www.youtube.com/feeds/videos.xml?channel_id=" + ChannelId, topic);
-            Assert.DoesNotContain("/xml/feeds/", topic, StringComparison.Ordinal);
+            // 官方文件的 /feeds/ 驗證會過但收不到推播（issue 566069563）。
+            Assert.Equal(
+                "https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + ChannelId,
+                YoutubeWebSubContract.CanonicalTopic(ChannelId));
         }
+
+        [Fact]
+        public void AtomFeedUrlStaysOnDocumentedPath()
+            => Assert.Equal("https://www.youtube.com/feeds/videos.xml?channel_id=", YoutubeWebSubContract.AtomFeedPrefix);
 
         [Fact]
         public void CanonicalTopicRejectsInvalidChannelId()
@@ -85,7 +89,7 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("864000", fields[3].Value);
             Assert.Equal("secret-value", fields[4].Value);
             Assert.DoesNotContain(fields, x => x.Key.Contains("verify", StringComparison.Ordinal));
-            Assert.DoesNotContain(fields, x => x.Value.Contains("/xml/feeds/", StringComparison.Ordinal));
+            Assert.Equal("https://www.youtube.com/xml/feeds/videos.xml?channel_id=" + ChannelId, fields[1].Value);
         }
 
         [Fact]
@@ -165,11 +169,11 @@ namespace DiscordStreamNotifyBot.Tests
         [InlineData("")]
         [InlineData("not json")]
         [InlineData("{}")]
-        [InlineData("{\"version\":2,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
-        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"other\",\"topic\":\"https://www.youtube.com/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
-        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/feeds/videos.xml?channel_id=UCzyxwvutsrqponmlkjihgfe\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
-        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
-        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
+        [InlineData("{\"version\":2,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
+        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"other\",\"topic\":\"https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
+        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCzyxwvutsrqponmlkjihgfe\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
+        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/xml/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
+        [InlineData("{\"version\":1,\"channelId\":\"UCabcdefghijklmnopqrstuv\",\"mode\":\"subscribe\",\"topic\":\"https://www.youtube.com/feeds/videos.xml?channel_id=UCabcdefghijklmnopqrstuv\",\"callbackToken\":\"t\",\"requestedAtUtc\":\"2026-09-19T00:00:00Z\"}")]
         public void PendingActionRejectsUnusablePayload(string json)
             => Assert.False(YoutubeWebSubPendingAction.TryParse(json, out _, out var error), $"不應接受：{json} / {error}");
 

@@ -168,7 +168,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             using var request = new HttpRequestMessage(
                 HttpMethod.Get,
-                YoutubeWebSubContract.TopicPrefix + Uri.EscapeDataString(channelId));
+                YoutubeWebSubContract.AtomFeedPrefix + Uri.EscapeDataString(channelId));
             if (!string.IsNullOrEmpty(etag))
                 request.Headers.TryAddWithoutValidation("If-None-Match", etag);
             if (!string.IsNullOrEmpty(lastModified))

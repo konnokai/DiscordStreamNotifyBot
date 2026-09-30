@@ -218,11 +218,10 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                 Assert.Equal(1, handler.RequestCount);
 
                 string form = handler.LastFormBody;
-                Assert.Contains($"hub.topic=https%3A%2F%2Fwww.youtube.com%2Ffeeds%2Fvideos.xml%3Fchannel_id%3D{ChannelId}", form, StringComparison.Ordinal);
+                Assert.Contains($"hub.topic=https%3A%2F%2Fwww.youtube.com%2Fxml%2Ffeeds%2Fvideos.xml%3Fchannel_id%3D{ChannelId}", form, StringComparison.Ordinal);
                 Assert.Contains($"hub.callback=https%3A%2F%2Fapi.example.com%2FNotificationCallback%3FchannelId%3D{ChannelId}%26token%3D", form, StringComparison.Ordinal);
                 Assert.Contains("hub.lease_seconds=864000", form, StringComparison.Ordinal);
                 Assert.DoesNotContain("hub.verify", form, StringComparison.Ordinal);
-                Assert.DoesNotContain("/xml/feeds/", form, StringComparison.Ordinal);
 
                 // secret 只建立一次，且 callback URL 內是 secret 的衍生 token，不是 secret 本身。
                 string secret = await new YoutubeWebSubState(db).GetSecretAsync(ChannelId);

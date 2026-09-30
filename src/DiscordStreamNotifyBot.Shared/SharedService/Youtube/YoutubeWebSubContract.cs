@@ -68,8 +68,15 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         /// <summary>Backend 的 challenge／通知 callback 路徑。</summary>
         public const string CallbackPath = "NotificationCallback";
 
-        /// <summary>canonical topic 前綴；與官方文件的 <c>https://www.youtube.com/feeds/videos.xml?channel_id=</c> 相同。</summary>
-        public const string TopicPrefix = "https://www.youtube.com/feeds/videos.xml?channel_id=";
+        /// <summary>
+        /// canonical topic 前綴。官方文件寫的是 <c>/feeds/videos.xml</c>，但 YouTube 送推播時寫死用 <c>/xml/feeds/videos.xml</c>，
+        /// Hub 又是逐字比對 topic；訂 <c>/feeds/</c> 雖然驗證會過，卻永遠收不到通知。
+        /// 見 https://issuetracker.google.com/issues/566069563
+        /// </summary>
+        public const string TopicPrefix = "https://www.youtube.com/xml/feeds/videos.xml?channel_id=";
+
+        /// <summary>Atom 補償輪詢抓 feed 用的網址；只是讀內容，不牽涉 Hub 比對，維持官方文件寫的網址。</summary>
+        public const string AtomFeedPrefix = "https://www.youtube.com/feeds/videos.xml?channel_id=";
 
         /// <summary>目前既有的 10 天 requested lease（864000 秒）。Hub 表單的 <c>hub.lease_numbers</c> 是筆誤，規格欄位固定為 <c>hub.lease_seconds</c>。</summary>
         public const int RequestedLeaseSeconds = 864000;

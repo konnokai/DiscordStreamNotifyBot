@@ -84,7 +84,9 @@ MySQL schema 仍由 Bot 儲存庫管理。本計畫不需要 schema 變更。
    - 2026-09-19 使用者決策變更：原設計是「涵蓋全部 crawler」，但實測 feed 端點不支援條件式 GET（見 §17.3），全頻道輪詢等於每輪全量下載，因此改為只補疑似失效的頻道、間隔由 5 分鐘拉長為 15 分鐘。
    - 已知代價：Hub 靜默停止送通知但訂閱仍被續訂確認的頻道不會被 Atom 覆蓋；這類故障需要靠 WebSub 端（Hub 通知延遲、NeedRegister、log）與營運監控發現。
 3. Atom 使用 `https://www.youtube.com/feeds/videos.xml?channel_id={channelId}`。
-4. WebSub topic 使用與 Atom 相同的 canonical URL，不再使用 `/xml/feeds/`。
+4. WebSub topic 使用 `https://www.youtube.com/xml/feeds/videos.xml?channel_id={channelId}`，與 Atom 不同。
+   - 2026-09-30 修正：原本改成與 Atom 相同的 `/feeds/`，結果驗證成功卻收不到任何推播。Google 在 [issue 566069563](https://issuetracker.google.com/issues/566069563) 確認 Hub 逐字比對 topic，而 YouTube 送推播時寫死 `/xml/feeds/`。官方文件修正前一律用 `/xml/feeds/` 訂閱；Atom 只是讀 feed，維持 `/feeds/`。
+   - 這正是上一點「已知代價」的情況：訂閱都被確認，`LastSubscribeTime` 持續更新，所以 Atom 也不會補抓。
 5. 不呼叫 `search.list`。未知 ID 的詳細資料只使用既有 `videos.list`，每次最多 50 個 ID。
 6. Atom 沿用 `TryClaimUnknownVideo`、`SharedExtensions.HasStreamVideoByVideoId`、`GetVideosAsync` 與 `AddOtherDataAsync`，不建立第二套影片分類或通知邏輯。
 7. WebSub 訂閱 POST 收到任一 2xx 只表示 Hub 已受理；只有 challenge 成功才可更新 `LastSubscribeTime` 與 HMAC secret 的實際 lease TTL。
@@ -192,7 +194,7 @@ pending payload 最少包含：
   "version": 1,
   "channelId": "UC...",
   "mode": "subscribe",
-  "topic": "https://www.youtube.com/feeds/videos.xml?channel_id=UC...",
+  "topic": "https://www.youtube.com/xml/feeds/videos.xml?channel_id=UC...",
   "callbackToken": "<base64url>",
   "requestedAtUtc": "2026-09-19T00:00:00Z",
   "confirmedAtUtc": null,
@@ -251,7 +253,7 @@ Hub 首頁公告的 `https://pubsubhubbub.appspot.com/` 是 publisher discovery 
 
 ```text
 hub.mode=subscribe|unsubscribe
-hub.topic=https://www.youtube.com/feeds/videos.xml?channel_id={channelId}
+hub.topic=https://www.youtube.com/xml/feeds/videos.xml?channel_id={channelId}
 hub.callback=https://{ApiServerDomain}/NotificationCallback?channelId={channelId}&token={callbackToken}
 hub.secret={per-channel HMAC secret}   # subscribe 才需要
 hub.lease_seconds=864000               # 保留目前 10 天請求值
@@ -601,7 +603,8 @@ Google Hub 目前若仍全面 503，可先完成本機與 fixture 驗證，但�
 - W3C WebSub：<https://www.w3.org/TR/websub/>
 - Google PubSubHubbub Hub：<https://pubsubhubbub.appspot.com/>
 - Google Hub Subscribe 表單：<https://pubsubhubbub.appspot.com/subscribe>
-- YouTube Atom topic：`https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID`
+- YouTube Atom feed：`https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID`
+- YouTube WebSub topic：`https://www.youtube.com/xml/feeds/videos.xml?channel_id=CHANNEL_ID`（[issue 566069563](https://issuetracker.google.com/issues/566069563)）
 - `videos.list`：<https://developers.google.com/youtube/v3/docs/videos/list>
 
 ## 17. 實際驗證結果
