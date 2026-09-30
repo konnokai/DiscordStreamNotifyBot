@@ -174,13 +174,26 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
         [RequireContext(ContextType.DM)]
         [Command("ForceReSubscribeSpider")]
-        [Summary("強制重新註冊爬蟲（all 或 channelUrl）")]
+        [Summary("強制重新註冊爬蟲（all、trigger 或 channelUrl）\n" +
+            "all：清空全部爬蟲的最後註冊時間再重新註冊\n" +
+            "trigger：不動最後註冊時間，只觸發一輪重新註冊")]
         [Alias("frss")]
-        [CommandExample("all", "998rrr", "UCs5FNYPHeZz5f7N1BDExxfg")]
+        [CommandExample("all", "trigger", "998rrr", "UCs5FNYPHeZz5f7N1BDExxfg")]
         [RequireOwner]
         public async Task ForceReSubscribeSpider(string channelUrl)
         {
             await Context.Channel.TriggerTypingAsync();
+
+            // trigger 不經過 GetChannelIdAsync：那邊的特殊關鍵字是其他指令共用的，不在那裡加。
+            if (string.Equals(channelUrl?.Trim(), "trigger", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("要觸發所有爬蟲重新註冊嗎？（不更新最後註冊時間）")))
+                    return;
+
+                await Context.Channel.SendConfirmAsync("已觸發爬蟲重新註冊…");
+                await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.control.subscribePubSub", RedisChannel.PatternMode.Literal), "");
+                return;
+            }
 
             string channelId = "";
             try
@@ -202,12 +215,13 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
             if (channelId == "all")
             {
-                if (await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("要重新註冊所有爬蟲嗎？")))
+                // 取消時必須直接結束，否則下面仍會送出控制訊息，照樣觸發一輪強制重新註冊。
+                if (!await PromptUserConfirmAsync(new EmbedBuilder().WithOkColor().WithDescription("要重新註冊所有爬蟲嗎？")))
+                    return;
+
+                foreach (var item in db.YoutubeChannelSpider)
                 {
-                    foreach (var item in db.YoutubeChannelSpider)
-                    {
-                        item.LastSubscribeTime = DateTime.MinValue;
-                    }
+                    item.LastSubscribeTime = DateTime.MinValue;
                 }
             }
             else

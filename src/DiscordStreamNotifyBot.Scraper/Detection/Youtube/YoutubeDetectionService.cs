@@ -40,6 +40,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private readonly BotConfig _botConfig;
         private readonly Shared.YoutubeApiService _apiService;
 
+        /// <summary>定期續訂與 owner 強制重新註冊共用這把鎖，同一時間只跑一輪，避免兩輪同時對 Hub 送同一批頻道。</summary>
+        private readonly SemaphoreSlim _subscribePubSubGate = new(1, 1);
+
+        /// <summary>1 代表已有強制重新註冊在等鎖；最多一輪執行、一輪排隊，重複的要求不再疊加。</summary>
+        private int _forceSubscribePending;
+
         public YoutubeDetectionService(IHttpClientFactory httpClientFactory, BotConfig botConfig, MainDbService dbService,
             Shared.YoutubeApiService apiService, SharedService.Youtube.YoutubeWebSubService webSubService,
             SharedService.Youtube.IYoutubeAtomValidatorStore atomValidators)
@@ -708,6 +714,42 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// 逐一送出 subscribe。暫時性失敗停止本輪（交給下一個週期），永久性失敗只略過該頻道。
         /// </summary>
         internal async Task SubscribePubSubAsync(bool force = false)
+        {
+            if (!force)
+            {
+                // 正在跑的那輪不論是哪一種都會涵蓋到期頻道，定期續訂直接等下個週期。
+                if (!await _subscribePubSubGate.WaitAsync(0).ConfigureAwait(false))
+                {
+                    Log.Info("YT WebSub 已有一輪註冊在執行，略過本次定期續訂");
+                    return;
+                }
+            }
+            else
+            {
+                // owner 的強制要求不能丟，要等目前這輪結束再跑；已經有一個在排隊就不再多排。
+                if (Interlocked.Exchange(ref _forceSubscribePending, 1) == 1)
+                {
+                    Log.Warn("YT WebSub 已有強制重新註冊在排隊，忽略本次要求");
+                    return;
+                }
+
+                await _subscribePubSubGate.WaitAsync().ConfigureAwait(false);
+
+                // 拿到鎖才清除，執行期間再收到的強制要求會排進下一輪，不會被這輪吞掉。
+                Volatile.Write(ref _forceSubscribePending, 0);
+            }
+
+            try
+            {
+                await SubscribePubSubCoreAsync(force).ConfigureAwait(false);
+            }
+            finally
+            {
+                _subscribePubSubGate.Release();
+            }
+        }
+
+        private async Task SubscribePubSubCoreAsync(bool force)
         {
             try
             {
