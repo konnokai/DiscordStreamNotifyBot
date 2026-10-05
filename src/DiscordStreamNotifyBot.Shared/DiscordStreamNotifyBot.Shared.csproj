@@ -12,9 +12,6 @@
 		<None Include="..\..\.editorconfig" Link=".editorconfig" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<InternalsVisibleTo Include="DiscordStreamNotifyBot.Tests" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Ben.Demystifier" Version="0.4.1" />

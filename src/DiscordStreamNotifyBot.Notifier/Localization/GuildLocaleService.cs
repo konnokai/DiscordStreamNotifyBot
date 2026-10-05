@@ -17,27 +17,12 @@ namespace DiscordStreamNotifyBot.Localization
         private readonly TimeProvider _timeProvider;
 
         public GuildLocaleService(MainDbService dbService, LocaleResolver localeResolver)
-            : this(
-                localeResolver,
-                guildId => LoadConfiguredLocaleAsync(dbService, guildId),
-                guildIds => LoadConfiguredLocalesAsync(dbService, guildIds),
-                (guildId, locale) => SaveConfiguredLocaleAsync(dbService, guildId, locale),
-                TimeProvider.System)
-        {
-        }
-
-        internal GuildLocaleService(
-            LocaleResolver localeResolver,
-            Func<ulong, Task<string>> loadConfiguredLocaleAsync,
-            Func<IReadOnlyCollection<ulong>, Task<IReadOnlyDictionary<ulong, string>>> loadConfiguredLocalesAsync,
-            Func<ulong, string, Task> saveConfiguredLocaleAsync,
-            TimeProvider timeProvider)
         {
             _localeResolver = localeResolver;
-            _loadConfiguredLocaleAsync = loadConfiguredLocaleAsync;
-            _loadConfiguredLocalesAsync = loadConfiguredLocalesAsync;
-            _saveConfiguredLocaleAsync = saveConfiguredLocaleAsync;
-            _timeProvider = timeProvider;
+            _loadConfiguredLocaleAsync = guildId => LoadConfiguredLocaleAsync(dbService, guildId);
+            _loadConfiguredLocalesAsync = guildIds => LoadConfiguredLocalesAsync(dbService, guildIds);
+            _saveConfiguredLocaleAsync = (guildId, locale) => SaveConfiguredLocaleAsync(dbService, guildId, locale);
+            _timeProvider = TimeProvider.System;
         }
 
         public async Task<string> GetAsync(

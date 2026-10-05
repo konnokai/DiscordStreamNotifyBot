@@ -74,7 +74,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
         }
 
         /// <summary>
-        /// 立即錄影的判斷與發布；以 API 結果與發布委派為輸入，讓測試不需 HTTP 與 Redis。
+        /// 立即錄影的判斷與發布；以 API 結果與發布委派為輸入。
         /// 失敗原因以 code 回傳，由呼叫端轉成可理解的訊息；有訂閱者也只代表請求已送出，不宣稱正在錄影。
         /// </summary>
         internal static async Task<AdminSettingsMutationResult> PublishRecordRequestAsync(

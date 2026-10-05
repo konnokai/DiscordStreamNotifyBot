@@ -528,11 +528,10 @@ Backend 必須：
 
 ### 12.3 必跑驗證
 
-Bot：
+Bot（Bot 已無自動化測試，行為改以 Release 實際執行手動驗證）：
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release
-dotnet test DiscordStreamNotifyBot.sln -c Release
 git diff --check
 ```
 
@@ -544,7 +543,7 @@ dotnet test DiscordStreamBotBackend.sln -c Release
 git diff --check
 ```
 
-若 Backend solution 或測試命令與目前工作樹不同，以該 repo 現有入口為準並在本文件記錄實際命令。需要 Redis 的 component tests 若環境不可用，必須明確列出未驗證項目，不得用單元測試結果宣稱真實 Google Hub 已驗證。
+若 Backend solution 或測試命令與目前工作樹不同，以該 repo 現有入口為準並在本文件記錄實際命令。需要 Redis 的整合行為若未實測，必須明確列出未驗證項目，不得用單元測試結果宣稱真實 Google Hub 已驗證。
 
 ## 13. 手動整合驗證
 

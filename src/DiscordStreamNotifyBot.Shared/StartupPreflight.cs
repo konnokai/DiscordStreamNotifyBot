@@ -42,12 +42,11 @@ namespace DiscordStreamNotifyBot.Shared
             await db.PingAsync();
         }
 
-        internal static async Task RetryWithBackoffAsync(
+        private static async Task RetryWithBackoffAsync(
             string name,
             Func<Task> probe,
             TimeSpan timeout,
-            TimeProvider timeProvider,
-            Func<TimeSpan, Task> delayAsync = null)
+            TimeProvider timeProvider)
         {
             var deadline = timeProvider.GetUtcNow() + timeout;
             int attempt = 0;
@@ -76,10 +75,7 @@ namespace DiscordStreamNotifyBot.Shared
                         delay = remaining;
 
                     Log.Warn($"[Preflight] {name} 連線失敗（第 {attempt} 次）：{ex.Message}；{delay.TotalSeconds:0} 秒後重試");
-                    if (delayAsync == null)
-                        await Task.Delay(delay, timeProvider).ConfigureAwait(false);
-                    else
-                        await delayAsync(delay).ConfigureAwait(false);
+                    await Task.Delay(delay, timeProvider).ConfigureAwait(false);
                 }
             }
 

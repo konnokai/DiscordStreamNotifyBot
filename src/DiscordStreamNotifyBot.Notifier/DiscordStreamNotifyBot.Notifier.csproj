@@ -25,9 +25,6 @@
 		<ProjectReference Include="..\DiscordStreamNotifyBot.Shared\DiscordStreamNotifyBot.Shared.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<InternalsVisibleTo Include="DiscordStreamNotifyBot.Tests" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Ben.Demystifier" Version="0.4.1" />

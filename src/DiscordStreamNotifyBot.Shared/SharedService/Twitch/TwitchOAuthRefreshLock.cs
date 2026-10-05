@@ -17,8 +17,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 connection.GetDatabase(DiscordStreamNotifyBot.Shared.RedisChannels.OAuth.DatabaseNumber));
         }
 
-        internal int DatabaseNumber => _database.Database;
-
         /// <summary>以固定 Redis DB 與 owner token 嘗試取得可續租的 Twitch refresh lease。</summary>
         public async Task<OAuthLeaseAcquireResult> TryAcquireAsync(
             string twitchUserId,

@@ -251,7 +251,7 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton(p => SharedService.Youtube.YoutubeWebSubService.Create(
                     _botConfig, p.GetRequiredService<IHttpClientFactory>(), Redis))
-                .AddSingleton<SharedService.Youtube.IYoutubeAtomValidatorStore>(_ =>
+                .AddSingleton(_ =>
                     SharedService.Youtube.YoutubeAtomValidatorStore.Create(Redis))
                 .AddSingleton(SharedService.Google.GoogleOAuthOperationLock.Create(Redis))
                 .AddSingleton<SharedService.EmojiService>()

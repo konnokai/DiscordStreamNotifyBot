@@ -68,7 +68,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly MemberOperationCoordinator _operationCoordinator;
         private readonly ClusterQueryService _clusterQuery;
         private readonly SharedService.Youtube.YoutubeWebSubService _webSubService;
-        private readonly SharedService.Youtube.IYoutubeAtomValidatorStore _atomValidators;
+        private readonly SharedService.Youtube.YoutubeAtomValidatorStore _atomValidators;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory,
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
@@ -76,7 +76,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver,
             NotifierMetrics metrics, MemberOperationCoordinator operationCoordinator,
             ClusterQueryService clusterQuery, SharedService.Youtube.YoutubeWebSubService webSubService,
-            SharedService.Youtube.IYoutubeAtomValidatorStore atomValidators)
+            SharedService.Youtube.YoutubeAtomValidatorStore atomValidators)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;

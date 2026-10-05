@@ -25,14 +25,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
     internal sealed class YoutubeAtomFallback
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IYoutubeAtomValidatorStore _validators;
+        private readonly YoutubeAtomValidatorStore _validators;
         private readonly Func<CancellationToken, Task<IReadOnlyList<string>>> _listChannelIds;
         private readonly Func<IReadOnlyList<string>, CancellationToken, Task<YoutubeAtomProcessResult>> _processUnknownVideos;
         private long _notBeforeUtcTicks;
 
         internal YoutubeAtomFallback(
             IHttpClientFactory httpClientFactory,
-            IYoutubeAtomValidatorStore validators,
+            YoutubeAtomValidatorStore validators,
             Func<CancellationToken, Task<IReadOnlyList<string>>> listChannelIds,
             Func<IReadOnlyList<string>, CancellationToken, Task<YoutubeAtomProcessResult>> processUnknownVideos)
         {

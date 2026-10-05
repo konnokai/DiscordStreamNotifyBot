@@ -12,38 +12,21 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
         private readonly Func<string, string, string, IReadOnlyCollection<TwitchChannelUpdateInfo>, Task> _publishAsync;
         private readonly CancellationTokenRegistration _cancellationRegistration;
         private readonly string _twitchUserName, _twitchUserLogin, _twitchUserId;
-        private Task _currentPublishTask = Task.CompletedTask;
 
         public DebounceChannelUpdateMessage(TwitchDetectionService twitchService, string twitchUserName, string twitchUserLogin, string twitchUserId)
-            : this(
-                twitchUserName,
-                twitchUserLogin,
-                twitchUserId,
-                TimeProvider.System,
-                twitchService.PublishChannelUpdateAsync,
-                GracefulShutdown.Token)
-        {
-        }
-
-        internal DebounceChannelUpdateMessage(
-            string twitchUserName,
-            string twitchUserLogin,
-            string twitchUserId,
-            TimeProvider timeProvider,
-            Func<string, string, string, IReadOnlyCollection<TwitchChannelUpdateInfo>, Task> publishAsync,
-            CancellationToken cancellationToken = default)
         {
             _twitchUserName = twitchUserName;
             _twitchUserLogin = twitchUserLogin;
             _twitchUserId = twitchUserId;
-            _publishAsync = publishAsync;
+            _publishAsync = twitchService.PublishChannelUpdateAsync;
 
-            _debouncer = new(timeProvider)
+            _debouncer = new(TimeProvider.System)
             {
                 DebounceWindow = TimeSpan.FromMinutes(1),
                 DebounceTimeout = TimeSpan.FromMinutes(3),
             };
             _debouncer.Debounced += _debouncer_Debounced;
+            CancellationToken cancellationToken = GracefulShutdown.Token;
             if (cancellationToken.CanBeCanceled)
                 _cancellationRegistration = cancellationToken.Register(CancelPending);
         }
@@ -57,7 +40,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
                 // publish DTO 至匯流排，由消費端（Notifier）重建 embed 發送
                 var updates = e.TriggerData.ToArray();
                 // 發布委派（TwitchDetectionService.PublishChannelUpdateAsync）自行攔截並記錄例外。
-                _currentPublishTask = Task.Run(() => _publishAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, updates));
+                _ = Task.Run(() => _publishAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, updates));
             }
             catch (Exception ex)
             {
@@ -75,15 +58,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
             _debouncer.Trigger(update);
         }
 
-        internal void CancelPending()
+        private void CancelPending()
         {
             _debouncer.Reset();
-        }
-
-        internal async Task WaitForIdleAsync()
-        {
-            await _debouncer.CurrentEventHandlersTask.ConfigureAwait(false);
-            await _currentPublishTask.ConfigureAwait(false);
         }
 
         private int _isDisposed;

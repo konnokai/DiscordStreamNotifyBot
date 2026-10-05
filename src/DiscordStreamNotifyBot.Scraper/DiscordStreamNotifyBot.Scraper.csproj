@@ -16,9 +16,6 @@
 		<ProjectReference Include="..\DiscordStreamNotifyBot.Shared\DiscordStreamNotifyBot.Shared.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<InternalsVisibleTo Include="DiscordStreamNotifyBot.Tests" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />

@@ -44,7 +44,7 @@ namespace DiscordStreamNotifyBot.Scraper
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton(p => SharedService.Youtube.YoutubeWebSubService.Create(
                     config, p.GetRequiredService<IHttpClientFactory>(), RedisConnection.Instance.ConnectionMultiplexer))
-                .AddSingleton<SharedService.Youtube.IYoutubeAtomValidatorStore>(_ =>
+                .AddSingleton(_ =>
                     SharedService.Youtube.YoutubeAtomValidatorStore.Create(RedisConnection.Instance.ConnectionMultiplexer))
                 .AddSingleton<Detection.Youtube.YoutubeDetectionService>()
                 .AddSingleton<SharedService.Twitch.TwitchApiService>()

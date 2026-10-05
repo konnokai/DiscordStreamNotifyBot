@@ -48,7 +48,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         public YoutubeDetectionService(IHttpClientFactory httpClientFactory, BotConfig botConfig, MainDbService dbService,
             Shared.YoutubeApiService apiService, SharedService.Youtube.YoutubeWebSubService webSubService,
-            SharedService.Youtube.IYoutubeAtomValidatorStore atomValidators)
+            SharedService.Youtube.YoutubeAtomValidatorStore atomValidators)
         {
             _httpClientFactory = httpClientFactory;
             _dbService = dbService;

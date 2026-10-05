@@ -220,7 +220,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
         }
 
         /// <summary>
-        /// 將 API 觀察與持久化場次轉為決策；獨立於 I/O，讓測試涵蓋實際輪詢使用的場次鍵轉換。
+        /// 將 API 觀察與持久化場次轉為決策；獨立於 I/O。
         /// <para>
         /// 契約重點：相同鍵不重發、新 openDate 為新場、舊場 CLOSE 不關閉新場、未知資料不轉離線、
         /// 關台需延遲後重新確認且重複 CLOSE 不重設等待起點。

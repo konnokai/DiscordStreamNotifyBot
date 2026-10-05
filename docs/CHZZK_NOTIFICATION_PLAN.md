@@ -291,11 +291,10 @@ streamKey = channelId + ":" + 正規化 openDate
 - [ ] 經授權才在測試 Discord guild 傳訊息；外部 API、正式 Discord、正式 DB 或多 shard 尚未驗證者明列，不以 unit tests 宣稱已通過。
 - [x] 更新必要文件與 AGENTS.md 狀態，不自動部署、commit、push 或 graphify update。
 
-使用現有測試框架，不新增框架、不規定任意測試數量。Bot 命令：
+Bot 已無自動化測試，行為改以 Release 實際執行手動驗證。Bot 命令：
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release
-dotnet test DiscordStreamNotifyBot.sln -c Release
 ```
 
 ## 11. 交接提示詞

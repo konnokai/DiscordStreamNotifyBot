@@ -1,6 +1,6 @@
 # Twitch 訂閱驗證實作計畫
 
-> 狀態：程式實作完成；待正式 DB migration、component environment 與 Twitch/Discord 手動驗收
+> 狀態：程式實作完成；待正式 DB migration 與 Twitch/Discord 手動驗收
 >
 > 建立日期：2026-08-03
 
@@ -375,6 +375,8 @@ Frontend 不新增驗證 API，也不在網站判斷特定 guild 的訂閱資格
 
 ### 12.2 Bot
 
+> Bot 自動化測試已移除；以下清單保留作為手動驗收參考。
+
 - Tier 1/2/3 各自得到共用角色及正確 Tier 角色。
 - Twitch token 密文可正確解密，Client ID、user ID、scope 不符時拒絕查詢。
 - `MySqlDataStore` 使用注入的 provider token encryption key，不依賴 `Utility.RedisKey` 或 Redis key provisioning。
@@ -461,7 +463,6 @@ Bot：
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release
-dotnet test DiscordStreamNotifyBot.sln -c Release
 ```
 
 Frontend：

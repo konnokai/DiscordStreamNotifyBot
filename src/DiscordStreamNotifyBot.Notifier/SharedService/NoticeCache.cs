@@ -21,21 +21,13 @@ namespace DiscordStreamNotifyBot.SharedService
         private DateTimeOffset _loadedAt = DateTimeOffset.MinValue;
 
         public NoticeCache(MainDbService dbService, Func<MainDbContext, List<T>> load, TimeSpan? ttl = null)
-            : this(
-                () =>
-                {
-                    using var db = dbService.GetDbContext();
-                    return load(db);
-                },
-                TimeProvider.System,
-                ttl)
         {
-        }
-
-        internal NoticeCache(Func<List<T>> load, TimeProvider timeProvider, TimeSpan? ttl = null)
-        {
-            _load = load;
-            _timeProvider = timeProvider;
+            _load = () =>
+            {
+                using var db = dbService.GetDbContext();
+                return load(db);
+            };
+            _timeProvider = TimeProvider.System;
             _ttl = ttl ?? TimeSpan.FromSeconds(30);
         }
 

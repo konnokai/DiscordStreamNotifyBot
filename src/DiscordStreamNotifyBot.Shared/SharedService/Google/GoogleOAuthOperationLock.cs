@@ -19,8 +19,6 @@ namespace DiscordStreamNotifyBot.SharedService.Google
                 connection.GetDatabase(DiscordStreamNotifyBot.Shared.RedisChannels.OAuth.DatabaseNumber));
         }
 
-        internal int DatabaseNumber => _database.Database;
-
         public Task<OAuthLeaseAcquireResult> TryAcquireAsync(
             ulong discordUserId,
             CancellationToken cancellationToken = default)

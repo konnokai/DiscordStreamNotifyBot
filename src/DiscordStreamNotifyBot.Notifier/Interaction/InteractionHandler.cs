@@ -34,95 +34,6 @@ namespace DiscordStreamNotifyBot.Interaction
         /// </summary>
         public string DebugCommandSignature => BuildCommandSignature(true);
 
-        /// <summary>供測試與 review 使用的可讀 Slash command registration contract。</summary>
-        internal string ReadableCommandContract => BuildReadableCommandContract();
-
-        private string BuildReadableCommandContract()
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("slash-contract v1");
-            AppendReadableCommandSection(sb, "global", command => !command.Module.DontAutoRegister);
-            AppendReadableCommandSection(sb, "guild-only", command => command.Module.DontAutoRegister);
-            return sb.ToString().ReplaceLineEndings("\n").TrimEnd();
-        }
-
-        private void AppendReadableCommandSection(
-            StringBuilder sb,
-            string sectionName,
-            Func<SlashCommandInfo, bool> includeCommand)
-        {
-            sb.Append('[').Append(sectionName).AppendLine("]");
-            var commands = _interactions.SlashCommands
-                .Where(includeCommand)
-                .OrderBy(command => string.Join(".", CommandDisplayResolver.GetCanonicalCommandPath(command)), StringComparer.Ordinal)
-                .ToList();
-
-            foreach (var module in commands
-                .Where(command => command.Module.IsSlashGroup)
-                .Select(command => command.Module)
-                .Distinct()
-                .OrderBy(module => string.Join(".", CommandDisplayResolver.GetCanonicalModulePath(module)), StringComparer.Ordinal))
-            {
-                sb.Append("group /")
-                    .Append(string.Join(" ", CommandDisplayResolver.GetCanonicalModulePath(module)))
-                    .AppendLine();
-            }
-
-            foreach (SlashCommandInfo command in commands)
-            {
-                sb.Append("command /")
-                    .Append(string.Join(" ", CommandDisplayResolver.GetCanonicalCommandPath(command)))
-                    .Append(" permissions=").Append(command.DefaultMemberPermissions?.ToString() ?? "-")
-                    .Append(" dm=").Append(command.IsEnabledInDm.ToString().ToLowerInvariant())
-                    .Append(" nsfw=").Append(command.IsNsfw.ToString().ToLowerInvariant())
-                    .Append(" contexts=").Append(FormatContractValues(command.ContextTypes))
-                    .Append(" integrations=").Append(FormatContractValues(command.IntegrationTypes))
-                    .AppendLine();
-
-                for (int index = 0; index < command.Parameters.Count; index++)
-                {
-                    SlashCommandParameterInfo parameter = command.Parameters[index];
-                    sb.Append("  option ").Append(index).Append(' ')
-                        .Append(parameter.Name)
-                        .Append(" type=").Append(parameter.DiscordOptionType?.ToString() ?? parameter.ParameterType.Name)
-                        .Append(" required=").Append(parameter.IsRequired.ToString().ToLowerInvariant())
-                        .Append(" autocomplete=").Append(parameter.IsAutocomplete.ToString().ToLowerInvariant())
-                        .Append(" channels=").Append(FormatContractValues(parameter.ChannelTypes))
-                        .Append(" min=").Append(FormatContractNumber(parameter.MinValue, -9007199254740991D))
-                        .Append(" max=").Append(FormatContractNumber(parameter.MaxValue, 9007199254740991D))
-                        .Append(" minLength=").Append(FormatContractValue(parameter.MinLength))
-                        .Append(" maxLength=").Append(FormatContractValue(parameter.MaxLength))
-                        .AppendLine();
-
-                    int choiceIndex = 0;
-                    foreach (var choice in GetChoices(parameter))
-                    {
-                        sb.Append("    choice ").Append(choiceIndex++)
-                            .Append(" name=").Append(JsonConvert.SerializeObject(choice.DisplayName))
-                            .Append(" value=").Append(JsonConvert.SerializeObject(choice.Value))
-                            .AppendLine();
-                    }
-                }
-            }
-        }
-
-        private static string FormatContractValues<T>(IEnumerable<T> values)
-        {
-            if (values == null)
-                return "-";
-
-            string result = string.Join(",", values.Select(value => Convert.ToString(value, CultureInfo.InvariantCulture)));
-            return result.Length == 0 ? "-" : result;
-        }
-
-        private static string FormatContractValue(object value)
-            => value == null ? "-" : Convert.ToString(value, CultureInfo.InvariantCulture);
-
-        private static string FormatContractNumber(double? value, double defaultValue)
-            => !value.HasValue || value.Value == defaultValue
-                ? "-"
-                : value.Value.ToString(CultureInfo.InvariantCulture);
-
         private string BuildCommandSignature(bool includeDontAutoRegister)
         {
             var sb = new StringBuilder();
@@ -212,7 +123,7 @@ namespace DiscordStreamNotifyBot.Interaction
             _interactions.SlashCommandExecuted += SlashCommandExecuted;
         }
 
-        internal void ValidateCommandLocalizationResources()
+        private void ValidateCommandLocalizationResources()
         {
             var commands = _interactions.SlashCommands
                 .Where(command => !command.Module.DontAutoRegister)
