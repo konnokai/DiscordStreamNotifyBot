@@ -17,11 +17,6 @@ namespace DiscordStreamNotifyBot.Interaction
         // GetProductionType/GetProductionName 已移至 Shared 的 SharedExtensions（同命名空間 Interaction，
         // 供 Scraper 偵測層共用，計畫 §3-3）；此處刪除以免與其重複定義（擴充方法模稜兩可）。
 
-        public static IEnumerable<T> Distinct<T, V>(this IEnumerable<T> source, Func<T, V> keySelector)
-        {
-            return source.Distinct(new CommonEqualityComparer<T, V>(keySelector));
-        }
-
         public static string GetYoutubeChannelTitleByChannelId(this MainDbContext _, string channelId)
         {
             channelId = channelId.Trim();

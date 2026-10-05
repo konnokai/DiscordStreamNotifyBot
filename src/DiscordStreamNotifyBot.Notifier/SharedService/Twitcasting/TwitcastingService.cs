@@ -9,10 +9,6 @@ using DiscordStreamNotifyBot.SharedService.Cluster;
 using DiscordStreamNotifyBot.SharedService.Member;
 using Newtonsoft.Json.Linq;
 
-#if !DEBUG
-using Polly;
-#endif
-
 
 namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 {
@@ -350,7 +346,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 var noticeGuildList = _noticeCache.Get().Where((x) => x.ScreenId == twitcastingStream.ChannelId).ToList();
                 Log.New($"發送 TwitCasting 開台通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))}): {twitcastingStream.ChannelTitle} - {twitcastingStream.StreamTitle} (私人直播: {isPrivate})");
 
-                var variants = new Dictionary<string, Lazy<TwitcastingNotificationVariant>>(StringComparer.Ordinal);
                 var guildsById = noticeGuildList
                     .Select(item => item.GuildId)
                     .Distinct()
@@ -359,159 +354,54 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                     .ToDictionary(guild => guild.Id);
                 Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
+                // TwitCasting 沿用既有 log 文字：失敗 log 以「TwitCasting 通知 - 」開頭，重試 log 沒有前綴。
+                var delivery = new ChannelNotificationDelivery(
+                    new NotificationDelivery(_metrics, NotificationMetricEvent.TwitcastingStart, progress),
+                    guildsById, localesByGuildId,
+                    new NotificationVariantCache<NotificationVariant>(
+                        locale => BuildVariant(twitcastingStream, isPrivate, isRecord, locale)),
+                    failureLogPrefix: "TwitCasting 通知 - ",
+                    retryLogPrefix: "",
+                    removeGuildNotices: guildId =>
+                    {
+                        db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == guildId));
+                        db.SaveChanges();
+                        _noticeCache.Invalidate();
+                    },
+                    removeChannelNotices: channelId =>
+                    {
+                        db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.DiscordChannelId == channelId));
+                        db.SaveChanges();
+                        _noticeCache.Invalidate();
+                    });
+
                 foreach (var item in noticeGuildList)
                 {
-                    string target = $"{item.Id}:{item.DiscordChannelId}";
-                    if (progress.IsComplete(target))
-                        continue;
-                    NotificationDeliveryResult? deliveryResult = null;
-                    Stopwatch deliveryStopwatch = null;
-                    bool primaryMessageSent = false;
-                    bool retryRequired = false;
-                    try
-                    {
-                        if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
-                        {
-                            // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
-                            if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
-                                continue;
-
-                            Log.Warn($"TwitCasting 通知 ({item.DiscordChannelId}) | 找不到伺服器 {item.GuildId}");
-                            deliveryResult = NotificationDeliveryResult.MissingGuild;
-                            db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == item.GuildId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
-                            continue;
-                        }
-
-                        string locale = localesByGuildId[guild.Id];
-                        if (!variants.TryGetValue(locale, out var variantValue))
-                        {
-                            variantValue = new Lazy<TwitcastingNotificationVariant>(() =>
-                            {
-                                Embed embed = TwitcastingEmbedBuilderFactory.CreateStreamStarted(
-                                    twitcastingStream, isPrivate, isRecord, _localizer, locale).Build();
-                                MessageComponent component = _botConfig.DisableNotificationsAds
-                                    ? null
-                                    : new ComponentBuilder()
-                                        .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale),
-                                            style: ButtonStyle.Link, emote: _emojiService.ECPayEmote,
-                                            url: Utility.ECPayUrl, row: 1)
-                                        .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale),
-                                            style: ButtonStyle.Link, emote: _emojiService.PayPalEmote,
-                                            url: Utility.PaypalUrl, row: 1)
-                                        .Build();
-                                return new TwitcastingNotificationVariant(embed, component);
-                            }, LazyThreadSafetyMode.ExecutionAndPublication);
-                            variants.Add(locale, variantValue);
-                        }
-                        TwitcastingNotificationVariant variant = variantValue.Value;
-
-                        var channel = guild.GetTextChannel(item.DiscordChannelId);
-                        if (channel == null)
-                        {
-                            deliveryResult = NotificationDeliveryResult.MissingChannel;
-                            continue;
-                        }
-
-                        deliveryStopwatch = Stopwatch.StartNew();
-                        await Policy.Handle<TimeoutException>()
-                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                            .WaitAndRetryAsync(3, (retryAttempt) =>
-                            {
-                                _metrics.RecordNotificationDeliveryRetry(NotificationMetricEvent.TwitcastingStart);
-                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                Log.Warn($"{item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                return timeSpan;
-                            })
-                            .ExecuteAsync(() => progress.SendAsync(target, channel, async () =>
-                            {
-                                var message = await channel.SendMessageAsync(text: item.StartStreamMessage,
-                                    embed: variant.Embed, components: variant.Component,
-                                    options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                                primaryMessageSent = true;
-                                return message;
-                            }, channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id)));
-                        deliveryResult = NotificationDeliveryResult.Sent;
-                    }
-                    catch (Discord.Net.HttpException httpEx)
-                    {
-                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"TwitCasting 通知 ({item.DiscordChannelId})"))
-                        {
-                            retryRequired = true;
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.AuthorizationFailure;
-                            throw;
-                        }
-
-                        if (NotificationTargetFailure.IsPermanent(httpEx))
-                        {
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.MissingPermission;
-                            Log.Warn($"TwitCasting 通知 - 永久失敗（權限或目標不存在）{item.GuildId} / {item.DiscordChannelId}：{httpEx.DiscordCode}");
-                            db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
-                        }
-                        else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                        {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.Discord5xx;
-                            Log.Warn($"TwitCasting 通知 - Discord 5xx 錯誤：{httpEx.HttpCode}");
-                        }
-                        else
-                        {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.UnknownError;
-                            Log.Error(httpEx, $"TwitCasting 通知 - Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
-                        }
-                    }
-                    catch (TimeoutException ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.Timeout;
-                        Log.Warn($"TwitCasting 通知 - Discord 逾時 {item.GuildId} / {item.DiscordChannelId}");
-                    }
-                    catch (Exception ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.UnknownError;
-                        Log.Error(ex.Demystify(), $"TwitCasting 通知 - 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
-                    }
-                    finally
-                    {
-                        if (deliveryStopwatch != null)
-                        {
-                            deliveryStopwatch.Stop();
-                            _metrics.ObserveNotificationDeliveryDuration(NotificationMetricEvent.TwitcastingStart, deliveryStopwatch.Elapsed);
-                        }
-
-                        if (deliveryResult.HasValue)
-                        {
-                            _metrics.RecordNotificationDelivery(NotificationMetricEvent.TwitcastingStart, deliveryResult.Value);
-                            if (!retryRequired)
-                                await progress.CompleteAsync(target);
-                        }
-                    }
+                    // TwitCasting 沒有「-」關閉通知的檢查，沿用既有行為
+                    await delivery.SendAsync($"{item.Id}:{item.DiscordChannelId}", item.GuildId, item.DiscordChannelId,
+                        item.StartStreamMessage, skipDisabledMessage: false, $"TwitCasting 通知 ({item.DiscordChannelId})");
                 }
             }
 #endif
         }
 
-        private sealed record TwitcastingNotificationVariant(Embed Embed, MessageComponent Component);
+        private NotificationVariant BuildVariant(TwitcastingStream twitcastingStream, bool isPrivate, bool isRecord,
+            string locale)
+        {
+            Embed embed = TwitcastingEmbedBuilderFactory.CreateStreamStarted(
+                twitcastingStream, isPrivate, isRecord, _localizer, locale).Build();
+            // TwitCasting 的按鈕只有贊助連結，沒有隨機影片按鈕。
+            MessageComponent component = _botConfig.DisableNotificationsAds
+                ? null
+                : new ComponentBuilder()
+                    .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale),
+                        style: ButtonStyle.Link, emote: _emojiService.ECPayEmote,
+                        url: Utility.ECPayUrl, row: 1)
+                    .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale),
+                        style: ButtonStyle.Link, emote: _emojiService.PayPalEmote,
+                        url: Utility.PaypalUrl, row: 1)
+                    .Build();
+            return new NotificationVariant(embed, component);
+        }
     }
 }

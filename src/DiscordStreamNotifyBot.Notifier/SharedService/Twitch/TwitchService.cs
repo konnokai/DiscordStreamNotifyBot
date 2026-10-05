@@ -13,10 +13,6 @@ using Clip = TwitchLib.Api.Helix.Models.Clips.GetClips.Clip;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
 using Video = TwitchLib.Api.Helix.Models.Videos.GetVideos.Video;
 
-#if !DEBUG
-using Polly;
-#endif
-
 
 namespace DiscordStreamNotifyBot.SharedService.Twitch
 {
@@ -357,7 +353,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             await SendStreamMessageAsync(dto, twitchSpider, noticeType, thumbnailCacheBuster, progress).ConfigureAwait(false);
         }
 
-        private TwitchNotificationVariant BuildVariant(Shared.Messages.TwitchNotification dto,
+        private NotificationVariant BuildVariant(Shared.Messages.TwitchNotification dto,
             DataBase.Table.TwitchSpider twitchSpider, NoticeType noticeType, long thumbnailCacheBuster, string locale)
         {
             Embed embed;
@@ -395,7 +391,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             MessageComponent component = noticeType == NoticeType.StartStream && !_botConfig.DisableNotificationsAds
                 ? _emojiService.BuildNotificationAdsComponent(_localizer, locale)
                 : null;
-            return new TwitchNotificationVariant(embed, component);
+            return new NotificationVariant(embed, component);
         }
 
         internal async Task SendStreamMessageAsync(Shared.Messages.TwitchNotification dto,
@@ -415,7 +411,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 // 通知設定改讀記憶體快取（§12.3）
                 var noticeGuildList = _noticeCache.Get().Where((x) => x.NoticeTwitchUserId == dto.UserId).ToList();
                 Log.New($"發送 Twitch 通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))} / {noticeType}): ({dto.UserId}) - {dto.StreamTitle}");
-                var variants = new Dictionary<string, Lazy<TwitchNotificationVariant>>(StringComparer.Ordinal);
                 var guildsById = noticeGuildList
                     .Select(item => item.GuildId)
                     .Distinct()
@@ -424,167 +419,48 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                     .ToDictionary(guild => guild.Id);
                 Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
+                string source = $"Twitch 通知 ({dto.UserId})";
+                var delivery = new ChannelNotificationDelivery(
+                    new NotificationDelivery(_metrics, metricEvent, progress),
+                    guildsById, localesByGuildId,
+                    new NotificationVariantCache<NotificationVariant>(
+                        locale => BuildVariant(dto, twitchSpider, noticeType, thumbnailCacheBuster, locale)),
+                    failureLogPrefix: $"{source} | ",
+                    retryLogPrefix: $"{source} | ",
+                    removeGuildNotices: guildId =>
+                    {
+                        db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == guildId));
+                        db.SaveChanges();
+                        _noticeCache.Invalidate();
+                    },
+                    removeChannelNotices: channelId =>
+                    {
+                        db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == channelId));
+                        db.SaveChanges();
+                        _noticeCache.Invalidate();
+                    });
+
                 foreach (var item in noticeGuildList)
                 {
-                    string target = $"{item.Id}:{item.DiscordChannelId}";
-                    if (progress.IsComplete(target))
-                        continue;
-                    NotificationDeliveryResult? deliveryResult = null;
-                    Stopwatch deliveryStopwatch = null;
-                    bool primaryMessageSent = false;
-                    bool retryRequired = false;
-                    try
+                    string sendMessage = "";
+                    switch (noticeType)
                     {
-                        string sendMessage = "";
-                        switch (noticeType)
-                        {
-                            case NoticeType.StartStream:
-                                sendMessage = item.StartStreamMessage;
-                                break;
-                            case NoticeType.EndStream:
-                                sendMessage = item.EndStreamMessage;
-                                break;
-                            case NoticeType.ChangeStreamData:
-                                sendMessage = item.ChangeStreamDataMessage;
-                                break;
-                        }
-
-                        if (sendMessage == "-")
-                        {
-                            if (guildsById.ContainsKey(item.GuildId))
-                                deliveryResult = NotificationDeliveryResult.Disabled;
-                            continue;
-                        }
-
-                        if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
-                        {
-                            // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
-                            if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
-                                continue;
-
-                            Log.Warn($"Twitch 通知 ({dto.UserId}) | 找不到伺服器 {item.GuildId}");
-                            deliveryResult = NotificationDeliveryResult.MissingGuild;
-                            db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == item.GuildId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
-                            continue;
-                        }
-
-                        string locale = localesByGuildId[guild.Id];
-                        if (!variants.TryGetValue(locale, out var variantValue))
-                        {
-                            variantValue = new Lazy<TwitchNotificationVariant>(
-                                () => BuildVariant(dto, twitchSpider, noticeType, thumbnailCacheBuster, locale),
-                                LazyThreadSafetyMode.ExecutionAndPublication);
-                            variants.Add(locale, variantValue);
-                        }
-                        TwitchNotificationVariant variant = variantValue.Value;
-
-                        var channel = guild.GetTextChannel(item.DiscordChannelId);
-                        if (channel == null)
-                        {
-                            deliveryResult = NotificationDeliveryResult.MissingChannel;
-                            continue;
-                        }
-
-                        deliveryStopwatch = Stopwatch.StartNew();
-                        await Policy.Handle<TimeoutException>()
-                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                            .WaitAndRetryAsync(3, (retryAttempt) =>
-                            {
-                                _metrics.RecordNotificationDeliveryRetry(metricEvent);
-                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                Log.Warn($"Twitch 通知 ({dto.UserId}) | {item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                return timeSpan;
-                            })
-                            .ExecuteAsync(() => progress.SendAsync(target, channel, async () =>
-                            {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: variant.Embed,
-                                    components: variant.Component,
-                                    options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                                primaryMessageSent = true;
-                                return message;
-                            }, channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id)));
-                        deliveryResult = NotificationDeliveryResult.Sent;
+                        case NoticeType.StartStream:
+                            sendMessage = item.StartStreamMessage;
+                            break;
+                        case NoticeType.EndStream:
+                            sendMessage = item.EndStreamMessage;
+                            break;
+                        case NoticeType.ChangeStreamData:
+                            sendMessage = item.ChangeStreamDataMessage;
+                            break;
                     }
-                    catch (Discord.Net.HttpException httpEx)
-                    {
-                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"Twitch 通知 ({dto.UserId})"))
-                        {
-                            retryRequired = true;
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.AuthorizationFailure;
-                            throw;
-                        }
 
-                        if (NotificationTargetFailure.IsPermanent(httpEx))
-                        {
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.MissingPermission;
-                            Log.Warn($"Twitch 通知 ({dto.UserId}) | 永久失敗（權限或目標不存在）{item.GuildId} / {item.DiscordChannelId}：{httpEx.DiscordCode}");
-                            db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == item.DiscordChannelId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
-                        }
-                        else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                        {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.Discord5xx;
-                            Log.Warn($"Twitch 通知 ({dto.UserId}) | Discord 5xx 錯誤：{httpEx.HttpCode}");
-                        }
-                        else
-                        {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.UnknownError;
-                            Log.Error(httpEx, $"Twitch 通知 ({dto.UserId}) | Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
-                        }
-                    }
-                    catch (TimeoutException ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.Timeout;
-                        Log.Warn($"Twitch 通知 ({dto.UserId}) | Discord 逾時 {item.GuildId} / {item.DiscordChannelId}");
-                    }
-                    catch (Exception ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.UnknownError;
-                        Log.Error(ex.Demystify(), $"Twitch 通知 ({dto.UserId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
-                    }
-                    finally
-                    {
-                        if (deliveryStopwatch != null)
-                        {
-                            deliveryStopwatch.Stop();
-                            _metrics.ObserveNotificationDeliveryDuration(metricEvent, deliveryStopwatch.Elapsed);
-                        }
-
-                        if (deliveryResult.HasValue)
-                        {
-                            _metrics.RecordNotificationDelivery(metricEvent, deliveryResult.Value);
-                            if (!retryRequired)
-                                await progress.CompleteAsync(target);
-                        }
-                    }
+                    await delivery.SendAsync($"{item.Id}:{item.DiscordChannelId}", item.GuildId, item.DiscordChannelId,
+                        sendMessage, skipDisabledMessage: true, source);
                 }
             }
 #endif
         }
-
-        private sealed record TwitchNotificationVariant(Embed Embed, MessageComponent Component);
     }
 }

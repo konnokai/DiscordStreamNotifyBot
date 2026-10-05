@@ -11,10 +11,6 @@ using DiscordStreamNotifyBot.SharedService.Cluster;
 using DiscordStreamNotifyBot.SharedService.Member;
 using Newtonsoft.Json.Linq;
 
-#if !DEBUG
-using Polly;
-#endif
-
 namespace DiscordStreamNotifyBot.SharedService.Chzzk
 {
     /// <summary>
@@ -308,7 +304,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             await SendStreamMessageAsync(dto, noticeType.Value, progress).ConfigureAwait(false);
         }
 
-        private ChzzkNotificationVariant BuildVariant(ChzzkNotification dto, NoticeType noticeType, string locale)
+        private NotificationVariant BuildVariant(ChzzkNotification dto, NoticeType noticeType, string locale)
         {
             Embed embed = noticeType == NoticeType.StartStream
                 ? ChzzkEmbedBuilderFactory.CreateStreamStarted(dto, _localizer, locale).Build()
@@ -317,7 +313,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             MessageComponent component = noticeType == NoticeType.StartStream && !_botConfig.DisableNotificationsAds
                 ? _emojiService.BuildNotificationAdsComponent(_localizer, locale)
                 : null;
-            return new ChzzkNotificationVariant(embed, component);
+            return new NotificationVariant(embed, component);
         }
 
         internal async Task SendStreamMessageAsync(ChzzkNotification dto,
@@ -336,7 +332,6 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
                 var noticeGuildList = _noticeCache.Get()
                     .Where(x => x.NoticeChzzkChannelId == dto.ChannelId).ToList();
                 Log.New($"發送 CHZZK 通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))} / {noticeType}): ({dto.ChannelId}) - {dto.StreamTitle}");
-                var variants = new Dictionary<string, Lazy<ChzzkNotificationVariant>>(StringComparer.Ordinal);
                 var guildsById = noticeGuildList
                     .Select(item => item.GuildId)
                     .Distinct()
@@ -345,161 +340,40 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
                     .ToDictionary(guild => guild.Id);
                 Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
+                string source = $"CHZZK 通知 ({dto.ChannelId})";
+                var delivery = new ChannelNotificationDelivery(
+                    new NotificationDelivery(_metrics, metricEvent, progress),
+                    guildsById, localesByGuildId,
+                    new NotificationVariantCache<NotificationVariant>(locale => BuildVariant(dto, noticeType, locale)),
+                    failureLogPrefix: $"{source} | ",
+                    retryLogPrefix: $"{source} | ",
+                    removeGuildNotices: guildId =>
+                    {
+                        db.NoticeChzzkStreamChannels.RemoveRange(
+                            db.NoticeChzzkStreamChannels.Where(x => x.GuildId == guildId));
+                        db.SaveChanges();
+                        _noticeCache.Invalidate();
+                    },
+                    removeChannelNotices: channelId =>
+                    {
+                        db.NoticeChzzkStreamChannels.RemoveRange(
+                            db.NoticeChzzkStreamChannels.Where(x => x.DiscordChannelId == channelId));
+                        db.SaveChanges();
+                        _noticeCache.Invalidate();
+                    });
+
                 foreach (var item in noticeGuildList)
                 {
-                    string target = $"{item.Id}:{item.DiscordChannelId}";
-                    if (progress.IsComplete(target))
-                        continue;
-                    NotificationDeliveryResult? deliveryResult = null;
-                    Stopwatch deliveryStopwatch = null;
-                    bool primaryMessageSent = false;
-                    bool retryRequired = false;
-                    try
-                    {
-                        string sendMessage = noticeType == NoticeType.StartStream
-                            ? item.StartStreamMessage
-                            : item.EndStreamMessage;
+                    string sendMessage = noticeType == NoticeType.StartStream
+                        ? item.StartStreamMessage
+                        : item.EndStreamMessage;
 
-                        if (sendMessage == "-")
-                        {
-                            if (guildsById.ContainsKey(item.GuildId))
-                                deliveryResult = NotificationDeliveryResult.Disabled;
-                            continue;
-                        }
-
-                        if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
-                        {
-                            // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
-                            if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
-                                continue;
-
-                            Log.Warn($"CHZZK 通知 ({dto.ChannelId}) | 找不到伺服器 {item.GuildId}");
-                            deliveryResult = NotificationDeliveryResult.MissingGuild;
-                            db.NoticeChzzkStreamChannels.RemoveRange(
-                                db.NoticeChzzkStreamChannels.Where(x => x.GuildId == item.GuildId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
-                            continue;
-                        }
-
-                        string locale = localesByGuildId[guild.Id];
-                        if (!variants.TryGetValue(locale, out var variantValue))
-                        {
-                            variantValue = new Lazy<ChzzkNotificationVariant>(
-                                () => BuildVariant(dto, noticeType, locale),
-                                LazyThreadSafetyMode.ExecutionAndPublication);
-                            variants.Add(locale, variantValue);
-                        }
-                        ChzzkNotificationVariant variant = variantValue.Value;
-
-                        var channel = guild.GetTextChannel(item.DiscordChannelId);
-                        if (channel == null)
-                        {
-                            deliveryResult = NotificationDeliveryResult.MissingChannel;
-                            continue;
-                        }
-
-                        deliveryStopwatch = Stopwatch.StartNew();
-                        await Policy.Handle<TimeoutException>()
-                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                            .WaitAndRetryAsync(3, (retryAttempt) =>
-                            {
-                                _metrics.RecordNotificationDeliveryRetry(metricEvent);
-                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                Log.Warn($"CHZZK 通知 ({dto.ChannelId}) | {item.GuildId} / {item.DiscordChannelId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                return timeSpan;
-                            })
-                            .ExecuteAsync(() => progress.SendAsync(target, channel, async () =>
-                            {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: variant.Embed,
-                                    components: variant.Component,
-                                    options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                                primaryMessageSent = true;
-                                return message;
-                            }, channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id)));
-                        deliveryResult = NotificationDeliveryResult.Sent;
-                    }
-                    catch (Discord.Net.HttpException httpEx)
-                    {
-                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"CHZZK 通知 ({dto.ChannelId})"))
-                        {
-                            retryRequired = true;
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.AuthorizationFailure;
-                            throw;
-                        }
-
-                        if (NotificationTargetFailure.IsPermanent(httpEx))
-                        {
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.MissingPermission;
-                            Log.Warn($"CHZZK 通知 ({dto.ChannelId}) | 永久失敗（權限或目標不存在）{item.GuildId} / {item.DiscordChannelId}：{httpEx.DiscordCode}");
-                            db.NoticeChzzkStreamChannels.RemoveRange(
-                                db.NoticeChzzkStreamChannels.Where(x => x.DiscordChannelId == item.DiscordChannelId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
-                        }
-                        else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                        {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.Discord5xx;
-                            Log.Warn($"CHZZK 通知 ({dto.ChannelId}) | Discord 5xx 錯誤：{httpEx.HttpCode}");
-                        }
-                        else
-                        {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.UnknownError;
-                            Log.Error(httpEx, $"CHZZK 通知 ({dto.ChannelId}) | Discord 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
-                        }
-                    }
-                    catch (TimeoutException ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.Timeout;
-                        Log.Warn($"CHZZK 通知 ({dto.ChannelId}) | Discord 逾時 {item.GuildId} / {item.DiscordChannelId}");
-                    }
-                    catch (Exception ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.UnknownError;
-                        Log.Error(ex.Demystify(), $"CHZZK 通知 ({dto.ChannelId}) | 未知錯誤 {item.GuildId} / {item.DiscordChannelId}");
-                    }
-                    finally
-                    {
-                        if (deliveryStopwatch != null)
-                        {
-                            deliveryStopwatch.Stop();
-                            _metrics.ObserveNotificationDeliveryDuration(metricEvent, deliveryStopwatch.Elapsed);
-                        }
-
-                        if (deliveryResult.HasValue)
-                        {
-                            _metrics.RecordNotificationDelivery(metricEvent, deliveryResult.Value);
-                            if (!retryRequired)
-                                await progress.CompleteAsync(target);
-                        }
-                    }
+                    await delivery.SendAsync($"{item.Id}:{item.DiscordChannelId}", item.GuildId, item.DiscordChannelId,
+                        sendMessage, skipDisabledMessage: true, source);
                 }
             }
 #endif
         }
-
-        /// <summary>沿用既有非平台專屬通知按鈕（開台訊息附帶）。</summary>
-        private sealed record ChzzkNotificationVariant(Embed Embed, MessageComponent Component);
 
         private static AdminSettingsMutationResult Added(string sourceId, string sourceName)
             => AdminSettingsMutationResult.Applied("crawler.added", new JObject
