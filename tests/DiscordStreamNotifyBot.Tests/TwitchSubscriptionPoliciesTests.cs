@@ -7,45 +7,6 @@ namespace DiscordStreamNotifyBot.Tests
     public sealed class TwitchSubscriptionPoliciesTests
     {
         [Fact]
-        public void LocalAuthorizationStateSeparatesRevocationFromTemporaryLocalFailures()
-        {
-            Assert.Equal(
-                TwitchAuthorizationLocalState.Missing,
-                TwitchAuthorizationLocalStatePolicy.ClassifyEntity(false, false, false, false, false));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.PersistedInvalid,
-                TwitchAuthorizationLocalStatePolicy.ClassifyEntity(true, true, true, true, true));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.Active,
-                TwitchAuthorizationLocalStatePolicy.ClassifyEntity(true, false, true, true, true));
-
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyEntity(true, false, false, true, true));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyEntity(true, false, true, false, true));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyEntity(true, false, true, true, false));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyToken(false, true, true, true, true));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyToken(true, false, true, true, true));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyToken(true, true, false, true, true));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyToken(true, true, true, false, true));
-            Assert.Equal(
-                TwitchAuthorizationLocalState.TemporaryFailure,
-                TwitchAuthorizationLocalStatePolicy.ClassifyToken(true, true, true, true, false));
-        }
-
-        [Fact]
         public void RefreshPersistenceUsesExpectedCiphertextCompareAndSwap()
         {
             Assert.Equal(

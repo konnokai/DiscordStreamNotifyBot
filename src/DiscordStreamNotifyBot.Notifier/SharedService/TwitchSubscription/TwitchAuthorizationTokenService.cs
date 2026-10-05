@@ -3,6 +3,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Twitch;
+using System.Linq.Expressions;
 
 namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 {
@@ -57,30 +58,13 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             ulong discordUserId,
             CancellationToken cancellationToken)
         {
-            using var db = _dbService.GetDbContext();
-            var entity = await db.TwitchBroadcasterAuthorization.AsNoTracking()
-                .SingleOrDefaultAsync(x => x.DiscordUserId == discordUserId, cancellationToken);
-            TwitchAuthorizationLocalState entityState = ClassifyEntity(entity);
-            if (entityState != TwitchAuthorizationLocalState.Active)
-                return Status(MapLocalState(entityState), entity?.TwitchUserId);
-
-            TwitchAccessTokenData token;
-            try
-            {
-                token = TokenManager.GetTokenResponseValue<TwitchAccessTokenData>(
-                    entity.EncryptedAccessToken,
-                    _botConfig.ProviderTokenEncryptionKey);
-            }
-            catch (Exception ex)
-            {
-                _metrics.RecordTwitchTokenOperation(TwitchTokenOperation.Decrypt, TwitchTokenOperationResult.Invalid);
-                Log.Warn($"Twitch token 解密失敗，保留既有授權資料: {ex.GetType().Name}");
-                return Status(TwitchSubscriptionStatus.TemporaryFailure, entity.TwitchUserId);
-            }
-
-            TwitchAuthorizationLocalState tokenState = ClassifyToken(entity, token);
-            if (tokenState != TwitchAuthorizationLocalState.Active)
-                return Status(MapLocalState(tokenState), entity.TwitchUserId);
+            var (localStatus, entity, token) = await LoadActiveTokenAsync(
+                x => x.DiscordUserId == discordUserId,
+                "",
+                recordDecryptFailure: true,
+                cancellationToken);
+            if (localStatus != TwitchSubscriptionStatus.Subscribed)
+                return Status(localStatus, entity?.TwitchUserId);
 
             _metrics.RecordTwitchTokenOperation(TwitchTokenOperation.Decrypt, TwitchTokenOperationResult.Success);
             return Success(entity, token.AccessToken);
@@ -104,12 +88,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             string twitchUserId,
             CancellationToken cancellationToken)
         {
-            TwitchOAuthRefreshLockAcquireResult lockResult = await _refreshLock.TryAcquireAsync(twitchUserId, cancellationToken);
-            if (lockResult.Status != TwitchOAuthRefreshLockAcquireStatus.Acquired)
+            OAuthLeaseAcquireResult lockResult = await _refreshLock.TryAcquireAsync(twitchUserId, cancellationToken);
+            if (lockResult.Status != OAuthLeaseAcquireStatus.Acquired)
             {
                 _metrics.RecordTwitchTokenOperation(
                     TwitchTokenOperation.RefreshLock,
-                    lockResult.Status == TwitchOAuthRefreshLockAcquireStatus.Contended
+                    lockResult.Status == OAuthLeaseAcquireStatus.Contended
                         ? TwitchTokenOperationResult.Contended
                         : TwitchTokenOperationResult.TemporaryFailure);
                 if (lockResult.Exception != null)
@@ -123,32 +107,13 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             {
                 // 取得跨程序 lease 後仍須重讀 MySQL；其他 instance 可能已完成 rotation。
                 // 後續寫入會以此處讀到的密文作為 CAS 版本，避免舊 token 覆寫新 token。
-                TwitchBroadcasterAuthorization entity;
-                using (var db = _dbService.GetDbContext())
-                {
-                    entity = await db.TwitchBroadcasterAuthorization.AsNoTracking()
-                        .SingleOrDefaultAsync(x => x.TwitchUserId == twitchUserId, cancellationToken);
-                }
-
-                TwitchAuthorizationLocalState entityState = ClassifyEntity(entity);
-                if (entityState != TwitchAuthorizationLocalState.Active)
-                    return Status(MapLocalState(entityState), entity?.TwitchUserId);
-
-                TwitchAccessTokenData token;
-                try
-                {
-                    token = TokenManager.GetTokenResponseValue<TwitchAccessTokenData>(
-                        entity.EncryptedAccessToken,
-                        _botConfig.ProviderTokenEncryptionKey);
-                }
-                catch (Exception ex)
-                {
-                    Log.Warn($"Twitch token 在 refresh lock 內解密失敗，保留既有授權資料: {ex.GetType().Name}");
-                    return Status(TwitchSubscriptionStatus.TemporaryFailure, entity.TwitchUserId);
-                }
-
-                if (ClassifyToken(entity, token) != TwitchAuthorizationLocalState.Active)
-                    return Status(TwitchSubscriptionStatus.TemporaryFailure, entity.TwitchUserId);
+                var (localStatus, entity, token) = await LoadActiveTokenAsync(
+                    x => x.TwitchUserId == twitchUserId,
+                    "在 refresh lock 內",
+                    recordDecryptFailure: false,
+                    cancellationToken);
+                if (localStatus != TwitchSubscriptionStatus.Subscribed)
+                    return Status(localStatus, entity?.TwitchUserId);
 
                 TwitchProviderResult<TwitchValidateTokenData> validation =
                     await _apiClient.ValidateTokenAsync(token.AccessToken, cancellationToken);
@@ -193,7 +158,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 refreshedToken.TwitchUserId = entity.TwitchUserId;
                 refreshedToken.Scopes ??= token.Scopes;
                 refreshedToken.TokenType ??= token.TokenType;
-                if (ClassifyToken(entity, refreshedToken) != TwitchAuthorizationLocalState.Active)
+                if (ClassifyToken(entity, refreshedToken) != TwitchSubscriptionStatus.Subscribed)
                 {
                     Log.Warn($"Twitch refresh 回應不符合 token contract，保留既有授權資料: {entity.TwitchUserId}");
                     return Status(TwitchSubscriptionStatus.TemporaryFailure, entity.TwitchUserId);
@@ -210,14 +175,14 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
                 // Twitch 接受 refresh 後舊 token 可能立刻失效，因此 replacement 必須在 lease 內落盤。
                 // 立即保存失敗時只能把 lease 一併移交背景重試，不能放行其他 instance 使用舊 token。
-                TwitchRefreshPersistenceDecision persistence = await PersistWithRetriesAsync(
+                PersistenceOutcome persistence = await PersistWithRetriesAsync(
                     pending,
                     ImmediatePersistenceAttempts,
                     ImmediatePersistenceDelay,
                     CancellationToken.None);
-                if (persistence == TwitchRefreshPersistenceDecision.Stale)
+                if (persistence == PersistenceOutcome.Stale)
                     return Status(TwitchSubscriptionStatus.TemporaryFailure, entity.TwitchUserId);
-                if (persistence != TwitchRefreshPersistenceDecision.AlreadyPersisted)
+                if (persistence == PersistenceOutcome.AttemptsExhausted)
                 {
                     QueuePendingPersistence(pending);
                     leaseTransferredToRetry = true;
@@ -244,11 +209,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             finally
             {
                 if (!leaseTransferredToRetry)
-                {
-                    var release = await lockResult.Lease.ReleaseAsync(CancellationToken.None);
-                    if (release.Status != TwitchOAuthRefreshLockReleaseStatus.Released)
-                        Log.Warn($"Twitch refresh lock 釋放結果: {release.Status}");
-                }
+                    await ReleaseRefreshLockAsync(lockResult.Lease);
             }
         }
 
@@ -258,41 +219,22 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             string rejectedAccessToken,
             CancellationToken cancellationToken)
         {
-            TwitchOAuthRefreshLockAcquireResult lockResult = await _refreshLock.TryAcquireAsync(twitchUserId, cancellationToken);
-            if (lockResult.Status != TwitchOAuthRefreshLockAcquireStatus.Acquired)
+            OAuthLeaseAcquireResult lockResult = await _refreshLock.TryAcquireAsync(twitchUserId, cancellationToken);
+            if (lockResult.Status != OAuthLeaseAcquireStatus.Acquired)
                 return TwitchSubscriptionStatus.TemporaryFailure;
             _metrics.RecordTwitchTokenOperation(TwitchTokenOperation.RefreshLock, TwitchTokenOperationResult.Success);
 
             try
             {
-                TwitchBroadcasterAuthorization entity;
-                using (var db = _dbService.GetDbContext())
-                {
-                    entity = await db.TwitchBroadcasterAuthorization.AsNoTracking().SingleOrDefaultAsync(
-                        x => x.TwitchUserId == twitchUserId, cancellationToken);
-                }
-                TwitchAuthorizationLocalState entityState = ClassifyEntity(entity);
-                if (entityState != TwitchAuthorizationLocalState.Active)
-                    return MapLocalState(entityState);
-
-                TwitchAccessTokenData currentToken;
-                try
-                {
-                    currentToken = TokenManager.GetTokenResponseValue<TwitchAccessTokenData>(
-                        entity.EncryptedAccessToken,
-                        _botConfig.ProviderTokenEncryptionKey);
-                }
-                catch (Exception ex)
-                {
-                    Log.Warn($"Twitch token 最終 401 後解密失敗，保留既有授權資料: {ex.GetType().Name}");
+                var (localStatus, entity, currentToken) = await LoadActiveTokenAsync(
+                    x => x.TwitchUserId == twitchUserId,
+                    "最終 401 後",
+                    recordDecryptFailure: false,
+                    cancellationToken);
+                if (localStatus != TwitchSubscriptionStatus.Subscribed)
+                    return localStatus;
+                if (!string.Equals(currentToken.AccessToken, rejectedAccessToken, StringComparison.Ordinal))
                     return TwitchSubscriptionStatus.TemporaryFailure;
-                }
-
-                if (ClassifyToken(entity, currentToken) != TwitchAuthorizationLocalState.Active ||
-                    !string.Equals(currentToken.AccessToken, rejectedAccessToken, StringComparison.Ordinal))
-                {
-                    return TwitchSubscriptionStatus.TemporaryFailure;
-                }
 
                 if (!await MarkInvalidIfCurrentAsync(
                     entity.TwitchUserId,
@@ -308,29 +250,80 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
             finally
             {
-                var release = await lockResult.Lease.ReleaseAsync(CancellationToken.None);
-                if (release.Status != TwitchOAuthRefreshLockReleaseStatus.Released)
-                    Log.Warn($"Twitch refresh lock 釋放結果: {release.Status}");
+                await ReleaseRefreshLockAsync(lockResult.Lease);
             }
         }
 
-        private TwitchAuthorizationLocalState ClassifyEntity(TwitchBroadcasterAuthorization entity)
-            => TwitchAuthorizationLocalStatePolicy.ClassifyEntity(
-                entity != null,
-                entity?.RevokedAt != null,
-                entity?.ClientId == _botConfig.TwitchClientId,
-                !string.IsNullOrWhiteSpace(entity?.EncryptedAccessToken),
-                HasRequiredScope(entity?.Scopes));
+        /// <summary>
+        /// 讀取授權列並解密 token。回傳 Subscribed 代表本地列與 token 皆通過檢查；
+        /// 缺列或已撤銷回傳對應授權狀態，本地設定或解密異常一律為暫時失敗。
+        /// </summary>
+        private async Task<(TwitchSubscriptionStatus Status, TwitchBroadcasterAuthorization Entity, TwitchAccessTokenData Token)> LoadActiveTokenAsync(
+            Expression<Func<TwitchBroadcasterAuthorization, bool>> predicate,
+            string decryptFailureContext,
+            bool recordDecryptFailure,
+            CancellationToken cancellationToken)
+        {
+            TwitchBroadcasterAuthorization entity;
+            using (var db = _dbService.GetDbContext())
+            {
+                entity = await db.TwitchBroadcasterAuthorization.AsNoTracking()
+                    .SingleOrDefaultAsync(predicate, cancellationToken);
+            }
+            TwitchSubscriptionStatus entityStatus = ClassifyEntity(entity);
+            if (entityStatus != TwitchSubscriptionStatus.Subscribed)
+                return (entityStatus, entity, null);
 
-        private static TwitchAuthorizationLocalState ClassifyToken(
+            TwitchAccessTokenData token;
+            try
+            {
+                token = TokenManager.GetTokenResponseValue<TwitchAccessTokenData>(
+                    entity.EncryptedAccessToken,
+                    _botConfig.ProviderTokenEncryptionKey);
+            }
+            catch (Exception ex)
+            {
+                if (recordDecryptFailure)
+                    _metrics.RecordTwitchTokenOperation(TwitchTokenOperation.Decrypt, TwitchTokenOperationResult.Invalid);
+                Log.Warn($"Twitch token {decryptFailureContext}解密失敗，保留既有授權資料: {ex.GetType().Name}");
+                return (TwitchSubscriptionStatus.TemporaryFailure, entity, null);
+            }
+
+            return (ClassifyToken(entity, token), entity, token);
+        }
+
+        private static async Task ReleaseRefreshLockAsync(OAuthLease lease)
+        {
+            var release = await lease.ReleaseAsync(CancellationToken.None);
+            if (release.Status != OAuthLeaseReleaseStatus.Released)
+                Log.Warn($"Twitch refresh lock 釋放結果: {release.Status}");
+        }
+
+        /// <summary>缺列為未授權、已撤銷為授權失效；client ID、密文或 scope 不符屬本地暫時失敗。</summary>
+        private TwitchSubscriptionStatus ClassifyEntity(TwitchBroadcasterAuthorization entity)
+        {
+            if (entity == null)
+                return TwitchSubscriptionStatus.AuthorizationMissing;
+            if (entity.RevokedAt != null)
+                return TwitchSubscriptionStatus.AuthorizationInvalid;
+            return entity.ClientId == _botConfig.TwitchClientId &&
+                !string.IsNullOrWhiteSpace(entity.EncryptedAccessToken) &&
+                HasRequiredScope(entity.Scopes)
+                    ? TwitchSubscriptionStatus.Subscribed
+                    : TwitchSubscriptionStatus.TemporaryFailure;
+        }
+
+        /// <summary>token 欄位不完整或與授權列不符時只回傳暫時失敗，不撤銷授權。</summary>
+        private static TwitchSubscriptionStatus ClassifyToken(
             TwitchBroadcasterAuthorization entity,
             TwitchAccessTokenData token)
-            => TwitchAuthorizationLocalStatePolicy.ClassifyToken(
-                !string.IsNullOrWhiteSpace(token?.AccessToken),
-                !string.IsNullOrWhiteSpace(token?.RefreshToken),
-                string.Equals(token?.TokenType, "bearer", StringComparison.OrdinalIgnoreCase),
-                !string.IsNullOrWhiteSpace(token?.TwitchUserId) && token.TwitchUserId == entity.TwitchUserId,
-                token?.Scopes?.Contains(RequiredScope, StringComparer.Ordinal) == true);
+            => !string.IsNullOrWhiteSpace(token?.AccessToken) &&
+                !string.IsNullOrWhiteSpace(token.RefreshToken) &&
+                string.Equals(token.TokenType, "bearer", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(token.TwitchUserId) && token.TwitchUserId == entity.TwitchUserId &&
+                token.Scopes?.Contains(RequiredScope, StringComparer.Ordinal) == true
+                    ? TwitchSubscriptionStatus.Subscribed
+                    : TwitchSubscriptionStatus.TemporaryFailure;
 
         private bool IsValidIdentity(TwitchBroadcasterAuthorization entity, TwitchValidateTokenData validation)
             => validation != null &&
@@ -357,7 +350,15 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 .Contains(RequiredScope, StringComparer.Ordinal);
         }
 
-        private async Task<TwitchRefreshPersistenceDecision> PersistWithRetriesAsync(
+        /// <summary>保存 rotation 的結果：已落盤（本次寫入或冪等完成）、已過期，或所有嘗試皆失敗需交由背景重試。</summary>
+        private enum PersistenceOutcome
+        {
+            Persisted,
+            Stale,
+            AttemptsExhausted
+        }
+
+        private async Task<PersistenceOutcome> PersistWithRetriesAsync(
             PendingRefreshPersistence pending,
             int attempts,
             TimeSpan delay,
@@ -369,9 +370,9 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 try
                 {
                     TwitchRefreshPersistenceDecision decision = await PersistRotationOnceAsync(pending, cancellationToken);
-                    if (decision != TwitchRefreshPersistenceDecision.WriteReplacement)
-                        return decision;
-                    return TwitchRefreshPersistenceDecision.AlreadyPersisted;
+                    return decision == TwitchRefreshPersistenceDecision.Stale
+                        ? PersistenceOutcome.Stale
+                        : PersistenceOutcome.Persisted;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -384,7 +385,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         await Task.Delay(delay, cancellationToken);
                 }
             }
-            return TwitchRefreshPersistenceDecision.WriteReplacement;
+            return PersistenceOutcome.AttemptsExhausted;
         }
 
         /// <summary>確認 lease owner 後，以密文 CAS 保存一次 rotation，並辨識冪等完成或 stale 狀態。</summary>
@@ -394,12 +395,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         {
             // 網路或 DB I/O 期間 lease 可能已由新 owner 接手；任何寫入前都要重新確認所有權。
             var ownership = await pending.Lease.EnsureOwnedAsync(cancellationToken);
-            if (ownership.Status == TwitchOAuthRefreshLockOwnershipStatus.OwnershipLost)
+            if (ownership.Status == OAuthLeaseOwnershipStatus.OwnershipLost)
             {
                 Log.Warn("Twitch refresh lock owner 已變更，停止寫入: refresh_token_persistence");
                 return TwitchRefreshPersistenceDecision.Stale;
             }
-            if (ownership.Status == TwitchOAuthRefreshLockOwnershipStatus.TemporaryFailure)
+            if (ownership.Status == OAuthLeaseOwnershipStatus.TemporaryFailure)
                 throw new InvalidOperationException("暫時無法確認 Twitch refresh lock owner。", ownership.Exception);
 
             using var db = _dbService.GetDbContext();
@@ -447,19 +448,9 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         /// <summary>將立即保存失敗的 rotation 與 lease 登記到背景重試及關機 drain。</summary>
         private void QueuePendingPersistence(PendingRefreshPersistence pending)
         {
-            // 先建立暫停中的 task 並登記到關機 drain，再啟動重試，避免交接空窗漏掉已接受的 rotation。
-            var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            Task task = RunQueuedPendingPersistenceAsync(pending, start.Task);
-            _rotationLifecycle.TrackAcceptedPersistence(task);
-            start.SetResult();
-        }
-
-        private async Task RunQueuedPendingPersistenceAsync(
-            PendingRefreshPersistence pending,
-            Task start)
-        {
-            await start;
-            await RetryPendingPersistenceUntilCompletedAsync(pending);
+            // 呼叫端仍持有 refresh operation；關機 drain 會先等所有 operation 結束才掃描 task 集合，
+            // 因此 task 先啟動再登記不會漏掉已接受的 rotation，登記前即完成也只會被立即移除。
+            _rotationLifecycle.TrackAcceptedPersistence(RetryPendingPersistenceUntilCompletedAsync(pending));
         }
 
         /// <summary>持續重試已接受的 rotation，直到 replacement 落盤或確認其他狀態已取代它。</summary>
@@ -470,14 +461,14 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             {
                 while (true)
                 {
-                    TwitchRefreshPersistenceDecision decision = await PersistWithRetriesAsync(
+                    PersistenceOutcome outcome = await PersistWithRetriesAsync(
                         pending,
                         1,
                         TimeSpan.Zero,
                         CancellationToken.None);
-                    if (decision is TwitchRefreshPersistenceDecision.AlreadyPersisted or TwitchRefreshPersistenceDecision.Stale)
+                    if (outcome != PersistenceOutcome.AttemptsExhausted)
                     {
-                        if (decision == TwitchRefreshPersistenceDecision.AlreadyPersisted)
+                        if (outcome == PersistenceOutcome.Persisted)
                             Log.Info($"Twitch refresh token rotation 延遲保存完成: {pending.TwitchUserId}");
                         else
                             Log.Warn($"Twitch refresh token rotation 延遲保存已過期，停止重試: {pending.TwitchUserId}");
@@ -555,7 +546,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             string twitchUserId,
             string expectedCiphertext,
             string reason,
-            TwitchOAuthRefreshLockLease lease,
+            OAuthLease lease,
             CancellationToken cancellationToken)
         {
             if (!await EnsureLockOwnedAsync(lease, "authorization_invalidation", cancellationToken))
@@ -591,29 +582,20 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         }
 
         private static async Task<bool> EnsureLockOwnedAsync(
-            TwitchOAuthRefreshLockLease lease,
+            OAuthLease lease,
             string operation,
             CancellationToken cancellationToken)
         {
             var ownership = await lease.EnsureOwnedAsync(cancellationToken);
-            if (ownership.Status == TwitchOAuthRefreshLockOwnershipStatus.Owned)
+            if (ownership.Status == OAuthLeaseOwnershipStatus.Owned)
                 return true;
 
-            if (ownership.Status == TwitchOAuthRefreshLockOwnershipStatus.OwnershipLost)
+            if (ownership.Status == OAuthLeaseOwnershipStatus.OwnershipLost)
                 Log.Warn($"Twitch refresh lock owner 已變更，停止寫入: {operation}");
             else
                 Log.Warn($"Twitch refresh lock 無法確認 owner，停止寫入: {operation} / {ownership.Exception?.GetType().Name}");
             return false;
         }
-
-        private static TwitchSubscriptionStatus MapLocalState(TwitchAuthorizationLocalState state)
-            => state switch
-            {
-                TwitchAuthorizationLocalState.Missing => TwitchSubscriptionStatus.AuthorizationMissing,
-                TwitchAuthorizationLocalState.PersistedInvalid => TwitchSubscriptionStatus.AuthorizationInvalid,
-                TwitchAuthorizationLocalState.Active => TwitchSubscriptionStatus.Subscribed,
-                _ => TwitchSubscriptionStatus.TemporaryFailure
-            };
 
         private static TwitchAuthorizationAccessResult Status(TwitchSubscriptionStatus status, string twitchUserId = null)
             => new() { Status = status, TwitchUserId = twitchUserId };
@@ -634,6 +616,6 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             string ReplacementCiphertext,
             DateTime? TokenExpiresAt,
             DateTime DateUpdated,
-            TwitchOAuthRefreshLockLease Lease);
+            OAuthLease Lease);
     }
 }

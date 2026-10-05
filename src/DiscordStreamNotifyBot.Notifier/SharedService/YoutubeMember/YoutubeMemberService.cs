@@ -183,9 +183,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     throw new NullReferenceException("userId");
 
                 ulong userId = ulong.Parse(discordUserId);
-                GoogleOAuthOperationLockAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
+                OAuthLeaseAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
                     userId, CancellationToken.None);
-                if (lockResult.Status != GoogleOAuthOperationLockAcquireStatus.Acquired)
+                if (lockResult.Status != OAuthLeaseAcquireStatus.Acquired)
                     throw new InvalidOperationException($"無法取得 Google OAuth 跨程序 lease: {lockResult.Status}");
                 await using var operationLease = lockResult.Lease;
 
@@ -198,14 +198,14 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 }
 
                 // provider 結果不明時 RevokeAsync 會丟出並保留本機 token；pending intent 留下供安全重試。
-                if (await operationLease.EnsureOwnedAsync(CancellationToken.None) !=
-                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                if ((await operationLease.EnsureOwnedAsync(CancellationToken.None)).Status !=
+                    OAuthLeaseOwnershipStatus.Owned)
                 {
                     throw new InvalidOperationException("Google OAuth 跨程序 lease 已失效，取消 provider revoke。");
                 }
                 await _authorizationService.RevokeAsync(snapshot.Value, CancellationToken.None);
-                if (await operationLease.EnsureOwnedAsync(CancellationToken.None) !=
-                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                if ((await operationLease.EnsureOwnedAsync(CancellationToken.None)).Status !=
+                    OAuthLeaseOwnershipStatus.Owned)
                 {
                     throw new InvalidOperationException("Google OAuth 跨程序 lease 已失效，保留 durable unlink intent。");
                 }
@@ -235,20 +235,20 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         {
             try
             {
-                GoogleOAuthOperationLockAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
+                OAuthLeaseAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
                     userId, cancellationToken);
-                if (lockResult.Status != GoogleOAuthOperationLockAcquireStatus.Acquired)
+                if (lockResult.Status != OAuthLeaseAcquireStatus.Acquired)
                     return false;
                 await using var operationLease = lockResult.Lease;
-                if (await operationLease.EnsureOwnedAsync(cancellationToken) !=
-                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                if ((await operationLease.EnsureOwnedAsync(cancellationToken)).Status !=
+                    OAuthLeaseOwnershipStatus.Owned)
                 {
                     return false;
                 }
                 return await PrepareMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken,
                         (configurationSnapshot, checkSnapshot)) &&
-                    await operationLease.EnsureOwnedAsync(cancellationToken) ==
-                        GoogleOAuthOperationLockOwnershipStatus.Owned &&
+                    (await operationLease.EnsureOwnedAsync(cancellationToken)).Status ==
+                        OAuthLeaseOwnershipStatus.Owned &&
                     await CompleteMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken);
             }
             catch (Exception ex)

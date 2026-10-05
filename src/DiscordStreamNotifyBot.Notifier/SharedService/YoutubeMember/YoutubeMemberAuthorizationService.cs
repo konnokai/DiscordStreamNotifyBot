@@ -94,9 +94,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (!token.IsStale)
                 return new(YoutubeMemberAuthorizationStatus.Ready, credential, encryptedTokenPayload);
 
-            GoogleOAuthOperationLockAcquireResult lockResult = await _operationLock.TryAcquireAsync(
+            OAuthLeaseAcquireResult lockResult = await _operationLock.TryAcquireAsync(
                 ulong.Parse(discordUserId), cancellationToken);
-            if (lockResult.Status != GoogleOAuthOperationLockAcquireStatus.Acquired)
+            if (lockResult.Status != OAuthLeaseAcquireStatus.Acquired)
             {
                 Log.Warn($"YouTube OAuth refresh 無法取得跨程序 lease: {discordUserId} / {lockResult.Status}");
                 return new(YoutubeMemberAuthorizationStatus.TemporaryFailure, null, encryptedTokenPayload);
@@ -117,8 +117,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 credential = GoogleCredential.FromAccessToken(token.AccessToken);
                 if (!token.IsStale)
                     return new(YoutubeMemberAuthorizationStatus.Ready, credential, encryptedTokenPayload);
-                if (await operationLease.EnsureOwnedAsync(cancellationToken) !=
-                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                if ((await operationLease.EnsureOwnedAsync(cancellationToken)).Status !=
+                    OAuthLeaseOwnershipStatus.Owned)
                 {
                     return new(YoutubeMemberAuthorizationStatus.TemporaryFailure, null, encryptedTokenPayload);
                 }
@@ -126,8 +126,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 TokenResponse refreshedToken = await _flow.RefreshTokenAsync(
                     discordUserId, token.RefreshToken, cancellationToken);
                 refreshedToken.RefreshToken ??= token.RefreshToken;
-                if (await operationLease.EnsureOwnedAsync(cancellationToken) !=
-                        GoogleOAuthOperationLockOwnershipStatus.Owned ||
+                if ((await operationLease.EnsureOwnedAsync(cancellationToken)).Status !=
+                        OAuthLeaseOwnershipStatus.Owned ||
                     !await _dataStore.StoreRefreshIfCurrentAsync(
                         ulong.Parse(discordUserId),
                         expectedEncryptedToken,

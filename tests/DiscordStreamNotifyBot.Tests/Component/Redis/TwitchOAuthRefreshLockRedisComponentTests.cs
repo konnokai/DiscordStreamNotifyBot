@@ -1,4 +1,5 @@
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using StackExchange.Redis;
 
@@ -35,19 +36,19 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
 
             try
             {
-                TwitchOAuthRefreshLockAcquireResult first = await refreshLock.TryAcquireAsync(twitchUserId);
-                TwitchOAuthRefreshLockAcquireResult contender = await refreshLock.TryAcquireAsync(twitchUserId);
+                OAuthLeaseAcquireResult first = await refreshLock.TryAcquireAsync(twitchUserId);
+                OAuthLeaseAcquireResult contender = await refreshLock.TryAcquireAsync(twitchUserId);
 
-                Assert.Equal(TwitchOAuthRefreshLockAcquireStatus.Acquired, first.Status);
-                Assert.Equal(TwitchOAuthRefreshLockAcquireStatus.Contended, contender.Status);
+                Assert.Equal(OAuthLeaseAcquireStatus.Acquired, first.Status);
+                Assert.Equal(OAuthLeaseAcquireStatus.Contended, contender.Status);
                 TimeSpan? ttl = await db.KeyTimeToLiveAsync(key);
                 Assert.NotNull(ttl);
                 Assert.InRange(ttl.Value, TimeSpan.FromMinutes(9), TimeSpan.FromMinutes(10));
                 Assert.Equal(
-                    TwitchOAuthRefreshLockOwnershipStatus.Owned,
+                    OAuthLeaseOwnershipStatus.Owned,
                     (await first.Lease.EnsureOwnedAsync()).Status);
-                Assert.Equal(TwitchOAuthRefreshLockReleaseStatus.Released, (await first.Lease.ReleaseAsync()).Status);
-                Assert.Equal(TwitchOAuthRefreshLockReleaseStatus.Released, (await first.Lease.ReleaseAsync()).Status);
+                Assert.Equal(OAuthLeaseReleaseStatus.Released, (await first.Lease.ReleaseAsync()).Status);
+                Assert.Equal(OAuthLeaseReleaseStatus.Released, (await first.Lease.ReleaseAsync()).Status);
                 Assert.False(await db.KeyExistsAsync(key));
             }
             finally
@@ -67,15 +68,15 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
 
             try
             {
-                TwitchOAuthRefreshLockAcquireResult first = await refreshLock.TryAcquireAsync(twitchUserId);
-                Assert.Equal(TwitchOAuthRefreshLockAcquireStatus.Acquired, first.Status);
+                OAuthLeaseAcquireResult first = await refreshLock.TryAcquireAsync(twitchUserId);
+                Assert.Equal(OAuthLeaseAcquireStatus.Acquired, first.Status);
                 await db.StringSetAsync(key, "replacement-owner", TimeSpan.FromMinutes(10), When.Always);
 
                 var ownership = await first.Lease.EnsureOwnedAsync();
                 var release = await first.Lease.ReleaseAsync();
 
-                Assert.Equal(TwitchOAuthRefreshLockOwnershipStatus.OwnershipLost, ownership.Status);
-                Assert.Equal(TwitchOAuthRefreshLockReleaseStatus.OwnershipLost, release.Status);
+                Assert.Equal(OAuthLeaseOwnershipStatus.OwnershipLost, ownership.Status);
+                Assert.Equal(OAuthLeaseReleaseStatus.OwnershipLost, release.Status);
                 Assert.Equal("replacement-owner", (await db.StringGetAsync(key)).ToString());
             }
             finally

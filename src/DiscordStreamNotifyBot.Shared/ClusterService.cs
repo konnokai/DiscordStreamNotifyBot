@@ -8,13 +8,9 @@ namespace DiscordStreamNotifyBot.Shared
     {
         private readonly IDatabase _db;
 
-        // 只有當鍵值等於預期持有者時才更新 TTL（續租）
-        private const string RenewIfOwnerScript =
-            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('pexpire', KEYS[1], ARGV[2]) else return 0 end";
-
-        // 只有當鍵值等於預期持有者時才刪除（釋放）
-        private const string ReleaseIfOwnerScript =
-            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+        // 只有當鍵值等於預期持有者時才更新 TTL（續租）／刪除（釋放）；與 OAuth lease 共用同一份 Lua。
+        private const string RenewIfOwnerScript = SharedService.OAuthLease.RenewScript;
+        private const string ReleaseIfOwnerScript = SharedService.OAuthLease.ReleaseScript;
 
         public ClusterService(IDatabase db = null)
         {

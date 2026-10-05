@@ -1,4 +1,5 @@
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService;
 using DiscordStreamNotifyBot.SharedService.Google;
 using StackExchange.Redis;
 
@@ -35,14 +36,14 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
 
             try
             {
-                GoogleOAuthOperationLockAcquireResult first = await operationLock.TryAcquireAsync(discordUserId);
-                GoogleOAuthOperationLockAcquireResult contender = await operationLock.TryAcquireAsync(discordUserId);
+                OAuthLeaseAcquireResult first = await operationLock.TryAcquireAsync(discordUserId);
+                OAuthLeaseAcquireResult contender = await operationLock.TryAcquireAsync(discordUserId);
 
-                Assert.Equal(GoogleOAuthOperationLockAcquireStatus.Acquired, first.Status);
-                Assert.Equal(GoogleOAuthOperationLockAcquireStatus.Contended, contender.Status);
+                Assert.Equal(OAuthLeaseAcquireStatus.Acquired, first.Status);
+                Assert.Equal(OAuthLeaseAcquireStatus.Contended, contender.Status);
                 Assert.Equal(
-                    GoogleOAuthOperationLockOwnershipStatus.Owned,
-                    await first.Lease.EnsureOwnedAsync());
+                    OAuthLeaseOwnershipStatus.Owned,
+                    (await first.Lease.EnsureOwnedAsync()).Status);
                 await first.Lease.DisposeAsync();
                 Assert.False(await db.KeyExistsAsync(key));
             }

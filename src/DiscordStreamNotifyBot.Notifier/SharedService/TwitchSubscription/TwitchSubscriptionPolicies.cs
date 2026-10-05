@@ -2,43 +2,6 @@ using DiscordStreamNotifyBot.DataBase.Table;
 
 namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 {
-    internal enum TwitchAuthorizationLocalState
-    {
-        Active,
-        Missing,
-        PersistedInvalid,
-        TemporaryFailure
-    }
-
-    internal static class TwitchAuthorizationLocalStatePolicy
-    {
-        public static TwitchAuthorizationLocalState ClassifyEntity(
-            bool exists,
-            bool isPersistedRevoked,
-            bool clientIdMatches,
-            bool hasCiphertext,
-            bool hasRequiredScope)
-        {
-            if (!exists)
-                return TwitchAuthorizationLocalState.Missing;
-            if (isPersistedRevoked)
-                return TwitchAuthorizationLocalState.PersistedInvalid;
-            return clientIdMatches && hasCiphertext && hasRequiredScope
-                ? TwitchAuthorizationLocalState.Active
-                : TwitchAuthorizationLocalState.TemporaryFailure;
-        }
-
-        public static TwitchAuthorizationLocalState ClassifyToken(
-            bool hasAccessToken,
-            bool hasRefreshToken,
-            bool hasTokenType,
-            bool twitchUserIdMatches,
-            bool scopeMatches)
-            => hasAccessToken && hasRefreshToken && hasTokenType && twitchUserIdMatches && scopeMatches
-                ? TwitchAuthorizationLocalState.Active
-                : TwitchAuthorizationLocalState.TemporaryFailure;
-    }
-
     internal enum TwitchRefreshPersistenceDecision
     {
         WriteReplacement,
