@@ -62,10 +62,8 @@
   <data name="youtube-spider.add.channel.description" xml:space="preserve"><value>要加入監測的 YouTube 頻道</value></data>
   <data name="youtube-spider.remove.description" xml:space="preserve"><value>移除 hololive／NIJISANJI 以外的 YouTube 頻道監測</value></data>
   <data name="youtube-spider.remove.channel.description" xml:space="preserve"><value>要停止監測的 YouTube 頻道</value></data>
-  <data name="youtube-spider.list.description" xml:space="preserve"><value>顯示已認可的 YouTube 監測頻道</value></data>
+  <data name="youtube-spider.list.description" xml:space="preserve"><value>顯示已加入爬蟲檢測的 YouTube 頻道</value></data>
   <data name="youtube-spider.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
-  <data name="youtube-spider.list-not-trusted.description" xml:space="preserve"><value>顯示未認可的 YouTube 監測頻道；可能包含中之人或前世頻道</value></data>
-  <data name="youtube-spider.list-not-trusted.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
 
   <data name="twitch.description" xml:space="preserve"><value>Twitch 直播通知設定</value></data>
   <data name="twitch.add.description" xml:space="preserve"><value>新增 Twitch 直播通知</value></data>
@@ -87,10 +85,8 @@
   <data name="twitch-spider.add.channel.description" xml:space="preserve"><value>要加入監測的 Twitch 頻道</value></data>
   <data name="twitch-spider.remove.description" xml:space="preserve"><value>移除 Twitch 頻道監測</value></data>
   <data name="twitch-spider.remove.channel.description" xml:space="preserve"><value>要停止監測的 Twitch 頻道</value></data>
-  <data name="twitch-spider.list.description" xml:space="preserve"><value>顯示未標記警告的 Twitch 監測頻道</value></data>
+  <data name="twitch-spider.list.description" xml:space="preserve"><value>顯示已加入爬蟲檢測的 Twitch 頻道</value></data>
   <data name="twitch-spider.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
-  <data name="twitch-spider.list-not-trusted.description" xml:space="preserve"><value>顯示已標記警告的 Twitch 監測頻道；可能包含中之人或前世頻道</value></data>
-  <data name="twitch-spider.list-not-trusted.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
 
   <data name="twitcasting.description" xml:space="preserve"><value>TwitCasting 直播通知設定</value></data>
   <data name="twitcasting.add.description" xml:space="preserve"><value>新增 TwitCasting 直播通知</value></data>
@@ -111,10 +107,8 @@
   <data name="twitcasting-spider.add.channel.description" xml:space="preserve"><value>要加入監測的 TwitCasting 頻道</value></data>
   <data name="twitcasting-spider.remove.description" xml:space="preserve"><value>移除 TwitCasting 頻道監測</value></data>
   <data name="twitcasting-spider.remove.channel.description" xml:space="preserve"><value>要停止監測的 TwitCasting 頻道</value></data>
-  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>顯示未標記警告的 TwitCasting 監測頻道</value></data>
+  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>顯示已加入爬蟲檢測的 TwitCasting 頻道</value></data>
   <data name="twitcasting-spider.list.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
-  <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>顯示已標記警告的 TwitCasting 監測頻道；可能包含中之人或前世頻道</value></data>
-  <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>要顯示的頁數</value></data>
 
   <data name="youtube-member.description" xml:space="preserve"><value>YouTube 會員資格驗證</value></data>
   <data name="youtube-member.check.description" xml:space="preserve"><value>確認網站綁定並開始會員驗證</value></data>

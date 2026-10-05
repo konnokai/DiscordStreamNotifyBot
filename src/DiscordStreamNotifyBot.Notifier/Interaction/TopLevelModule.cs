@@ -296,12 +296,14 @@ namespace DiscordStreamNotifyBot.Interaction
             return BotLocalizer.Format("Notifications.MessageCleared", locale, channelName, noticeTypeString);
         }
 
+        /// <summary>bot owner 可以看到所有伺服器的爬蟲；其他人只看得到本伺服器新增的爬蟲。</summary>
+        protected bool CanViewAllSpiders => Context.User.Id == Bot.ApplicatonOwner.Id;
+
         /// <summary>
-        /// 送出爬蟲清單，每頁顯示 20 筆；<paramref name="warningChannelNum"/> 有值時頁尾一併顯示警告頻道數。
+        /// 送出爬蟲清單，每頁顯示 20 筆。
         /// </summary>
         protected async Task SendSpiderListAsync(string locale, int page, string titleKey,
-            ClusterQueryService clusterQuery, IEnumerable<(string Name, string Url, ulong GuildId)> spiders,
-            int? warningChannelNum = null, bool ephemeral = false)
+            ClusterQueryService clusterQuery, IEnumerable<(string Name, string Url, ulong GuildId)> spiders)
         {
             // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
             var guildMap = await clusterQuery.GetGuildNameMapAsync();
@@ -318,11 +320,11 @@ namespace DiscordStreamNotifyBot.Interaction
                 return new EmbedBuilder()
                     .WithOkColor()
                     .WithTitle(BotLocalizer.Get(titleKey, locale))
-                    .WithDescription(string.Join('\n', list.Skip(currentPage * 20).Take(20)))
-                    .WithFooter(warningChannelNum is int warning
-                        ? BotLocalizer.Format("Spider.ListFooter", locale, shown, list.Count, warning)
-                        : BotLocalizer.Format("Common.ChannelCountFooter", locale, shown, list.Count));
-            }, list.Count, 20, false, ephemeral).ConfigureAwait(false);
+                    .WithDescription(list.Count == 0
+                        ? BotLocalizer.Get("Common.None", locale)
+                        : string.Join('\n', list.Skip(currentPage * 20).Take(20)))
+                    .WithFooter(BotLocalizer.Format("Common.ChannelCountFooter", locale, shown, list.Count));
+            }, list.Count, 20, false).ConfigureAwait(false);
         }
 
         public async Task CheckIsFirstSetNoticeAndSendWarningMessageAsync(MainDbContext dbContext)

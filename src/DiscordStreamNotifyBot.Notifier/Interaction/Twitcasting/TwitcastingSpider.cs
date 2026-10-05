@@ -77,26 +77,11 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
 
             using (var db = _dbService.GetDbContext())
             {
-                var spiders = db.TwitcastingSpider.AsNoTracking().Where((x) => !x.IsWarningUser).AsEnumerable()
+                bool showAll = CanViewAllSpiders;
+                ulong guildId = Context.Guild.Id;
+                var spiders = db.TwitcastingSpider.AsNoTracking().Where((x) => showAll || x.GuildId == guildId).AsEnumerable()
                     .Select((x) => (x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}", x.GuildId));
-                await SendSpiderListAsync(locale, page, "TwitcastingSpider.ListTitle", _clusterQuery, spiders,
-                    db.TwitcastingSpider.AsNoTracking().Count((x) => x.IsWarningUser)).ConfigureAwait(false);
-            }
-        }
-
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
-        [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道（此清單可能包含中之人或前世的頻道）")]
-        public async Task ListNotTrustedChannelSpider([Summary("page", "頁數")] int page = 0)
-        {
-            if (page < 0) page = 0;
-            string locale = await GetLocaleAsync(false);
-
-            using (var db = _dbService.GetDbContext())
-            {
-                var spiders = db.TwitcastingSpider.AsNoTracking().Where((x) => x.IsWarningUser).AsEnumerable()
-                    .Select((x) => (x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}", x.GuildId));
-                await SendSpiderListAsync(locale, page, "Spider.WarningListTitle", _clusterQuery, spiders,
-                    ephemeral: true).ConfigureAwait(false);
+                await SendSpiderListAsync(locale, page, "TwitcastingSpider.ListTitle", _clusterQuery, spiders).ConfigureAwait(false);
             }
         }
     }

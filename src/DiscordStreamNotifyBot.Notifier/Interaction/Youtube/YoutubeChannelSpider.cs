@@ -86,26 +86,11 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                var spiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.IsTrustedChannel).AsEnumerable()
+                bool showAll = CanViewAllSpiders;
+                ulong guildId = Context.Guild.Id;
+                var spiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => showAll || x.GuildId == guildId).AsEnumerable()
                     .Select((x) => (x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}", x.GuildId));
-                await SendSpiderListAsync(locale, page, "YoutubeSpider.ListTitle", _clusterQuery, spiders,
-                    db.YoutubeChannelSpider.Count((x) => !x.IsTrustedChannel)).ConfigureAwait(false);
-            }
-        }
-
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
-        [SlashCommand("list-not-trusted", "顯示已加入但非認可的爬蟲檢測頻道 (本清單可能內含中之人或前世的頻道)")]
-        public async Task ListNotTrustedChannelSpider([Summary("page", "頁數")] int page = 0)
-        {
-            if (page < 0) page = 0;
-            string locale = await GetLocaleAsync(false);
-
-            using (var db = _dbService.GetDbContext())
-            {
-                var spiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => !x.IsTrustedChannel).AsEnumerable()
-                    .Select((x) => (x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}", x.GuildId));
-                await SendSpiderListAsync(locale, page, "YoutubeSpider.UntrustedListTitle", _clusterQuery, spiders,
-                    ephemeral: true).ConfigureAwait(false);
+                await SendSpiderListAsync(locale, page, "YoutubeSpider.ListTitle", _clusterQuery, spiders).ConfigureAwait(false);
             }
         }
     }

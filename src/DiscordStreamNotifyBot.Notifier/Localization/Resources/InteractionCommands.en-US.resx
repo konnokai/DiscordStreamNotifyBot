@@ -62,10 +62,8 @@
   <data name="youtube-spider.add.channel.description" xml:space="preserve"><value>The YouTube channel to monitor</value></data>
   <data name="youtube-spider.remove.description" xml:space="preserve"><value>Stop monitoring a YouTube channel outside hololive and NIJISANJI</value></data>
   <data name="youtube-spider.remove.channel.description" xml:space="preserve"><value>The YouTube channel to stop monitoring</value></data>
-  <data name="youtube-spider.list.description" xml:space="preserve"><value>List trusted YouTube channel monitors</value></data>
+  <data name="youtube-spider.list.description" xml:space="preserve"><value>Show YouTube channel crawlers</value></data>
   <data name="youtube-spider.list.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="youtube-spider.list-not-trusted.description" xml:space="preserve"><value>List unapproved YouTube channels; may include creators' personal or former channels</value></data>
-  <data name="youtube-spider.list-not-trusted.page.description" xml:space="preserve"><value>The page to display</value></data>
 
   <data name="twitch.description" xml:space="preserve"><value>Twitch stream notification settings</value></data>
   <data name="twitch.add.description" xml:space="preserve"><value>Add Twitch stream notifications</value></data>
@@ -87,10 +85,8 @@
   <data name="twitch-spider.add.channel.description" xml:space="preserve"><value>The Twitch channel to monitor</value></data>
   <data name="twitch-spider.remove.description" xml:space="preserve"><value>Remove a Twitch channel monitor</value></data>
   <data name="twitch-spider.remove.channel.description" xml:space="preserve"><value>The Twitch channel to stop monitoring</value></data>
-  <data name="twitch-spider.list.description" xml:space="preserve"><value>List monitored Twitch channels without warnings</value></data>
+  <data name="twitch-spider.list.description" xml:space="preserve"><value>Show Twitch channel crawlers</value></data>
   <data name="twitch-spider.list.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="twitch-spider.list-not-trusted.description" xml:space="preserve"><value>List Twitch channels with warnings; may include creators' personal or former channels</value></data>
-  <data name="twitch-spider.list-not-trusted.page.description" xml:space="preserve"><value>The page to display</value></data>
 
   <data name="twitcasting.description" xml:space="preserve"><value>TwitCasting stream notification settings</value></data>
   <data name="twitcasting.add.description" xml:space="preserve"><value>Add TwitCasting stream notifications</value></data>
@@ -111,10 +107,8 @@
   <data name="twitcasting-spider.add.channel.description" xml:space="preserve"><value>The TwitCasting channel to monitor</value></data>
   <data name="twitcasting-spider.remove.description" xml:space="preserve"><value>Remove a TwitCasting channel monitor</value></data>
   <data name="twitcasting-spider.remove.channel.description" xml:space="preserve"><value>The TwitCasting channel to stop monitoring</value></data>
-  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>List monitored TwitCasting channels without warnings</value></data>
+  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>Show TwitCasting channel crawlers</value></data>
   <data name="twitcasting-spider.list.page.description" xml:space="preserve"><value>The page to display</value></data>
-  <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>List TwitCasting channels with warnings; may include creators' personal or former channels</value></data>
-  <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>The page to display</value></data>
 
   <data name="youtube-member.description" xml:space="preserve"><value>YouTube membership verification</value></data>
   <data name="youtube-member.check.description" xml:space="preserve"><value>Confirm website linking and start membership verification</value></data>

@@ -203,7 +203,6 @@
   <data name="YoutubeSpider.NotRecorded" xml:space="preserve"><value>此頻道不在錄影清單內。</value></data>
   <data name="YoutubeSpider.RecordRemoved" xml:space="preserve"><value>已從錄影清單移除。</value></data>
   <data name="YoutubeSpider.ListTitle" xml:space="preserve"><value>YouTube 爬蟲清單</value></data>
-  <data name="YoutubeSpider.UntrustedListTitle" xml:space="preserve"><value>未認可的 YouTube 爬蟲清單</value></data>
   <data name="Spider.LimitReached" xml:space="preserve"><value>此伺服器已設定 {0} 個 {1} 爬蟲，請先移除不需要的爬蟲。如有特殊需求，請使用 {2} 聯絡 Bot 擁有者。</value></data>
   <data name="Spider.LimitReachedShort" xml:space="preserve"><value>此伺服器的 {1} 爬蟲已達 {0} 個上限，無法新增。</value></data>
   <data name="Spider.AlreadyExists" xml:space="preserve"><value>`{0}` 已在爬蟲清單內。可在通知頻道使用 `{1} {2}` 開啟通知。{3}</value></data>
@@ -216,8 +215,6 @@
   <data name="Spider.StatusChanged" xml:space="preserve"><value>已將 `{0}` 的頻道狀態切換為「{1}」。</value></data>
   <data name="Spider.RecordingChanged" xml:space="preserve"><value>已將 `{0}` 的錄影狀態切換為「{1}」。</value></data>
   <data name="Spider.ListEntry" xml:space="preserve"><value>{0}，由 `{1}` 新增</value></data>
-  <data name="Spider.ListFooter" xml:space="preserve"><value>{0} / {1} 個頻道（{2} 個警告或未認可爬蟲）</value></data>
-  <data name="Spider.WarningListTitle" xml:space="preserve"><value>已標記警告的爬蟲清單</value></data>
   <data name="Twitch.Errors.UserNotFound" xml:space="preserve"><value>無法取得 Twitch 使用者資料，請確認頻道網址或名稱是否正確。</value></data>
   <data name="Twitch.Errors.InvalidAutocompleteValue" xml:space="preserve"><value>無法辨識 Twitch 頻道 ID。請重新從自動完成選單選擇，選擇期間不要切換 Discord 頻道。</value></data>
   <data name="Twitch.Notifications.Added" xml:space="preserve"><value>已將 `{0}` 加入 Twitch 通知清單。{1}</value></data>

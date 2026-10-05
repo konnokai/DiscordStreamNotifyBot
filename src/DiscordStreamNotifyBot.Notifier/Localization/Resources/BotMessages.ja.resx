@@ -203,7 +203,6 @@
   <data name="YoutubeSpider.NotRecorded" xml:space="preserve"><value>このチャンネルは録画一覧にありません。</value></data>
   <data name="YoutubeSpider.RecordRemoved" xml:space="preserve"><value>録画一覧から削除しました。</value></data>
   <data name="YoutubeSpider.ListTitle" xml:space="preserve"><value>YouTube 巡回一覧</value></data>
-  <data name="YoutubeSpider.UntrustedListTitle" xml:space="preserve"><value>未承認の YouTube 巡回一覧</value></data>
   <data name="Spider.LimitReached" xml:space="preserve"><value>このサーバーにはすでに {0} 件の {1} 巡回設定があります。削除してから再試行してください。特別な要望は {2} で Bot の所有者へ連絡してください。</value></data>
   <data name="Spider.LimitReachedShort" xml:space="preserve"><value>このサーバーは {1} 巡回設定の上限 {0} 件に達しています。</value></data>
   <data name="Spider.AlreadyExists" xml:space="preserve"><value>`{0}` はすでに巡回一覧にあります。通知チャンネルで `{1} {2}` を使用すると通知を有効にできます。{3}</value></data>
@@ -216,8 +215,6 @@
   <data name="Spider.StatusChanged" xml:space="preserve"><value>`{0}` のチャンネル状態を「{1}」に変更しました。</value></data>
   <data name="Spider.RecordingChanged" xml:space="preserve"><value>`{0}` の録画状態を「{1}」に変更しました。</value></data>
   <data name="Spider.ListEntry" xml:space="preserve"><value>{0}、`{1}` が追加</value></data>
-  <data name="Spider.ListFooter" xml:space="preserve"><value>{0} / {1} チャンネル（警告または未承認：{2}）</value></data>
-  <data name="Spider.WarningListTitle" xml:space="preserve"><value>警告状態の巡回一覧</value></data>
   <data name="Twitch.Errors.UserNotFound" xml:space="preserve"><value>Twitch ユーザーを取得できませんでした。チャンネル URL または名前を確認してください。</value></data>
   <data name="Twitch.Errors.InvalidAutocompleteValue" xml:space="preserve"><value>Twitch チャンネル ID を解析できませんでした。Discord チャンネルを切り替えずにオートコンプリート項目を選び直してください。</value></data>
   <data name="Twitch.Notifications.Added" xml:space="preserve"><value>`{0}` を Twitch 通知一覧に追加しました。{1}</value></data>
