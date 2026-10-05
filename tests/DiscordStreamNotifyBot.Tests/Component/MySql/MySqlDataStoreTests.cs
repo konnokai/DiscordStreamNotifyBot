@@ -69,9 +69,9 @@ namespace DiscordStreamNotifyBot.Tests.Component.MySql
                 Assert.NotEqual(firstDatabaseValue, rows[0].EncryptedAccessToken);
             }
 
-            Assert.True(await store.IsExistUserTokenAsync<StoredToken>(key));
-            await store.DeleteAsync<StoredToken>(key);
-            Assert.False(await store.IsExistUserTokenAsync<StoredToken>(key));
+            Assert.True(await store.IsExistUserTokenAsync(key));
+            await store.DeleteAsync(key);
+            Assert.False(await store.IsExistUserTokenAsync(key));
             Assert.Null(await store.GetAsync<StoredToken>(key));
         }
 

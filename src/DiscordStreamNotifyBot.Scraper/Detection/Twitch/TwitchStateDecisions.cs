@@ -317,25 +317,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         }
     }
 
-    internal enum TwitchOfflineScheduleAction
-    {
-        Schedule,
-        KeepExisting,
-        ReplaceExisting
-    }
-
-    internal static class TwitchOfflineSchedulePolicy
-    {
-        public static TwitchOfflineScheduleAction Decide(bool hasExisting, bool replaceExisting)
-        {
-            if (replaceExisting)
-                return TwitchOfflineScheduleAction.ReplaceExisting;
-            return hasExisting
-                ? TwitchOfflineScheduleAction.KeepExisting
-                : TwitchOfflineScheduleAction.Schedule;
-        }
-    }
-
     internal sealed record TwitchChannelStateFacts(
         string Title,
         string Category,
@@ -357,8 +338,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         string OldCategory,
         string NewCategory)
     {
-        public bool HasChanges => NewTitle != null || NewCategory != null;
-
         public TwitchChannelUpdateInfo ToDto() => new()
         {
             ElapsedSeconds = ElapsedSeconds,

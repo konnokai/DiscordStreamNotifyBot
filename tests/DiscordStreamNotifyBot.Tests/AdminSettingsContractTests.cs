@@ -240,16 +240,6 @@ namespace DiscordStreamNotifyBot.Tests
                 .ToArray();
 
         [Theory]
-        [InlineData("youtube-crawler.add", "{\"source\":\"UC1\"}", true)]
-        [InlineData("youtube-crawler.remove", "{\"sourceId\":\"UC1\"}", true)]
-        [InlineData("youtube-crawler.remove", "{\"sourceId\":1}", false)]
-        [InlineData("youtube-verification.upsert", "{\"source\":\"UC1\",\"roleId\":\"123\"}", true)]
-        [InlineData("youtube-verification.upsert", "{\"source\":\"UC1\",\"roleId\":123}", false)]
-        [InlineData("youtube-verification.set-probe-video", "{\"sourceId\":\"UC1\",\"video\":\"abc\"}", true)]
-        public void NewPayloadShapesRequireStringIdentifiers(string action, string json, bool expected)
-            => Assert.Equal(expected, AdminSettingsService.ValidCrawlerOrVerificationPayload(action, JObject.Parse(json)));
-
-        [Theory]
         [InlineData(true, false, false, 9, 10, true)]
         [InlineData(false, false, false, 9, 10, false)]
         [InlineData(true, true, false, 0, 10, false)]

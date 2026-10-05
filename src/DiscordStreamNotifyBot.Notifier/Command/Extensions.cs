@@ -22,36 +22,6 @@ namespace DiscordStreamNotifyBot.Command
         public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
                 channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
 
-        public static bool HasStreamVideoByVideoId(string videoId)
-        {
-            videoId = videoId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-
-            return false;
-        }
-
-        public static DataBase.Table.Video GetStreamVideoByVideoId(string videoId)
-        {
-            videoId = videoId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NonApprovedVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-
-            return null;
-        }
-
         public static Task<IUserMessage> SendConfirmAsync(this IMessageChannel ch, string des)
              => ch.SendMessageAsync("", embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build());
         public static Task<IUserMessage> SendConfirmAsync(this IMessageChannel ch, string title, string des)
@@ -60,71 +30,6 @@ namespace DiscordStreamNotifyBot.Command
              => ch.SendMessageAsync("", embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build());
         public static Task<IUserMessage> SendErrorAsync(this IMessageChannel ch, string title, string des)
              => ch.SendMessageAsync("", embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build());
-
-        static public async Task<bool> PromptUserConfirmAsync(this SocketCommandContext ctx, EmbedBuilder embed)
-        {
-            embed.WithOkColor()
-                .WithFooter("yes/no");
-
-            var msg = await ctx.Channel.EmbedAsync(embed).ConfigureAwait(false);
-            try
-            {
-                var input = await GetUserInputAsync(ctx.Client, ctx.User.Id, ctx.Channel.Id).ConfigureAwait(false);
-                input = input?.ToUpperInvariant();
-
-                if (input != "YES" && input != "Y")
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            finally
-            {
-                var _ = Task.Run(() => msg.DeleteAsync());
-            }
-        }
-
-        static public async Task<string> GetUserInputAsync(DiscordSocketClient client, ulong userId, ulong channelId)
-        {
-            var userInputTask = new TaskCompletionSource<string>();
-            try
-            {
-                client.MessageReceived += MessageReceived;
-
-                if ((await Task.WhenAny(userInputTask.Task, Task.Delay(10000)).ConfigureAwait(false)) != userInputTask.Task)
-                {
-                    return null;
-                }
-
-                return await userInputTask.Task.ConfigureAwait(false);
-            }
-            finally
-            {
-                client.MessageReceived -= MessageReceived;
-            }
-
-            Task MessageReceived(SocketMessage arg)
-            {
-                var _ = Task.Run(() =>
-                {
-                    if (!(arg is SocketUserMessage userMsg) ||
-                        !(userMsg.Channel is ITextChannel chan) ||
-                        userMsg.Author.Id != userId ||
-                        userMsg.Channel.Id != channelId)
-                    {
-                        return Task.CompletedTask;
-                    }
-
-                    if (userInputTask.TrySetResult(arg.Content))
-                    {
-                        userMsg.DeleteAfter(1);
-                    }
-                    return Task.CompletedTask;
-                });
-                return Task.CompletedTask;
-            }
-        }
 
         public static IMessage DeleteAfter(this IUserMessage msg, int seconds)
         {
@@ -188,11 +93,6 @@ namespace DiscordStreamNotifyBot.Command
         public static Task<IUserMessage> EmbedAsync(this IMessageChannel ch, EmbedBuilder embed, string msg = "")
             => ch.SendMessageAsync(msg, embed: embed.Build(),
                 options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-
-        public static Task<IUserMessage> EmbedAsync(this IMessageChannel ch, string msg = "")
-        {
-            return ch.SendMessageAsync(null, false, new EmbedBuilder().WithOkColor().WithDescription(msg).Build(), new RequestOptions { RetryMode = RetryMode.AlwaysRetry });
-        }
 
         public static Task SendPaginatedConfirmAsync(this ICommandContext ctx, int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true)
             => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter);
@@ -287,12 +187,12 @@ namespace DiscordStreamNotifyBot.Command
                 return embed.WithFooter(efb => efb.WithText(curPage.ToString()));
         }
 
-        public static ReactionEventWrapper OnReaction(this IUserMessage msg, DiscordSocketClient client, Func<SocketReaction, Task> reactionAdded, Func<SocketReaction, Task> reactionRemoved = null)
+        public static Interaction.ReactionEventWrapper OnReaction(this IUserMessage msg, DiscordSocketClient client, Func<SocketReaction, Task> reactionAdded, Func<SocketReaction, Task> reactionRemoved = null)
         {
             if (reactionRemoved == null)
                 reactionRemoved = _ => Task.CompletedTask;
 
-            var wrap = new ReactionEventWrapper(client, msg);
+            var wrap = new Interaction.ReactionEventWrapper(client, msg);
             wrap.OnReactionAdded += (r) => { var _ = Task.Run(() => reactionAdded(r)); };
             wrap.OnReactionRemoved += (r) => { var _ = Task.Run(() => reactionRemoved(r)); };
             return wrap;

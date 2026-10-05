@@ -575,36 +575,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 _ => AdminSettingsMutationResult.Rejected("verification.role-invalid")
             };
 
-        private async Task DisableSelectMenuAsync(SocketMessageComponent component, string locale, string placeholder = "")
-        {
-            SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
-                .WithPlaceholder(string.IsNullOrEmpty(placeholder) ? _localizer.Get("Member.Select.Selected", locale) : placeholder)
-                .WithMinValues(1)
-                .WithMaxValues(1)
-                .AddOption("1", "2")
-                .WithCustomId("1234")
-                .WithDisabled(true);
-
-            var newComponent = new ComponentBuilder()
-                .WithSelectMenu(selectMenuBuilder)
-                .Build();
-
-            try
-            {
-                await component.UpdateAsync((act) =>
-                {
-                    act.Components = new Optional<MessageComponent>(newComponent);
-                });
-            }
-            catch
-            {
-                await component.ModifyOriginalResponseAsync((act) =>
-                {
-                    act.Components = new Optional<MessageComponent>(newComponent);
-                });
-            }
-        }
-
         /// <summary>
         /// 消費匯流排的會限影片探索 log 事件（Scraper 探索 → 各 Notifier shard 發送）。
         /// bot owner DM 只在 shard 0 補送一次；log channel / guild owner 由 SendMsgToLogChannelAsync 依 shard 守衛處理。
@@ -816,34 +786,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
     static class Ext
     {
-        // RestUser 無法序列化，暫不使用快取。
-        //private static async Task<RestUser> GetRestUserFromCatchOrCreate(ulong userId)
-        //{
-        //    try
-        //    {
-        //        var userJson = await Bot.RedisDb.StringGetAsync($"discord_stream_bot:restuser:{userId}");
-        //        if (userJson.IsNull)
-        //        {
-        //            var user = await Bot._client.Rest.GetUserAsync(userId);
-        //            if (user == null) return null;
-
-        //            await Bot.RedisDb.StringSetAsync($"discord_stream_bot:restuser:{userId}", JsonConvert.SerializeObject(user), TimeSpan.FromHours(1));
-        //            return user;
-        //        }
-        //        else
-        //        {
-        //            RestUser restUser = JsonConvert.DeserializeObject<RestUser>(userJson.ToString());
-        //            return restUser;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Error($"Member-GetRestUserFromCatchOrCreate: {userId}");
-        //        Log.Error(ex.ToString());
-        //        return null;
-        //    }
-        //}
-
         public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, DiscordSocketClient client, ulong userId, EmbedBuilder embedBuilder)
         {
             try
@@ -1044,42 +986,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {userId}");
-            }
-        }
-
-        public static async Task SendErrorMessageAsync(this IDMChannel dc, string text)
-        {
-            if (dc == null) return;
-
-            try
-            {
-                await Policy.Handle<TimeoutException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, (retryAttempt) =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YoutubeMemberService-SendUserDMErrorMessageAsync 通知 | {dc.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
-                    .ExecuteAsync(async () =>
-                    {
-                        return await dc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
-                    });
-            }
-            catch (Discord.Net.HttpException ex)
-            {
-                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
-                {
-                    Log.Warn($"無法傳送訊息至: {dc.Name}");
-                }
-                else
-                {
-                    Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {dc.Name}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {dc.Name}");
             }
         }
     }

@@ -18,7 +18,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
     public class TwitchDetectionService
     {
         private static readonly TimeSpan OfflineDebounce = TimeSpan.FromMinutes(3);
-        internal static TimeSpan StreamNotificationTtl { get; } = TimeSpan.FromDays(1);
+        private static TimeSpan StreamNotificationTtl { get; } = TimeSpan.FromDays(1);
 
         private readonly TwitchApiService _apiService;
         private readonly MainDbService _dbService;
@@ -1031,7 +1031,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         private bool SetPending(string userId, TwitchEventSubCleanupDeferredMetricReason? reason)
         {
             // 不持久化此集合；服務重啟後完整同步會從 DB 與現有 EventSub 重新建立待處理項目。
-            bool firstObservation = RecordPendingCleanup(_pendingCleanup, userId);
+            bool firstObservation = _pendingCleanup.TryAdd(userId, 0);
             if (reason.HasValue)
                 _deferredCleanup[userId] = reason.Value;
             else
@@ -1039,10 +1039,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             RefreshPendingMetrics();
             return firstObservation;
         }
-
-        internal static bool RecordPendingCleanup(
-            ConcurrentDictionary<string, byte> pendingCleanup, string userId)
-            => pendingCleanup.TryAdd(userId, 0);
 
         private void ClearPending(string userId)
         {

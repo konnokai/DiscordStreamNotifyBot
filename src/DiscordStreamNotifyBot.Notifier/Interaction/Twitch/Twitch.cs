@@ -209,11 +209,6 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
         }
 
         [RequireBotPermission(GuildPermission.MentionEveryone)]
-        [CommandSummary("設定通知訊息\n" +
-            "未輸入通知訊息時，會清除自訂通知訊息\n" +
-            "輸入 `-` 可關閉該通知類型\n" +
-            "請先新增直播通知，再設定通知訊息（`/help get-command-help twitch add`）\n\n" +
-            "（若通知訊息要提及特定身分組，Bot 必須具備提及所有身分組權限）")]
         [CommandExample("998rrr 開台啦", "https://twitch.tv/998rrr 開始直播 開台啦")]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("set-message", "設定通知訊息")]

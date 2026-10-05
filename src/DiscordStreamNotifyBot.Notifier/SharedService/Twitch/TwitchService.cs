@@ -80,9 +80,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             CancellationToken cancellationToken = default)
             => _apiService.GetUserAsync(twitchUserId, twitchUserLogin, cancellationToken);
 
-        public Task<IReadOnlyList<User>> GetUsersAsync(params string[] twitchUserLogins)
-            => _apiService.GetUsersAsync(twitchUserLogins);
-
         public Task<Video> GetLatestVODAsync(string twitchUserId) => _apiService.GetLatestVODAsync(twitchUserId);
 
         public Task<IReadOnlyList<Clip>> GetClipsAsync(string twitchUserId, DateTime startedAt, DateTime endedAt)

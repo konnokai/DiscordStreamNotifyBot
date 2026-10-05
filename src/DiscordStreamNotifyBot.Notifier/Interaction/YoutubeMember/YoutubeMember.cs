@@ -231,36 +231,33 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 return;
             }
 
-            using (var db = _dbService.GetDbContext())
+            if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
             {
-                if (await _service.IsExistUserTokenAsync(Context.User.Id.ToString()))
-                {
-                    if (!await PromptUserConfirmAsync("Member.UnlinkPrompt"))
-                        return;
+                if (!await PromptUserConfirmAsync("Member.UnlinkPrompt"))
+                    return;
 
-                    try
-                    {
-                        await _service.RevokeUserGoogleCertAsync(Context.User.Id.ToString());
-                        // 本 shard 已儲存清理意圖並刪除本機 token，其他 shard 僅根據此提示補做 Discord 清理。
-                        await Bot.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
-                        await SendLocalizedConfirmAsync("Member.Unlinked", true, true);
-                    }
-                    catch (NullReferenceException nullEx)
-                    {
-                        string locale = await GetLocaleAsync(true);
-                        await SendLocalizedErrorAsync("Member.Errors.GoogleRevokeFailed", true, true,
-                            Format.Url(BotLocalizer.Get("Common.GoogleSecurity", locale), "https://myaccount.google.com/permissions"));
-                        Log.Warn($"RevokeTokenNull: {nullEx.Message} ({Context.User.Id})");
-                    }
-                    catch (Exception)
-                    {
-                        await SendLocalizedErrorAsync("Member.Errors.UnlinkFailed", true, true, Bot.ApplicatonOwner);
-                    }
-                }
-                else
+                try
                 {
-                    await SendLocalizedErrorAsync("Member.Errors.NothingToUnlink", true, true);
+                    await _service.RevokeUserGoogleCertAsync(Context.User.Id.ToString());
+                    // 本 shard 已儲存清理意圖並刪除本機 token，其他 shard 僅根據此提示補做 Discord 清理。
+                    await Bot.RedisSub.PublishAsync(new RedisChannel("member.revokeToken", RedisChannel.PatternMode.Literal), Context.User.Id);
+                    await SendLocalizedConfirmAsync("Member.Unlinked", true, true);
                 }
+                catch (NullReferenceException nullEx)
+                {
+                    string locale = await GetLocaleAsync(true);
+                    await SendLocalizedErrorAsync("Member.Errors.GoogleRevokeFailed", true, true,
+                        Format.Url(BotLocalizer.Get("Common.GoogleSecurity", locale), "https://myaccount.google.com/permissions"));
+                    Log.Warn($"RevokeTokenNull: {nullEx.Message} ({Context.User.Id})");
+                }
+                catch (Exception)
+                {
+                    await SendLocalizedErrorAsync("Member.Errors.UnlinkFailed", true, true, Bot.ApplicatonOwner);
+                }
+            }
+            else
+            {
+                await SendLocalizedErrorAsync("Member.Errors.NothingToUnlink", true, true);
             }
         }
 

@@ -14,7 +14,6 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
     {
         private readonly MainDbService _dbService;
         private readonly ClusterQueryService _clusterQuery;
-        private readonly BotConfig _botConfig;
         public class GuildTwitchSpiderAutocompleteHandler : AutocompleteHandler
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -54,17 +53,12 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             }
         }
 
-        public TwitchSpider(MainDbService dbService, ClusterQueryService clusterQuery, BotConfig botConfig)
+        public TwitchSpider(MainDbService dbService, ClusterQueryService clusterQuery)
         {
             _dbService = dbService;
             _clusterQuery = clusterQuery;
-            _botConfig = botConfig;
         }
 
-        [CommandSummary("新增 Twitch 頻道爬蟲\n" +
-           "伺服器人數至少 200 人才可使用\n" +
-           "未來會根據情況增減可新增的頻道數量\n" +
-           "如有需求，請聯絡擁有者")]
         [CommandExample("998rrr", "https://twitch.tv/998rrr")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("add", "新增 Twitch 頻道爬蟲")]
@@ -78,8 +72,6 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
             await SendCrawlerResultAsync(result, twitchUrl, "twitch");
         }
 
-        [CommandSummary("移除 Twitch 頻道檢測爬蟲\n" +
-            "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("998rrr", "https://twitch.tv/998rrr")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove", "移除 Twitch 頻道爬蟲")]

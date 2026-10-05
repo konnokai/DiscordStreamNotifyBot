@@ -37,14 +37,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         private readonly ConcurrentDictionary<ulong, TwitchMissingGuildObservation> _missingGuildGenerations = new();
 
         public TwitchGuildEligibilityEvaluator(ClusterService cluster)
-            : this(cluster, TimeProvider.System)
-        {
-        }
-
-        internal TwitchGuildEligibilityEvaluator(ClusterService cluster, TimeProvider timeProvider)
         {
             _cluster = cluster;
-            _timeProvider = timeProvider;
+            _timeProvider = TimeProvider.System;
         }
 
         /// <summary>

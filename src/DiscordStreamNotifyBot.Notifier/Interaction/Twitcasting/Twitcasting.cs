@@ -202,10 +202,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [RequireBotPermission(GuildPermission.MentionEveryone)]
-        [CommandSummary("設定通知訊息\n" +
-            "未輸入通知訊息時，會清除自訂通知訊息\n" +
-            "請先新增直播通知，再設定通知訊息（`/help get-command-help twitcasting add`）\n\n" +
-            "（若通知訊息要提及特定身分組，Bot 必須具備提及所有身分組權限）")]
         [CommandExample("nana_kaguraaa 開台啦", "https://twitcasting.tv/nana_kaguraaa 開台啦")]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("set-message", "設定通知訊息")]

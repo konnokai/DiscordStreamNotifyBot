@@ -2,7 +2,6 @@
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Interaction.Attribute;
 using DiscordStreamNotifyBot.Shared;
-using DiscordStreamNotifyBot.SharedService.Member;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 
@@ -14,24 +13,15 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
     [Group("youtube-member-set", "YouTube 會員驗證設定")]
     public class YoutubeMemberSetting : TopLevelModule<YoutubeMemberService>
     {
-        private readonly DiscordSocketClient _client;
         private readonly YoutubeStreamService _ytservice;
         private readonly MainDbService _dbService;
-        private readonly YoutubeMemberRoleService _roleService;
-        private readonly MemberOperationCoordinator _operationCoordinator;
 
         public YoutubeMemberSetting(
-            DiscordSocketClient client,
             YoutubeStreamService youtubeStreamService,
-            MainDbService dbService,
-            YoutubeMemberRoleService roleService,
-            MemberOperationCoordinator operationCoordinator)
+            MainDbService dbService)
         {
-            _client = client;
             _ytservice = youtubeStreamService;
             _dbService = dbService;
-            _roleService = roleService;
-            _operationCoordinator = operationCoordinator;
         }
 
         public class GuildYoutubeMemberCheckChannelIdAutocompleteHandler : AutocompleteHandler
@@ -79,10 +69,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         }
 
         [RequireGuildMemberCount(250)]
-        [CommandSummary("新增會員驗證頻道，目前最多可設定 5 個頻道\n" +
-           "新增相同頻道可變更授予的身分組\n" +
-           "伺服器人數至少 250 人才可使用\n" +
-           "如有需求，請聯絡擁有者")]
         [CommandExample("https://www.youtube.com/@998rrr @玖桃")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("add-member-check", "新增會員驗證頻道")]
@@ -94,7 +80,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             await SendVerificationResultAsync(result, url, roleName: role.Name);
         }
 
-        [CommandSummary("移除會員驗證頻道")]
         [CommandExample("https://www.youtube.com/@998rrr")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove-member-check", "移除會員驗證頻道")]
@@ -115,9 +100,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
         }
 
-        [CommandSummary("手動指定會員驗證用的偵測影片\n" +
-            "用於頻道有多階會員時，指定「最低階」的會員限定影片，避免低階但合法的會員被誤判失敗\n" +
-            "指定後自動探索不會再覆寫此影片；該影片失效時會發送通知到通知頻道提醒需重設")]
         [CommandExample("頻道名稱 https://youtu.be/xxxxxxxxxxx")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("set-check-video", "手動指定會員驗證探測影片")]
@@ -141,7 +123,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
         }
 
-        [CommandSummary("改回自動挑選會員驗證偵測影片（取消手動指定）")]
         [CommandExample("https://www.youtube.com/@998rrr")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("clear-check-video", "改回自動挑選會員驗證偵測影片")]
@@ -164,22 +145,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             }
         }
 
-        private string ExtractVideoId(string input)
-        {
-            try
-            {
-                return _ytservice.GetVideoId(input);
-            }
-            catch (ArgumentNullException)
-            {
-                return null;
-            }
-            catch (UriFormatException)
-            {
-                return null;
-            }
-        }
-
         private async Task<string> ResolveConfiguredChannelIdAsync(string channel)
         {
             using var db = _dbService.GetDbContext();
@@ -196,11 +161,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
                 throw new FormatException("找到多個同名 YouTube 頻道，請從自動完成選單選擇頻道");
             return await _ytservice.GetChannelIdAsync(channel);
         }
-
-        private static string GetChannelDisplayName(DataBase.Table.GuildYoutubeMemberConfig config)
-            => string.IsNullOrWhiteSpace(config.MemberCheckChannelTitle)
-                ? config.MemberCheckChannelId
-                : config.MemberCheckChannelTitle;
 
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("list-checked-member", "顯示現在已成功驗證的成員清單")]

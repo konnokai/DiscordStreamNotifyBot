@@ -7,7 +7,7 @@ namespace DiscordStreamNotifyBot
     /// 會限 OAuth token 的 MySQL 儲存後端（真實來源）。
     /// T 恆為 Google.Apis 的 TokenResponse、key 為 Discord userId 字串。
     /// </summary>
-    public class MySqlDataStore : ITokenDataStore
+    public class MySqlDataStore
     {
         private readonly MainDbService _dbService;
         private readonly string _key;
@@ -18,11 +18,6 @@ namespace DiscordStreamNotifyBot
             if (string.IsNullOrWhiteSpace(providerTokenEncryptionKey) || providerTokenEncryptionKey.Length < 64)
                 throw new ArgumentException("Provider token 加密金鑰不得為空，且長度至少為 64 字元", nameof(providerTokenEncryptionKey));
             _key = providerTokenEncryptionKey;
-        }
-
-        public Task ClearAsync()
-        {
-            throw new NotImplementedException();
         }
 
         public async Task StoreAsync<T>(string key, T value)
@@ -105,7 +100,7 @@ namespace DiscordStreamNotifyBot
             return updated == 1;
         }
 
-        public async Task DeleteAsync<T>(string key)
+        public async Task DeleteAsync(string key)
         {
             var userId = ulong.Parse(key);
 
@@ -118,7 +113,7 @@ namespace DiscordStreamNotifyBot
             }
         }
 
-        public async Task<bool> IsExistUserTokenAsync<T>(string key)
+        public async Task<bool> IsExistUserTokenAsync(string key)
         {
             var userId = ulong.Parse(key);
 

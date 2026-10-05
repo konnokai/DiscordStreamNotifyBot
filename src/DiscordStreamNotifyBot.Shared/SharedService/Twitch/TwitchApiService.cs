@@ -464,9 +464,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
         }
 
-        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
-            => (await GetNowStreamsResultAsync(twitchUserIds)).Streams;
-
         public async Task<TwitchEventSubSubscriptionsResult> GetEventSubSubscriptionsResultAsync(string userId = null)
         {
             if (!IsEnable)

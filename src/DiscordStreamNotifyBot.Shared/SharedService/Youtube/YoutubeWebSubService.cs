@@ -29,8 +29,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             _database = database ?? throw new ArgumentNullException(nameof(database));
         }
 
-        public int DatabaseNumber => _database.Database;
-
         /// <summary>
         /// 讀取 pending action 與原始 JSON；不存在時回傳 null。格式無法解析時 <see cref="YoutubeWebSubPendingSnapshot.Action"/>
         /// 為 null 但保留原始 JSON：決策上視為沒有 pending，CAS 仍以它為條件才可能取代損壞的資料。

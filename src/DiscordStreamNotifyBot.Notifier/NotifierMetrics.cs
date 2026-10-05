@@ -19,14 +19,9 @@ namespace DiscordStreamNotifyBot
     {
         Member,
         NotMember,
-        TokenMissing,
-        RefreshTokenMissing,
         CredentialExpired,
-        CommentsDisabled,
         VideoNotFound,
         QuotaExceeded,
-        Provider4xx,
-        Provider5xx,
         TemporaryFailure,
         UnknownError
     }
@@ -40,10 +35,7 @@ namespace DiscordStreamNotifyBot
     internal enum YoutubeMemberRoleResult
     {
         Success,
-        MissingPermission,
-        UserMissing,
-        DiscordError,
-        UnknownError
+        DiscordError
     }
 
     internal enum TwitchSubscriptionRoleOperation
@@ -353,14 +345,9 @@ namespace DiscordStreamNotifyBot
         {
             YoutubeMemberVerificationResult.Member => "member",
             YoutubeMemberVerificationResult.NotMember => "not_member",
-            YoutubeMemberVerificationResult.TokenMissing => "token_missing",
-            YoutubeMemberVerificationResult.RefreshTokenMissing => "refresh_token_missing",
             YoutubeMemberVerificationResult.CredentialExpired => "credential_expired",
-            YoutubeMemberVerificationResult.CommentsDisabled => "comments_disabled",
             YoutubeMemberVerificationResult.VideoNotFound => "video_not_found",
             YoutubeMemberVerificationResult.QuotaExceeded => "quota_exceeded",
-            YoutubeMemberVerificationResult.Provider4xx => "provider_4xx",
-            YoutubeMemberVerificationResult.Provider5xx => "provider_5xx",
             YoutubeMemberVerificationResult.TemporaryFailure => "temporary_failure",
             YoutubeMemberVerificationResult.UnknownError => "unknown_error",
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
@@ -400,10 +387,7 @@ namespace DiscordStreamNotifyBot
         private static string ToLabel(YoutubeMemberRoleResult value) => value switch
         {
             YoutubeMemberRoleResult.Success => "success",
-            YoutubeMemberRoleResult.MissingPermission => "missing_permission",
-            YoutubeMemberRoleResult.UserMissing => "user_missing",
             YoutubeMemberRoleResult.DiscordError => "discord_error",
-            YoutubeMemberRoleResult.UnknownError => "unknown_error",
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
         };
 

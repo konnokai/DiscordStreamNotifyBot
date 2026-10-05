@@ -482,9 +482,6 @@ namespace DiscordStreamNotifyBot
                 var hasInvitePermission = guild.GetUser(client.CurrentUser.Id)?.GuildPermissions.CreateInstantInvite ?? false;
                 if (!hasInvitePermission)
                 {
-                    //serviceProvider.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name} ({guild.Id})\n" +
-                    //    $"擁有者: {guild.OwnerId}\n" +
-                    //    $"未開放邀請權限，已離開");
                     guild.LeaveAsync().GetAwaiter().GetResult();
                     return Task.CompletedTask;
                 }

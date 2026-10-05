@@ -19,14 +19,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             _ttl = ttl;
         }
 
-        internal int Count => _claims.Count;
-
         /// <summary>
         /// 嘗試取得影片 ID 的 claim。未過期時不延長期限；不存在或已到期時只有一個併發呼叫會成功。
         /// </summary>
-        internal bool TryClaim(string videoId)
-            => TryClaim(videoId, out _);
-
         private bool TryClaim(string videoId, out DateTimeOffset expiresAt)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(videoId);
@@ -49,10 +44,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     return true;
             }
         }
-
-        /// <summary>後續兜底檢查拋出例外時釋放 claim，讓下一輪可以重試。</summary>
-        internal void Release(string videoId)
-            => _claims.TryRemove(videoId, out _);
 
         internal Batch CreateBatch() => new(this);
 

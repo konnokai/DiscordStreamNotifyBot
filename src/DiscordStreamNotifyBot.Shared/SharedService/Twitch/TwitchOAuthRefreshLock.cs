@@ -157,14 +157,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
         }
 
-        /// <summary>停止續租但保留 lock，交由 TTL 清除；用於 refresh token 已輪替但尚未安全保存時。</summary>
-        public async Task AbandonAsync()
-        {
-            if (Interlocked.Exchange(ref _releaseStarted, 1) != 0)
-                return;
-            await StopRenewalAsync();
-        }
-
         private async Task RenewUntilReleasedAsync(CancellationToken cancellationToken)
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(_ttl.TotalMilliseconds / 3));

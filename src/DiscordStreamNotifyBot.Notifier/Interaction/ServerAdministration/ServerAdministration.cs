@@ -15,16 +15,13 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
     {
         private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
-        private readonly BotLocalizer _botLocalizer;
 
         public ServerAdministration(
             DiscordSocketClient client,
-            MainDbService dbService,
-            BotLocalizer botLocalizer)
+            MainDbService dbService)
         {
             _client = client;
             _dbService = dbService;
-            _botLocalizer = botLocalizer;
         }
 
         [RequireContext(ContextType.Guild)]
@@ -64,8 +61,8 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
             }
             string selectedLocale = result.Arguments.Value<string>("locale");
             string responseLocale = await GetLocaleAsync(true);
-            string displayLanguage = _botLocalizer.GetLocaleDisplayName(selectedLocale, responseLocale);
-            await Context.Interaction.SendConfirmAsync(_botLocalizer, responseLocale, "Utility.LanguageChanged",
+            string displayLanguage = BotLocalizer.GetLocaleDisplayName(selectedLocale, responseLocale);
+            await Context.Interaction.SendConfirmAsync(BotLocalizer, responseLocale, "Utility.LanguageChanged",
                 false, true, displayLanguage);
         }
 

@@ -17,39 +17,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
             _clusterQuery = clusterQuery;
         }
 
-        // 暫時移除，ChangeStatus 現在並非 Static
-        //[RequireContext(ContextType.DM)]
-        //[Command("UpdateStatus")]
-        //[Summary("更新機器人的狀態\n參數: Guild, Member, Stream, StreamCount, Info")]
-        //[Alias("UpStats")]
-        //[RequireOwner]
-        //public async Task UpdateStatusAsync([Summary("狀態")] string stats)
-        //{
-        //    switch (stats.ToLowerInvariant())
-        //    {
-        //        case "guild":
-        //            Bot.Status = Bot.BotPlayingStatus.Guild;
-        //            break;
-        //        case "member":
-        //            Bot.Status = Bot.BotPlayingStatus.Member;
-        //            break;
-        //        case "stream":
-        //            Bot.Status = Bot.BotPlayingStatus.Stream;
-        //            break;
-        //        case "streamcount":
-        //            Bot.Status = Bot.BotPlayingStatus.StreamCount;
-        //            break;
-        //        case "info":
-        //            Bot.Status = Bot.BotPlayingStatus.Info;
-        //            break;
-        //        default:
-        //            await Context.Channel.SendConfirmAsync(string.Format("找不到 {0} 狀態", stats));
-        //            return;
-        //    }
-
-        //    Bot.ChangeStatus();
-        //}
-
         [RequireContext(ContextType.DM)]
         [Command("ListServer")]
         [Summary("顯示所有的伺服器")]

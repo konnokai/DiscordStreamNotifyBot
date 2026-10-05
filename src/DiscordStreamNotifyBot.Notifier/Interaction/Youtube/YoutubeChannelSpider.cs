@@ -59,8 +59,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             _clusterQuery = clusterQuery;
         }
 
-        [CommandSummary("新增非兩大箱的頻道檢測爬蟲\n" +
-           "如有任何需要請向 Bot 擁有者詢問")]
         [CommandExample("https://www.youtube.com/channel/UUMOs5FNYPHeZz5f7N1BDExxfg",
             "https://www.youtube.com/@998rrr")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
@@ -75,8 +73,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             await SendCrawlerResultAsync(result, channelUrl, "youtube");
         }
 
-        [CommandSummary("移除非兩大箱的頻道檢測爬蟲\n" +
-            "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("https://www.youtube.com/channel/UUMOs5FNYPHeZz5f7N1BDExxfg",
             "https://www.youtube.com/@998rrr")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]

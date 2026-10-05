@@ -61,10 +61,6 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
             _clusterQuery = clusterQuery;
         }
 
-        [CommandSummary("新增 CHZZK 頻道爬蟲\n" +
-           "伺服器人數至少 200 人才可使用\n" +
-           "未來會根據情況增減可新增的頻道數量\n" +
-           "如有需求，請聯絡擁有者")]
         [CommandExample("https://chzzk.naver.com/64d76089fba26b180d9c9e48a32600d9",
            "https://chzzk.naver.com/live/64d76089fba26b180d9c9e48a32600d9")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
@@ -79,8 +75,6 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
             await SendCrawlerResultAsync(result, channelUrl, "chzzk");
         }
 
-        [CommandSummary("移除 CHZZK 頻道檢測爬蟲\n" +
-            "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("64d76089fba26b180d9c9e48a32600d9", "https://chzzk.naver.com/64d76089fba26b180d9c9e48a32600d9")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove", "移除 CHZZK 頻道檢測爬蟲")]

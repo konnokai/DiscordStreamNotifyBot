@@ -323,8 +323,7 @@ namespace DiscordStreamNotifyBot.Tests
         {
             var snapshot = new MemberRoleOwnershipSnapshot(
                 [new MemberRoleEntitlement(MemberEntitlementProvider.Youtube, "UC1", 42, 500)],
-                [700],
-                []);
+                [700]);
 
             Assert.True(snapshot.HasOtherActiveEntitlement(
                 42, 500, MemberEntitlementProvider.Twitch, "broadcaster-a"));

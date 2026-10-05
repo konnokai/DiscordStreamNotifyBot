@@ -58,16 +58,8 @@ namespace DiscordStreamNotifyBot.Tests
         public void TransientHttpFailuresPreserveExistingEntitlement(int statusCode)
         {
             YoutubeMemberProbeResultKind result = YoutubeMemberApiClient.Classify(statusCode, []);
-            Assert.True(new YoutubeMemberProbeResult(result).PreservesEntitlement);
             Assert.NotEqual(YoutubeMemberProbeResultKind.NotMember, result);
             Assert.NotEqual(YoutubeMemberProbeResultKind.AuthorizationInvalid, result);
-        }
-
-        [Fact]
-        public void LocalContractFailurePreservesExistingEntitlement()
-        {
-            Assert.True(new YoutubeMemberProbeResult(YoutubeMemberProbeResultKind.LocalContractFailure)
-                .PreservesEntitlement);
         }
 
         [Fact]

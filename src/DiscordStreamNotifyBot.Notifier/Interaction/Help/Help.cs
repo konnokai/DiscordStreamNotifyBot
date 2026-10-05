@@ -7,12 +7,10 @@ namespace DiscordStreamNotifyBot.Interaction.Help
     [Group("help", "說明")]
     public class Help : TopLevelModule<Service.HelpService>
     {
-        private readonly InteractionService _interaction;
         private readonly IServiceProvider _services;
 
-        public Help(InteractionService interaction, IServiceProvider services)
+        public Help(IServiceProvider services)
         {
-            _interaction = interaction;
             _services = services;
         }
 

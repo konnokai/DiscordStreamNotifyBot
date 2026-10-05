@@ -18,11 +18,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         LocalContractFailure
     }
 
-    internal readonly record struct YoutubeMemberProbeResult(YoutubeMemberProbeResultKind Kind)
-    {
-        public bool PreservesEntitlement => Kind is not YoutubeMemberProbeResultKind.NotMember and
-            not YoutubeMemberProbeResultKind.AuthorizationInvalid;
-    }
+    internal readonly record struct YoutubeMemberProbeResult(YoutubeMemberProbeResultKind Kind);
 
     /// <summary>封裝會員限定影片留言探測，避免呼叫端依賴 Google SDK 的例外訊息文字。</summary>
     public sealed class YoutubeMemberApiClient
@@ -168,9 +164,5 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             => exception != null && exception.HttpStatusCode == HttpStatusCode.Forbidden &&
                 exception.Error?.Errors?.Any(error =>
                     string.Equals(error.Reason, "forbidden", StringComparison.OrdinalIgnoreCase)) == true;
-
-        internal static bool HasReason(GoogleApiException exception, string reason)
-            => exception?.Error?.Errors?.Any(error =>
-                string.Equals(error.Reason, reason, StringComparison.OrdinalIgnoreCase)) == true;
     }
 }

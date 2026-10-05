@@ -64,7 +64,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         public bool IsConfigured => _flow != null;
 
         public async Task<bool> IsExistUserTokenAsync(string discordUserId)
-            => _flow != null && await _dataStore.IsExistUserTokenAsync<TokenResponse>(discordUserId);
+            => _flow != null && await _dataStore.IsExistUserTokenAsync(discordUserId);
 
         internal async Task<YoutubeMemberAuthorizationResult> GetCredentialAsync(
             string discordUserId,

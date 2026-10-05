@@ -96,10 +96,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
-        /// <summary>Discord/log 權限是可恢復的營運錯誤，不能轉成設定刪除。</summary>
-        public static bool ShouldPreserveConfigurationForOperationalFailure()
-            => true;
-
         public static IReadOnlyList<YoutubeMemberSelectionTransition> BuildSelectionTransition(
             IEnumerable<YoutubeMemberCheck> existingChecks,
             IReadOnlyCollection<string> selectedChannelIds)

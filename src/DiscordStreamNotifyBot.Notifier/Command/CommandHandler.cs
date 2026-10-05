@@ -51,7 +51,7 @@ namespace DiscordStreamNotifyBot.Command
                     {
                         try { if (context.Message.Author.Id == Bot.ApplicatonOwner.Id || context.Message.CleanContent == "s!ymlc") await message.DeleteAsync(); }
                         catch { }
-                        Log.FormatColorWrite($"[{context.Guild?.Name}/{context.Message.Channel?.Name}] {message.Author.Username} 執行 {context.Message}", ConsoleColor.DarkYellow);
+                        Log.FormatColorWrite($"[{context.Guild?.Name}/{context.Message.Channel?.Name}] {message.Author.Username} 執行 {context.Message}");
                     }
                 }
             }

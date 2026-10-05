@@ -23,9 +23,6 @@ namespace DiscordStreamNotifyBot.Interaction
                 : LocaleResolver.ResolvePublic(guildLocale, Context.Interaction.GuildLocale);
         }
 
-        protected async Task<string> LocalizeAsync(string resourceKey, bool isPrivate = true, params object[] arguments)
-            => BotLocalizer.Format(resourceKey, await GetLocaleAsync(isPrivate), arguments);
-
         protected async Task SendLocalizedConfirmAsync(string resourceKey, bool isFollowup = false,
             bool ephemeral = false, params object[] arguments)
         {

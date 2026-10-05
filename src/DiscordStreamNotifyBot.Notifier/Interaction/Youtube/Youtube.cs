@@ -212,52 +212,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                 using var db = _dbService.GetDbContext();
                 var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId);
 
-                //var channel = Context.Guild.GetTextChannel(noticeYoutubeStreamChannel.DiscordNoticeStreamChannelId);
-                //if (channel == null)
-                //{
-                //    await Context.Interaction.SendErrorAsync($"無法取得 `{noticeYoutubeStreamChannel.YouTubeChannelId}` 所設定的通知頻道，請重新加入通知後重試", true);
-                //    db.NoticeYoutubeStreamChannel.Remove(noticeYoutubeStreamChannel);
-                //    db.SaveChanges();
-                //    return;
-                //}
-
-                // CreateEvents 權限在套件中歸類為頻道權限，但實際須在伺服器身分組中設定。
-                // 因此需要直接建立活動來驗證權限是否正常。
-                //var permission = Context.Guild.GetUser(Context.Client.CurrentUser.Id).GetPermissions(channel);
-                //if (!permission.CreateEvents)
-                //{
-                //    await Context.Interaction.SendErrorAsync($"我在伺服器沒有 `建立 & 管理活動 ` 的權限，請給予權限後再次執行本指令", true);
-                //    return;
-                //}
-
-                // 經測試，只要具備管理活動權限即可建立活動，不必另外在伺服器身分組中啟用建立活動權限。
-                //try
-                //{
-                //    var testEvent = await Context.Guild.CreateEventAsync("測試用活動",
-                //        DateTimeOffset.Now.AddHours(1),
-                //        GuildScheduledEventType.External,
-                //        endTime: DateTimeOffset.Now.AddHours(2),
-                //        location: "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-                //    await testEvent.DeleteAsync();
-                //}
-                //catch (Discord.Net.HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.MissingPermissions)
-                //{
-                //    await Context.Interaction.SendErrorAsync($"我在伺服器沒有 `管理活動 ` 的權限，請給予權限後再次執行本指令", true);
-                //    return;
-                //}
-
-                //if (!noticeYoutubeStreamChannel.IsCreateEventForNewStream && noticeYoutubeStreamChannel.NewStreamMessage == "-")
-                //{
-                //    if (await PromptUserConfirmAsync("開啟此功能需要同時開啟新待機室通知，是否開啟？"))
-                //    {
-                //        noticeYoutubeStreamChannel.NewStreamMessage = "";
-                //    }
-                //    else
-                //    {
-                //        return;
-                //    }
-                //}
-
                 noticeYoutubeStreamChannel.IsCreateEventForNewStream = !noticeYoutubeStreamChannel.IsCreateEventForNewStream;
                 db.NoticeYoutubeStreamChannel.Update(noticeYoutubeStreamChannel);
 
@@ -299,11 +253,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         [RequireBotPermission(GuildPermission.ManageGuild)]
         [RequireUserPermission(GuildPermission.ManageGuild)]
         [DefaultMemberPermissions(GuildPermission.ManageGuild)]
-        [CommandSummary("設定伺服器橫幅使用指定頻道的最新影片（直播）縮圖\n" +
-            "若未輸入頻道網址則關閉本設定\n\n" +
-            "Bot 必須具備管理伺服器權限\n" +
-            "且伺服器必須達到 Boost 等級 2 才可使用本設定\n" +
-            "（此功能依賴直播通知，請確保設定的頻道在兩大箱或爬蟲清單中）")]
         [CommandExample("https://www.youtube.com/@998rrr")]
         [SlashCommand("set-banner-change", "設定伺服器橫幅使用指定頻道的最新影片（直播）縮圖")]
         public async Task SetBannerChange([Summary("channel-url", "頻道網址")] string channelUrl = "")
@@ -377,12 +326,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
-        [CommandSummary("新增直播開台通知的頻道\n" +
-            "輸入 `holo` 通知全部 `Holo 成員` 的直播\n" +
-            "輸入 `2434` 通知全部 `彩虹社成員` 的直播\n" +
-            "（僅 JP、EN 與 VR 成員歸類於此選項；如需其他成員，建議先使用 `/youtube-spider add` 設定）\n" +
-            "輸入 `other` 通知部分 `非兩大箱` 的直播\n" +
-            "（可使用 `/youtube-spider list` 查詢頻道）")]
         [CommandExample("https://www.youtube.com/@998rrr", "other", "2434")]
         [SlashCommand("add", "新增 YouTube 直播開台通知的頻道")]
         public async Task AddChannel([Summary("channel-or-group", "頻道網址")] string channelUrl,
@@ -501,11 +444,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
-        [CommandSummary("移除通知頻道\n" +
-            "輸入 `holo` 移除全部 `Holo 成員` 的直播通知\n" +
-            "輸入 `2434` 移除全部 `彩虹社成員` 的直播通知\n" +
-            "輸入 `other` 移除部分 `非兩大箱` 的直播通知\n" +
-            "輸入 `all` 移除所有直播通知")]
         [CommandExample("https://www.youtube.com/@998rrr", "all", "2434")]
         [SlashCommand("remove", "移除 YouTube 直播開台通知的頻道")]
         public async Task RemoveChannel([Summary("channel", "頻道名稱"), Autocomplete(typeof(GuildNoticeYoutubeChannelIdAutocompleteHandler))] string channelName)
@@ -694,11 +632,6 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         [RequireUserPermission(GuildPermission.ManageMessages | GuildPermission.MentionEveryone)]
         [DefaultMemberPermissions(GuildPermission.ManageMessages | GuildPermission.MentionEveryone)]
         [RequireBotPermission(GuildPermission.MentionEveryone)]
-        [CommandSummary("設定通知訊息\n" +
-            "未輸入通知訊息時，會清除自訂通知訊息\n" +
-            "輸入 `-` 可關閉該通知類型\n" +
-            "請先新增直播通知，再設定通知訊息（`/help get-command-help youtube add`）\n\n" +
-            "（若通知訊息要提及特定身分組，Bot 必須具備提及所有身分組權限）")]
         [CommandExample("998rrr 開始直播\\首播 @通知用身分組 玖玖巴開台啦",
             "holo 新待機室 @某人 已建立新的待機室",
             "UCUKD-uaobj9jiqB-VXt71mA 新上傳影片 -",

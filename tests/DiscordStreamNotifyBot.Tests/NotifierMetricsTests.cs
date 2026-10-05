@@ -17,7 +17,7 @@ namespace DiscordStreamNotifyBot.Tests
             metrics.RecordYoutubeMemberCheckCycle(YoutubeMemberCheckType.New, YoutubeMemberCheckCycleResult.Success);
             metrics.ObserveYoutubeMemberCheckDuration(YoutubeMemberCheckType.New, TimeSpan.FromSeconds(2));
             metrics.RecordYoutubeMemberVerification(YoutubeMemberCheckType.Old, YoutubeMemberVerificationResult.QuotaExceeded);
-            metrics.RecordYoutubeMemberRoleOperation(YoutubeMemberRoleOperation.Remove, YoutubeMemberRoleResult.MissingPermission);
+            metrics.RecordYoutubeMemberRoleOperation(YoutubeMemberRoleOperation.Remove, YoutubeMemberRoleResult.DiscordError);
             metrics.RecordTwitchSubscriptionVerification(TwitchSubscriptionStatus.Subscribed, "2000");
             metrics.RecordTwitchSubscriptionRoleOperation(TwitchSubscriptionRoleOperation.Synchronize, TwitchSubscriptionRoleResult.Success);
             metrics.RecordTwitchTokenOperation(TwitchTokenOperation.Refresh, TwitchTokenOperationResult.Contended);
@@ -40,7 +40,7 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Contains("discord_stream_notify_youtube_member_check_last_success_unixtime{check_type=\"old\"} 0", exposition);
             Assert.Contains("discord_stream_notify_youtube_member_check_cycles_total{check_type=\"new\",result=\"success\"} 1", exposition);
             Assert.Contains("discord_stream_notify_youtube_member_verifications_total{check_type=\"old\",result=\"quota_exceeded\"} 1", exposition);
-            Assert.Contains("discord_stream_notify_youtube_member_role_operations_total{operation=\"remove\",result=\"missing_permission\"} 1", exposition);
+            Assert.Contains("discord_stream_notify_youtube_member_role_operations_total{operation=\"remove\",result=\"discord_error\"} 1", exposition);
             Assert.Contains("discord_stream_notify_twitch_subscription_verifications_total{result=\"subscribed\",tier=\"2000\"} 1", exposition);
             Assert.Contains("discord_stream_notify_twitch_subscription_role_operations_total{operation=\"synchronize\",result=\"success\"} 1", exposition);
             Assert.Contains("discord_stream_notify_twitch_subscription_token_operations_total{operation=\"refresh\",result=\"contended\"} 1", exposition);

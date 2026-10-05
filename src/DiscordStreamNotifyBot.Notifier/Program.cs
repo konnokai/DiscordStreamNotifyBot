@@ -129,7 +129,7 @@ namespace DiscordStreamNotifyBot
                         writer.WriteLine(demystified.ToString());
                     }
 
-                    Log.Error(demystified, "UnhandledException", true, false);
+                    Log.Error(demystified, "UnhandledException", false);
 
                     try
                     {

@@ -43,17 +43,14 @@ namespace DiscordStreamNotifyBot.SharedService.Member
     {
         internal MemberRoleOwnershipSnapshot(
             IReadOnlyCollection<MemberRoleEntitlement> entitlements,
-            IReadOnlyCollection<ulong> youtubeRoleReferences,
-            IReadOnlyCollection<ulong> twitchRoleReferences)
+            IReadOnlyCollection<ulong> youtubeRoleReferences)
         {
             Entitlements = entitlements;
             YoutubeRoleReferences = youtubeRoleReferences;
-            TwitchRoleReferences = twitchRoleReferences;
         }
 
         public IReadOnlyCollection<MemberRoleEntitlement> Entitlements { get; }
         public IReadOnlyCollection<ulong> YoutubeRoleReferences { get; }
-        public IReadOnlyCollection<ulong> TwitchRoleReferences { get; }
 
         public bool HasOtherActiveEntitlement(
             ulong discordUserId,
@@ -103,16 +100,14 @@ namespace DiscordStreamNotifyBot.SharedService.Member
             ulong guildId,
             CancellationToken cancellationToken)
         {
-            // 三個查詢刻意各自使用短生命週期 context；呼叫端必須先取得 guild lock，
+            // 兩個查詢刻意各自使用短生命週期 context；呼叫端必須先取得 guild lock，
             // 因而 snapshot 與隨後的 Discord mutation 不會和本 Notifier 的設定操作交錯。
             Task<ulong[]> youtubeReferences = LoadYoutubeConfigurationRoleReferencesAsync(guildId, cancellationToken);
-            Task<ulong[]> twitchReferences = LoadTwitchConfigurationRoleReferencesAsync(guildId, cancellationToken);
             Task<MemberRoleEntitlement[]> entitlements = LoadActiveEntitlementsAsync(guildId, cancellationToken);
-            await Task.WhenAll(youtubeReferences, twitchReferences, entitlements);
+            await Task.WhenAll(youtubeReferences, entitlements);
             return new MemberRoleOwnershipSnapshot(
                 entitlements.Result,
-                youtubeReferences.Result,
-                twitchReferences.Result);
+                youtubeReferences.Result);
         }
 
         private async Task<ulong[]> LoadYoutubeConfigurationRoleReferencesAsync(

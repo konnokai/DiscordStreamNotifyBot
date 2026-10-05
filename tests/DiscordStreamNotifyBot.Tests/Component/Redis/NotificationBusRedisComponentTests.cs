@@ -67,7 +67,8 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                 var pending = await db.StreamPendingAsync(NotificationBus.StreamKey, NotificationBus.GroupName(shardId));
                 Assert.Equal(1, pending.PendingMessageCount);
 
-                Assert.Equal(1, await NotificationBus.AckAsync(db, shardId, messageId));
+                Assert.Equal(1, await db.StreamAcknowledgeAsync(
+                    NotificationBus.StreamKey, NotificationBus.GroupName(shardId), messageId));
                 pending = await db.StreamPendingAsync(NotificationBus.StreamKey, NotificationBus.GroupName(shardId));
                 Assert.Equal(0, pending.PendingMessageCount);
             }
@@ -98,10 +99,12 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
 
                 using var restartedConnection = await _fixture.OpenConnectionAsync();
                 var restartedDb = restartedConnection.GetDatabase();
-                var claimed = await NotificationBus.AutoClaimAsync(restartedDb, shardId, TimeSpan.Zero, 10);
+                var claimed = (await NotificationBus.AutoClaimPageAsync(restartedDb, shardId, TimeSpan.Zero, "0-0", 10))
+                    .ClaimedEntries;
 
                 Assert.Equal(messageId, Assert.Single(claimed).Id);
-                Assert.Equal(1, await NotificationBus.AckAsync(restartedDb, shardId, messageId));
+                Assert.Equal(1, await restartedDb.StreamAcknowledgeAsync(
+                    NotificationBus.StreamKey, NotificationBus.GroupName(shardId), messageId));
                 var pending = await restartedDb.StreamPendingAsync(
                     NotificationBus.StreamKey,
                     NotificationBus.GroupName(shardId));
@@ -132,7 +135,8 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                 Assert.Equal(messageId, first.Id);
                 Assert.Equal(messageId, second.Id);
 
-                Assert.Equal(1, await NotificationBus.AckAsync(db, firstShardId, messageId));
+                Assert.Equal(1, await db.StreamAcknowledgeAsync(
+                    NotificationBus.StreamKey, NotificationBus.GroupName(firstShardId), messageId));
                 Assert.Equal(0, (await db.StreamPendingAsync(
                     NotificationBus.StreamKey,
                     NotificationBus.GroupName(firstShardId))).PendingMessageCount);
@@ -140,7 +144,8 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                     NotificationBus.StreamKey,
                     NotificationBus.GroupName(secondShardId))).PendingMessageCount);
 
-                Assert.Equal(1, await NotificationBus.AckAsync(db, secondShardId, messageId));
+                Assert.Equal(1, await db.StreamAcknowledgeAsync(
+                    NotificationBus.StreamKey, NotificationBus.GroupName(secondShardId), messageId));
             }
             finally
             {

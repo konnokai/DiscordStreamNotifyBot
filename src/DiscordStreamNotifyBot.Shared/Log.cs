@@ -63,67 +63,37 @@ public static class Log
         IsTrueEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") ||
         IsTrueEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINERS");
 
-    public static void New(string text, bool newLine = true)
-        => WriteText(text, newLine, false, LogLevel.Info, LogFileRoute.Stream);
+    public static void New(string text)
+        => WriteText(text, false, LogLevel.Info, LogFileRoute.Stream);
 
-    public static void New(string messageTemplate, object propertyValue, params object[] additionalPropertyValues)
-        => WriteTemplate(messageTemplate, CombinePropertyValues(propertyValue, additionalPropertyValues), false,
-            LogLevel.Info, LogFileRoute.Stream);
-
-    public static void Debug(string text, bool newLine = true)
+    public static void Debug(string text)
     {
         if (!Debugger.IsAttached)
             return;
 
-        WriteText(text, newLine, false, LogLevel.Debug, LogFileRoute.None);
+        WriteText(text, false, LogLevel.Debug, LogFileRoute.None);
     }
 
-    public static void Debug(string messageTemplate, object propertyValue, params object[] additionalPropertyValues)
-    {
-        if (!Debugger.IsAttached)
-            return;
-
-        WriteTemplate(messageTemplate, CombinePropertyValues(propertyValue, additionalPropertyValues), false,
-            LogLevel.Debug, LogFileRoute.None);
-    }
-
-    public static void Info(string text, bool newLine = true)
-        => WriteText(text, newLine, false, LogLevel.Info, LogFileRoute.General);
+    public static void Info(string text)
+        => WriteText(text, false, LogLevel.Info, LogFileRoute.General);
 
     public static void Info(string messageTemplate, object propertyValue, params object[] additionalPropertyValues)
         => WriteTemplate(messageTemplate, CombinePropertyValues(propertyValue, additionalPropertyValues), false,
             LogLevel.Info, LogFileRoute.General);
 
-    public static void Warn(string text, bool newLine = true)
-        => WriteText(text, newLine, false, LogLevel.Warn, LogFileRoute.General);
+    public static void Warn(string text)
+        => WriteText(text, false, LogLevel.Warn, LogFileRoute.General);
 
-    public static void Warn(string messageTemplate, object propertyValue, params object[] additionalPropertyValues)
-        => WriteTemplate(messageTemplate, CombinePropertyValues(propertyValue, additionalPropertyValues), false,
-            LogLevel.Warn, LogFileRoute.General);
-
-    public static void Error(string text, bool newLine = true, bool writeLog = true)
-        => WriteText(text, newLine, true, LogLevel.Error,
+    public static void Error(string text, bool writeLog = true)
+        => WriteText(text, true, LogLevel.Error,
             writeLog ? LogFileRoute.Error : LogFileRoute.None);
 
-    public static void Error(string messageTemplate, object propertyValue, params object[] additionalPropertyValues)
-        => WriteTemplate(messageTemplate, CombinePropertyValues(propertyValue, additionalPropertyValues), true,
-            LogLevel.Error, LogFileRoute.Error);
-
-    public static void Error(Exception ex, string text, bool newLine = true, bool writeLog = true)
-        => WriteText(text, newLine, true, LogLevel.Error,
+    public static void Error(Exception ex, string text, bool writeLog = true)
+        => WriteText(text, true, LogLevel.Error,
             writeLog ? LogFileRoute.Error : LogFileRoute.None, exception: ex?.Demystify());
 
-    public static void Error(Exception ex, string messageTemplate, object propertyValue,
-        params object[] additionalPropertyValues)
-        => WriteTemplate(messageTemplate, CombinePropertyValues(propertyValue, additionalPropertyValues), true,
-            LogLevel.Error, LogFileRoute.Error, ex?.Demystify());
-
-    public static void FormatColorWrite(string text, ConsoleColor consoleColor = ConsoleColor.Gray,
-        bool newLine = true, bool isError = false, LogLevel level = LogLevel.Info)
-    {
-        _ = consoleColor;
-        WriteText(text, newLine, isError, level, LogFileRoute.None);
-    }
+    public static void FormatColorWrite(string text, bool isError = false, LogLevel level = LogLevel.Info)
+        => WriteText(text, isError, level, LogFileRoute.None);
 
     /// <summary>建立完整 Serilog pipeline。未設定或 URL 無效時保留 console/file 行為。</summary>
     public static void ConfigureLoki(string url)
@@ -239,11 +209,11 @@ public static class Log
         if (includeException)
         {
             LogLevel exceptionLevel = level is LogLevel.Error or LogLevel.Critical ? level : LogLevel.Error;
-            WriteText(message.Message, true, true, exceptionLevel, fileRoute, true, message.Exception.Demystify());
+            WriteText(message.Message, true, exceptionLevel, fileRoute, true, message.Exception.Demystify());
         }
         else if (!string.IsNullOrEmpty(message.Message))
         {
-            WriteText(message.Message, true, false, level, fileRoute, writeConsole);
+            WriteText(message.Message, false, level, fileRoute, writeConsole);
         }
 
         return Task.CompletedTask;
@@ -312,13 +282,10 @@ public static class Log
             .WriteTo.Sink(new DeferredFileSink($"{LogFilePrefix}_stream.log", FileFormatter)));
     }
 
-    private static void WriteText(string text, bool newLine, bool consoleError, LogLevel level,
+    private static void WriteText(string text, bool consoleError, LogLevel level,
         LogFileRoute fileRoute, bool writeConsole = true, Exception exception = null)
-    {
-        _ = newLine;
-        WriteTemplate("{LogText:l}", new object[] { text ?? "" }, consoleError, level, fileRoute,
+        => WriteTemplate("{LogText:l}", new object[] { text ?? "" }, consoleError, level, fileRoute,
             exception, writeConsole);
-    }
 
     private static void WriteTemplate(string messageTemplate, object[] propertyValues, bool consoleError,
         LogLevel level, LogFileRoute fileRoute, Exception exception = null, bool writeConsole = true)

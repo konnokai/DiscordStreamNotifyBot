@@ -60,10 +60,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [RequireGuildMemberCount(500)]
-        [CommandSummary("新增 TwitCasting 頻道監測爬蟲\n" +
-           "伺服器人數至少 500 人才可使用\n" +
-           "未來會根據情況增減可新增的頻道數量\n" +
-           "如有需求，請聯絡擁有者")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("add", "新增 TwitCasting 頻道監測爬蟲")]
@@ -77,8 +73,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             await SendCrawlerResultAsync(result, channelUrl, "twitcasting");
         }
 
-        [CommandSummary("移除 TwitCasting 頻道檢測爬蟲\n" +
-            "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove", "移除 TwitCasting 頻道檢測爬蟲")]

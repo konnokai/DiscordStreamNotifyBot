@@ -564,9 +564,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         public Task<YTApiVideo> GetVideoAsync(string videoId) => _apiService.GetVideoAsync(videoId);
         private Task<IEnumerable<YTApiVideo>> GetVideosAsync(IEnumerable<string> videoIds, CancellationToken cancellationToken = default)
             => _apiService.GetVideosAsync(videoIds, cancellationToken);
-        public Task<string> GetChannelIdAsync(string channelUrl) => _apiService.GetChannelIdAsync(channelUrl);
         public string GetVideoId(string videoUrl) => _apiService.GetVideoId(videoUrl);
-        public Task<string> GetChannelTitle(string channelId) => _apiService.GetChannelTitle(channelId);
 
         /// <summary>對 Google Hub 送出單一頻道的 WebSub subscribe；<paramref name="force"/> 供 owner 強制重新訂閱（可清除 denied）。</summary>
         private Task<YoutubeWebSubRequestResult> RequestWebSubSubscribeAsync(string channelId, bool force, bool renewDue)

@@ -118,9 +118,6 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         public static bool ShouldCompensateCreatedRoles(bool configurationPersisted)
             => !configurationPersisted;
 
-        public static bool CanApplyDiscordMutations(bool configurationPersisted)
-            => configurationPersisted;
-
         public static string ValidateUpdateState(
             GuildTwitchSubscriptionConfig config,
             ulong requestedSubscriberRoleId)

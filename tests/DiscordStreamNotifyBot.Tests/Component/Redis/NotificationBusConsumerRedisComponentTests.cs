@@ -131,8 +131,8 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
 
                 using var restartedConnection = await _fixture.OpenConnectionAsync();
                 var restartedDb = restartedConnection.GetDatabase();
-                var claimed = Assert.Single(await NotificationBus.AutoClaimAsync(
-                    restartedDb, shardId, TimeSpan.Zero, 1));
+                var claimed = Assert.Single((await NotificationBus.AutoClaimPageAsync(
+                    restartedDb, shardId, TimeSpan.Zero, "0-0", 1)).ClaimedEntries);
                 Assert.Equal(entry.Id, claimed.Id);
 
                 var consumer = new NotificationBusConsumer((_, _, _) =>
@@ -338,7 +338,8 @@ namespace DiscordStreamNotifyBot.Tests.Component.Redis
                 fail = false;
                 using var restartedConnection = await _fixture.OpenConnectionAsync();
                 var restartedDb = restartedConnection.GetDatabase();
-                var reclaimed = Assert.Single(await NotificationBus.AutoClaimAsync(restartedDb, shardId, TimeSpan.Zero, 1));
+                var reclaimed = Assert.Single((await NotificationBus.AutoClaimPageAsync(
+                    restartedDb, shardId, TimeSpan.Zero, "0-0", 1)).ClaimedEntries);
                 await new NotificationBusConsumer(Dispatch).ProcessEntryAsync(restartedDb, shardId, reclaimed);
 
                 Assert.Equal(1, successfulSends);

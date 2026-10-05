@@ -77,12 +77,6 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.False(YoutubeMemberPolicies.IsActive(pending));
         }
 
-        [Fact]
-        public void OperationalLogAndManagedRoleFailuresPreserveConfigurationForRetry()
-        {
-            Assert.True(YoutubeMemberPolicies.ShouldPreserveConfigurationForOperationalFailure());
-        }
-
         [Theory]
         [InlineData(YoutubeMemberRoleApplyResult.Applied, true)]
         [InlineData(YoutubeMemberRoleApplyResult.UnknownMember, true)]
@@ -102,7 +96,6 @@ namespace DiscordStreamNotifyBot.Tests
                     new MemberRoleEntitlement(MemberEntitlementProvider.Youtube, "UC1", 42, 500),
                     new MemberRoleEntitlement(MemberEntitlementProvider.Twitch, "streamer", 42, 500)
                 ],
-                [],
                 []);
 
             Assert.True(snapshot.HasOtherActiveEntitlement(

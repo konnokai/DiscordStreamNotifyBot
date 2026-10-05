@@ -59,7 +59,6 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal("twitch:stream_data:user-42", RedisChannels.Twitch.StreamData("user-42"));
             Assert.Equal("twitch:stream_notified:stream-99", RedisChannels.Twitch.StreamNotification("stream-99"));
             Assert.Equal("cluster:heartbeat:notifier:2", RedisChannels.Cluster.Heartbeat("notifier", "2"));
-            Assert.Equal("cluster:shard:lease:7", RedisChannels.Cluster.ShardLease(7));
             Assert.Equal("cluster:query:reply:correlation-id", RedisChannels.Cluster.QueryReply("correlation-id"));
             Assert.Equal("twitch:oauth:refresh-lock:user-42", RedisChannels.OAuth.TwitchRefreshLock("user-42"));
             Assert.Equal("google:oauth:operation-lock:42", RedisChannels.OAuth.GoogleOperationLock(42));

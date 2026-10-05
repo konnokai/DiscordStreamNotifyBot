@@ -7,16 +7,25 @@ namespace DiscordStreamNotifyBot.Tests
     {
         private static readonly TimeSpan Ttl = TimeSpan.FromHours(24);
 
+        /// <summary>透過批次取得並保留 claim（等同處理完成的影片）。</summary>
+        private static bool Claim(YoutubeVideoClaimCache cache, string videoId)
+        {
+            using var batch = cache.CreateBatch();
+            if (!batch.TryClaim(videoId))
+                return false;
+            batch.Complete(videoId);
+            return true;
+        }
+
         [Fact]
         public async Task ConcurrentClaimsHaveSingleWinner()
         {
             var cache = new YoutubeVideoClaimCache(new FakeTimeProvider(), Ttl);
 
             bool[] claims = await Task.WhenAll(Enumerable.Range(0, 100)
-                .Select(_ => Task.Run(() => cache.TryClaim("video-id"))));
+                .Select(_ => Task.Run(() => Claim(cache, "video-id"))));
 
             Assert.Single(claims.Where(claimed => claimed));
-            Assert.Equal(1, cache.Count);
         }
 
         [Fact]
@@ -25,16 +34,15 @@ namespace DiscordStreamNotifyBot.Tests
             var timeProvider = new FakeTimeProvider();
             var cache = new YoutubeVideoClaimCache(timeProvider, Ttl);
 
-            Assert.True(cache.TryClaim("video-id"));
+            Assert.True(Claim(cache, "video-id"));
             timeProvider.Advance(Ttl - TimeSpan.FromTicks(1));
-            Assert.False(cache.TryClaim("video-id"));
+            Assert.False(Claim(cache, "video-id"));
             timeProvider.Advance(TimeSpan.FromTicks(1));
 
             bool[] claims = await Task.WhenAll(Enumerable.Range(0, 100)
-                .Select(_ => Task.Run(() => cache.TryClaim("video-id"))));
+                .Select(_ => Task.Run(() => Claim(cache, "video-id"))));
 
             Assert.Single(claims.Where(claimed => claimed));
-            Assert.Equal(1, cache.Count);
         }
 
         [Fact]
@@ -43,15 +51,14 @@ namespace DiscordStreamNotifyBot.Tests
             var timeProvider = new FakeTimeProvider();
             var cache = new YoutubeVideoClaimCache(timeProvider, Ttl);
 
-            Assert.True(cache.TryClaim("expired"));
+            Assert.True(Claim(cache, "expired"));
             timeProvider.Advance(TimeSpan.FromHours(12));
-            Assert.True(cache.TryClaim("active"));
+            Assert.True(Claim(cache, "active"));
             timeProvider.Advance(TimeSpan.FromHours(12));
 
             Assert.Equal(1, cache.RemoveExpired());
-            Assert.Equal(1, cache.Count);
-            Assert.True(cache.TryClaim("expired"));
-            Assert.False(cache.TryClaim("active"));
+            Assert.True(Claim(cache, "expired"));
+            Assert.False(Claim(cache, "active"));
         }
 
         [Fact]
@@ -67,9 +74,9 @@ namespace DiscordStreamNotifyBot.Tests
                 Assert.False(batch.TryClaim("failed"));
             }
 
-            Assert.False(cache.TryClaim("completed"));
-            Assert.True(cache.TryClaim("omitted"));
-            Assert.True(cache.TryClaim("failed"));
+            Assert.False(Claim(cache, "completed"));
+            Assert.True(Claim(cache, "omitted"));
+            Assert.True(Claim(cache, "failed"));
         }
 
         [Fact]
@@ -87,20 +94,9 @@ namespace DiscordStreamNotifyBot.Tests
 
             previous.Dispose();
 
-            Assert.False(cache.TryClaim("video"));
+            Assert.False(Claim(cache, "video"));
             replacement.Dispose();
-            Assert.True(cache.TryClaim("video"));
-        }
-
-        [Fact]
-        public void ReleasedClaimCanBeRetriedImmediately()
-        {
-            var cache = new YoutubeVideoClaimCache(new FakeTimeProvider(), Ttl);
-
-            Assert.True(cache.TryClaim("video-id"));
-            cache.Release("video-id");
-
-            Assert.True(cache.TryClaim("video-id"));
+            Assert.True(Claim(cache, "video"));
         }
 
         /// <summary>

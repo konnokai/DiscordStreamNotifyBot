@@ -35,9 +35,6 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             EndStream
         }
 
-        /// <summary>CHZZK 走匿名網站 endpoint，不需憑證；保留屬性供快照與 Web capability 顯示一致。</summary>
-        public bool IsEnable => true;
-
         private readonly DiscordSocketClient _client;
         private readonly ChzzkClient _chzzkClient;
         private readonly BotConfig _botConfig;
@@ -87,8 +84,6 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             CancellationToken cancellationToken,
             bool addForBotOwner = false)
         {
-            if (!IsEnable)
-                return AdminSettingsMutationResult.Rejected("crawler.platform-disabled");
             if (!ChzzkUrlParser.TryParseChannelId(source, out string channelId))
                 return AdminSettingsMutationResult.Rejected("crawler.source-not-found");
 
@@ -202,8 +197,6 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             AdminSettingsChzzkMessages messages,
             CancellationToken cancellationToken)
         {
-            if (!IsEnable)
-                return AdminSettingsMutationResult.Rejected("settings.feature-disabled");
             if (string.IsNullOrWhiteSpace(source) || !ChzzkUrlParser.TryParseChannelId(source, out string channelId))
                 return AdminSettingsMutationResult.Rejected("settings.invalid-source");
 

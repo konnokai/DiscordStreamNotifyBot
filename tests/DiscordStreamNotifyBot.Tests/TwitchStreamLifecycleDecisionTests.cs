@@ -70,15 +70,6 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal(TwitchStreamStartAction.IgnoreMissingSpider, missingSpider);
         }
 
-        [Fact]
-        public void RepeatedMissingSpiderPollingOnlyRecordsFirstPendingObservation()
-        {
-            var pendingCleanup = new ConcurrentDictionary<string, byte>();
-
-            Assert.True(TwitchDetectionService.RecordPendingCleanup(pendingCleanup, "user"));
-            Assert.False(TwitchDetectionService.RecordPendingCleanup(pendingCleanup, "user"));
-        }
-
         [Theory]
         [InlineData(null, "user")]
         [InlineData("stream", "")]
@@ -170,24 +161,6 @@ namespace DiscordStreamNotifyBot.Tests
 
             Assert.NotNull(restored);
             Assert.Equal(endAt, restored.StreamEndAt);
-        }
-
-        [Fact]
-        public void StreamNotificationMarkerExpiresAfterOneDay()
-        {
-            Assert.Equal(TimeSpan.FromDays(1), TwitchDetectionService.StreamNotificationTtl);
-        }
-
-        [Theory]
-        [InlineData(false, false, "Schedule")]
-        [InlineData(false, true, "ReplaceExisting")]
-        [InlineData(true, false, "KeepExisting")]
-        [InlineData(true, true, "ReplaceExisting")]
-        public void OfflineDebounceScheduleHasExplicitReplacementDecision(
-            bool hasExisting, bool replaceExisting, string expected)
-        {
-            Assert.Equal(Enum.Parse<TwitchOfflineScheduleAction>(expected),
-                TwitchOfflineSchedulePolicy.Decide(hasExisting, replaceExisting));
         }
     }
 }

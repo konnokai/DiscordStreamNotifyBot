@@ -48,8 +48,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             //Niji
         }
 
-        public bool IsRecord { get; set; } = true;
-
         /// <summary>YouTube API 用戶端，委派至 Shared 的 <see cref="Shared.YoutubeApiService"/>（單一來源）。</summary>
         public YouTubeService YouTubeService => _apiService.YouTubeService;
 
