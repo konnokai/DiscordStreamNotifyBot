@@ -111,7 +111,7 @@ namespace DiscordStreamNotifyBot.Tests
             current.LastObservedAt = now;
             Assert.Equal(ChzzkPollAction.Ignore,
                 ChzzkDetectionService.DecideObservation(spider, current, result.Status,
-                    now + ChzzkPollPolicy.CloseConfirmationDelay - TimeSpan.FromTicks(1), out _));
+                    now + ChzzkDetectionService.CloseConfirmationDelay - TimeSpan.FromTicks(1), out _));
 
             // 重新讀取 API 並還原持久化場次，確認重啟不會重設等待起點。
             current = JsonConvert.DeserializeObject<ChzzkStream>(JsonConvert.SerializeObject(current));
@@ -119,12 +119,12 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.True(result.IsSuccess);
             Assert.Equal(ChzzkPollAction.ConfirmClose,
                 ChzzkDetectionService.DecideObservation(spider, current, result.Status,
-                    now + ChzzkPollPolicy.CloseConfirmationDelay, out _));
+                    now + ChzzkDetectionService.CloseConfirmationDelay, out _));
             Assert.Equal(now, current.LastObservedAt);
 
             ChzzkNotification notification = null;
             await ChzzkDetectionService.ConfirmCloseAsync(spider, current, result.Status.CloseDate,
-                now + ChzzkPollPolicy.CloseConfirmationDelay, dto =>
+                now + ChzzkDetectionService.CloseConfirmationDelay, dto =>
                 {
                     Assert.Equal(ChzzkStreamStatus.PendingClose, current.Status);
                     notification = dto;
@@ -140,7 +140,7 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal($"notified:0:cz:{key}:1", NotificationDedupPolicy.TryGetKey(0, NotifyType.Chzzk, payload));
             Assert.Equal(ChzzkPollAction.Ignore,
                 ChzzkDetectionService.DecideObservation(spider, current, result.Status,
-                    now + ChzzkPollPolicy.CloseConfirmationDelay, out _));
+                    now + ChzzkDetectionService.CloseConfirmationDelay, out _));
         }
 
         [Theory]

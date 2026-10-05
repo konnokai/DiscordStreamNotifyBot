@@ -23,6 +23,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
         /// <summary>輪詢間隔；使用者已決定 30 秒，直接寫死為常數。</summary>
         internal static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(30);
 
+        /// <summary>關台確認等待時間；使用者已決定為 3 分鐘。</summary>
+        internal static readonly TimeSpan CloseConfirmationDelay = TimeSpan.FromMinutes(3);
+
         private readonly ChzzkClient _client;
         private readonly MainDbService _dbService;
         private readonly BotConfig _botConfig;
@@ -164,7 +167,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                     current.Status = ChzzkStreamStatus.PendingClose;
                     current.LastObservedAt = now;
                     await db.SaveChangesAsync();
-                    Log.Info($"CHZZK 收到關台訊號，等待 {ChzzkPollPolicy.CloseConfirmationDelay.TotalMinutes:0} 分鐘後確認：{current.StreamKey}");
+                    Log.Info($"CHZZK 收到關台訊號，等待 {CloseConfirmationDelay.TotalMinutes:0} 分鐘後確認：{current.StreamKey}");
                     return;
 
                 case ChzzkPollAction.ConfirmClose:
@@ -210,13 +213,19 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                     spider.CurrentStreamKey = streamKey;
                     spider.InitializedAt ??= now;
                     await db.SaveChangesAsync();
-                    await DelegateRecordThenPublishAsync(action, spider, stream, PublishRecordAsync, PublishAsync,
+                    await DelegateRecordThenPublishAsync(spider, stream, PublishRecordAsync, PublishAsync,
                         recordingDisabled: _botConfig.DisableRecording);
                     return;
             }
         }
 
-        /// <summary>將 API 觀察與持久化場次轉為決策；獨立於 I/O，讓測試涵蓋實際輪詢使用的場次鍵轉換。</summary>
+        /// <summary>
+        /// 將 API 觀察與持久化場次轉為決策；獨立於 I/O，讓測試涵蓋實際輪詢使用的場次鍵轉換。
+        /// <para>
+        /// 契約重點：相同鍵不重發、新 openDate 為新場、舊場 CLOSE 不關閉新場、未知資料不轉離線、
+        /// 關台需延遲後重新確認且重複 CLOSE 不重設等待起點。
+        /// </para>
+        /// </summary>
         internal static ChzzkPollAction DecideObservation(ChzzkSpider spider, ChzzkStream current,
             ChzzkLiveStatus status, DateTime now, out string streamKey)
         {
@@ -226,19 +235,42 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
                 return ChzzkPollAction.Unknown;
 
             // OPEN 與 CLOSE 都需要相同的場次鍵；只有首次 CLOSE 建立離線基線時不需識別上一場。
-            bool hasValidStreamKey = ChzzkStreamIdentity.TryCreate(spider.ChannelId, status.OpenDate, out streamKey);
-            if (!hasValidStreamKey && (knownStatus == ChzzkLiveStatusValues.Open || spider.InitializedAt != null))
+            bool isOpen = knownStatus == ChzzkLiveStatusValues.Open;
+            if (!ChzzkStreamIdentity.TryCreate(spider.ChannelId, status.OpenDate, out streamKey) &&
+                (isOpen || spider.InitializedAt != null))
                 return ChzzkPollAction.Unknown;
 
-            return ChzzkPollPolicy.Decide(new ChzzkPollFacts(
-                IsOpen: knownStatus == ChzzkLiveStatusValues.Open,
-                HasValidStreamKey: hasValidStreamKey,
-                StreamKey: streamKey,
-                IsInitialized: spider.InitializedAt != null,
-                CurrentStreamKey: spider.CurrentStreamKey,
-                CurrentStatus: current?.Status,
-                PendingCloseSinceUtc: current is { Status: ChzzkStreamStatus.PendingClose } ? current.LastObservedAt : null,
-                NowUtc: now));
+            if (isOpen)
+            {
+                if (string.IsNullOrEmpty(spider.CurrentStreamKey))
+                    return ChzzkPollAction.TrackNewStream;
+                if (!string.Equals(spider.CurrentStreamKey, streamKey, StringComparison.Ordinal))
+                    return ChzzkPollAction.SupersedeAndTrack;
+
+                return current?.Status == ChzzkStreamStatus.PendingClose
+                    ? ChzzkPollAction.CancelPendingClose
+                    : ChzzkPollAction.RefreshObserved;
+            }
+
+            // CLOSE：尚未初始化時建立離線基線，不需要場次鍵。
+            if (spider.InitializedAt == null)
+                return ChzzkPollAction.BaselineOffline;
+            if (string.IsNullOrEmpty(spider.CurrentStreamKey) ||
+                !string.Equals(spider.CurrentStreamKey, streamKey, StringComparison.Ordinal))
+                return ChzzkPollAction.Ignore;
+
+            switch (current?.Status)
+            {
+                case ChzzkStreamStatus.Open:
+                    return ChzzkPollAction.StartPendingClose;
+                case ChzzkStreamStatus.PendingClose:
+                    // 等待起點記在 LastObservedAt
+                    return now - current.LastObservedAt >= CloseConfirmationDelay
+                        ? ChzzkPollAction.ConfirmClose
+                        : ChzzkPollAction.Ignore;
+                default:
+                    return ChzzkPollAction.Ignore;
+            }
         }
 
         private static void ApplySnapshot(ChzzkStream stream, ChzzkLiveStatus status)
@@ -262,12 +294,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
 
         /// <summary>
         /// 建立新場次後的兩個獨立副作用：先依 <see cref="ChzzkSpider.IsRecord"/> 委派錄影，再發布開台通知。
-        /// 只有新場次（<see cref="ChzzkPollAction.TrackNewStream"/> / <see cref="ChzzkPollAction.SupersedeAndTrack"/>）
-        /// 會委派；同場 OPEN、接回既有場次、PendingClose 恢復與關台都不補錄，也不依啟用時間排除。
+        /// 只在建立新場次（<see cref="ChzzkPollAction.TrackNewStream"/> / <see cref="ChzzkPollAction.SupersedeAndTrack"/>）時呼叫；
+        /// 同場 OPEN、接回既有場次、PendingClose 恢復與關台都不補錄，也不依啟用時間排除。
         /// 錄影發布失敗只記錄、不阻擋開台通知；通知發布失敗也不影響已完成的錄影嘗試，維持既有通知重送政策。
         /// </summary>
         internal static async Task<bool> DelegateRecordThenPublishAsync(
-            ChzzkPollAction action,
             ChzzkSpider spider,
             ChzzkStream stream,
             Func<string, string, Task<long>> publishRecordAsync,
@@ -275,8 +306,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Chzzk
             bool recordingDisabled = false)
         {
             bool recordDelegated = false;
-            bool isNewStream = action is ChzzkPollAction.TrackNewStream or ChzzkPollAction.SupersedeAndTrack;
-            if (isNewStream && spider.IsRecord && !recordingDisabled)
+            if (spider.IsRecord && !recordingDisabled)
             {
                 try
                 {

@@ -56,7 +56,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
 
                 // publish DTO 至匯流排，由消費端（Notifier）重建 embed 發送
                 var updates = e.TriggerData.ToArray();
-                _currentPublishTask = Task.Run(() => PublishAsync(updates));
+                // 發布委派（TwitchDetectionService.PublishChannelUpdateAsync）自行攔截並記錄例外。
+                _currentPublishTask = Task.Run(() => _publishAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, updates));
             }
             catch (Exception ex)
             {
@@ -83,18 +84,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch.Debounce
         {
             await _debouncer.CurrentEventHandlersTask.ConfigureAwait(false);
             await _currentPublishTask.ConfigureAwait(false);
-        }
-
-        private async Task PublishAsync(IReadOnlyCollection<TwitchChannelUpdateInfo> updates)
-        {
-            try
-            {
-                await _publishAsync(_twitchUserId, _twitchUserName, _twitchUserLogin, updates).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"{_twitchUserLogin} 發送頻道更新通知失敗");
-            }
         }
 
         private int _isDisposed;

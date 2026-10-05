@@ -15,8 +15,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         private void StartReminder(TableVideo streamVideo, TableVideo.YTChannelType channelType)
         {
-            var decision = YoutubeReminderPolicy.PlanStart(streamVideo.ScheduledStartTime, DateTime.Now);
-            if (decision.Action == YoutubeReminderStartAction.Ignore)
+            if (YoutubeReminderPolicy.GetReminderDelay(streamVideo.ScheduledStartTime, DateTime.Now) is not { } dueTime)
                 return;
 
             try
@@ -26,9 +25,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     StreamVideo = streamVideo,
                     ChannelType = channelType,
                 };
-                var dueTime = decision.Action == YoutubeReminderStartAction.RunImmediately
-                    ? TimeSpan.Zero
-                    : decision.Delay;
                 var remT = new Timer(TimerCallbackWrapper, reminder, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
                 reminder.Timer = remT;
 
@@ -38,7 +34,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     return;
                 }
 
-                // dueTime 由 PlanStart 限制在 0 ~ 14 天，不會超出 Timer 範圍
+                // dueTime 由 GetReminderDelay 限制在 0 ~ 14 天，不會超出 Timer 範圍
                 remT.Change(dueTime, Timeout.InfiniteTimeSpan);
             }
             catch (Exception ex)

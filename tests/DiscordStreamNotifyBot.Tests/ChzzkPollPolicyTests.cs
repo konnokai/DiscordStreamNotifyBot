@@ -8,53 +8,53 @@ namespace DiscordStreamNotifyBot.Tests
     public sealed class ChzzkPollPolicyTests
     {
         private const string Key1 = "channel-1:20260915_134152";
-        private const string Key2 = "channel-1:20260915_180000";
         private static readonly DateTime Now = new(2026, 9, 15, 12, 0, 0, DateTimeKind.Utc);
 
-        private static ChzzkPollFacts OpenFacts(
-            string currentStreamKey = null,
-            ChzzkStreamStatus? currentStatus = null,
-            bool initialized = true,
-            bool hasValidStreamKey = true,
-            string streamKey = Key1)
-            => new(
-                IsOpen: true,
-                HasValidStreamKey: hasValidStreamKey,
-                StreamKey: streamKey,
-                IsInitialized: initialized,
-                CurrentStreamKey: currentStreamKey,
-                CurrentStatus: currentStatus,
-                PendingCloseSinceUtc: null,
-                NowUtc: Now);
+        private const string OpenDate1 = "2026-09-15 13:41:52";
+        private const string OpenDate2 = "2026-09-15 18:00:00";
 
-        private static ChzzkPollFacts CloseFacts(
+        private static ChzzkPollAction Observe(string liveStatus, string openDate, string currentStreamKey,
+            ChzzkStreamStatus? currentStatus, bool initialized, DateTime? pendingSince)
+        {
+            var spider = new ChzzkSpider
+            {
+                ChannelId = "channel-1", CurrentStreamKey = currentStreamKey,
+                InitializedAt = initialized ? Now.AddDays(-1) : null
+            };
+            var current = currentStatus is { } streamStatus
+                ? new ChzzkStream { StreamKey = currentStreamKey, Status = streamStatus, LastObservedAt = pendingSince ?? Now }
+                : null;
+            return ChzzkDetectionService.DecideObservation(spider, current,
+                new ChzzkLiveStatus { Status = liveStatus, OpenDate = openDate }, Now, out _);
+        }
+
+        private static ChzzkPollAction Open(
             string currentStreamKey = null,
             ChzzkStreamStatus? currentStatus = null,
             bool initialized = true,
-            string streamKey = Key1,
+            string openDate = OpenDate1)
+            => Observe("OPEN", openDate, currentStreamKey, currentStatus, initialized, null);
+
+        private static ChzzkPollAction Close(
+            string currentStreamKey = null,
+            ChzzkStreamStatus? currentStatus = null,
+            bool initialized = true,
+            string openDate = OpenDate1,
             DateTime? pendingSince = null)
-            => new(
-                IsOpen: false,
-                HasValidStreamKey: true,
-                StreamKey: streamKey,
-                IsInitialized: initialized,
-                CurrentStreamKey: currentStreamKey,
-                CurrentStatus: currentStatus,
-                PendingCloseSinceUtc: pendingSince,
-                NowUtc: Now);
+            => Observe("CLOSE", openDate, currentStreamKey, currentStatus, initialized, pendingSince);
 
         [Fact]
         public void FirstOpenTracksNewStream()
         {
             Assert.Equal(ChzzkPollAction.TrackNewStream,
-                ChzzkPollPolicy.Decide(OpenFacts(initialized: false)));
+                Open(initialized: false));
         }
 
         [Fact]
         public void FirstCloseOnlyCreatesOfflineBaseline()
         {
             Assert.Equal(ChzzkPollAction.BaselineOffline,
-                ChzzkPollPolicy.Decide(CloseFacts(initialized: false)));
+                Close(initialized: false));
         }
 
         [Fact]
@@ -62,58 +62,58 @@ namespace DiscordStreamNotifyBot.Tests
         {
             // 已建立離線基線後，未觀察過 OPEN 的場次不得補發關台。
             Assert.Equal(ChzzkPollAction.Ignore,
-                ChzzkPollPolicy.Decide(CloseFacts(currentStreamKey: null)));
+                Close(currentStreamKey: null));
         }
 
         [Fact]
         public void SameKeyOpenRefreshesWithoutRepublish()
         {
             Assert.Equal(ChzzkPollAction.RefreshObserved,
-                ChzzkPollPolicy.Decide(OpenFacts(Key1, ChzzkStreamStatus.Open)));
+                Open(Key1, ChzzkStreamStatus.Open));
         }
 
         [Fact]
         public void SameKeyOpenAfterClosedDoesNotRepublish()
         {
             Assert.Equal(ChzzkPollAction.RefreshObserved,
-                ChzzkPollPolicy.Decide(OpenFacts(Key1, ChzzkStreamStatus.Closed)));
+                Open(Key1, ChzzkStreamStatus.Closed));
         }
 
         [Fact]
         public void SameKeyOpenDuringPendingCloseCancelsConfirmation()
         {
             Assert.Equal(ChzzkPollAction.CancelPendingClose,
-                ChzzkPollPolicy.Decide(OpenFacts(Key1, ChzzkStreamStatus.PendingClose)));
+                Open(Key1, ChzzkStreamStatus.PendingClose));
         }
 
         [Fact]
         public void NewOpenDateIsANewStreamAndSupersedesTheOldOne()
         {
             Assert.Equal(ChzzkPollAction.SupersedeAndTrack,
-                ChzzkPollPolicy.Decide(OpenFacts(Key1, ChzzkStreamStatus.Open, streamKey: Key2)));
+                Open(Key1, ChzzkStreamStatus.Open, openDate: OpenDate2));
             Assert.Equal(ChzzkPollAction.SupersedeAndTrack,
-                ChzzkPollPolicy.Decide(OpenFacts(Key1, ChzzkStreamStatus.PendingClose, streamKey: Key2)));
+                Open(Key1, ChzzkStreamStatus.PendingClose, openDate: OpenDate2));
         }
 
         [Fact]
         public void MissingOpenDateOnOpenIsUnknown()
         {
             Assert.Equal(ChzzkPollAction.Unknown,
-                ChzzkPollPolicy.Decide(OpenFacts(hasValidStreamKey: false, streamKey: null)));
+                Open(openDate: null));
         }
 
         [Fact]
         public void SameKeyCloseEntersPendingConfirmation()
         {
             Assert.Equal(ChzzkPollAction.StartPendingClose,
-                ChzzkPollPolicy.Decide(CloseFacts(Key1, ChzzkStreamStatus.Open)));
+                Close(Key1, ChzzkStreamStatus.Open));
         }
 
         [Fact]
         public void RepeatedCloseBeforeDelayDoesNotConfirmOrReset()
         {
-            var decision = ChzzkPollPolicy.Decide(CloseFacts(Key1, ChzzkStreamStatus.PendingClose,
-                pendingSince: Now - TimeSpan.FromMinutes(1)));
+            var decision = Close(Key1, ChzzkStreamStatus.PendingClose,
+                pendingSince: Now - TimeSpan.FromMinutes(1));
             Assert.Equal(ChzzkPollAction.Ignore, decision);
         }
 
@@ -121,31 +121,24 @@ namespace DiscordStreamNotifyBot.Tests
         public void PendingCloseConfirmsAfterThreeMinutes()
         {
             Assert.Equal(ChzzkPollAction.ConfirmClose,
-                ChzzkPollPolicy.Decide(CloseFacts(Key1, ChzzkStreamStatus.PendingClose,
-                    pendingSince: Now - ChzzkPollPolicy.CloseConfirmationDelay)));
-        }
-
-        [Fact]
-        public void PendingCloseWithoutStartTimeStaysUnknown()
-        {
-            Assert.Equal(ChzzkPollAction.Ignore,
-                ChzzkPollPolicy.Decide(CloseFacts(Key1, ChzzkStreamStatus.PendingClose, pendingSince: null)));
+                Close(Key1, ChzzkStreamStatus.PendingClose,
+                    pendingSince: Now - ChzzkDetectionService.CloseConfirmationDelay));
         }
 
         [Fact]
         public void ForeignCloseDoesNotCloseCurrentStream()
         {
             Assert.Equal(ChzzkPollAction.Ignore,
-                ChzzkPollPolicy.Decide(CloseFacts(Key1, ChzzkStreamStatus.Open, streamKey: Key2)));
+                Close(Key1, ChzzkStreamStatus.Open, openDate: OpenDate2));
         }
 
         [Fact]
         public void RepeatedCloseOnClosedStreamIsIgnored()
         {
             Assert.Equal(ChzzkPollAction.Ignore,
-                ChzzkPollPolicy.Decide(CloseFacts(Key1, ChzzkStreamStatus.Closed)));
+                Close(Key1, ChzzkStreamStatus.Closed));
             Assert.Equal(ChzzkPollAction.Ignore,
-                ChzzkPollPolicy.Decide(CloseFacts(Key1, ChzzkStreamStatus.Superseded)));
+                Close(Key1, ChzzkStreamStatus.Superseded));
         }
 
         [Fact]
@@ -187,7 +180,7 @@ namespace DiscordStreamNotifyBot.Tests
             var current = initialized ? new ChzzkStream
             {
                 StreamKey = Key1, Status = ChzzkStreamStatus.PendingClose,
-                LastObservedAt = Now - ChzzkPollPolicy.CloseConfirmationDelay
+                LastObservedAt = Now - ChzzkDetectionService.CloseConfirmationDelay
             } : null;
 
             Assert.Equal(ChzzkPollAction.Unknown, ChzzkDetectionService.DecideObservation(spider, current,
@@ -215,7 +208,7 @@ namespace DiscordStreamNotifyBot.Tests
             var current = new ChzzkStream
             {
                 StreamKey = Key1, Status = ChzzkStreamStatus.PendingClose,
-                LastObservedAt = Now - ChzzkPollPolicy.CloseConfirmationDelay
+                LastObservedAt = Now - ChzzkDetectionService.CloseConfirmationDelay
             };
 
             Assert.Equal(expected, ChzzkDetectionService.DecideObservation(spider, current,
@@ -243,7 +236,7 @@ namespace DiscordStreamNotifyBot.Tests
         [Fact]
         public async Task FailedClosePublishKeepsPendingStateAndCanRetryAfterFreshConfirmation()
         {
-            var since = Now - ChzzkPollPolicy.CloseConfirmationDelay;
+            var since = Now - ChzzkDetectionService.CloseConfirmationDelay;
             var spider = new ChzzkSpider { ChannelId = "channel-1", CurrentStreamKey = Key1, InitializedAt = since };
             var current = new ChzzkStream
             {

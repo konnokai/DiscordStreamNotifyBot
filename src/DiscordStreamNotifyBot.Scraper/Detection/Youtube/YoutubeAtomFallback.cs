@@ -36,10 +36,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             Func<CancellationToken, Task<IReadOnlyList<string>>> listChannelIds,
             Func<IReadOnlyList<string>, CancellationToken, Task<YoutubeAtomProcessResult>> processUnknownVideos)
         {
-            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-            _validators = validators ?? throw new ArgumentNullException(nameof(validators));
-            _listChannelIds = listChannelIds ?? throw new ArgumentNullException(nameof(listChannelIds));
-            _processUnknownVideos = processUnknownVideos ?? throw new ArgumentNullException(nameof(processUnknownVideos));
+            _httpClientFactory = httpClientFactory;
+            _validators = validators;
+            _listChannelIds = listChannelIds;
+            _processUnknownVideos = processUnknownVideos;
         }
 
         /// <summary>執行一輪補償；同一時間只允許一輪（由 <see cref="PeriodicRunner"/> 保證不重入）。</summary>
@@ -137,8 +137,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 return;
             }
 
-            var failedSet = processResult.FailedVideoIds as IReadOnlySet<string>
-                ?? processResult.FailedVideoIds.ToHashSet(StringComparer.Ordinal);
+            var failedSet = processResult.FailedVideoIds.ToHashSet(StringComparer.Ordinal);
             int updated = 0;
             foreach (ChannelFeed feed in modified)
             {
@@ -210,7 +209,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 return ChannelFetch.Failed();
             }
 
-            if (!IsFeedForChannel(parsed, channelId))
+            // feed 本身（根節點 yt:channelId 或 self link）必須是請求的頻道；entry 的 channel 在下方逐筆過濾。
+            if (parsed.FeedChannelId != channelId)
             {
                 Log.Warn($"Atom fallback feed channel 不符，整份略過：{channelId} / {parsed.FeedChannelId ?? "(無 self link)"}");
                 return ChannelFetch.Failed();
@@ -235,13 +235,6 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return ChannelFetch.Modified(
                 videoIds, newEtag, newLastModified, parsed.SkippedEntryCount, parsed.Entries.Count - ownEntries.Length);
         }
-
-        /// <summary>
-        /// feed 本身（根節點 <c>yt:channelId</c> 或 self link）必須是請求的頻道；
-        /// entry 的 channel 不在此判斷，由呼叫端逐筆過濾。
-        /// </summary>
-        private static bool IsFeedForChannel(YoutubeAtomParseResult parsed, string channelId)
-            => parsed.FeedChannelId == channelId;
 
         private static TimeSpan? ParseRetryAfter(System.Net.Http.Headers.RetryConditionHeaderValue retryAfter)
         {

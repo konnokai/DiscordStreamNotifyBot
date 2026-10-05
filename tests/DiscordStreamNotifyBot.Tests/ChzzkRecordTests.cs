@@ -51,44 +51,14 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal(StreamKey, roundTrip.StreamKey);
         }
 
-        [Theory]
-        [InlineData(nameof(ChzzkPollAction.RefreshObserved))]
-        [InlineData(nameof(ChzzkPollAction.CancelPendingClose))]
-        [InlineData(nameof(ChzzkPollAction.StartPendingClose))]
-        [InlineData(nameof(ChzzkPollAction.ConfirmClose))]
-        [InlineData(nameof(ChzzkPollAction.Ignore))]
-        [InlineData(nameof(ChzzkPollAction.BaselineOffline))]
-        [InlineData(nameof(ChzzkPollAction.Unknown))]
-        public async Task SameStreamUpdatesAndCloseConcernsNeverDelegateRecording(string actionName)
+        [Fact]
+        public async Task NewStreamDelegatesRecordingOnlyWhenAutoRecordEnabled()
         {
-            var action = Enum.Parse<ChzzkPollAction>(actionName);
-            int recordPublishes = 0;
-            int notifications = 0;
-
-            bool delegated = await ChzzkDetectionService.DelegateRecordThenPublishAsync(
-                action,
-                CreateSpider(isRecord: true),
-                CreateStream(),
-                (_, _) => { recordPublishes++; return Task.FromResult(1L); },
-                _ => { notifications++; return Task.CompletedTask; });
-
-            Assert.False(delegated);
-            Assert.Equal(0, recordPublishes);
-            Assert.Equal(1, notifications);
-        }
-
-        [Theory]
-        [InlineData(nameof(ChzzkPollAction.TrackNewStream))]
-        [InlineData(nameof(ChzzkPollAction.SupersedeAndTrack))]
-        public async Task NewStreamDelegatesRecordingOnlyWhenAutoRecordEnabled(string actionName)
-        {
-            var action = Enum.Parse<ChzzkPollAction>(actionName);
             string publishedChannelId = null;
             string publishedStreamKey = null;
             int notifications = 0;
 
             bool delegated = await ChzzkDetectionService.DelegateRecordThenPublishAsync(
-                action,
                 CreateSpider(isRecord: true),
                 CreateStream(),
                 (channelId, streamKey) =>
@@ -106,7 +76,6 @@ namespace DiscordStreamNotifyBot.Tests
 
             int disabledPublishes = 0;
             bool disabledDelegated = await ChzzkDetectionService.DelegateRecordThenPublishAsync(
-                action,
                 CreateSpider(isRecord: false),
                 CreateStream(),
                 (_, _) => { disabledPublishes++; return Task.FromResult(1L); },
@@ -122,7 +91,6 @@ namespace DiscordStreamNotifyBot.Tests
             int notifications = 0;
 
             bool delegated = await ChzzkDetectionService.DelegateRecordThenPublishAsync(
-                ChzzkPollAction.TrackNewStream,
                 CreateSpider(isRecord: true),
                 CreateStream(),
                 (_, _) => Task.FromException<long>(new IOException("Redis unavailable")),
@@ -138,7 +106,6 @@ namespace DiscordStreamNotifyBot.Tests
             int notifications = 0;
 
             bool delegated = await ChzzkDetectionService.DelegateRecordThenPublishAsync(
-                ChzzkPollAction.TrackNewStream,
                 CreateSpider(isRecord: true),
                 CreateStream(),
                 (_, _) => Task.FromResult(0L),

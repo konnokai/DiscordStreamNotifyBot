@@ -192,8 +192,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 YoutubeMemberTokenSnapshot? snapshot = await _authorizationService.GetTokenSnapshotAsync(
                     discordUserId, CancellationToken.None);
                 if (snapshot == null || !await PrepareMemberCheckCleanupAsync(
-                        userId, snapshot.Value.EncryptedTokenPayload, CancellationToken.None,
-                        null, null))
+                        userId, snapshot.Value.EncryptedTokenPayload, CancellationToken.None, null))
                 {
                     throw new InvalidOperationException("Google 憑證已被新的綁定取代，取消本次解除授權。");
                 }
@@ -232,7 +231,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         private async Task<bool> RemoveMemberCheckFromDbAsync(ulong userId, string expectedEncryptedToken,
             YoutubeMemberProbeConfigurationSnapshot configurationSnapshot,
             YoutubeMemberCheckStateSnapshot checkSnapshot,
-            int checkId,
             CancellationToken cancellationToken = default)
         {
             try
@@ -247,13 +245,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 {
                     return false;
                 }
-                if (!await PrepareMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken,
-                        configurationSnapshot, (checkId, checkSnapshot)) ||
-                    await operationLease.EnsureOwnedAsync(cancellationToken) !=
-                        GoogleOAuthOperationLockOwnershipStatus.Owned ||
-                    !await CompleteMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken))
-                    return false;
-                return true;
+                return await PrepareMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken,
+                        (configurationSnapshot, checkSnapshot)) &&
+                    await operationLease.EnsureOwnedAsync(cancellationToken) ==
+                        GoogleOAuthOperationLockOwnershipStatus.Owned &&
+                    await CompleteMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -265,8 +261,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         /// <summary>在任何 provider revoke 或本機 token 刪除之前，先保存每筆角色移除 intent。</summary>
         private async Task<bool> PrepareMemberCheckCleanupAsync(ulong userId, string expectedEncryptedToken,
             CancellationToken cancellationToken,
-            YoutubeMemberProbeConfigurationSnapshot? providerConfigurationSnapshot,
-            (int CheckId, YoutubeMemberCheckStateSnapshot Snapshot)? providerCheckSnapshot)
+            (YoutubeMemberProbeConfigurationSnapshot Configuration, YoutubeMemberCheckStateSnapshot Check)? providerSnapshot)
         {
             await using var userLock = await _operationCoordinator.LockUserAsync(userId, cancellationToken);
             ulong[] expectedGuildIds = await GetUserCheckGuildIdsAsync(userId, cancellationToken);
@@ -287,16 +282,14 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 Log.Warn($"YouTube cleanup 期間的 guild 清單已變更，保留供下次重試: {userId}");
                 return false;
             }
-            if (providerConfigurationSnapshot.HasValue || providerCheckSnapshot.HasValue)
+            if (providerSnapshot is (var configurationSnapshot, var checkSnapshot))
             {
-                if (!providerConfigurationSnapshot.HasValue || !providerCheckSnapshot.HasValue)
-                    return false;
-                YoutubeMemberCheck providerCheck = checks.SingleOrDefault(x => x.Id == providerCheckSnapshot.Value.CheckId);
+                YoutubeMemberCheck providerCheck = checks.SingleOrDefault(x => x.Id == checkSnapshot.Id);
                 GuildYoutubeMemberConfig providerConfiguration = await LockConfigurationAsync(intentDb,
-                    providerConfigurationSnapshot.Value.Id, cancellationToken);
+                    configurationSnapshot.Id, cancellationToken);
                 if (!YoutubeMemberPolicies.CanApplyProviderResult(YoutubeMemberProbeResultKind.AuthorizationInvalid,
-                        expectedEncryptedToken, token.EncryptedAccessToken, providerCheckSnapshot.Value.Snapshot,
-                        providerCheck, providerConfigurationSnapshot.Value, providerConfiguration))
+                        expectedEncryptedToken, token.EncryptedAccessToken, checkSnapshot,
+                        providerCheck, configurationSnapshot, providerConfiguration))
                 {
                     Log.Warn($"YouTube OAuth token、check 或探測設定已更新，忽略過期 authorization invalid 結果: {userId}");
                     return false;
@@ -744,9 +737,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         catch { }
                     }
 
-                    if (dto.IsNeedRemove &&
-                        YoutubeMemberManualPinPolicy.DecideAutomaticMutation(item.IsManualVideoId) ==
-                        YoutubeMemberAutomaticMutationAction.Apply)
+                    // 管理員手動指定的探測影片不受自動刪除影響。
+                    if (dto.IsNeedRemove && !item.IsManualVideoId)
                     {
                         if (!await _roleService.MarkConfigurationDeletionPendingAsync(item, GracefulShutdown.Token))
                             Log.Warn($"YouTube 會限設定刪除標記失敗: {item.GuildId} / {item.MemberCheckChannelId}");

@@ -25,9 +25,6 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
             _roleService = roleService;
         }
 
-        public static bool IsYoutubeMemberSelectionCustomId(string customId)
-            => YoutubeMemberPolicies.TryParseSelectionRoute(customId, out _, out _);
-
         [ComponentInteraction("youtube-member-check:*:*", true)]
         public async Task HandleSelectionAsync(string guildValue, string userValue, string[] selectedChannelIds)
         {

@@ -45,18 +45,6 @@ namespace DiscordStreamNotifyBot.Tests
                 TwitchAuthorizationLocalStatePolicy.ClassifyToken(true, true, true, true, false));
         }
 
-        [Theory]
-        [InlineData("invalid")]
-        [InlineData(" REVOKED ")]
-        [InlineData("Unlinked")]
-        public void AuthorizationEventRequiresCurrentPersistedRevocation(string status)
-        {
-            Assert.True(TwitchAuthorizationEventPolicy.ShouldCleanup(status, true, true));
-            Assert.False(TwitchAuthorizationEventPolicy.ShouldCleanup(status, true, false));
-            Assert.False(TwitchAuthorizationEventPolicy.ShouldCleanup(status, false, true));
-            Assert.False(TwitchAuthorizationEventPolicy.ShouldCleanup("linked", true, true));
-        }
-
         [Fact]
         public void RefreshPersistenceUsesExpectedCiphertextCompareAndSwap()
         {
@@ -99,7 +87,7 @@ namespace DiscordStreamNotifyBot.Tests
         }
 
         [Fact]
-        public void ConfigurationQueriesSeparateActiveAndDeletionPendingRows()
+        public void ActiveConfigurationsExcludeDeletionPendingRows()
         {
             var configs = new[]
             {
@@ -108,7 +96,6 @@ namespace DiscordStreamNotifyBot.Tests
             }.AsQueryable();
 
             Assert.Equal([1], configs.ActiveConfigurations().Select(x => x.Id).ToArray());
-            Assert.Equal([2], configs.DeletionPendingConfigurations().Select(x => x.Id).ToArray());
         }
 
         [Fact]
@@ -133,16 +120,6 @@ namespace DiscordStreamNotifyBot.Tests
                 TwitchSubscriptionConfigurationPolicy.ValidateUpdateState(repairing, 300));
             Assert.Null(TwitchSubscriptionConfigurationPolicy.ValidateUpdateState(repairing, 200));
             Assert.Equal((ulong)100, repairing.PreviousSubscriberRoleId);
-        }
-
-        [Fact]
-        public void RateLimitBlocksOnlyUntilProviderReset()
-        {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-
-            Assert.True(TwitchRateLimitPolicy.IsBlocked(now, now.AddSeconds(1)));
-            Assert.False(TwitchRateLimitPolicy.IsBlocked(now, now));
-            Assert.False(TwitchRateLimitPolicy.IsBlocked(now, null));
         }
 
         private static GuildTwitchSubscriptionConfig Configuration(

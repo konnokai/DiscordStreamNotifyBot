@@ -51,7 +51,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (stateError != null)
                 return new YoutubeMemberRoleConfigurationResult { Error = stateError };
 
-            string validationError = ValidateRole(guild, requestedRole);
+            string validationError = MemberDiscordRoles.ValidateConfiguredRole(
+                guild, requestedRole, "MemberSetting.Errors.", "MemberSetting.Errors.ManageRolesRequired");
             if (validationError != null)
                 return new YoutubeMemberRoleConfigurationResult { Error = validationError };
             if ((config == null || config.MemberCheckGrantRoleId != requestedRole.Id) &&
@@ -151,7 +152,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (config == null || config.DeletionPending)
                 return YoutubeMemberRoleApplyResult.Failed;
             SocketGuild guild = _client.GetGuild(config.GuildId);
-            if (guild == null || !CanManageRole(guild, config.MemberCheckGrantRoleId))
+            if (guild == null || !MemberDiscordRoles.CanManageRole(guild, config.MemberCheckGrantRoleId))
                 return YoutubeMemberRoleApplyResult.Failed;
             try
             {
@@ -302,28 +303,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             ulong roleId,
             MemberRoleOwnershipSnapshot ownership,
             CancellationToken cancellationToken)
-        {
-            if (guild.GetRole(roleId) == null || ownership.HasOtherActiveEntitlement(userId, roleId))
-                return true;
-            if (!CanManageRole(guild, roleId))
-                return false;
-            try
-            {
-                await _client.Rest.RemoveRoleAsync(guild.Id, userId, roleId,
-                    new RequestOptions { CancelToken = cancellationToken });
-                return true;
-            }
-            catch (Discord.Net.HttpException ex) when (ex.DiscordCode is DiscordErrorCode.UnknownAccount or
-                DiscordErrorCode.UnknownMember or DiscordErrorCode.UnknownUser)
-            {
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Warn($"移除 YouTube 孤兒會限身分組失敗: {guild.Id} / {userId} / {ex.GetType().Name}");
-                return false;
-            }
-        }
+            => await MemberDiscordRoles.RemoveRoleAsync(_client, guild, userId, roleId, ownership, null, null,
+                ex => Log.Warn($"移除 YouTube 孤兒會限身分組失敗: {guild.Id} / {userId} / {ex.GetType().Name}"),
+                propagateCancellation: false, cancellationToken) != MemberRoleRemovalResult.Failed;
 
         /// <summary>供 guild lock 內的孤兒對帳一次載入跨平台 entitlement 快照。</summary>
         public Task<MemberRoleOwnershipSnapshot> LoadOwnershipSnapshotAsync(
@@ -366,57 +348,14 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 return Bot.ShouldDeleteMissingGuild(config.GuildId);
             foreach (ulong roleId in roleIds.Where(x => x != 0).Distinct())
             {
-                if (ownership.HasOtherActiveEntitlement(
-                        userId,
-                        roleId,
-                        MemberEntitlementProvider.Youtube,
-                        config.MemberCheckChannelId))
-                    continue;
-                if (guild.GetRole(roleId) == null)
-                    continue;
-                if (!CanManageRole(guild, roleId))
+                // 成員已離開 guild 時繼續處理其餘角色。
+                if (await MemberDiscordRoles.RemoveRoleAsync(_client, guild, userId, roleId, ownership,
+                        MemberEntitlementProvider.Youtube, config.MemberCheckChannelId,
+                        ex => Log.Warn($"移除 YouTube 會限身分組失敗: {guild.Id} / {userId} / {ex.GetType().Name}"),
+                        propagateCancellation: false, cancellationToken) == MemberRoleRemovalResult.Failed)
                     return false;
-                try
-                {
-                    await _client.Rest.RemoveRoleAsync(guild.Id, userId, roleId,
-                        new RequestOptions { CancelToken = cancellationToken });
-                }
-                catch (Discord.Net.HttpException ex) when (ex.DiscordCode is DiscordErrorCode.UnknownAccount or
-                    DiscordErrorCode.UnknownMember or DiscordErrorCode.UnknownUser)
-                {
-                }
-                catch (Exception ex)
-                {
-                    Log.Warn($"移除 YouTube 會限身分組失敗: {guild.Id} / {userId} / {ex.GetType().Name}");
-                    return false;
-                }
             }
             return true;
-        }
-
-        private string ValidateRole(SocketGuild guild, IRole role)
-        {
-            SocketGuildUser bot = guild.GetUser(_client.CurrentUser.Id);
-            if (bot?.GuildPermissions.ManageRoles != true)
-                return "MemberSetting.Errors.ManageRolesRequired";
-            if (role.Id == guild.EveryoneRole.Id)
-                return "MemberSetting.Errors.EveryoneRole";
-            if (role.IsManaged)
-                return "MemberSetting.Errors.ManagedRole";
-            if (role.Position >= bot.Roles.Max(x => x.Position))
-                return "MemberSetting.Errors.RoleTooHigh";
-            return null;
-        }
-
-        private bool CanManageRole(SocketGuild guild, ulong roleId)
-        {
-            SocketGuildUser bot = guild.GetUser(_client.CurrentUser.Id);
-            SocketRole role = guild.GetRole(roleId);
-            return bot?.GuildPermissions.ManageRoles == true &&
-                role != null &&
-                role.Id != guild.EveryoneRole.Id &&
-                !role.IsManaged &&
-                role.Position < bot.Roles.Max(x => x.Position);
         }
     }
 }

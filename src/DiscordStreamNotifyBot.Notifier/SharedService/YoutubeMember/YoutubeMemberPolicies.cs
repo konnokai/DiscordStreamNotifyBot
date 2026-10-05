@@ -224,9 +224,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         public static bool RequiresRoleMigration(YoutubeMemberCheck check)
             => IsActive(check) || check.PendingRoleRemoval;
 
-        public static (ulong UserId, string VideoId) BuildProbeCacheKey(ulong userId, string memberCheckVideoId)
-            => (userId, memberCheckVideoId);
-
         /// <summary>離開 guild 的使用者無法再持有舊角色，migration 可安全完成；一般驗證授予仍必須失敗。</summary>
         public static bool IsRoleMigrationSynchronized(YoutubeMemberRoleApplyResult result)
             => result is YoutubeMemberRoleApplyResult.Applied or YoutubeMemberRoleApplyResult.UnknownMember;

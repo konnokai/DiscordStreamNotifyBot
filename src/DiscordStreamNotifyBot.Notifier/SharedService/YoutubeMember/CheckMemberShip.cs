@@ -103,7 +103,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     total++;
                     YoutubeMemberCheckStateSnapshot snapshot = YoutubeMemberPolicies.CaptureState(check);
                     string userLocale = _localeResolver.ResolveDelayedDirectMessage(check.Locale, guildLocale);
-                    var key = YoutubeMemberPolicies.BuildProbeCacheKey(check.UserId, configuration.MemberCheckVideoId);
+                    var key = (check.UserId, configuration.MemberCheckVideoId);
                     if (!probeResults.TryGetValue(key, out var probeExecution))
                     {
                         if (!authorizations.TryGetValue(check.UserId, out YoutubeMemberAuthorizationResult authorization))
@@ -166,7 +166,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                             // 僅明確 invalidation 進入 cleanup，且先 durable 標記所有 check 才刪本機 token。
                             if (!cleanedInvalidUsers.Contains(check.UserId) && await RemoveMemberCheckFromDbAsync(
                                     check.UserId, probeExecution.EncryptedTokenPayload, configurationSnapshot,
-                                    snapshot, check.Id, cancellationToken))
+                                    snapshot, cancellationToken))
                             {
                                 cleanedInvalidUsers.Add(check.UserId);
                                 await NotifyCredentialInvalidAsync(logChannel, configuration, check.UserId, userLocale, guildLocale);

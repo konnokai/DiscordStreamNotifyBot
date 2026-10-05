@@ -7,18 +7,17 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private static readonly TimeSpan StartTimeGrace = TimeSpan.FromMinutes(2);
         private static readonly TimeSpan MinTimerDelay = TimeSpan.FromSeconds(1);
 
-        internal static YoutubeReminderStartDecision PlanStart(DateTime scheduledStart, DateTime now)
+        /// <summary>提醒 Timer 的延遲；超過 14 天回傳 null 不排程，已到提醒時間回傳 0 立即執行。</summary>
+        internal static TimeSpan? GetReminderDelay(DateTime scheduledStart, DateTime now)
         {
             if (scheduledStart > now + MaxReminderAdvance)
-                return new YoutubeReminderStartDecision(YoutubeReminderStartAction.Ignore, TimeSpan.Zero);
+                return null;
 
             TimeSpan delay = scheduledStart - ReminderAdvance - now;
             if (delay <= TimeSpan.Zero)
-                return new YoutubeReminderStartDecision(YoutubeReminderStartAction.RunImmediately, TimeSpan.Zero);
+                return TimeSpan.Zero;
 
-            if (delay < MinTimerDelay)
-                delay = MinTimerDelay;
-            return new YoutubeReminderStartDecision(YoutubeReminderStartAction.ScheduleTimer, delay);
+            return delay < MinTimerDelay ? MinTimerDelay : delay;
         }
 
         internal static YoutubeReminderApiAction DecideApiRecheck(DateTime apiStart, DateTime now)
@@ -26,52 +25,27 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 ? YoutubeReminderApiAction.TreatAsStarted
                 : YoutubeReminderApiAction.TreatAsTimeChanged;
 
-        internal static YoutubeReminderBatchChangeAction PlanBatchChange(
+        internal static YoutubeReminderReconciliationAction ReconcileBatch(
+            bool apiVideoFound,
+            bool hasLiveStreamingDetails,
+            bool hasScheduledStartTime,
+            DateTime? scheduledStartTime,
             DateTime previousStart,
-            DateTime newStart,
             DateTime now)
         {
-            if (previousStart == newStart)
-                return YoutubeReminderBatchChangeAction.Unchanged;
-            if (newStart <= now || newStart >= now + MaxReminderAdvance)
-                return YoutubeReminderBatchChangeAction.RemoveWithoutReplacement;
-
-            return PlanStart(newStart, now).Action == YoutubeReminderStartAction.RunImmediately
-                ? YoutubeReminderBatchChangeAction.PublishAndRunImmediately
-                : YoutubeReminderBatchChangeAction.PublishAndReplaceTimer;
-        }
-
-        internal static YoutubeReminderReconciliationAction ReconcileBatch(
-            YoutubeReminderBatchFacts facts)
-        {
-            if (!facts.ApiVideoFound)
+            if (!apiVideoFound)
                 return YoutubeReminderReconciliationAction.PublishDeleteAndRemove;
-            if (!facts.HasLiveStreamingDetails || !facts.HasScheduledStartTime)
+            if (!hasLiveStreamingDetails || !hasScheduledStartTime)
                 return YoutubeReminderReconciliationAction.PublishStartAndRemove;
-            if (!facts.ScheduledStartTime.HasValue)
+            // 排程時間解析失敗或沒有變更時保留原提醒
+            if (scheduledStartTime is not { } newStart || previousStart == newStart)
                 return YoutubeReminderReconciliationAction.KeepExisting;
+            if (newStart <= now || newStart >= now + MaxReminderAdvance)
+                return YoutubeReminderReconciliationAction.RemoveWithoutReplacement;
 
-            return PlanBatchChange(facts.PreviousStart, facts.ScheduledStartTime.Value, facts.Now) switch
-            {
-                YoutubeReminderBatchChangeAction.Unchanged => YoutubeReminderReconciliationAction.KeepExisting,
-                YoutubeReminderBatchChangeAction.RemoveWithoutReplacement => YoutubeReminderReconciliationAction.RemoveWithoutReplacement,
-                YoutubeReminderBatchChangeAction.PublishAndRunImmediately => YoutubeReminderReconciliationAction.PublishChangeAndRunImmediately,
-                YoutubeReminderBatchChangeAction.PublishAndReplaceTimer => YoutubeReminderReconciliationAction.PublishChangeAndReplaceTimer,
-                _ => throw new ArgumentOutOfRangeException(),
-            };
+            return YoutubeReminderReconciliationAction.PublishChange;
         }
     }
-
-    internal enum YoutubeReminderStartAction
-    {
-        Ignore,
-        RunImmediately,
-        ScheduleTimer,
-    }
-
-    internal readonly record struct YoutubeReminderStartDecision(
-        YoutubeReminderStartAction Action,
-        TimeSpan Delay);
 
     internal enum YoutubeReminderApiAction
     {
@@ -79,29 +53,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         TreatAsTimeChanged,
     }
 
-    internal enum YoutubeReminderBatchChangeAction
-    {
-        Unchanged,
-        RemoveWithoutReplacement,
-        PublishAndRunImmediately,
-        PublishAndReplaceTimer,
-    }
-
-    internal readonly record struct YoutubeReminderBatchFacts(
-        bool ApiVideoFound,
-        bool HasLiveStreamingDetails,
-        bool HasScheduledStartTime,
-        DateTime? ScheduledStartTime,
-        DateTime PreviousStart,
-        DateTime Now);
-
     internal enum YoutubeReminderReconciliationAction
     {
         KeepExisting,
         PublishDeleteAndRemove,
         PublishStartAndRemove,
         RemoveWithoutReplacement,
-        PublishChangeAndRunImmediately,
-        PublishChangeAndReplaceTimer,
+        /// <summary>發布時間變更通知，並由 StartReminder 依新時間重新排程。</summary>
+        PublishChange,
     }
 }

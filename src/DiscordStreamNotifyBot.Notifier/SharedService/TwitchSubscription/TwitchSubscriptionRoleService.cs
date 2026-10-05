@@ -61,7 +61,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     return new TwitchRoleConfigurationResult { Error = stateError };
             }
 
-            string validationError = ValidateSubscriberRole(guild, subscriberRole);
+            string validationError = MemberDiscordRoles.ValidateConfiguredRole(
+                guild, subscriberRole, "TwitchMemberSetting.Errors.", "TwitchMemberSetting.Errors.MissingManageRoles");
             if (validationError != null)
                 return new TwitchRoleConfigurationResult { Error = validationError };
             if ((isNew || config.SubscriberRoleId != subscriberRole.Id) &&
@@ -111,9 +112,9 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     throw new InvalidOperationException("Twitch 訂閱驗證身分組設定違反重疊規則。");
                 }
 
-                if (!CanManageRole(guild, subscriberRole.Id) ||
+                if (!MemberDiscordRoles.CanManageRole(guild, subscriberRole.Id) ||
                     new[] { config.Tier1RoleId, config.Tier2RoleId, config.Tier3RoleId }.Any(x =>
-                        createdRoles.All(role => role.Id != x) && !CanManageRole(guild, x)))
+                        createdRoles.All(role => role.Id != x) && !MemberDiscordRoles.CanManageRole(guild, x)))
                 {
                     throw new InvalidOperationException("Bot 無法管理 Twitch 訂閱驗證所需的身分組。");
                 }
@@ -157,7 +158,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
             catch (Exception ex)
             {
-                if (TwitchSubscriptionConfigurationPolicy.ShouldCompensateCreatedRoles(configurationPersisted))
+                if (!configurationPersisted)
                     await DeleteCreatedRolesAsync(createdRoles, "補償刪除 Twitch Tier 身分組失敗", cancellationToken);
                 Log.Error(ex.Demystify(), "建立或修復 Twitch 訂閱身分組失敗");
                 return new TwitchRoleConfigurationResult
@@ -195,12 +196,12 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             if (guild == null || !CanManageRoles(guild))
                 return false;
             SocketRole subscriberRole = guild.GetRole(config.SubscriberRoleId);
-            if (subscriberRole == null || !CanManageRole(guild, subscriberRole.Id))
+            if (subscriberRole == null || !MemberDiscordRoles.CanManageRole(guild, subscriberRole.Id))
                 return false;
             if (tier is not ("1000" or "2000" or "3000"))
                 return false;
             ulong tierRoleId = TwitchSubscriptionRolePolicy.GetTierRoleId(config, tier);
-            if (tierRoleId != 0 && guild.GetRole(tierRoleId) != null && !CanManageRole(guild, tierRoleId))
+            if (tierRoleId != 0 && guild.GetRole(tierRoleId) != null && !MemberDiscordRoles.CanManageRole(guild, tierRoleId))
                 return false;
 
             try
@@ -228,7 +229,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         MemberEntitlementProvider.Twitch,
                         config.BroadcasterId))
                         continue;
-                    if (!CanManageRole(guild, roleId))
+                    if (!MemberDiscordRoles.CanManageRole(guild, roleId))
                         return false;
                     await _client.Rest.RemoveRoleAsync(guild.Id, discordUserId, roleId, options);
                 }
@@ -341,55 +342,31 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             if (!CanManageRoles(guild))
                 return false;
 
-            try
+            cancellationToken.ThrowIfCancellationRequested();
+            // Tier 角色先移除，共用角色最後；成員已離開 guild 時其餘角色不必再移除。
+            foreach (ulong roleId in new[] { config.Tier1RoleId, config.Tier2RoleId, config.Tier3RoleId }
+                .Where(x => x != 0).Distinct().Append(config.SubscriberRoleId))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var options = new RequestOptions { CancelToken = cancellationToken };
-                foreach (ulong roleId in new[] { config.Tier1RoleId, config.Tier2RoleId, config.Tier3RoleId }.Where(x => x != 0).Distinct())
+                MemberRoleRemovalResult result = await MemberDiscordRoles.RemoveRoleAsync(
+                    _client, guild, discordUserId, roleId, ownership,
+                    MemberEntitlementProvider.Twitch, config.BroadcasterId,
+                    ex =>
+                    {
+                        RecordRoleFailure(TwitchSubscriptionRoleOperation.Remove, ex);
+                        Log.Warn($"移除 Twitch 訂閱身分組失敗: {guild.Id} / {discordUserId} / {ex.GetType().Name}");
+                    },
+                    propagateCancellation: true, cancellationToken);
+                if (result == MemberRoleRemovalResult.Failed)
+                    return false;
+                if (result == MemberRoleRemovalResult.UserMissing)
                 {
-                    if (guild.GetRole(roleId) == null)
-                        continue;
-                    if (ownership.HasOtherActiveEntitlement(
-                        discordUserId,
-                        roleId,
-                        MemberEntitlementProvider.Twitch,
-                        config.BroadcasterId))
-                        continue;
-                    if (!CanManageRole(guild, roleId))
-                        return false;
-                    await _client.Rest.RemoveRoleAsync(guild.Id, discordUserId, roleId, options);
+                    _metrics.RecordTwitchSubscriptionRoleOperation(TwitchSubscriptionRoleOperation.Remove, TwitchSubscriptionRoleResult.UserMissing);
+                    return true;
                 }
+            }
 
-                if (!ownership.HasOtherActiveEntitlement(
-                        discordUserId,
-                        config.SubscriberRoleId,
-                        MemberEntitlementProvider.Twitch,
-                        config.BroadcasterId) &&
-                    guild.GetRole(config.SubscriberRoleId) != null)
-                {
-                    if (!CanManageRole(guild, config.SubscriberRoleId))
-                        return false;
-                    await _client.Rest.RemoveRoleAsync(guild.Id, discordUserId, config.SubscriberRoleId, options);
-                }
-
-                _metrics.RecordTwitchSubscriptionRoleOperation(TwitchSubscriptionRoleOperation.Remove, TwitchSubscriptionRoleResult.Success);
-                return true;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Discord.Net.HttpException ex) when (ex.DiscordCode is DiscordErrorCode.UnknownMember or DiscordErrorCode.UnknownUser or DiscordErrorCode.UnknownAccount)
-            {
-                _metrics.RecordTwitchSubscriptionRoleOperation(TwitchSubscriptionRoleOperation.Remove, TwitchSubscriptionRoleResult.UserMissing);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                RecordRoleFailure(TwitchSubscriptionRoleOperation.Remove, ex);
-                Log.Warn($"移除 Twitch 訂閱身分組失敗: {guild.Id} / {discordUserId} / {ex.GetType().Name}");
-                return false;
-            }
+            _metrics.RecordTwitchSubscriptionRoleOperation(TwitchSubscriptionRoleOperation.Remove, TwitchSubscriptionRoleResult.Success);
+            return true;
         }
 
         /// <summary>供 guild lock 內的批次同步與孤兒對帳共用同一份 ownership snapshot。</summary>
@@ -494,7 +471,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         IRole role = guild.GetRole(roleId);
                         if (role != null)
                         {
-                            if (!CanManageRole(guild, roleId))
+                            if (!MemberDiscordRoles.CanManageRole(guild, roleId))
                             {
                                 await db.SaveChangesAsync(cancellationToken);
                                 return false;
@@ -531,40 +508,19 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             MemberRoleOwnershipSnapshot ownership,
             CancellationToken cancellationToken)
         {
-            if (guild.GetRole(roleId) == null)
-                return true;
-            if (ownership.HasOtherActiveEntitlement(discordUserId, roleId))
-                return true;
-            if (!CanManageRole(guild, roleId))
-                return false;
-            try
-            {
-                await _client.Rest.RemoveRoleAsync(
-                    guild.Id,
-                    discordUserId,
-                    roleId,
-                    new RequestOptions { CancelToken = cancellationToken });
+            MemberRoleRemovalResult result = await MemberDiscordRoles.RemoveRoleAsync(
+                _client, guild, discordUserId, roleId, ownership, null, null,
+                ex => RecordRoleFailure(TwitchSubscriptionRoleOperation.Remove, ex),
+                propagateCancellation: true, cancellationToken);
+            if (result == MemberRoleRemovalResult.Removed)
                 _metrics.RecordTwitchSubscriptionRoleOperation(
                     TwitchSubscriptionRoleOperation.Remove,
                     TwitchSubscriptionRoleResult.Success);
-                return true;
-            }
-            catch (Discord.Net.HttpException ex) when (ex.DiscordCode is DiscordErrorCode.UnknownMember or DiscordErrorCode.UnknownUser or DiscordErrorCode.UnknownAccount)
-            {
+            else if (result == MemberRoleRemovalResult.UserMissing)
                 _metrics.RecordTwitchSubscriptionRoleOperation(
                     TwitchSubscriptionRoleOperation.Remove,
                     TwitchSubscriptionRoleResult.UserMissing);
-                return true;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                RecordRoleFailure(TwitchSubscriptionRoleOperation.Remove, ex);
-                return false;
-            }
+            return result != MemberRoleRemovalResult.Failed;
         }
 
         /// <summary>依 Tier 1→3 順序補建缺少的層級身分組，每個 Tier 完成後立即寫回 config。</summary>
@@ -607,7 +563,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 ?? throw new InvalidOperationException("找不到已保存的 Twitch Tier 身分組。");
             if (role.Name != expectedName)
             {
-                if (!CanManageRole(guild, role.Id))
+                if (!MemberDiscordRoles.CanManageRole(guild, role.Id))
                     throw new InvalidOperationException("Bot 無法管理既有的 Twitch Tier 身分組。");
                 await role.ModifyAsync(properties => properties.Name = expectedName,
                     new RequestOptions { CancelToken = cancellationToken });
@@ -638,69 +594,14 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             string currentBroadcasterId,
             MemberRoleOwnershipSnapshot ownership,
             CancellationToken cancellationToken)
-        {
-            bool stillEntitled = ownership.HasOtherActiveEntitlement(
-                discordUserId,
-                oldSubscriberRoleId,
-                MemberEntitlementProvider.Twitch,
-                currentBroadcasterId);
-            if (stillEntitled || guild.GetRole(oldSubscriberRoleId) == null)
-                return true;
-            if (!CanManageRole(guild, oldSubscriberRoleId))
-                return false;
-
-            try
-            {
-                await _client.Rest.RemoveRoleAsync(
-                    guild.Id,
-                    discordUserId,
-                    oldSubscriberRoleId,
-                    new RequestOptions { CancelToken = cancellationToken });
-                return true;
-            }
-            catch (Discord.Net.HttpException ex) when (ex.DiscordCode is DiscordErrorCode.UnknownMember or DiscordErrorCode.UnknownUser or DiscordErrorCode.UnknownAccount)
-            {
-                return true;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                RecordRoleFailure(TwitchSubscriptionRoleOperation.Remove, ex);
-                return false;
-            }
-        }
-
-        private string ValidateSubscriberRole(SocketGuild guild, IRole role)
-        {
-            SocketGuildUser bot = guild.GetUser(_client.CurrentUser.Id);
-            if (bot?.GuildPermissions.ManageRoles != true)
-                return "TwitchMemberSetting.Errors.MissingManageRoles";
-            if (role.Id == guild.EveryoneRole.Id)
-                return "TwitchMemberSetting.Errors.EveryoneRole";
-            if (role.IsManaged)
-                return "TwitchMemberSetting.Errors.ManagedRole";
-            int botHighestPosition = bot.Roles.Max(x => x.Position);
-            if (role.Position >= botHighestPosition)
-                return "TwitchMemberSetting.Errors.RoleTooHigh";
-            return null;
-        }
+            => await MemberDiscordRoles.RemoveRoleAsync(
+                _client, guild, discordUserId, oldSubscriberRoleId, ownership,
+                MemberEntitlementProvider.Twitch, currentBroadcasterId,
+                ex => RecordRoleFailure(TwitchSubscriptionRoleOperation.Remove, ex),
+                propagateCancellation: true, cancellationToken) != MemberRoleRemovalResult.Failed;
 
         private bool CanManageRoles(SocketGuild guild)
             => guild.GetUser(_client.CurrentUser.Id)?.GuildPermissions.ManageRoles == true;
-
-        private bool CanManageRole(SocketGuild guild, ulong roleId)
-        {
-            SocketGuildUser bot = guild.GetUser(_client.CurrentUser.Id);
-            SocketRole role = guild.GetRole(roleId);
-            return bot?.GuildPermissions.ManageRoles == true &&
-                role != null &&
-                !role.IsManaged &&
-                role.Id != guild.EveryoneRole.Id &&
-                role.Position < bot.Roles.Max(x => x.Position);
-        }
 
         private void RecordRoleFailure(TwitchSubscriptionRoleOperation operation, Exception exception)
         {

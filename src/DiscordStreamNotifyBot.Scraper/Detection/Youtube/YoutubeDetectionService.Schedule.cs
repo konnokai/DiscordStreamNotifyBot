@@ -549,13 +549,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                     Log.Error($"CheckScheduleTime-Parse: {reminder.Key} / {scheduledStartTimeRaw}");
                             }
 
-                            var action = YoutubeReminderPolicy.ReconcileBatch(new YoutubeReminderBatchFacts(
+                            var action = YoutubeReminderPolicy.ReconcileBatch(
                                 item != null,
                                 item?.LiveStreamingDetails != null,
                                 !string.IsNullOrEmpty(scheduledStartTimeRaw),
                                 startTime,
                                 reminder.Value.StreamVideo.ScheduledStartTime,
-                                DateTime.Now));
+                                DateTime.Now);
 
                             if (action == YoutubeReminderReconciliationAction.KeepExisting)
                                 continue;
@@ -595,8 +595,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                                 Log.Info($"直播時間已變更 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}：{previousScheduledStartTime:O} -> {startTime:O}");
 
-                                if (action is YoutubeReminderReconciliationAction.PublishChangeAndRunImmediately or
-                                    YoutubeReminderReconciliationAction.PublishChangeAndReplaceTimer)
+                                if (action == YoutubeReminderReconciliationAction.PublishChange)
                                 {
                                     await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
                                         previousScheduledStartTime: previousScheduledStartTime).ConfigureAwait(false);

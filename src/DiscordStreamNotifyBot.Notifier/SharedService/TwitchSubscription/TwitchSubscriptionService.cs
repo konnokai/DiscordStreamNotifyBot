@@ -211,8 +211,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
             if (user == null)
                 return AdminSettingsMutationResult.Rejected("verification.source-not-found");
-            if (!string.Equals(user.BroadcasterType, "affiliate", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(user.BroadcasterType, "partner", StringComparison.OrdinalIgnoreCase))
+            if (!TwitchSubscriptionConfigurationPolicy.IsEligibleBroadcaster(user.BroadcasterType))
                 return AdminSettingsMutationResult.Rejected("verification.source-ineligible");
 
             TwitchRoleConfigurationResult result = await _roleService.CreateOrRepairConfigurationAsync(
@@ -318,7 +317,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 // DeletionPending 是獨立的耐久工作，不依賴 subscription check 是否仍存在。
                 // 即使成員紀錄已清空，排程仍須重試 Tier 角色與設定本身的刪除。
                 var pendingDeletions = await db.GuildTwitchSubscriptionConfig.AsNoTracking()
-                    .DeletionPendingConfigurations()
+                    .Where(x => x.DeletionPending)
                     .ToListAsync(cancellationToken);
                 foreach (var config in pendingDeletions.Where(x => Bot.IsServerOnThisShard(x.GuildId)))
                     await _roleService.ProcessPendingConfigurationDeletionAsync(config, cancellationToken);
@@ -499,7 +498,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             DateTimeOffset now = DateTimeOffset.UtcNow;
             if (_rateLimitUntilByTwitchUserId.TryGetValue(authorization.TwitchUserId, out DateTimeOffset retryAfter))
             {
-                if (TwitchRateLimitPolicy.IsBlocked(now, retryAfter))
+                if (retryAfter > now)
                     return Result(TwitchSubscriptionStatus.TemporaryFailure, broadcasterId, authorization.TwitchUserId);
                 _rateLimitUntilByTwitchUserId.TryRemove(authorization.TwitchUserId, out _);
             }
@@ -729,10 +728,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     .Where(x => x.TwitchUserId == payload.TwitchUserId && x.DiscordUserId == discordUserId.Value)
                     .Select(x => new { x.RevokedAt })
                     .SingleOrDefaultAsync(cancellationToken);
-                if (TwitchAuthorizationEventPolicy.ShouldCleanup(
-                    status,
-                    current != null,
-                    current?.RevokedAt != null))
+                if (current?.RevokedAt != null && status is "invalid" or "revoked" or "unlinked")
                 {
                     await CleanupAuthorizationCoreAsync(discordUserId.Value, cancellationToken);
                 }

@@ -1,24 +1,10 @@
 using DiscordStreamNotifyBot.DataBase.Table;
-using DiscordStreamNotifyBot.Interaction.YoutubeMember;
 using DiscordStreamNotifyBot.SharedService.YoutubeMember;
 
 namespace DiscordStreamNotifyBot.Tests
 {
     public sealed class YoutubeMemberSelectMenuTests
     {
-        [Theory]
-        [InlineData("youtube-member-check:123:456", true)]
-        [InlineData("member:check:123:456", false)]
-        [InlineData("twitch-subscription-check:123:456", false)]
-        [InlineData("spider_youtube:trusted:channel", false)]
-        [InlineData("youtube-member-check:123", false)]
-        [InlineData("1234", false)]
-        [InlineData(null, false)]
-        public void OnlyYoutubeMemberSelectMenusAreHandled(string customId, bool expected)
-        {
-            Assert.Equal(expected, YoutubeMemberComponent.IsYoutubeMemberSelectionCustomId(customId));
-        }
-
         [Fact]
         public void RouteAndSelectionValidationRejectWrongShapeCountAndDuplicateValues()
         {
@@ -87,15 +73,6 @@ namespace DiscordStreamNotifyBot.Tests
 
             YoutubeMemberPolicies.MarkVerified(check);
             Assert.True(YoutubeMemberPolicies.IsActive(check));
-        }
-
-        [Fact]
-        public void ProbeCacheKeyUsesUserAndActualVideoRatherThanChannelRoute()
-        {
-            Assert.Equal((42UL, "video-a"), YoutubeMemberPolicies.BuildProbeCacheKey(42, "video-a"));
-            Assert.NotEqual(
-                YoutubeMemberPolicies.BuildProbeCacheKey(42, "video-a"),
-                YoutubeMemberPolicies.BuildProbeCacheKey(42, "video-b"));
         }
 
         [Fact]

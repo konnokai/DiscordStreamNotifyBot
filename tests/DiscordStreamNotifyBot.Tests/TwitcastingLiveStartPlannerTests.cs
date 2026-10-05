@@ -78,86 +78,31 @@ namespace DiscordStreamNotifyBot.Tests
         [Fact]
         public void StreamMappingUsesScreenIdAndUtcTimestamp()
         {
-            var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
-                CreateEvent(),
-                StreamAlreadyExists: false,
-                IsRecordingEnabled: true,
-                ResolvedCategoryName: "音樂"));
-
-            Assert.Equal(TwitcastingLiveStartAction.PersistRequestRecordingAndNotify, plan.Action);
-            Assert.Equal("twitcasting_jp", plan.Stream.ChannelId);
-            Assert.Equal(new DateTime(2024, 7, 3, 9, 46, 40, DateTimeKind.Utc), plan.Stream.StreamStartAt);
-            Assert.Equal("音樂", plan.Stream.Category);
-
-            var entity = TwitcastingLiveStartPlanner.ToEntity(plan.Stream);
-            Assert.Equal(plan.Stream.ChannelId, entity.ChannelId);
-            Assert.Equal(plan.Stream.ChannelTitle, entity.ChannelTitle);
-            Assert.Equal(plan.Stream.StreamId, entity.StreamId);
-            Assert.Equal(plan.Stream.StreamTitle, entity.StreamTitle);
-            Assert.Equal(plan.Stream.StreamSubTitle, entity.StreamSubTitle);
-            Assert.Equal(plan.Stream.Category, entity.Category);
-            Assert.Equal(plan.Stream.ThumbnailUrl, entity.ThumbnailUrl);
-            Assert.Equal(plan.Stream.StreamStartAt, entity.StreamStartAt);
-        }
-
-        [Theory]
-        [InlineData(true, true, 1)]
-        [InlineData(true, false, 1)]
-        [InlineData(false, false, 1)]
-        [InlineData(false, true, 2)]
-        public void RecordingDecisionRequiresPublicStreamAndEnabledSpider(
-            bool isProtected,
-            bool isRecordingEnabled,
-            int expected)
-        {
-            var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
-                CreateEvent(isProtected),
-                StreamAlreadyExists: false,
-                isRecordingEnabled,
-                "音樂"));
-
-            Assert.Equal((TwitcastingLiveStartAction)expected, plan.Action);
-        }
-
-        [Fact]
-        public void DuplicateStreamHasNoSideEffectPlan()
-        {
-            var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
-                CreateEvent(),
-                StreamAlreadyExists: true,
-                IsRecordingEnabled: true,
-                ResolvedCategoryName: "音樂"));
-
-            Assert.Equal(TwitcastingLiveStartAction.IgnoreDuplicate, plan.Action);
-            Assert.Null(plan.Stream);
-        }
-
-        [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, false)]
-        public void NotificationUsesActualRecordingDelegationResult(bool recordingDelegated, bool expected)
-        {
-            var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
-                CreateEvent(), false, true, "音樂"));
-
-            var notification = TwitcastingLiveStartPlanner.CreateNotification(plan, recordingDelegated);
+            var notification = TwitcastingLiveStartPlanner.CreateNotification(CreateEvent(), "音樂");
 
             Assert.Equal("twitcasting_jp", notification.ChannelId);
+            Assert.Equal("TwitCasting", notification.ChannelTitle);
             Assert.Equal(12345, notification.StreamId);
-            Assert.Equal(expected, notification.IsRecord);
+            Assert.Equal(new DateTime(2024, 7, 3, 9, 46, 40, DateTimeKind.Utc), notification.StreamStartAt);
+            Assert.Equal("音樂", notification.Category);
             Assert.False(notification.IsPrivate);
+            Assert.False(notification.IsRecord);
+
+            var entity = TwitcastingLiveStartPlanner.ToEntity(notification);
+            Assert.Equal(notification.ChannelId, entity.ChannelId);
+            Assert.Equal(notification.ChannelTitle, entity.ChannelTitle);
+            Assert.Equal(notification.StreamId, entity.StreamId);
+            Assert.Equal(notification.StreamTitle, entity.StreamTitle);
+            Assert.Equal(notification.StreamSubTitle, entity.StreamSubTitle);
+            Assert.Equal(notification.Category, entity.Category);
+            Assert.Equal(notification.ThumbnailUrl, entity.ThumbnailUrl);
+            Assert.Equal(notification.StreamStartAt, entity.StreamStartAt);
         }
 
         [Fact]
-        public void SkippedRecordingCannotProduceRecordedNotification()
+        public void ProtectedStreamIsMarkedPrivate()
         {
-            var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
-                CreateEvent(isProtected: true), false, true, "音樂"));
-
-            var notification = TwitcastingLiveStartPlanner.CreateNotification(plan, recordingDelegated: true);
-
-            Assert.False(notification.IsRecord);
-            Assert.True(notification.IsPrivate);
+            Assert.True(TwitcastingLiveStartPlanner.CreateNotification(CreateEvent(isProtected: true), "音樂").IsPrivate);
         }
 
         [Fact]
@@ -170,13 +115,12 @@ namespace DiscordStreamNotifyBot.Tests
                 ThumbnailUrl = null,
             };
 
-            var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
-                startEvent, false, false, null));
+            var notification = TwitcastingLiveStartPlanner.CreateNotification(startEvent, null);
 
-            Assert.Equal("無標題", plan.Stream.StreamTitle);
-            Assert.Equal(string.Empty, plan.Stream.StreamSubTitle);
-            Assert.Equal(string.Empty, plan.Stream.ThumbnailUrl);
-            Assert.Equal(string.Empty, plan.Stream.Category);
+            Assert.Equal("無標題", notification.StreamTitle);
+            Assert.Equal(string.Empty, notification.StreamSubTitle);
+            Assert.Equal(string.Empty, notification.ThumbnailUrl);
+            Assert.Equal(string.Empty, notification.Category);
         }
 
         [Fact]

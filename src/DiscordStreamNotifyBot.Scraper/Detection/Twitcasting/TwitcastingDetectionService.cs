@@ -76,27 +76,24 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                     .Where(item => item.ChannelId == startEvent.UserId)
                     .Select(item => item.IsRecord)
                     .FirstOrDefaultAsync();
-                var plan = TwitcastingLiveStartPlanner.Plan(new TwitcastingLiveStartFacts(
-                    startEvent,
-                    streamAlreadyExists,
-                    isRecordingEnabled && !_botConfig.DisableRecording,
-                    TwitcastingLiveStartPlanner.ResolveCategoryName(startEvent.CategoryId, categories)));
+                string categoryName = TwitcastingLiveStartPlanner.ResolveCategoryName(startEvent.CategoryId, categories);
 
-                if (plan.Action == TwitcastingLiveStartAction.IgnoreDuplicate)
+                if (streamAlreadyExists)
                 {
                     Log.Warn($"TwitCasting 重複開台通知：{startEvent.StreamId} - {startEvent.StreamTitle}");
                     return;
                 }
 
-                bool recordingDelegated = false;
-                if (plan.Action == TwitcastingLiveStartAction.PersistRequestRecordingAndNotify)
-                    recordingDelegated = await RecordTwitCastingAsync(plan.Stream);
+                var notification = TwitcastingLiveStartPlanner.CreateNotification(startEvent, categoryName);
+                // 私人直播不錄影
+                if (!startEvent.IsProtected && isRecordingEnabled && !_botConfig.DisableRecording)
+                    notification.IsRecord = await RecordTwitCastingAsync(notification);
 
-                var notification = TwitcastingLiveStartPlanner.CreateNotification(plan, recordingDelegated);
                 if (!await PublishStartLiveWithRetryAsync(notification))
                     return;
 
-                await db.TwitcastingStreams.AddAsync(TwitcastingLiveStartPlanner.ToEntity(plan.Stream));
+                // 實體在發布成功後才建立，DateAdded 維持寫入當下的時間
+                await db.TwitcastingStreams.AddAsync(TwitcastingLiveStartPlanner.ToEntity(notification));
                 await db.SaveChangesAsync();
             }
             finally
@@ -198,7 +195,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         /// 錄影委派：比照 Twitch，publish <see cref="RedisChannels.Twitcasting.Record"/> 給錄影工具執行，
         /// 不再於 Scraper 程序內以本機 streamlink 錄影。以訂閱者數判斷錄影端是否在線。
         /// </summary>
-        private async Task<bool> RecordTwitCastingAsync(TwitcastingStreamData stream)
+        private async Task<bool> RecordTwitCastingAsync(TwitcastingNotification stream)
         {
             Log.Info($"{stream.ChannelTitle} ({stream.StreamId}): {stream.StreamTitle}");
 

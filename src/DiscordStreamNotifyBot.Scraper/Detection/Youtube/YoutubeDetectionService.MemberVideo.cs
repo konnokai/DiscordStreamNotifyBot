@@ -11,7 +11,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         // 會限影片探索在 Scraper 單例執行，逐使用者驗證仍由各 Notifier shard 負責。
         internal async Task CheckMemberShipOnlyVideoIdAsync()
         {
-            List<(ulong GuildId, string ChannelId, YoutubeMemberChannelDecision Decision)> needCheckList;
+            List<(ulong GuildId, string ChannelId, bool DiscoverVideo, bool RefreshChannelTitle)> needCheckList;
             using (var db = _dbService.GetDbContext())
             {
                 var configs = db.GuildYoutubeMemberConfig
@@ -21,15 +21,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 needCheckList = configs
                     .GroupBy((x) => x.MemberCheckChannelId)
-                    .Select((group) =>
-                    {
-                        var decision = YoutubeMemberVideoPolicy.PlanChannel(new YoutubeMemberChannelFacts(
-                            group.Any((x) => !x.IsManualVideoId &&
-                                (string.IsNullOrEmpty(x.MemberCheckVideoId) || x.MemberCheckVideoId == "-")),
-                            group.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle))));
-                        return (group.First().GuildId, ChannelId: group.Key, Decision: decision);
-                    })
-                    .Where((x) => x.Decision.DiscoverVideo || x.Decision.RefreshChannelTitle)
+                    .Select((group) => (
+                        group.First().GuildId,
+                        ChannelId: group.Key,
+                        // 手動指定影片的設定不參與自動探索
+                        DiscoverVideo: group.Any((x) => !x.IsManualVideoId &&
+                            (string.IsNullOrEmpty(x.MemberCheckVideoId) || x.MemberCheckVideoId == "-")),
+                        RefreshChannelTitle: group.Any((x) => string.IsNullOrEmpty(x.MemberCheckChannelTitle))))
+                    .Where((x) => x.DiscoverVideo || x.RefreshChannelTitle)
                     .ToList();
             }
 
@@ -37,7 +36,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             {
                 using var db = _dbService.GetDbContext();
 
-                if (item.Decision.DiscoverVideo)
+                if (item.DiscoverVideo)
                 {
                     try
                     {
@@ -45,8 +44,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         request.PlaylistId = item.ChannelId.Replace("UC", "UUMO");
                         var result = await request.ExecuteAsync().ConfigureAwait(false);
                         var videoList = result.Items.ToList();
-                        bool selected = false;
-                        bool aborted = false;
+                        // 選到會限影片時寫入影片 ID，中止探索時清空；兩者都沒發生代表沒有可檢測的影片
+                        bool stopped = false;
+                        string newVideoId = null;
 
                         while (videoList.Count > 0)
                         {
@@ -57,61 +57,56 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             var commentRequest = YouTubeService.CommentThreads.List("snippet");
                             commentRequest.VideoId = videoId;
 
-                            YoutubeMemberCandidateAction action;
+                            MemberCandidateAction action;
                             try
                             {
+                                // 能讀到留言代表是公開影片，換下一部
                                 _ = await commentRequest.ExecuteAsync().ConfigureAwait(false);
-                                action = YoutubeMemberVideoPolicy.ClassifyCandidate(
-                                    new YoutubeMemberCandidateFacts(true, null, null));
+                                action = MemberCandidateAction.Skip;
                             }
                             catch (Exception ex)
                             {
                                 int? statusCode = ex is GoogleApiException apiException
                                     ? (int)apiException.HttpStatusCode
                                     : null;
-                                action = YoutubeMemberVideoPolicy.ClassifyCandidate(
-                                    new YoutubeMemberCandidateFacts(false, statusCode, ex.Message));
+                                action = ClassifyMemberCandidateError(statusCode, ex.Message);
                             }
 
-                            if (action is YoutubeMemberCandidateAction.IgnorePublicVideo or
-                                YoutubeMemberCandidateAction.IgnoreCommentsDisabled or
-                                YoutubeMemberCandidateAction.IgnoreUnavailable)
+                            if (action == MemberCandidateAction.Skip)
                                 continue;
 
-                            if (action == YoutubeMemberCandidateAction.SelectMemberOnlyVideo)
+                            if (action == MemberCandidateAction.Select)
                             {
                                 Log.Info($"新會限影片（{item.ChannelId}）：{videoId}");
                                 await PublishMemberVideoLogAsync(item.ChannelId,
                                     isNeedRemove: false, isNeedSendToOwner: false,
                                     messageCode: "NewProbeVideo", messageArguments: [item.ChannelId, videoId]);
-
-                                foreach (var config in await db.GuildYoutubeMemberConfig
-                                    .Where((x) => x.MemberCheckChannelId == item.ChannelId && !x.IsManualVideoId)
-                                    .ToListAsync())
-                                {
-                                    config.MemberCheckVideoId = videoId;
-                                    db.GuildYoutubeMemberConfig.Update(config);
-                                }
-
-                                selected = true;
-                                break;
+                                newVideoId = videoId;
+                            }
+                            else
+                            {
+                                Log.Error($"{item.ChannelId} 新會限影片檢查錯誤");
+                                newVideoId = "";
                             }
 
-                            Log.Error($"{item.ChannelId} 新會限影片檢查錯誤");
+                            stopped = true;
+                            break;
+                        }
+
+                        if (!stopped)
+                        {
+                            await PublishNoMemberVideosAsync(item.ChannelId, notifyBotOwner: true);
+                        }
+                        else
+                        {
                             foreach (var config in await db.GuildYoutubeMemberConfig
                                 .Where((x) => x.MemberCheckChannelId == item.ChannelId && !x.IsManualVideoId)
                                 .ToListAsync())
                             {
-                                config.MemberCheckVideoId = "";
+                                config.MemberCheckVideoId = newVideoId;
                                 db.GuildYoutubeMemberConfig.Update(config);
                             }
-
-                            aborted = true;
-                            break;
                         }
-
-                        if (!selected && !aborted)
-                            await PublishNoMemberVideosAsync(item.ChannelId, notifyBotOwner: true);
                     }
                     catch (Exception ex)
                     {
@@ -127,7 +122,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     }
                 }
 
-                if (item.Decision.RefreshChannelTitle)
+                if (item.RefreshChannelTitle)
                 {
                     try
                     {
@@ -163,6 +158,25 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 await db.SaveChangesAsync();
             }
+        }
+
+        internal enum MemberCandidateAction { Skip, Select, Abort }
+
+        /// <summary>
+        /// 依留言串查詢的錯誤判斷候選影片：留言關閉或影片不存在就換下一部，沒有權限代表是會限影片，其他錯誤中止探索。
+        /// 留言關閉要先判斷，避免同時帶 403 時被當成會限影片。
+        /// </summary>
+        internal static MemberCandidateAction ClassifyMemberCandidateError(int? httpStatusCode, string errorMessage)
+        {
+            string message = errorMessage?.ToLowerInvariant() ?? string.Empty;
+            if (message.Contains("disabled comments") ||
+                httpStatusCode == 404 || message.Contains("notfound") || message.Contains("not found"))
+                return MemberCandidateAction.Skip;
+            if (httpStatusCode == 403 || message.Contains("403") || message.Contains("forbidden") ||
+                message.Contains("unauthorized") || message.Contains("the request might not be properly authorized"))
+                return MemberCandidateAction.Select;
+
+            return MemberCandidateAction.Abort;
         }
 
         private static Task PublishNoMemberVideosAsync(string channelId, bool notifyBotOwner)

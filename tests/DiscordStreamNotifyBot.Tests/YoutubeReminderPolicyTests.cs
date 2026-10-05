@@ -9,19 +9,14 @@ namespace DiscordStreamNotifyBot.Tests
         [Fact]
         public void StartAfterFourteenDaysIsIgnored()
         {
-            var decision = YoutubeReminderPolicy.PlanStart(Now.AddDays(14).AddTicks(1), Now);
-
-            Assert.Equal(YoutubeReminderStartAction.Ignore, decision.Action);
-            Assert.Equal(TimeSpan.Zero, decision.Delay);
+            Assert.Null(YoutubeReminderPolicy.GetReminderDelay(Now.AddDays(14).AddTicks(1), Now));
         }
 
         [Fact]
         public void StartExactlyFourteenDaysIsScheduledOneMinuteEarly()
         {
-            var decision = YoutubeReminderPolicy.PlanStart(Now.AddDays(14), Now);
-
-            Assert.Equal(YoutubeReminderStartAction.ScheduleTimer, decision.Action);
-            Assert.Equal(TimeSpan.FromDays(14) - TimeSpan.FromMinutes(1), decision.Delay);
+            Assert.Equal(TimeSpan.FromDays(14) - TimeSpan.FromMinutes(1),
+                YoutubeReminderPolicy.GetReminderDelay(Now.AddDays(14), Now));
         }
 
         [Theory]
@@ -31,28 +26,21 @@ namespace DiscordStreamNotifyBot.Tests
         [InlineData(-60)]
         public void StartAtOrBeforeOneMinuteAheadRunsImmediately(int secondsAhead)
         {
-            var decision = YoutubeReminderPolicy.PlanStart(Now.AddSeconds(secondsAhead), Now);
-
-            Assert.Equal(YoutubeReminderStartAction.RunImmediately, decision.Action);
-            Assert.Equal(TimeSpan.Zero, decision.Delay);
+            Assert.Equal(TimeSpan.Zero, YoutubeReminderPolicy.GetReminderDelay(Now.AddSeconds(secondsAhead), Now));
         }
 
         [Fact]
         public void PositiveSubSecondTimerDelayIsClampedToOneSecond()
         {
-            var decision = YoutubeReminderPolicy.PlanStart(Now.AddMinutes(1).AddMilliseconds(500), Now);
-
-            Assert.Equal(YoutubeReminderStartAction.ScheduleTimer, decision.Action);
-            Assert.Equal(TimeSpan.FromSeconds(1), decision.Delay);
+            Assert.Equal(TimeSpan.FromSeconds(1),
+                YoutubeReminderPolicy.GetReminderDelay(Now.AddMinutes(1).AddMilliseconds(500), Now));
         }
 
         [Fact]
         public void NormalFutureStartUsesOneMinuteAdvance()
         {
-            var decision = YoutubeReminderPolicy.PlanStart(Now.AddHours(2), Now);
-
-            Assert.Equal(YoutubeReminderStartAction.ScheduleTimer, decision.Action);
-            Assert.Equal(TimeSpan.FromHours(2) - TimeSpan.FromMinutes(1), decision.Delay);
+            Assert.Equal(TimeSpan.FromHours(2) - TimeSpan.FromMinutes(1),
+                YoutubeReminderPolicy.GetReminderDelay(Now.AddHours(2), Now));
         }
 
         [Theory]
@@ -65,56 +53,6 @@ namespace DiscordStreamNotifyBot.Tests
             Assert.Equal(
                 (YoutubeReminderApiAction)expected,
                 YoutubeReminderPolicy.DecideApiRecheck(Now.AddSeconds(secondsAhead), Now));
-        }
-
-        [Fact]
-        public void UnchangedBatchTimeKeepsExistingTimer()
-        {
-            Assert.Equal(
-                YoutubeReminderBatchChangeAction.Unchanged,
-                YoutubeReminderPolicy.PlanBatchChange(Now.AddHours(1), Now.AddHours(1), Now));
-        }
-
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(0)]
-        public void BatchChangeToPastOrNowRemovesWithoutReplacement(int secondsAhead)
-        {
-            Assert.Equal(
-                YoutubeReminderBatchChangeAction.RemoveWithoutReplacement,
-                YoutubeReminderPolicy.PlanBatchChange(Now.AddHours(1), Now.AddSeconds(secondsAhead), Now));
-        }
-
-        [Fact]
-        public void BatchChangeExactlyFourteenDaysRemovesWithoutReplacement()
-        {
-            Assert.Equal(
-                YoutubeReminderBatchChangeAction.RemoveWithoutReplacement,
-                YoutubeReminderPolicy.PlanBatchChange(Now.AddHours(1), Now.AddDays(14), Now));
-        }
-
-        [Fact]
-        public void BatchChangeAfterFourteenDaysRemovesWithoutReplacement()
-        {
-            Assert.Equal(
-                YoutubeReminderBatchChangeAction.RemoveWithoutReplacement,
-                YoutubeReminderPolicy.PlanBatchChange(Now.AddHours(1), Now.AddDays(14).AddTicks(1), Now));
-        }
-
-        [Fact]
-        public void BatchChangeInsideFourteenDaysReplacesTimer()
-        {
-            Assert.Equal(
-                YoutubeReminderBatchChangeAction.PublishAndReplaceTimer,
-                YoutubeReminderPolicy.PlanBatchChange(Now.AddHours(1), Now.AddDays(14).AddTicks(-1), Now));
-        }
-
-        [Fact]
-        public void BatchChangeWithinOneMinutePublishesAndRunsImmediately()
-        {
-            Assert.Equal(
-                YoutubeReminderBatchChangeAction.PublishAndRunImmediately,
-                YoutubeReminderPolicy.PlanBatchChange(Now.AddHours(1), Now.AddSeconds(30), Now));
         }
     }
 }

@@ -34,13 +34,13 @@ namespace DiscordStreamNotifyBot.Tests
         {
             Assert.Equal(
                 YoutubeReminderReconciliationAction.KeepExisting,
-                YoutubeReminderPolicy.ReconcileBatch(new YoutubeReminderBatchFacts(
+                YoutubeReminderPolicy.ReconcileBatch(
                     true,
                     true,
                     true,
                     null,
                     PreviousStart,
-                    Now)));
+                    Now));
         }
 
         [Fact]
@@ -61,28 +61,32 @@ namespace DiscordStreamNotifyBot.Tests
                 Reconcile(scheduledStartTime: Now.AddSeconds(secondsAhead)));
         }
 
-        [Fact]
-        public void FourteenDayBoundaryIsRemovedWithoutNewTimer()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void FourteenDayBoundaryIsRemovedWithoutNewTimer(int ticksAfter)
         {
             Assert.Equal(
                 YoutubeReminderReconciliationAction.RemoveWithoutReplacement,
-                Reconcile(scheduledStartTime: Now.AddDays(14)));
+                Reconcile(scheduledStartTime: Now.AddDays(14).AddTicks(ticksAfter)));
+        }
+
+        [Theory]
+        [InlineData(30)]
+        [InlineData(2 * 60 * 60)]
+        public void FutureReplacementPublishesChange(int secondsAhead)
+        {
+            Assert.Equal(
+                YoutubeReminderReconciliationAction.PublishChange,
+                Reconcile(scheduledStartTime: Now.AddSeconds(secondsAhead)));
         }
 
         [Fact]
-        public void NearReplacementPublishesChangeAndRunsImmediately()
+        public void ReplacementJustInsideFourteenDaysPublishesChange()
         {
             Assert.Equal(
-                YoutubeReminderReconciliationAction.PublishChangeAndRunImmediately,
-                Reconcile(scheduledStartTime: Now.AddSeconds(30)));
-        }
-
-        [Fact]
-        public void FutureReplacementPublishesChangeAndReplacesTimer()
-        {
-            Assert.Equal(
-                YoutubeReminderReconciliationAction.PublishChangeAndReplaceTimer,
-                Reconcile(scheduledStartTime: Now.AddHours(2)));
+                YoutubeReminderReconciliationAction.PublishChange,
+                Reconcile(scheduledStartTime: Now.AddDays(14).AddTicks(-1)));
         }
 
         private static YoutubeReminderReconciliationAction Reconcile(
@@ -90,12 +94,12 @@ namespace DiscordStreamNotifyBot.Tests
             bool hasLiveStreamingDetails = true,
             bool hasScheduledStartTime = true,
             DateTime? scheduledStartTime = null)
-            => YoutubeReminderPolicy.ReconcileBatch(new YoutubeReminderBatchFacts(
+            => YoutubeReminderPolicy.ReconcileBatch(
                 apiVideoFound,
                 hasLiveStreamingDetails,
                 hasScheduledStartTime,
                 scheduledStartTime ?? (hasScheduledStartTime ? PreviousStart : null),
                 PreviousStart,
-                Now));
+                Now);
     }
 }
