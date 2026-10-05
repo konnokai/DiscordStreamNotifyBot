@@ -33,6 +33,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
         private readonly CancellationTokenSource _lifecycleCancellation;
+        private readonly YoutubeMember.YoutubeMemberLifecycleTaskRegistry _eventTasks = new();
         private readonly ConcurrentDictionary<string, DateTimeOffset> _rateLimitUntilByTwitchUserId = new(StringComparer.Ordinal);
         private Task _reverificationTask;
         private Task _orphanReconciliationTask;
@@ -75,7 +76,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             CancellationToken cancellationToken = _lifecycleCancellation.Token;
             Bot.RedisSub.Subscribe(
                 new RedisChannel(RedisChannels.Twitch.AuthorizationChanged, RedisChannel.PatternMode.Literal),
-                (channel, value) => _ = HandleAuthorizationChangedAsync(value, cancellationToken));
+                (channel, value) => TrackEventTask(() => HandleAuthorizationChangedAsync(value, cancellationToken)));
 
             if (_botConfig.EnableGuildMembersIntent)
             {
@@ -104,6 +105,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
             if (_botConfig.EnableGuildMembersIntent)
                 _client.UserJoined -= RestoreOnUserJoinedAsync;
+            // 停止後不再接受新的授權事件，並等待已開始處理的事件結束。
+            Task[] eventTasks = _eventTasks.StopAndSnapshot();
             await _lifecycleCancellation.CancelAsync();
             try
             {
@@ -117,12 +120,36 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
             try
             {
-                await Task.WhenAll(new[] { _reverificationTask, _orphanReconciliationTask }.Where(x => x != null));
+                await Task.WhenAll(new[] { _reverificationTask, _orphanReconciliationTask }.Where(x => x != null)
+                    .Concat(eventTasks));
             }
             catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested)
             {
             }
             _lifecycleCancellation.Dispose();
+        }
+
+        /// <summary>追蹤 Redis 事件處理工作，供 <see cref="StopAsync"/> 等待；停止後的新事件直接略過。</summary>
+        private Task TrackEventTask(Func<Task> action)
+        {
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!_eventTasks.TryRegister(completion.Task))
+                return Task.CompletedTask;
+
+            _ = RunTrackedEventAsync(action, completion);
+            return completion.Task;
+        }
+
+        private async Task RunTrackedEventAsync(Func<Task> action, TaskCompletionSource completion)
+        {
+            try { await action(); }
+            catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested) { }
+            catch (Exception ex) { Log.Error(ex.Demystify(), "處理 Twitch 訂閱授權事件失敗"); }
+            finally
+            {
+                _eventTasks.Complete(completion.Task);
+                completion.TrySetResult();
+            }
         }
 
         /// <summary>建立待驗證紀錄、查詢 Twitch，並在重新確認設定仍有效後套用 Discord 角色結果。</summary>

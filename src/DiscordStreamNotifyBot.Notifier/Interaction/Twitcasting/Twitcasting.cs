@@ -197,7 +197,9 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                     db.SaveChanges();
                     _service.InvalidateNoticeCache();
 
-                    if (message != "")
+                    if (message.Trim() == "-")
+                        await SendLocalizedConfirmAsync("Notifications.DisabledSimple", true, true, channelData.Name).ConfigureAwait(false);
+                    else if (message != "")
                         await SendLocalizedConfirmAsync("Notifications.MessageSetSimple", true, true, channelData.Name, message).ConfigureAwait(false);
                     else
                         await SendLocalizedConfirmAsync("Notifications.MessageClearedSimple", true, true, channelData.Name).ConfigureAwait(false);
@@ -227,7 +229,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                     {
                         string message = string.IsNullOrWhiteSpace(item.StartStreamMessage)
                             ? BotLocalizer.Get("Common.None", locale)
-                            : item.StartStreamMessage;
+                            : GetCurrentMessage(item.StartStreamMessage, locale);
                         dic.Add(db.GetTwitCastingChannelTitleByScreenId(item.ScreenId), message);
                     }
 

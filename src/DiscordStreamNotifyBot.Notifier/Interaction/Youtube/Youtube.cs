@@ -147,7 +147,7 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message + "r\n" + ex.StackTrace);
+                Log.Error(ex.Message + "\r\n" + ex.StackTrace);
                 await SendLocalizedErrorAsync("Errors.Unknown", true);
             }
         }
@@ -632,8 +632,11 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                     {
                         result += BotLocalizer.Get("Youtube.Notifications.NoEndWarning", locale);
                     }
-                    else if (!db.YoutubeChannelSpider.FirstOrDefault((x) => x.IsTrustedChannel)?.IsTrustedChannel ?? false &&
-                        (channelId != "holo" && channelId != "2434" && channelId != "other"))
+                    // 與偵測端的認可判定一致（錄影頻道、2434 或已認可的爬蟲頻道）；未認可頻道只會走影片上傳通知
+                    else if (channelId != "holo" && channelId != "2434" && channelId != "other" &&
+                        !(db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId) ||
+                          db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId) ||
+                          (db.YoutubeChannelSpider.AsNoTracking().FirstOrDefault((x) => x.ChannelId == channelId)?.IsTrustedChannel ?? false)))
                     {
                         result += BotLocalizer.Get("Youtube.Notifications.VideoOnlyWarning", locale);
                     }

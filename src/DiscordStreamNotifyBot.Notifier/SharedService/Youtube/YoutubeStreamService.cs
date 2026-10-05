@@ -3,6 +3,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.AdminSettings;
 using DiscordStreamNotifyBot.SharedService.Cluster;
@@ -10,6 +11,7 @@ using DiscordStreamNotifyBot.SharedService.Member;
 using Google.Apis.YouTube.v3;
 using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
+using Polly;
 using TableVideo = DiscordStreamNotifyBot.DataBase.Table.Video;
 using YTApiVideo = Google.Apis.YouTube.v3.Data.Video;
 
@@ -159,6 +161,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     return AdminSettingsMutationResult.Rejected("crawler.source-ineligible");
 
                 int limit = await GetYoutubeCrawlerLimitAsync(db, guild.Id, cancellationToken);
+                // Owner 歸屬（GuildId=0）不占操作 guild 名額，也不受該 guild 上限限制（與 CHZZK 一致）。
+                bool limitApplies = !addForBotOwner && !Utility.OfficialGuildContains(guild.Id);
                 var existing = await db.YoutubeChannelSpider.SingleOrDefaultAsync(
                     x => x.ChannelId == sourceId, cancellationToken);
                 if (existing != null)
@@ -170,7 +174,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     var guilds = await _clusterQuery.GetGuildNameMapAsync();
                     if (guilds.ContainsKey(existing.GuildId))
                         return AdminSettingsMutationResult.Rejected("crawler.source-owned");
-                    if (!Utility.OfficialGuildContains(guild.Id) &&
+                    if (limitApplies &&
                         await db.YoutubeChannelSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
                         return LimitReached(limit);
                     existing.GuildId = guild.Id;
@@ -178,7 +182,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     return Added(sourceId, existing.ChannelTitle);
                 }
 
-                if (!Utility.OfficialGuildContains(guild.Id) &&
+                if (limitApplies &&
                     await db.YoutubeChannelSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
                     return LimitReached(limit);
                 string sourceName = await GetChannelTitle(sourceId);
@@ -600,13 +604,13 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                                 _noticeCache.Invalidate();
                             }
                         },
-                        // 沿用既有 log：不論實際發到哪個通知頻道，都印出影片通知頻道
+                        // 印出這次實際發送的目的地頻道（新影片用影片頻道，其餘用直播頻道）
                         (failure, httpEx) => failure switch
                         {
-                            NotificationFailureLog.Discord5xx => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 5xx 錯誤：{httpEx.HttpCode}",
-                            NotificationFailureLog.DiscordUnknownError => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 未知錯誤",
-                            NotificationFailureLog.Timeout => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 逾時",
-                            _ => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 未知錯誤",
+                            NotificationFailureLog.Discord5xx => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} Discord 5xx 錯誤：{httpEx.HttpCode}",
+                            NotificationFailureLog.DiscordUnknownError => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} Discord 未知錯誤",
+                            NotificationFailureLog.Timeout => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} Discord 逾時",
+                            _ => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} 未知錯誤",
                         },
                         async attempt =>
                         {
@@ -786,9 +790,25 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             Log.Info($"YouTube 通知 ({videoId}) | 嘗試下載封面: {url}");
             try
             {
-                return await DiscordRetryPolicy.Create((retryAttempt, timeSpan) =>
-                        Log.Warn($"YouTube 通知 ({videoId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)"))
-                    .ExecuteAsync(() => SharedHttpClient.GetByteArrayAsync(url));
+                // HttpClient 失敗時拋的是 HttpRequestException / TaskCanceledException（逾時），不是 Discord 的例外，
+                // 因此不能沿用 DiscordRetryPolicy。只重試連線錯誤、5xx 與逾時；404 等用戶端錯誤代表沒有封面，直接放棄。
+                // 每次嘗試限時 10 秒：封面下載在逐伺服器發送迴圈內，卡住會拖住整個 shard 的通知；關機時不再重試。
+                return await Polly.Policy
+                    .Handle<HttpRequestException>((httpEx) => httpEx.StatusCode == null || (int)httpEx.StatusCode >= 500)
+                    .Or<TaskCanceledException>((_) => !GracefulShutdown.Token.IsCancellationRequested)
+                    .Or<TimeoutException>()
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
+                    {
+                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                        Log.Warn($"YouTube 通知 ({videoId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
+                        return timeSpan;
+                    })
+                    .ExecuteAsync(async () =>
+                    {
+                        using var cts = CancellationTokenSource.CreateLinkedTokenSource(GracefulShutdown.Token);
+                        cts.CancelAfter(TimeSpan.FromSeconds(10));
+                        return await SharedHttpClient.GetByteArrayAsync(url, cts.Token);
+                    });
             }
             catch (Exception ex)
             {

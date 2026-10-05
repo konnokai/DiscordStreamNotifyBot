@@ -312,7 +312,6 @@ namespace DiscordStreamNotifyBot.Interaction
                     (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))))
                 .ToList();
 
-            // 換頁計算沿用每頁 10 筆（與實際每頁顯示的 20 筆不同），維持既有行為
             await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, currentPage =>
             {
                 int shown = Math.Min(list.Count, (currentPage + 1) * 20);
@@ -323,7 +322,7 @@ namespace DiscordStreamNotifyBot.Interaction
                     .WithFooter(warningChannelNum is int warning
                         ? BotLocalizer.Format("Spider.ListFooter", locale, shown, list.Count, warning)
                         : BotLocalizer.Format("Common.ChannelCountFooter", locale, shown, list.Count));
-            }, list.Count, 10, false, ephemeral).ConfigureAwait(false);
+            }, list.Count, 20, false, ephemeral).ConfigureAwait(false);
         }
 
         public async Task CheckIsFirstSetNoticeAndSendWarningMessageAsync(MainDbContext dbContext)

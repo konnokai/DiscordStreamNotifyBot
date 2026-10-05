@@ -131,6 +131,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 
             using var db = _dbService.GetDbContext();
             int limit = await GetTwitcastingCrawlerLimitAsync(db, guild.Id, cancellationToken);
+            // Owner 歸屬（GuildId=0）不占操作 guild 名額，也不受該 guild 上限限制（與 CHZZK 一致）。
+            bool limitApplies = !addForBotOwner && !Utility.OfficialGuildContains(guild.Id);
             var existing = await db.TwitcastingSpider.SingleOrDefaultAsync(
                 x => x.ScreenId == broadcaster.ScreenId, cancellationToken);
             if (existing != null)
@@ -142,14 +144,14 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                 var guilds = await _clusterQuery.GetGuildNameMapAsync();
                 if (guilds.ContainsKey(existing.GuildId))
                     return AdminSettingsMutationResult.Rejected("crawler.source-owned");
-                if (!Utility.OfficialGuildContains(guild.Id) &&
+                if (limitApplies &&
                     await db.TwitcastingSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
                     return LimitReached(limit);
                 existing.GuildId = guild.Id;
                 await db.SaveChangesAsync(cancellationToken);
                 return Added(existing.ScreenId, existing.ChannelTitle);
             }
-            if (!Utility.OfficialGuildContains(guild.Id) &&
+            if (limitApplies &&
                 await db.TwitcastingSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
                 return LimitReached(limit);
 
@@ -354,14 +356,14 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
                     .ToDictionary(guild => guild.Id);
                 Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
 
-                // TwitCasting 沿用既有 log 文字：失敗 log 以「TwitCasting 通知 - 」開頭，重試 log 沒有前綴。
+                // TwitCasting 失敗 log 沿用既有的「TwitCasting 通知 - 」開頭；重試 log 與其他平台一致，加上平台與頻道前綴。
                 var delivery = new ChannelNotificationDelivery(
                     new NotificationDelivery(_metrics, NotificationMetricEvent.TwitcastingStart, progress),
                     guildsById, localesByGuildId,
                     new NotificationVariantCache<NotificationVariant>(
                         locale => BuildVariant(twitcastingStream, isPrivate, isRecord, locale)),
                     failureLogPrefix: "TwitCasting 通知 - ",
-                    retryLogPrefix: "",
+                    retryLogPrefix: $"TwitCasting 通知 ({twitcastingStream.ChannelId}) | ",
                     removeGuildNotices: guildId =>
                     {
                         db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where((x) => x.GuildId == guildId));
@@ -377,9 +379,9 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
 
                 foreach (var item in noticeGuildList)
                 {
-                    // TwitCasting 沒有「-」關閉通知的檢查，沿用既有行為
+                    // 與其他平台一致：自訂訊息為「-」時視為關閉通知、不發送
                     await delivery.SendAsync($"{item.Id}:{item.DiscordChannelId}", item.GuildId, item.DiscordChannelId,
-                        item.StartStreamMessage, skipDisabledMessage: false, $"TwitCasting 通知 ({item.DiscordChannelId})");
+                        item.StartStreamMessage, skipDisabledMessage: true, $"TwitCasting 通知 ({item.DiscordChannelId})");
                 }
             }
 #endif
