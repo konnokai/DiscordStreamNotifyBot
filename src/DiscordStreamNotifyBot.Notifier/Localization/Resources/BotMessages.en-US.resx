@@ -203,7 +203,6 @@
   <data name="YoutubeSpider.NotRecorded" xml:space="preserve"><value>This channel is not in the recording list.</value></data>
   <data name="YoutubeSpider.RecordRemoved" xml:space="preserve"><value>Removed from the recording list.</value></data>
   <data name="YoutubeSpider.ListTitle" xml:space="preserve"><value>YouTube Spider List</value></data>
-  <data name="YoutubeSpider.UntrustedListTitle" xml:space="preserve"><value>Unapproved YouTube Spiders</value></data>
   <data name="Spider.LimitReached" xml:space="preserve"><value>This server already has {0} {1} spiders. Remove one and try again. For special requests, use {2} to contact the bot owner.</value></data>
   <data name="Spider.LimitReachedShort" xml:space="preserve"><value>This server has reached its limit of {0} {1} spiders.</value></data>
   <data name="Spider.AlreadyExists" xml:space="preserve"><value>`{0}` is already in the spider list. Use `{1} {2}` in the notification channel to enable notifications.{3}</value></data>
@@ -216,8 +215,6 @@
   <data name="Spider.StatusChanged" xml:space="preserve"><value>The channel state for `{0}` is now “{1}”.</value></data>
   <data name="Spider.RecordingChanged" xml:space="preserve"><value>The recording state for `{0}` is now “{1}”.</value></data>
   <data name="Spider.ListEntry" xml:space="preserve"><value>{0}, added by `{1}`</value></data>
-  <data name="Spider.ListFooter" xml:space="preserve"><value>{0} / {1} channels ({2} warning or unapproved spiders)</value></data>
-  <data name="Spider.WarningListTitle" xml:space="preserve"><value>Warning-State Spiders</value></data>
   <data name="Twitch.Errors.UserNotFound" xml:space="preserve"><value>The Twitch user could not be retrieved. Check the channel URL or name.</value></data>
   <data name="Twitch.Errors.InvalidAutocompleteValue" xml:space="preserve"><value>The Twitch channel ID could not be resolved. Select an autocomplete result again without switching Discord channels.</value></data>
   <data name="Twitch.Notifications.Added" xml:space="preserve"><value>`{0}` has been added to the Twitch notification list.{1}</value></data>

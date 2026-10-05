@@ -75,7 +75,9 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
 
             using (var db = _dbService.GetDbContext())
             {
-                var spiders = db.ChzzkSpider.AsNoTracking().AsEnumerable()
+                bool showAll = CanViewAllSpiders;
+                ulong guildId = Context.Guild.Id;
+                var spiders = db.ChzzkSpider.AsNoTracking().Where((x) => showAll || x.GuildId == guildId).AsEnumerable()
                     .Select((x) => (string.IsNullOrEmpty(x.ChannelName) ? x.ChannelId : x.ChannelName,
                         ChzzkUrls.Channel(x.ChannelId), x.GuildId));
                 await SendSpiderListAsync(locale, page, "ChzzkSpider.ListTitle", _clusterQuery, spiders).ConfigureAwait(false);

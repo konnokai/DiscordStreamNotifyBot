@@ -69,34 +69,19 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
 
             using (var db = _dbService.GetDbContext())
             {
+                bool showAll = CanViewAllSpiders;
+                ulong guildId = Context.Guild.Id;
                 try
                 {
-                    var spiders = db.TwitchSpider.AsNoTracking().Where((x) => !x.IsWarningUser).AsEnumerable()
+                    var spiders = db.TwitchSpider.AsNoTracking().Where((x) => showAll || x.GuildId == guildId).AsEnumerable()
                         .Select((x) => (x.UserName, $"https://twitch.tv/{x.UserLogin}", x.GuildId));
-                    await SendSpiderListAsync(locale, page, "TwitchSpider.ListTitle", _clusterQuery, spiders,
-                        db.TwitchSpider.Count((x) => x.IsWarningUser)).ConfigureAwait(false);
+                    await SendSpiderListAsync(locale, page, "TwitchSpider.ListTitle", _clusterQuery, spiders).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex.Demystify(), $"Twitch-Spider-List Error");
                     await SendLocalizedErrorAsync("Errors.OperationFailed", false, true);
                 }
-            }
-        }
-
-        [DefaultMemberPermissions(GuildPermission.Administrator)]
-        [SlashCommand("list-not-trusted", "顯示已加入但為警告狀態的爬蟲檢測頻道（此清單可能包含中之人或前世的頻道）")]
-        public async Task ListNotTrustedChannelSpider([Summary("page", "頁數")] int page = 0)
-        {
-            if (page < 0) page = 0;
-            string locale = await GetLocaleAsync(false);
-
-            using (var db = _dbService.GetDbContext())
-            {
-                var spiders = db.TwitchSpider.AsNoTracking().Where((x) => x.IsWarningUser).AsEnumerable()
-                    .Select((x) => (x.UserName, $"https://twitch.tv/{x.UserLogin}", x.GuildId));
-                await SendSpiderListAsync(locale, page, "Spider.WarningListTitle", _clusterQuery, spiders,
-                    ephemeral: true).ConfigureAwait(false);
             }
         }
 

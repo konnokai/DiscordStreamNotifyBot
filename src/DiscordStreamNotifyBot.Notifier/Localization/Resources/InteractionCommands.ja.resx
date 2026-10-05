@@ -62,10 +62,8 @@
   <data name="youtube-spider.add.channel.description" xml:space="preserve"><value>監視する YouTube チャンネル</value></data>
   <data name="youtube-spider.remove.description" xml:space="preserve"><value>hololive／にじさんじ以外の YouTube チャンネルを監視対象から削除します</value></data>
   <data name="youtube-spider.remove.channel.description" xml:space="preserve"><value>監視を停止する YouTube チャンネル</value></data>
-  <data name="youtube-spider.list.description" xml:space="preserve"><value>承認済みの YouTube 監視チャンネルを表示します</value></data>
+  <data name="youtube-spider.list.description" xml:space="preserve"><value>登録済みの YouTube チャンネルクローラーを表示します</value></data>
   <data name="youtube-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="youtube-spider.list-not-trusted.description" xml:space="preserve"><value>未承認の YouTube 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
-  <data name="youtube-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 
   <data name="twitch.description" xml:space="preserve"><value>Twitch の配信通知設定</value></data>
   <data name="twitch.add.description" xml:space="preserve"><value>Twitch の配信通知を追加します</value></data>
@@ -87,10 +85,8 @@
   <data name="twitch-spider.add.channel.description" xml:space="preserve"><value>監視する Twitch チャンネル</value></data>
   <data name="twitch-spider.remove.description" xml:space="preserve"><value>Twitch チャンネルの監視を削除します</value></data>
   <data name="twitch-spider.remove.channel.description" xml:space="preserve"><value>監視を停止する Twitch チャンネル</value></data>
-  <data name="twitch-spider.list.description" xml:space="preserve"><value>警告のない Twitch 監視チャンネルを表示します</value></data>
+  <data name="twitch-spider.list.description" xml:space="preserve"><value>登録済みの Twitch チャンネルクローラーを表示します</value></data>
   <data name="twitch-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="twitch-spider.list-not-trusted.description" xml:space="preserve"><value>警告対象の Twitch 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
-  <data name="twitch-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 
   <data name="twitcasting.description" xml:space="preserve"><value>TwitCasting の配信通知設定</value></data>
   <data name="twitcasting.add.description" xml:space="preserve"><value>TwitCasting の配信通知を追加します</value></data>
@@ -111,10 +107,8 @@
   <data name="twitcasting-spider.add.channel.description" xml:space="preserve"><value>監視する TwitCasting チャンネル</value></data>
   <data name="twitcasting-spider.remove.description" xml:space="preserve"><value>TwitCasting チャンネルの監視を削除します</value></data>
   <data name="twitcasting-spider.remove.channel.description" xml:space="preserve"><value>監視を停止する TwitCasting チャンネル</value></data>
-  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>警告のない TwitCasting 監視チャンネルを表示します</value></data>
+  <data name="twitcasting-spider.list.description" xml:space="preserve"><value>登録済みの TwitCasting チャンネルクローラーを表示します</value></data>
   <data name="twitcasting-spider.list.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
-  <data name="twitcasting-spider.list-not-trusted.description" xml:space="preserve"><value>警告対象の TwitCasting 監視チャンネルを表示します。中の人や前世のチャンネルを含む場合があります</value></data>
-  <data name="twitcasting-spider.list-not-trusted.page.description" xml:space="preserve"><value>表示するページ番号</value></data>
 
   <data name="youtube-member.description" xml:space="preserve"><value>YouTube メンバーシップの認証</value></data>
   <data name="youtube-member.check.description" xml:space="preserve"><value>サイト連携を確認してメンバーシップ認証を開始します</value></data>
