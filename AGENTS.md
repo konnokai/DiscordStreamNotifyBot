@@ -126,3 +126,13 @@ dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Sh
 - 查詢不足時再讀 `graphify-out/wiki/index.md` 或 `graphify-out/GRAPH_REPORT.md`。
 - 修改後不要自動執行 `graphify update .`；提醒使用者自行更新。
 - `graphify-out/` 已列入 `.gitignore`，不進版控；提交時不需理會它的變更。
+
+## Agent skills
+
+### Issue tracker
+
+Issue 記在 GitHub Issues（`konnokai/DiscordStreamNotifyBot`），用 `gh` CLI 操作。See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context：根目錄一份 `CONTEXT.md`，ADR 放在 `docs/adr/`。See `docs/agents/domain.md`.
