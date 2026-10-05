@@ -199,7 +199,12 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
                     configured.Add(id);
                 foreach (var id in db.NoticeTwitcastingStreamChannels.AsNoTracking().Select((x) => x.GuildId).Distinct())
                     configured.Add(id);
+                foreach (var id in db.NoticeChzzkStreamChannels.AsNoTracking().Select((x) => x.GuildId).Distinct())
+                    configured.Add(id);
                 foreach (var id in db.GuildYoutubeMemberConfig.AsNoTracking().Select((x) => x.GuildId).Distinct())
+                    configured.Add(id);
+                // 等待刪除中的設定也算：身分組清理完成前 Bot 若先退出伺服器，就無法再移除那些身分組
+                foreach (var id in db.GuildTwitchSubscriptionConfig.AsNoTracking().Select((x) => x.GuildId).Distinct())
                     configured.Add(id);
             }
 
@@ -440,6 +445,9 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
 
                             foreach (var item in db.NoticeTwitcastingStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
                                 AddTarget(guilds[item.GuildId], "TwitCasting", "直播", item.DiscordChannelId);
+
+                            foreach (var item in db.NoticeChzzkStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
+                                AddTarget(guilds[item.GuildId], "CHZZK", "直播", item.DiscordChannelId);
                         }
 
                         response.CheckedCount = targets.Count;

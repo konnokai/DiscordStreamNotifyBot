@@ -160,6 +160,7 @@ namespace DiscordStreamNotifyBot
                         db.BannerChange.RemoveRange(db.BannerChange.Where(x => x.GuildId == guild.Id));
                         db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where(x => x.GuildId == guild.Id));
                         db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where(x => x.GuildId == guild.Id));
+                        db.NoticeChzzkStreamChannels.RemoveRange(db.NoticeChzzkStreamChannels.Where(x => x.GuildId == guild.Id));
                         db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guild.Id));
                         db.YoutubeMemberCheck.RemoveRange(db.YoutubeMemberCheck.Where(x => x.GuildId == guild.Id));
                         db.TwitchSubscriptionCheck.RemoveRange(db.TwitchSubscriptionCheck.Where(x => x.GuildId == guild.Id));
@@ -575,7 +576,7 @@ namespace DiscordStreamNotifyBot
                         try
                         {
                             await client.SetCustomStatusAsync($"服務 {await GetAggregatedShardCountAsync(Shared.RedisChannels.SharedState.MemberCountHash, client.Guilds.Sum((x) => x.MemberCount))} 個成員");
-                            Status = BotPlayingStatus.Info;
+                            Status = BotPlayingStatus.Stream;
                         }
                         catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
                         break;
@@ -593,7 +594,7 @@ namespace DiscordStreamNotifyBot
                             else
                             {
                                 list = null;
-                                switch (new Random().Next(0, 2))
+                                switch (new Random().Next(0, 3))
                                 {
                                     case 0:
                                         list = db.HoloVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();

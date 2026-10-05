@@ -166,87 +166,102 @@ namespace DiscordStreamNotifyBot.Interaction.OwnerOnly.Service
                 return;
 
             isSending = true;
-            Embed embed = BuildEmbed(payload);
-            var noticeType = payload.NoticeType;
-            var isSendMessageGuildId = new HashSet<ulong>();
-            using (var db = _dbService.GetDbContext())
+            try
             {
-                if (noticeType == NoticeType.Normal)
+                Embed embed = BuildEmbed(payload);
+                var noticeType = payload.NoticeType;
+                var isSendMessageGuildId = new HashSet<ulong>();
+                using (var db = _dbService.GetDbContext())
                 {
-                    // 跨 shard：只處理本 shard 持有的伺服器，否則對別 shard 的伺服器 GetGuild 會是 null 而誤刪其 GuildConfig（與 YT/Twitch/會限段一致）
+                    if (noticeType == NoticeType.Normal)
+                    {
+                        // 頻道不見或沒權限時只清掉全球通知頻道；同一伺服器可能有重複的 GuildConfig 列，全部清除，
+                        // 不刪整列以免連帶刪掉會限驗證紀錄頻道與語系等設定
+                        void ClearNoticeChannel(ulong guildId)
+                        {
+                            foreach (var guildConfig in db.GuildConfig.Where((x) => x.GuildId == guildId))
+                                guildConfig.NoticeChannelId = 0;
+                        }
+
+                        // 跨 shard：只處理本 shard 持有的伺服器，否則對別 shard 的伺服器 GetGuild 會是 null 而誤刪其 GuildConfig（與 YT/Twitch/會限段一致）
+                        await SendToTargetsAsync(db.GuildConfig
+                                .AsEnumerable()
+                                .DistinctBy((x) => x.GuildId)
+                                .Where((x) => x.NoticeChannelId != 0 && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                                .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.NoticeChannelId)),
+                            embed, isSendMessageGuildId,
+                            onGuildMissing: (guildId, channelId) => db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == guildId)),
+                            onChannelMissing: (guildId, channelId) => ClearNoticeChannel(guildId),
+                            onForbidden: (guildId, channelId) => ClearNoticeChannel(guildId),
+                            errorLogMessage: "Send Message To Global Notice Channel Error");
+
+                        db.SaveChanges();
+                        Log.Info("已於全球訊息專用通知頻道發送完成");
+                    }
+                    else if (noticeType == NoticeType.Sponsor)
+                    {
+                        foreach (var item in DiscordStreamNotifyBot.Utility.OfficialGuildList)
+                        {
+                            isSendMessageGuildId.Add(item);
+                        }
+
+                        Log.Info($"工商訊息已忽略的官方伺服器數：{isSendMessageGuildId.Count}");
+                    }
+
+                    await SendToTargetsAsync(db.NoticeYoutubeStreamChannel
+                            .AsEnumerable()
+                            .DistinctBy((x) => x.GuildId)
+                            .Where((x) => !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                            .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordNoticeVideoChannelId)),
+                        embed, isSendMessageGuildId,
+                        onGuildMissing: (guildId, channelId) => db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guildId)),
+                        onChannelMissing: (guildId, channelId) => db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == channelId)),
+                        onForbidden: (guildId, channelId) => db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == channelId)),
+                        errorLogMessage: "Send Message To YouTube Notice Channel Error");
+
+                    db.SaveChanges();
+                    Log.Info("已於 YouTube 通知頻道傳送完成");
+
+                    await SendToTargetsAsync(db.NoticeTwitchStreamChannels
+                            .AsEnumerable()
+                            .DistinctBy((x) => x.GuildId)
+                            .Where((x) => !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                            .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId)),
+                        embed, isSendMessageGuildId,
+                        onGuildMissing: (guildId, channelId) => db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == guildId)),
+                        onChannelMissing: (guildId, channelId) => db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == channelId)),
+                        onForbidden: (guildId, channelId) => db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == channelId)),
+                        errorLogMessage: "Send Message To Twitch Notice Channel Error");
+
+                    db.SaveChanges();
+                    Log.Info("已於 Twitch 通知頻道發送完成");
+
+                    // 會限紀錄頻道：伺服器、頻道不存在或缺少權限時只記錄警告並略過，不刪除任何設定，
+                    // 避免全球訊息廣播清掉會員驗證設定；伺服器離開時的清理由 Bot.LeftGuild 負責
+                    void SkipGuildMemberConfig(ulong guildId, ulong channelId)
+                        => Log.Warn($"會員驗證紀錄頻道無法傳送，已略過且保留設定：{guildId} / {channelId}");
+
                     await SendToTargetsAsync(db.GuildConfig
                             .AsEnumerable()
                             .DistinctBy((x) => x.GuildId)
-                            .Where((x) => x.NoticeChannelId != 0 && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
-                            .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.NoticeChannelId)),
+                            .Where((x) => x.VerificationLogChannelId != 0 && !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
+                            .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.VerificationLogChannelId)),
                         embed, isSendMessageGuildId,
-                        onGuildMissing: (guildId, channelId) => db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == guildId)),
-                        onChannelMissing: (guildId, channelId) => db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.NoticeChannelId == channelId)),
-                        onForbidden: (guildId, channelId) => db.GuildConfig.Single((x) => x.GuildId == guildId).NoticeChannelId = 0,
-                        errorLogMessage: "Send Message To Global Notice Channel Error");
+                        onGuildMissing: SkipGuildMemberConfig,
+                        onChannelMissing: SkipGuildMemberConfig,
+                        onForbidden: SkipGuildMemberConfig,
+                        errorLogMessage: "YouTube 會員驗證通知頻道傳送失敗");
 
                     db.SaveChanges();
-                    Log.Info("已於全球訊息專用通知頻道發送完成");
+                    Log.Info("已於 YouTube 會員驗證紀錄頻道傳送完成");
                 }
-                else if (noticeType == NoticeType.Sponsor)
-                {
-                    foreach (var item in DiscordStreamNotifyBot.Utility.OfficialGuildList)
-                    {
-                        isSendMessageGuildId.Add(item);
-                    }
-
-                    Log.Info($"工商訊息已忽略的官方伺服器數：{isSendMessageGuildId.Count}");
-                }
-
-                await SendToTargetsAsync(db.NoticeYoutubeStreamChannel
-                        .AsEnumerable()
-                        .DistinctBy((x) => x.GuildId)
-                        .Where((x) => !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
-                        .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordNoticeVideoChannelId)),
-                    embed, isSendMessageGuildId,
-                    onGuildMissing: (guildId, channelId) => db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == guildId)),
-                    onChannelMissing: (guildId, channelId) => db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == channelId)),
-                    onForbidden: (guildId, channelId) => db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.DiscordNoticeVideoChannelId == channelId)),
-                    errorLogMessage: "Send Message To YouTube Notice Channel Error");
-
-                db.SaveChanges();
-                Log.Info("已於 YouTube 通知頻道傳送完成");
-
-                await SendToTargetsAsync(db.NoticeTwitchStreamChannels
-                        .AsEnumerable()
-                        .DistinctBy((x) => x.GuildId)
-                        .Where((x) => !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
-                        .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.DiscordChannelId)),
-                    embed, isSendMessageGuildId,
-                    onGuildMissing: (guildId, channelId) => db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.GuildId == guildId)),
-                    onChannelMissing: (guildId, channelId) => db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == channelId)),
-                    onForbidden: (guildId, channelId) => db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where((x) => x.DiscordChannelId == channelId)),
-                    errorLogMessage: "Send Message To Twitch Notice Channel Error");
-
-                db.SaveChanges();
-                Log.Info("已於 Twitch 通知頻道發送完成");
-
-                // 會限紀錄頻道：伺服器、頻道不存在或缺少權限時，皆移除該伺服器的 GuildConfig 與 GuildYoutubeMemberConfig
-                void RemoveGuildMemberConfig(ulong guildId, ulong channelId)
-                {
-                    db.GuildConfig.RemoveRange(db.GuildConfig.Where((x) => x.GuildId == guildId));
-                    db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where((x) => x.GuildId == guildId));
-                }
-
-                await SendToTargetsAsync(db.GuildConfig
-                        .AsEnumerable()
-                        .DistinctBy((x) => x.GuildId)
-                        .Where((x) => x.VerificationLogChannelId != 0 && !isSendMessageGuildId.Contains(x.GuildId) && _client.Guilds.Any((x2) => x2.Id == x.GuildId))
-                        .Select((x) => new KeyValuePair<ulong, ulong>(x.GuildId, x.VerificationLogChannelId)),
-                    embed, isSendMessageGuildId,
-                    onGuildMissing: RemoveGuildMemberConfig,
-                    onChannelMissing: RemoveGuildMemberConfig,
-                    onForbidden: RemoveGuildMemberConfig,
-                    errorLogMessage: "YouTube 會員驗證通知頻道傳送失敗");
-
-                db.SaveChanges();
-                Log.Info("已於 YouTube 會員驗證紀錄頻道傳送完成");
-
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "全球訊息發送失敗");
+            }
+            finally
+            {
                 isSending = false;
             }
         }

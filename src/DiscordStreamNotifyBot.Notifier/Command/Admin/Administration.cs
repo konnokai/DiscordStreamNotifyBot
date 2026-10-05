@@ -468,7 +468,7 @@ namespace DiscordStreamNotifyBot.Command.Admin
 
                 if (checkedCount == 0)
                 {
-                    await Context.Channel.SendConfirmAsync("目前沒有設定任何 YouTube、Twitch 或 TwitCasting 通知頻道");
+                    await Context.Channel.SendConfirmAsync("目前沒有設定任何 YouTube、Twitch、TwitCasting 或 CHZZK 通知頻道");
                     return;
                 }
 
