@@ -100,20 +100,6 @@ namespace DiscordStreamNotifyBot.Shared
             => db.StreamReadGroupAsync(StreamKey, GroupName(shardId), ConsumerName(shardId),
                 position: StreamPosition.NewMessages, count: count);
 
-        /// <summary>認可（XACK）已處理完成的訊息。</summary>
-        public static Task<long> AckAsync(IDatabase db, int shardId, params RedisValue[] messageIds)
-            => db.StreamAcknowledgeAsync(StreamKey, GroupName(shardId), messageIds);
-
-        /// <summary>
-        /// 認領本 consumer PEL 中閒置逾 <paramref name="minIdle"/> 的訊息重新處理（崩潰恢復，§4.3）。
-        /// 回傳被認領的訊息，供呼叫端重新執行處理迴圈。
-        /// </summary>
-        public static async Task<StreamEntry[]> AutoClaimAsync(IDatabase db, int shardId, TimeSpan minIdle, int count)
-        {
-            var result = await AutoClaimPageAsync(db, shardId, minIdle, "0-0", count);
-            return result.ClaimedEntries;
-        }
-
         /// <summary>
         /// 從指定游標認領一頁待處理訊息；呼叫端必須保存 <see cref="StreamAutoClaimResult.NextStartId" />，
         /// 避免持續失敗的前段訊息使後段 PEL 永遠無法處理。

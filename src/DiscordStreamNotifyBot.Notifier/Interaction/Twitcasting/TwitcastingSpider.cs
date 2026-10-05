@@ -16,40 +16,17 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         private readonly ClusterQueryService _clusterQuery;
         public class GuildTwitCastingSpiderAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(async () =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    IQueryable<DataBase.Table.TwitcastingSpider> channelList;
+                using var db = Bot.DbService.GetDbContext();
+                IQueryable<DataBase.Table.TwitcastingSpider> channelList = autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id
+                    ? db.TwitcastingSpider
+                    : db.TwitcastingSpider.AsNoTracking().Where((x) => x.GuildId == autocompleteInteraction.GuildId);
 
-                    if (autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id)
-                    {
-                        channelList = db.TwitcastingSpider;
-                    }
-                    else
-                    {
-                        if (!(await db.TwitcastingSpider.AsNoTracking().AnyAsync((x) => x.GuildId == autocompleteInteraction.GuildId)))
-                            return AutocompletionResult.FromSuccess();
-
-                        channelList = db.TwitcastingSpider.AsNoTracking().Where((x) => x.GuildId == autocompleteInteraction.GuildId);
-                    }
-
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var candidates = channelList.Select(item =>
-                            new AutocompleteCandidate(item.ChannelTitle, item.ScreenId));
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"GuildTwitCastingSpiderAutocompleteHandler - {ex}");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                var candidates = channelList.Select(item =>
+                    new AutocompleteCandidate(item.ChannelTitle, item.ScreenId));
+                return Task.FromResult(AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error($"GuildTwitCastingSpiderAutocompleteHandler - {ex}")));
             }
         }
 
@@ -60,10 +37,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [RequireGuildMemberCount(500)]
-        [CommandSummary("新增 TwitCasting 頻道監測爬蟲\n" +
-           "伺服器人數至少 500 人才可使用\n" +
-           "未來會根據情況增減可新增的頻道數量\n" +
-           "如有需求，請聯絡擁有者")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("add", "新增 TwitCasting 頻道監測爬蟲")]
@@ -77,8 +50,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             await SendCrawlerResultAsync(result, channelUrl, "twitcasting");
         }
 
-        [CommandSummary("移除 TwitCasting 頻道檢測爬蟲\n" +
-            "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("nana_kaguraaa", "https://twitcasting.tv/nana_kaguraaa")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove", "移除 TwitCasting 頻道檢測爬蟲")]
@@ -106,24 +77,10 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
 
             using (var db = _dbService.GetDbContext())
             {
-                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
-                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => !x.IsWarningUser).Select((x) =>
-                    BotLocalizer.Format("Spider.ListEntry", locale,
-                        Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}"),
-                        x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
-                        (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))));
-                int warningChannelNum = db.TwitcastingSpider.AsNoTracking().Count((x) => x.IsWarningUser);
-
-                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
-                {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle(BotLocalizer.Get("TwitcastingSpider.ListTitle", locale))
-                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter(BotLocalizer.Format("Spider.ListFooter", locale,
-                            Math.Min(list.Count(), (page + 1) * 20), list.Count(), warningChannelNum));
-                }, list.Count(), 10, false).ConfigureAwait(false);
+                var spiders = db.TwitcastingSpider.AsNoTracking().Where((x) => !x.IsWarningUser).AsEnumerable()
+                    .Select((x) => (x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}", x.GuildId));
+                await SendSpiderListAsync(locale, page, "TwitcastingSpider.ListTitle", _clusterQuery, spiders,
+                    db.TwitcastingSpider.AsNoTracking().Count((x) => x.IsWarningUser)).ConfigureAwait(false);
             }
         }
 
@@ -136,23 +93,10 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
 
             using (var db = _dbService.GetDbContext())
             {
-                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
-                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                var list = db.TwitcastingSpider.AsNoTracking().Where((x) => x.IsWarningUser).Select((x) =>
-                    BotLocalizer.Format("Spider.ListEntry", locale,
-                        Format.Url(x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}"),
-                        x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
-                        (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))));
-
-                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
-                {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle(BotLocalizer.Get("Spider.WarningListTitle", locale))
-                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter(BotLocalizer.Format("Common.ChannelCountFooter", locale,
-                            Math.Min(list.Count(), (page + 1) * 20), list.Count()));
-                }, list.Count(), 10, false, true).ConfigureAwait(false);
+                var spiders = db.TwitcastingSpider.AsNoTracking().Where((x) => x.IsWarningUser).AsEnumerable()
+                    .Select((x) => (x.ChannelTitle, $"https://twitcasting.tv/{x.ScreenId}", x.GuildId));
+                await SendSpiderListAsync(locale, page, "Spider.WarningListTitle", _clusterQuery, spiders,
+                    ephemeral: true).ConfigureAwait(false);
             }
         }
     }

@@ -72,11 +72,10 @@ mysql -u root -p discord_stream_bot < migrate_sql/all.sql
 
 ## 本機建置與執行
 
-先建置及測試整個 solution：
+先建置整個 solution：
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release
-dotnet test DiscordStreamNotifyBot.sln -c Release
 ```
 
 單一 shard 環境要同時啟動三個服務。請分別在三個終端機執行：
@@ -141,7 +140,6 @@ CHZZK 錄影委派需要另外部署 [StreamRecordTools](https://github.com/konn
 ## 相關文件
 
 - [網站管理設定契約](docs/WEB_ADMIN_SETTINGS_PLAN.md)
-- [測試說明](docs/TESTING_PLAN.md)
 - [Log 與 Loki](docs/LOGGING.md)
 - [CHZZK 通知設計](docs/CHZZK_NOTIFICATION_PLAN.md)
 - [Discord 指令說明](https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37)

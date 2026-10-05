@@ -4,6 +4,7 @@ using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.AdminSettings;
 using DiscordStreamNotifyBot.SharedService.Member;
 using DiscordStreamNotifyBot.SharedService.Twitch;
 using Newtonsoft.Json.Linq;
@@ -32,6 +33,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         private readonly BotLocalizer _localizer;
         private readonly GuildLocaleService _guildLocaleService;
         private readonly CancellationTokenSource _lifecycleCancellation;
+        private readonly YoutubeMember.YoutubeMemberLifecycleTaskRegistry _eventTasks = new();
         private readonly ConcurrentDictionary<string, DateTimeOffset> _rateLimitUntilByTwitchUserId = new(StringComparer.Ordinal);
         private Task _reverificationTask;
         private Task _orphanReconciliationTask;
@@ -74,7 +76,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             CancellationToken cancellationToken = _lifecycleCancellation.Token;
             Bot.RedisSub.Subscribe(
                 new RedisChannel(RedisChannels.Twitch.AuthorizationChanged, RedisChannel.PatternMode.Literal),
-                (channel, value) => _ = HandleAuthorizationChangedAsync(value, cancellationToken));
+                (channel, value) => TrackEventTask(() => HandleAuthorizationChangedAsync(value, cancellationToken)));
 
             if (_botConfig.EnableGuildMembersIntent)
             {
@@ -103,6 +105,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
             if (_botConfig.EnableGuildMembersIntent)
                 _client.UserJoined -= RestoreOnUserJoinedAsync;
+            // 停止後不再接受新的授權事件，並等待已開始處理的事件結束。
+            Task[] eventTasks = _eventTasks.StopAndSnapshot();
             await _lifecycleCancellation.CancelAsync();
             try
             {
@@ -114,20 +118,38 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 Log.Warn($"關閉 Twitch 授權事件訂閱時 Redis 暫時失敗: {ex.GetType().Name}");
             }
 
-            Task[] tasks = new[] { _reverificationTask, _orphanReconciliationTask }
-                .Where(x => x != null)
-                .ToArray();
-            if (tasks.Length > 0)
+            try
             {
-                try
-                {
-                    await Task.WhenAll(tasks);
-                }
-                catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested)
-                {
-                }
+                await Task.WhenAll(new[] { _reverificationTask, _orphanReconciliationTask }.Where(x => x != null)
+                    .Concat(eventTasks));
+            }
+            catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested)
+            {
             }
             _lifecycleCancellation.Dispose();
+        }
+
+        /// <summary>追蹤 Redis 事件處理工作，供 <see cref="StopAsync"/> 等待；停止後的新事件直接略過。</summary>
+        private Task TrackEventTask(Func<Task> action)
+        {
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!_eventTasks.TryRegister(completion.Task))
+                return Task.CompletedTask;
+
+            _ = RunTrackedEventAsync(action, completion);
+            return completion.Task;
+        }
+
+        private async Task RunTrackedEventAsync(Func<Task> action, TaskCompletionSource completion)
+        {
+            try { await action(); }
+            catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested) { }
+            catch (Exception ex) { Log.Error(ex.Demystify(), "處理 Twitch 訂閱授權事件失敗"); }
+            finally
+            {
+                _eventTasks.Complete(completion.Task);
+                completion.TrySetResult();
+            }
         }
 
         /// <summary>建立待驗證紀錄、查詢 Twitch，並在重新確認設定仍有效後套用 Discord 角色結果。</summary>
@@ -175,17 +197,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
 
             TwitchSubscriptionResult lookup = await LookupAsync(discordUserId, broadcasterId, cancellationToken);
-            if (lookup.Status is TwitchSubscriptionStatus.AuthorizationInvalid or TwitchSubscriptionStatus.AuthorizationMissing)
-            {
-                if (await IsAuthorizationCleanupStillRequiredAsync(
-                    discordUserId,
-                    lookup.Status,
-                    cancellationToken))
-                {
-                    await CleanupAuthorizationCoreAsync(discordUserId, cancellationToken);
-                }
+            if (await HandleAuthorizationLostAsync(discordUserId, lookup.Status, cancellationToken))
                 return lookup;
-            }
 
             await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
             return await ApplyResultCoreAsync(guildId, discordUserId, broadcasterId, lookup, cancellationToken);
@@ -207,10 +220,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             {
                 var guildConfig = await db.GuildConfig.SingleOrDefaultAsync(
                     x => x.GuildId == guild.Id, cancellationToken);
-                if (guildConfig?.VerificationLogChannelId is not > 0)
-                    return AdminSettingsMutationResult.Rejected("verification.log-channel-required");
-                if (guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
-                    return AdminSettingsMutationResult.Rejected("verification.log-channel-missing");
+                if (AdminSettingsChannelValidator.ValidateVerificationLogChannel(guild, guildConfig) is { } rejected)
+                    return rejected;
             }
 
             TwitchLib.Api.Helix.Models.Users.GetUsers.User user;
@@ -227,32 +238,16 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
             if (user == null)
                 return AdminSettingsMutationResult.Rejected("verification.source-not-found");
-            if (!string.Equals(user.BroadcasterType, "affiliate", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(user.BroadcasterType, "partner", StringComparison.OrdinalIgnoreCase))
+            if (!TwitchSubscriptionConfigurationPolicy.IsEligibleBroadcaster(user.BroadcasterType))
                 return AdminSettingsMutationResult.Rejected("verification.source-ineligible");
 
             TwitchRoleConfigurationResult result = await _roleService.CreateOrRepairConfigurationAsync(
                 guild, user.Id, user.Login, user.DisplayName, role, cancellationToken);
             if (result.IsSuccess && result.IsNew)
             {
-                try
-                {
-                    SocketGuildUser actor = guild.GetUser(actorUserId);
-                    string actorText = actor == null
-                        ? actorUserId.ToString()
-                        : $"{actor.GlobalName ?? actor.Username} ({actor} / {actorUserId})";
-                    await Bot.ApplicatonOwner.SendMessageAsync(embed: new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle("已新增 Twitch 訂閱驗證頻道")
-                        .AddField("頻道", Format.Url(user.DisplayName, $"https://twitch.tv/{user.Login}"), false)
-                        .AddField("伺服器", $"{guild.Name} ({guild.Id})", false)
-                        .AddField("執行者", actorText, false)
-                        .Build());
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.Demystify(), "發送 Twitch 訂閱驗證新增通知給 Bot 擁有者時失敗");
-                }
+                await CrawlerOwnerNotifier.NotifyVerificationAddedAsync(guild, actorUserId, "已新增 Twitch 訂閱驗證頻道",
+                    Format.Url(user.DisplayName, $"https://twitch.tv/{user.Login}"),
+                    "發送 Twitch 訂閱驗證新增通知給 Bot 擁有者時失敗");
             }
             return result.Error switch
             {
@@ -297,14 +292,6 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         {
             await using var userLock = await _operationCoordinator.LockUserAsync(discordUserId, cancellationToken);
             await using var guildLock = await _operationCoordinator.LockGuildAsync(guildId, cancellationToken);
-            return await CancelCoreAsync(guildId, discordUserId, cancellationToken);
-        }
-
-        private async Task<TwitchSubscriptionCancellationStatus> CancelCoreAsync(
-            ulong guildId,
-            ulong discordUserId,
-            CancellationToken cancellationToken)
-        {
             using var db = _dbService.GetDbContext();
             var checks = await db.TwitchSubscriptionCheck
                 .Where(x => x.GuildId == guildId && x.DiscordUserId == discordUserId)
@@ -312,10 +299,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             if (checks.Count == 0)
                 return TwitchSubscriptionCancellationStatus.NotFound;
             foreach (var check in checks)
-            {
-                check.IsChecked = false;
-                check.PendingRoleRemoval = true;
-            }
+                TwitchSubscriptionRolePolicy.QueueRoleRemoval(check);
             await db.SaveChangesAsync(cancellationToken);
 
             var broadcasterIds = checks.Select(x => x.BroadcasterId).Distinct().ToArray();
@@ -360,7 +344,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 // DeletionPending 是獨立的耐久工作，不依賴 subscription check 是否仍存在。
                 // 即使成員紀錄已清空，排程仍須重試 Tier 角色與設定本身的刪除。
                 var pendingDeletions = await db.GuildTwitchSubscriptionConfig.AsNoTracking()
-                    .DeletionPendingConfigurations()
+                    .Where(x => x.DeletionPending)
                     .ToListAsync(cancellationToken);
                 foreach (var config in pendingDeletions.Where(x => Bot.IsServerOnThisShard(x.GuildId)))
                     await _roleService.ProcessPendingConfigurationDeletionAsync(config, cancellationToken);
@@ -401,17 +385,8 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                         group.Key.DiscordUserId,
                         group.Key.BroadcasterId,
                         cancellationToken);
-                    if (result.Status is TwitchSubscriptionStatus.AuthorizationInvalid or TwitchSubscriptionStatus.AuthorizationMissing)
-                    {
-                        if (await IsAuthorizationCleanupStillRequiredAsync(
-                            group.Key.DiscordUserId,
-                            result.Status,
-                            cancellationToken))
-                        {
-                            await CleanupAuthorizationCoreAsync(group.Key.DiscordUserId, cancellationToken);
-                        }
+                    if (await HandleAuthorizationLostAsync(group.Key.DiscordUserId, result.Status, cancellationToken))
                         continue;
-                    }
 
                     foreach (var check in group)
                     {
@@ -453,6 +428,19 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             }
         }
 
+        /// <summary>授權失效或遺失時，以 MySQL 現況確認仍需清理後才清理；回傳 false 表示授權狀態正常。</summary>
+        private async Task<bool> HandleAuthorizationLostAsync(
+            ulong discordUserId,
+            TwitchSubscriptionStatus status,
+            CancellationToken cancellationToken)
+        {
+            if (status is not (TwitchSubscriptionStatus.AuthorizationInvalid or TwitchSubscriptionStatus.AuthorizationMissing))
+                return false;
+            if (await IsAuthorizationCleanupStillRequiredAsync(discordUserId, status, cancellationToken))
+                await CleanupAuthorizationCoreAsync(discordUserId, cancellationToken);
+            return true;
+        }
+
         private async Task<bool> IsAuthorizationCleanupStillRequiredAsync(
             ulong discordUserId,
             TwitchSubscriptionStatus status,
@@ -484,10 +472,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                 db.TwitchSubscriptionCheck.RemoveRange(staleChecks);
             checks = checks.Except(staleChecks).Where(x => _client.GetGuild(x.GuildId) != null).ToList();
             foreach (var check in checks)
-            {
-                check.IsChecked = false;
-                check.PendingRoleRemoval = true;
-            }
+                TwitchSubscriptionRolePolicy.QueueRoleRemoval(check);
             await db.SaveChangesAsync(cancellationToken);
 
             var broadcasterIds = checks.Select(x => x.BroadcasterId).Distinct().ToArray();
@@ -540,7 +525,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             DateTimeOffset now = DateTimeOffset.UtcNow;
             if (_rateLimitUntilByTwitchUserId.TryGetValue(authorization.TwitchUserId, out DateTimeOffset retryAfter))
             {
-                if (TwitchRateLimitPolicy.IsBlocked(now, retryAfter))
+                if (retryAfter > now)
                     return Result(TwitchSubscriptionStatus.TemporaryFailure, broadcasterId, authorization.TwitchUserId);
                 _rateLimitUntilByTwitchUserId.TryRemove(authorization.TwitchUserId, out _);
             }
@@ -651,8 +636,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
             if (result.Status == TwitchSubscriptionStatus.NotSubscribed)
             {
-                check.IsChecked = false;
-                check.PendingRoleRemoval = true;
+                TwitchSubscriptionRolePolicy.QueueRoleRemoval(check);
                 check.Tier = null;
                 check.IsGift = false;
                 await db.SaveChangesAsync(cancellationToken);
@@ -771,10 +755,7 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
                     .Where(x => x.TwitchUserId == payload.TwitchUserId && x.DiscordUserId == discordUserId.Value)
                     .Select(x => new { x.RevokedAt })
                     .SingleOrDefaultAsync(cancellationToken);
-                if (TwitchAuthorizationEventPolicy.ShouldCleanup(
-                    status,
-                    current != null,
-                    current?.RevokedAt != null))
+                if (current?.RevokedAt != null && status is "invalid" or "revoked" or "unlinked")
                 {
                     await CleanupAuthorizationCoreAsync(discordUserId.Value, cancellationToken);
                 }

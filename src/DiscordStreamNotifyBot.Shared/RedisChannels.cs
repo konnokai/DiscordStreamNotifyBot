@@ -158,9 +158,6 @@ namespace DiscordStreamNotifyBot.Shared
             /// <summary>各程序心跳鍵：<c>cluster:heartbeat:{role}:{id}</c>。</summary>
             public static string Heartbeat(string role, string id) => $"cluster:heartbeat:{role}:{id}";
 
-            /// <summary>notifier shard 租約鍵：<c>cluster:shard:lease:{shardId}</c>。</summary>
-            public static string ShardLease(int shardId) => $"cluster:shard:lease:{shardId}";
-
             /// <summary>跨 shard 查詢請求頻道（scatter-gather；payload 內含 correlationId）。</summary>
             public const string QueryRequest = "cluster:query:request";
 

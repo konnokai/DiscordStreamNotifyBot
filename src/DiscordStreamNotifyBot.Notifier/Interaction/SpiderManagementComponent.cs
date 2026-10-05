@@ -17,20 +17,9 @@ namespace DiscordStreamNotifyBot.Interaction
         }
 
         [ComponentInteraction("spider_youtube:*:*", true)]
-        public async Task HandleYoutubeAsync(string action, string channelId)
-        {
-            try
+        public Task HandleYoutubeAsync(string action, string channelId)
+            => RunOwnerButtonAsync("YouTube", async button =>
             {
-                var button = (SocketMessageComponent)Context.Interaction;
-                if (Context.User.Id != Bot.ApplicatonOwner.Id)
-                {
-                    string ownerLocale = await GetLocaleAsync(true);
-                    await button.SendErrorAsync(BotLocalizer, ownerLocale, "Permissions.BotOwnerOnly", false, true);
-                    return;
-                }
-
-                Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
-                await button.DeferAsync(false);
                 string locale = await GetLocaleAsync(true);
 
                 using var db = _dbService.GetDbContext();
@@ -68,14 +57,8 @@ namespace DiscordStreamNotifyBot.Interaction
                     }
                 }
 
-                var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
-                var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
-                var embed = new EmbedBuilder()
-                    .WithOkColor()
-                    .WithTitle("已新增 YouTube 頻道爬蟲")
-                    .AddField("頻道", Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"), false)
-                    .AddField("伺服器", guild, false)
-                    .AddField("執行者", user, false)
+                var embed = RebuildSpiderEmbed(button, "已新增 YouTube 頻道爬蟲",
+                        Format.Url(youtubeChannelSpider.ChannelTitle, $"https://www.youtube.com/channel/{youtubeChannelSpider.ChannelId}"))
                     .AddField("認可頻道", youtubeChannelSpider.IsTrustedChannel ? "是" : "否", true)
                     .AddField("錄影頻道", db.RecordYoutubeChannel.Any((x) => x.YoutubeChannelId == channelId) ? "是" : "否", true).Build();
 
@@ -83,38 +66,12 @@ namespace DiscordStreamNotifyBot.Interaction
                 {
                     func.Embed = embed;
                 });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "處理 YouTube 爬蟲管理按鈕時失敗");
-                try
-                {
-                    string locale = await GetLocaleAsync(true);
-                    await Context.Interaction.SendErrorAsync(BotLocalizer, locale, "Errors.Unknown",
-                        Context.Interaction.HasResponded, true);
-                }
-                catch (Exception responseException)
-                {
-                    Log.Error(responseException.Demystify(), "回覆 YouTube 爬蟲管理按鈕未知錯誤時失敗");
-                }
-            }
-        }
+            });
 
         [ComponentInteraction("spider_twitch:*:*", true)]
-        public async Task HandleTwitchAsync(string action, string userId)
-        {
-            try
+        public Task HandleTwitchAsync(string action, string userId)
+            => RunOwnerButtonAsync("Twitch", async button =>
             {
-                var button = (SocketMessageComponent)Context.Interaction;
-                if (Context.User.Id != Bot.ApplicatonOwner.Id)
-                {
-                    string ownerLocale = await GetLocaleAsync(true);
-                    await button.SendErrorAsync(BotLocalizer, ownerLocale, "Permissions.BotOwnerOnly", false, true);
-                    return;
-                }
-
-                Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
-                await button.DeferAsync(false);
                 string locale = await GetLocaleAsync(true);
 
                 using var db = _dbService.GetDbContext();
@@ -147,14 +104,8 @@ namespace DiscordStreamNotifyBot.Interaction
                         BotLocalizer.Get(twitchSpider.IsRecord ? "Common.Enabled" : "Common.Disabled", locale));
                 }
 
-                var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
-                var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
-                var embed = new EmbedBuilder()
-                    .WithOkColor()
-                    .WithTitle("已新增 Twitch 頻道爬蟲")
-                    .AddField("頻道", Format.Url(twitchSpider.UserName, $"https://twitch.tv/{twitchSpider.UserLogin}"), false)
-                    .AddField("伺服器", guild, false)
-                    .AddField("執行者", user, false)
+                var embed = RebuildSpiderEmbed(button, "已新增 Twitch 頻道爬蟲",
+                        Format.Url(twitchSpider.UserName, $"https://twitch.tv/{twitchSpider.UserLogin}"))
                     .AddField("頻道狀態", twitchSpider.IsWarningUser ? "警告" : "普通", true)
                     .AddField("頻道錄影", twitchSpider.IsRecord ? "開啟" : "關閉", true).Build();
 
@@ -162,38 +113,12 @@ namespace DiscordStreamNotifyBot.Interaction
                 {
                     func.Embed = embed;
                 });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "處理 Twitch 爬蟲管理按鈕時失敗");
-                try
-                {
-                    string locale = await GetLocaleAsync(true);
-                    await Context.Interaction.SendErrorAsync(BotLocalizer, locale, "Errors.Unknown",
-                        Context.Interaction.HasResponded, true);
-                }
-                catch (Exception responseException)
-                {
-                    Log.Error(responseException.Demystify(), "回覆 Twitch 爬蟲管理按鈕未知錯誤時失敗");
-                }
-            }
-        }
+            });
 
         [ComponentInteraction("spider_tc:*:*", true)]
-        public async Task HandleTwitcastingAsync(string action, string screenId)
-        {
-            try
+        public Task HandleTwitcastingAsync(string action, string screenId)
+            => RunOwnerButtonAsync("TwitCasting", async button =>
             {
-                var button = (SocketMessageComponent)Context.Interaction;
-                if (Context.User.Id != Bot.ApplicatonOwner.Id)
-                {
-                    string ownerLocale = await GetLocaleAsync(true);
-                    await button.SendErrorAsync(BotLocalizer, ownerLocale, "Permissions.BotOwnerOnly", false, true);
-                    return;
-                }
-
-                Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
-                await button.DeferAsync(false);
                 string locale = await GetLocaleAsync(true);
 
                 using var db = _dbService.GetDbContext();
@@ -225,14 +150,8 @@ namespace DiscordStreamNotifyBot.Interaction
                         BotLocalizer.Get(twitcastingSpider.IsRecord ? "Common.Enabled" : "Common.Disabled", locale));
                 }
 
-                var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
-                var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
-                var embed = new EmbedBuilder()
-                    .WithOkColor()
-                    .WithTitle("已新增 TwitCasting 頻道爬蟲")
-                    .AddField("頻道", Format.Url(twitcastingSpider.ChannelTitle, $"https://twitcasting.tv/{twitcastingSpider.ScreenId}"), false)
-                    .AddField("伺服器", guild, false)
-                    .AddField("執行者", user, false)
+                var embed = RebuildSpiderEmbed(button, "已新增 TwitCasting 頻道爬蟲",
+                        Format.Url(twitcastingSpider.ChannelTitle, $"https://twitcasting.tv/{twitcastingSpider.ScreenId}"))
                     .AddField("頻道狀態", twitcastingSpider.IsWarningUser ? "警告" : "普通", true)
                     .AddField("頻道錄影", twitcastingSpider.IsRecord ? "開啟" : "關閉", true).Build();
 
@@ -240,25 +159,41 @@ namespace DiscordStreamNotifyBot.Interaction
                 {
                     func.Embed = embed;
                 });
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "處理 TwitCasting 爬蟲管理按鈕時失敗");
-                try
-                {
-                    string locale = await GetLocaleAsync(true);
-                    await Context.Interaction.SendErrorAsync(BotLocalizer, locale, "Errors.Unknown",
-                        Context.Interaction.HasResponded, true);
-                }
-                catch (Exception responseException)
-                {
-                    Log.Error(responseException.Demystify(), "回覆 TwitCasting 爬蟲管理按鈕未知錯誤時失敗");
-                }
-            }
-        }
+            });
 
         [ComponentInteraction("spider_chzzk:*:*", true)]
-        public async Task HandleChzzkAsync(string action, string channelId)
+        public Task HandleChzzkAsync(string action, string channelId)
+            => RunOwnerButtonAsync("CHZZK", async button =>
+            {
+                // 切換語意（對齊 Twitch／TwitCasting 的切換按鈕），不是盲目反轉加入／移除；
+                // 每次操作都重新檢查擁有者與爬蟲是否存在，舊訊息不得繞過權限或重建已刪除的爬蟲。
+                if (!action.Contains("record"))
+                {
+                    await button.SendErrorAsync("不支援的操作", true);
+                    return;
+                }
+
+                var result = await _chzzkRecordService.ToggleAutoRecordAsync(channelId, GracefulShutdown.Token);
+                string locale = await GetLocaleAsync(true);
+                if (result.Code == "record.not-configured")
+                {
+                    await button.SendErrorAsync(BotLocalizer, locale, "Components.ChannelRemoved", true, true);
+                    return;
+                }
+
+                bool isRecord = result.Arguments.Value<bool>("enabled");
+                string channelName = result.Arguments.Value<string>("sourceName") ?? channelId;
+                await button.SendConfirmAsync(BotLocalizer, locale, "Spider.RecordingChanged", true, true,
+                    channelName,
+                    BotLocalizer.Get(isRecord ? "Common.Enabled" : "Common.Disabled", locale));
+                await UpdateChzzkSpiderMessageAsync(button, channelId, channelName, isRecord);
+            });
+
+        /// <summary>
+        /// 爬蟲管理按鈕的共用流程：限 Bot 擁有者操作、記錄點擊並延遲回應後執行 <paramref name="handler"/>；
+        /// 未預期的例外統一記錄並回覆未知錯誤。
+        /// </summary>
+        private async Task RunOwnerButtonAsync(string platformName, Func<SocketMessageComponent, Task> handler)
         {
             try
             {
@@ -272,34 +207,11 @@ namespace DiscordStreamNotifyBot.Interaction
 
                 Log.Info($"\"{button.User}\" Click Button: {button.Data.CustomId}");
                 await button.DeferAsync(false);
-
-                // 切換語意（對齊 Twitch／TwitCasting 的切換按鈕），不是盲目反轉加入／移除；
-                // 每次操作都重新檢查擁有者與爬蟲是否存在，舊訊息不得繞過權限或重建已刪除的爬蟲。
-                if (!action.Contains("record"))
-                {
-                    await button.SendErrorAsync("不支援的操作", true);
-                    return;
-                }
-
-                var result = await _chzzkRecordService.ToggleAutoRecordAsync(channelId, GracefulShutdown.Token);
-                if (result.Code == "record.not-configured")
-                {
-                    string locale = await GetLocaleAsync(true);
-                    await button.SendErrorAsync(BotLocalizer, locale, "Components.ChannelRemoved", true, true);
-                    return;
-                }
-
-                bool isRecord = result.Arguments.Value<bool>("enabled");
-                string channelName = result.Arguments.Value<string>("sourceName") ?? channelId;
-                string confirmLocale = await GetLocaleAsync(true);
-                await button.SendConfirmAsync(BotLocalizer, confirmLocale, "Spider.RecordingChanged", true, true,
-                    channelName,
-                    BotLocalizer.Get(isRecord ? "Common.Enabled" : "Common.Disabled", confirmLocale));
-                await UpdateChzzkSpiderMessageAsync(button, channelId, channelName, isRecord);
+                await handler(button);
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "處理 CHZZK 爬蟲管理按鈕時失敗");
+                Log.Error(ex.Demystify(), $"處理 {platformName} 爬蟲管理按鈕時失敗");
                 try
                 {
                     string locale = await GetLocaleAsync(true);
@@ -308,23 +220,31 @@ namespace DiscordStreamNotifyBot.Interaction
                 }
                 catch (Exception responseException)
                 {
-                    Log.Error(responseException.Demystify(), "回覆 CHZZK 爬蟲管理按鈕未知錯誤時失敗");
+                    Log.Error(responseException.Demystify(), $"回覆 {platformName} 爬蟲管理按鈕未知錯誤時失敗");
                 }
             }
+        }
+
+        /// <summary>
+        /// 沿用原訊息的「伺服器」「執行者」欄位重建爬蟲管理 embed（頻道、伺服器、執行者），其餘欄位由呼叫端附加。
+        /// </summary>
+        private static EmbedBuilder RebuildSpiderEmbed(SocketMessageComponent button, string title, string channelField)
+        {
+            var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
+            var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
+            return new EmbedBuilder()
+                .WithOkColor()
+                .WithTitle(title)
+                .AddField("頻道", channelField, false)
+                .AddField("伺服器", guild, false)
+                .AddField("執行者", user, false);
         }
 
         private static Task UpdateChzzkSpiderMessageAsync(
             SocketMessageComponent button, string channelId, string channelName, bool isRecord)
         {
-            var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
-            var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
-            var embed = new EmbedBuilder()
-                .WithOkColor()
-                .WithTitle("已新增 CHZZK 頻道爬蟲")
-                .AddField("頻道", Format.Url(string.IsNullOrEmpty(channelName) ? channelId : channelName,
-                    ChzzkUrls.Channel(channelId)), false)
-                .AddField("伺服器", guild, false)
-                .AddField("執行者", user, false)
+            var embed = RebuildSpiderEmbed(button, "已新增 CHZZK 頻道爬蟲",
+                    Format.Url(string.IsNullOrEmpty(channelName) ? channelId : channelName, ChzzkUrls.Channel(channelId)))
                 .AddField("錄影頻道", isRecord ? "開啟" : "關閉", true)
                 .Build();
             var components = new ComponentBuilder()

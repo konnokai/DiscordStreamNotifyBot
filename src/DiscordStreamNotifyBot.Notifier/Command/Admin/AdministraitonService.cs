@@ -124,14 +124,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
             return count;
         }
 
-        public async Task ClearUser(ITextChannel textChannel)
-        {
-            IEnumerable<IMessage> msgs = (await textChannel.GetMessagesAsync(100).FlattenAsync().ConfigureAwait(false))
-                  .Where((item) => item.Author.Id == _client.CurrentUser.Id);
-
-            await Task.WhenAll(Task.Delay(1000), textChannel.DeleteMessagesAsync(msgs)).ConfigureAwait(false);
-        }
-
         /// <summary>儲存白名單至 Redis 並廣播變更，讓所有 shard 重新載入（階段 5）。</summary>
         internal async Task<bool> SaveAndBroadcastOfficialGuildListAsync()
         {

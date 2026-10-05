@@ -2,6 +2,7 @@
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Interaction
 {
@@ -22,9 +23,6 @@ namespace DiscordStreamNotifyBot.Interaction
                 ? LocaleResolver.ResolvePrivate(Context.Interaction.UserLocale, guildLocale, Context.Interaction.GuildLocale)
                 : LocaleResolver.ResolvePublic(guildLocale, Context.Interaction.GuildLocale);
         }
-
-        protected async Task<string> LocalizeAsync(string resourceKey, bool isPrivate = true, params object[] arguments)
-            => BotLocalizer.Format(resourceKey, await GetLocaleAsync(isPrivate), arguments);
 
         protected async Task SendLocalizedConfirmAsync(string resourceKey, bool isFollowup = false,
             bool ephemeral = false, params object[] arguments)
@@ -209,24 +207,14 @@ namespace DiscordStreamNotifyBot.Interaction
                 .WithDescription(BotLocalizer.Format(resourceKey, locale, arguments))
                 .WithFooter(BotLocalizer.Get("Confirmation.TimeoutFooter", locale));
 
-            ComponentBuilder component = new ComponentBuilder()
+            ComponentBuilder buttons = new ComponentBuilder()
                 .WithButton(BotLocalizer.Get("Common.Yes", locale), $"{guid}-yes", ButtonStyle.Success)
                 .WithButton(BotLocalizer.Get("Common.No", locale), $"{guid}-no", ButtonStyle.Danger);
 
-            await FollowupAsync(embed: embed.Build(), components: component.Build(), ephemeral: true).ConfigureAwait(false);
+            await FollowupAsync(embed: embed.Build(), components: buttons.Build(), ephemeral: true).ConfigureAwait(false);
 
-            try
-            {
-                var input = await GetUserClickAsync(Context.User.Id, Context.Channel.Id, guid, locale).ConfigureAwait(false);
-                return input;
-            }
-            finally
-            {
-            }
-        }
-
-        public async Task<bool> GetUserClickAsync(ulong userId, ulong channelId, string guid, string locale)
-        {
+            ulong userId = Context.User.Id;
+            ulong channelId = Context.Channel.Id;
             var userInputTask = new TaskCompletionSource<bool>();
 
             try
@@ -250,15 +238,13 @@ namespace DiscordStreamNotifyBot.Interaction
                 var _ = Task.Run(async () =>
                 {
                     if (!component.Data.CustomId.StartsWith(guid))
-                        return Task.CompletedTask;
+                        return;
 
-                    if (!(component is SocketMessageComponent userMsg) ||
-                        userMsg.User.Id != userId ||
-                        userMsg.Channel.Id != channelId)
+                    if (component.User.Id != userId || component.Channel.Id != channelId)
                     {
                         string componentLocale = LocaleResolver.ResolvePrivate(component.UserLocale, null, component.GuildLocale);
                         await component.SendErrorAsync(BotLocalizer, componentLocale, "Components.NotAllowed", true, true).ConfigureAwait(false);
-                        return Task.CompletedTask;
+                        return;
                     }
 
                     userInputTask.TrySetResult(component.Data.CustomId.EndsWith("yes"));
@@ -267,10 +253,76 @@ namespace DiscordStreamNotifyBot.Interaction
                         .WithButton(BotLocalizer.Get("Common.Yes", locale), $"{guid}-yes", ButtonStyle.Success, disabled: true)
                         .WithButton(BotLocalizer.Get("Common.No", locale), $"{guid}-no", ButtonStyle.Danger, disabled: true).Build())
                     .ConfigureAwait(false);
-                    return Task.CompletedTask;
                 });
                 return Task.CompletedTask;
             }
+        }
+
+        /// <summary>確認 Bot 能在指定頻道發送通知；權限不足時回覆錯誤並回傳 false。</summary>
+        protected async Task<bool> EnsureBotCanPostAsync(IGuildChannel channel, string locale, bool isFollowup = true)
+        {
+            var permissions = Context.Guild.GetUser(Context.Client.CurrentUser.Id).GetPermissions(channel);
+            if (!permissions.ViewChannel || !permissions.SendMessages)
+            {
+                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", isFollowup, true,
+                    $"`{channel}`", BotLocalizer.Format("Permissions.List", locale,
+                        BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
+                        BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
+                return false;
+            }
+
+            if (!permissions.EmbedLinks)
+            {
+                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", isFollowup, true,
+                    $"`{channel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>通知訊息為 "-" 時顯示為已停用。</summary>
+        protected string GetCurrentMessage(string message, string locale)
+            => message == "-" ? BotLocalizer.Get("Notifications.TypeDisabledValue", locale) : message;
+
+        /// <summary>組出設定通知訊息後的回覆；"-" 代表停用該類型通知，空字串代表清除自訂訊息。</summary>
+        protected string FormatNoticeMessageResult(string message, string locale, string channelName,
+            string noticeTypeString, string typeDisabledKey = "Notifications.TypeDisabled")
+        {
+            if (message == "-")
+                return BotLocalizer.Format(typeDisabledKey, locale, channelName, noticeTypeString);
+            if (message != "")
+                return BotLocalizer.Format("Notifications.MessageSet", locale, channelName, noticeTypeString, message);
+            return BotLocalizer.Format("Notifications.MessageCleared", locale, channelName, noticeTypeString);
+        }
+
+        /// <summary>
+        /// 送出爬蟲清單，每頁顯示 20 筆；<paramref name="warningChannelNum"/> 有值時頁尾一併顯示警告頻道數。
+        /// </summary>
+        protected async Task SendSpiderListAsync(string locale, int page, string titleKey,
+            ClusterQueryService clusterQuery, IEnumerable<(string Name, string Url, ulong GuildId)> spiders,
+            int? warningChannelNum = null, bool ephemeral = false)
+        {
+            // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
+            var guildMap = await clusterQuery.GetGuildNameMapAsync();
+            var list = spiders.Select((x) =>
+                BotLocalizer.Format("Spider.ListEntry", locale,
+                    Format.Url(x.Name, x.Url),
+                    x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
+                    (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))))
+                .ToList();
+
+            await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, currentPage =>
+            {
+                int shown = Math.Min(list.Count, (currentPage + 1) * 20);
+                return new EmbedBuilder()
+                    .WithOkColor()
+                    .WithTitle(BotLocalizer.Get(titleKey, locale))
+                    .WithDescription(string.Join('\n', list.Skip(currentPage * 20).Take(20)))
+                    .WithFooter(warningChannelNum is int warning
+                        ? BotLocalizer.Format("Spider.ListFooter", locale, shown, list.Count, warning)
+                        : BotLocalizer.Format("Common.ChannelCountFooter", locale, shown, list.Count));
+            }, list.Count, 20, false, ephemeral).ConfigureAwait(false);
         }
 
         public async Task CheckIsFirstSetNoticeAndSendWarningMessageAsync(MainDbContext dbContext)

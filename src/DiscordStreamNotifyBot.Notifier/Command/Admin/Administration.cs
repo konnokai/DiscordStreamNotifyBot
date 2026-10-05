@@ -1,5 +1,6 @@
 ﻿using Discord.Commands;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Command.Admin
@@ -16,39 +17,6 @@ namespace DiscordStreamNotifyBot.Command.Admin
             _dbService = dbService;
             _clusterQuery = clusterQuery;
         }
-
-        // 暫時移除，ChangeStatus 現在並非 Static
-        //[RequireContext(ContextType.DM)]
-        //[Command("UpdateStatus")]
-        //[Summary("更新機器人的狀態\n參數: Guild, Member, Stream, StreamCount, Info")]
-        //[Alias("UpStats")]
-        //[RequireOwner]
-        //public async Task UpdateStatusAsync([Summary("狀態")] string stats)
-        //{
-        //    switch (stats.ToLowerInvariant())
-        //    {
-        //        case "guild":
-        //            Bot.Status = Bot.BotPlayingStatus.Guild;
-        //            break;
-        //        case "member":
-        //            Bot.Status = Bot.BotPlayingStatus.Member;
-        //            break;
-        //        case "stream":
-        //            Bot.Status = Bot.BotPlayingStatus.Stream;
-        //            break;
-        //        case "streamcount":
-        //            Bot.Status = Bot.BotPlayingStatus.StreamCount;
-        //            break;
-        //        case "info":
-        //            Bot.Status = Bot.BotPlayingStatus.Info;
-        //            break;
-        //        default:
-        //            await Context.Channel.SendConfirmAsync(string.Format("找不到 {0} 狀態", stats));
-        //            return;
-        //    }
-
-        //    Bot.ChangeStatus();
-        //}
 
         [RequireContext(ContextType.DM)]
         [Command("ListServer")]
@@ -500,7 +468,7 @@ namespace DiscordStreamNotifyBot.Command.Admin
 
                 if (checkedCount == 0)
                 {
-                    await Context.Channel.SendConfirmAsync("目前沒有設定任何 YouTube、Twitch 或 TwitCasting 通知頻道");
+                    await Context.Channel.SendConfirmAsync("目前沒有設定任何 YouTube、Twitch、TwitCasting 或 CHZZK 通知頻道");
                     return;
                 }
 

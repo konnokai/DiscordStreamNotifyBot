@@ -11,44 +11,27 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
     [DefaultMemberPermissions(GuildPermission.ManageMessages)]
     public class Twitcasting : TopLevelModule<SharedService.Twitcasting.TwitcastingService>
     {
-        private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
 
         public class GuildNoticeTwitCastingChannelIdAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(async () =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    if (!await db.NoticeTwitcastingStreamChannels.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
-                        return AutocompletionResult.FromSuccess();
+                ulong guildId = context.Guild.Id;
+                using var db = Bot.DbService.GetDbContext();
+                var candidates = db.NoticeTwitcastingStreamChannels
+                    .AsNoTracking()
+                    .Where((x) => x.GuildId == guildId)
+                    .Select((x) => new AutocompleteCandidate(
+                        db.GetTwitCastingChannelTitleByScreenId(x.ScreenId), x.ScreenId));
 
-                    var candidates = db.NoticeTwitcastingStreamChannels
-                        .AsNoTracking()
-                        .Where((x) => x.GuildId == context.Guild.Id)
-                        .Select((x) => new AutocompleteCandidate(
-                            db.GetTwitCastingChannelTitleByScreenId(x.ScreenId), x.ScreenId));
-
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"GuildNoticeTwitCastingChannelIdAutocompleteHandler - {ex}");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                return Task.FromResult(AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error($"GuildNoticeTwitCastingChannelIdAutocompleteHandler - {ex}")));
             }
         }
 
-        public Twitcasting(DiscordSocketClient client, MainDbService dbService)
+        public Twitcasting(MainDbService dbService)
         {
-            _client = client;
             _dbService = dbService;
         }
 
@@ -69,22 +52,8 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
             var textChannel = channel as IGuildChannel;
             string locale = await GetLocaleAsync(true);
 
-            var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-            if (!permissions.ViewChannel || !permissions.SendMessages)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                        BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                        BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
+            if (!await EnsureBotCanPostAsync(textChannel, locale))
                 return;
-            }
-
-            if (!permissions.EmbedLinks)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
-                return;
-            }
 
             var channelData = await _service.GetChannelNameAndTitleAsync(channelUrl);
             if (channelData == null)
@@ -202,10 +171,6 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
         }
 
         [RequireBotPermission(GuildPermission.MentionEveryone)]
-        [CommandSummary("設定通知訊息\n" +
-            "未輸入通知訊息時，會清除自訂通知訊息\n" +
-            "請先新增直播通知，再設定通知訊息（`/help get-command-help twitcasting add`）\n\n" +
-            "（若通知訊息要提及特定身分組，Bot 必須具備提及所有身分組權限）")]
         [CommandExample("nana_kaguraaa 開台啦", "https://twitcasting.tv/nana_kaguraaa 開台啦")]
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("set-message", "設定通知訊息")]
@@ -232,7 +197,9 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                     db.SaveChanges();
                     _service.InvalidateNoticeCache();
 
-                    if (message != "")
+                    if (message.Trim() == "-")
+                        await SendLocalizedConfirmAsync("Notifications.DisabledSimple", true, true, channelData.Name).ConfigureAwait(false);
+                    else if (message != "")
                         await SendLocalizedConfirmAsync("Notifications.MessageSetSimple", true, true, channelData.Name, message).ConfigureAwait(false);
                     else
                         await SendLocalizedConfirmAsync("Notifications.MessageClearedSimple", true, true, channelData.Name).ConfigureAwait(false);
@@ -262,7 +229,7 @@ namespace DiscordStreamNotifyBot.Interaction.TwitCasting
                     {
                         string message = string.IsNullOrWhiteSpace(item.StartStreamMessage)
                             ? BotLocalizer.Get("Common.None", locale)
-                            : item.StartStreamMessage;
+                            : GetCurrentMessage(item.StartStreamMessage, locale);
                         dic.Add(db.GetTwitCastingChannelTitleByScreenId(item.ScreenId), message);
                     }
 

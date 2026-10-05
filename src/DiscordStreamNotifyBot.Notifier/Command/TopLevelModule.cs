@@ -1,4 +1,5 @@
 ﻿using Discord.Commands;
+using DiscordStreamNotifyBot.Interaction;
 
 namespace DiscordStreamNotifyBot.Command
 {

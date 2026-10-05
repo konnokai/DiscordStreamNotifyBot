@@ -4,10 +4,10 @@ using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.AdminSettings;
 using DiscordStreamNotifyBot.SharedService.Google;
 using DiscordStreamNotifyBot.SharedService.Youtube;
 using Newtonsoft.Json.Linq;
-using Polly;
 
 namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 {
@@ -128,9 +128,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             await _lifecycleCancellation.CancelAsync();
             try
             {
-                Task[] tasks = new[] { _newCheckTask, _oldCheckTask, _orphanCheckTask }
-                    .Where(task => task != null).Concat(eventTasks).ToArray();
-                await YoutubeMemberLifecyclePolicy.DrainAsync(tasks);
+                await Task.WhenAll(new[] { _newCheckTask, _oldCheckTask, _orphanCheckTask }
+                    .Where(task => task != null).Concat(eventTasks));
             }
             catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested)
             {
@@ -141,24 +140,21 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         private Task TrackEventTask(Func<Task> action)
         {
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!_eventTasks.TryRegister(completion.Task, out long taskId))
+            if (!_eventTasks.TryRegister(completion.Task))
                 return Task.CompletedTask;
 
-            _ = RunTrackedEventAsync(taskId, action, completion);
+            _ = RunTrackedEventAsync(action, completion);
             return completion.Task;
         }
 
-        private async Task RunTrackedEventAsync(
-            long taskId,
-            Func<Task> action,
-            TaskCompletionSource completion)
+        private async Task RunTrackedEventAsync(Func<Task> action, TaskCompletionSource completion)
         {
             try { await action(); }
             catch (OperationCanceledException) when (_lifecycleCancellation.IsCancellationRequested) { }
             catch (Exception ex) { Log.Error(ex.Demystify(), "處理 YouTube 會員生命週期事件失敗"); }
             finally
             {
-                _eventTasks.Complete(taskId);
+                _eventTasks.Complete(completion.Task);
                 completion.TrySetResult();
             }
         }
@@ -187,30 +183,29 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     throw new NullReferenceException("userId");
 
                 ulong userId = ulong.Parse(discordUserId);
-                GoogleOAuthOperationLockAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
+                OAuthLeaseAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
                     userId, CancellationToken.None);
-                if (lockResult.Status != GoogleOAuthOperationLockAcquireStatus.Acquired)
+                if (lockResult.Status != OAuthLeaseAcquireStatus.Acquired)
                     throw new InvalidOperationException($"無法取得 Google OAuth 跨程序 lease: {lockResult.Status}");
                 await using var operationLease = lockResult.Lease;
 
                 YoutubeMemberTokenSnapshot? snapshot = await _authorizationService.GetTokenSnapshotAsync(
                     discordUserId, CancellationToken.None);
                 if (snapshot == null || !await PrepareMemberCheckCleanupAsync(
-                        userId, snapshot.Value.EncryptedTokenPayload, CancellationToken.None,
-                        null, null))
+                        userId, snapshot.Value.EncryptedTokenPayload, CancellationToken.None, null))
                 {
                     throw new InvalidOperationException("Google 憑證已被新的綁定取代，取消本次解除授權。");
                 }
 
                 // provider 結果不明時 RevokeAsync 會丟出並保留本機 token；pending intent 留下供安全重試。
-                if (await operationLease.EnsureOwnedAsync(CancellationToken.None) !=
-                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                if ((await operationLease.EnsureOwnedAsync(CancellationToken.None)).Status !=
+                    OAuthLeaseOwnershipStatus.Owned)
                 {
                     throw new InvalidOperationException("Google OAuth 跨程序 lease 已失效，取消 provider revoke。");
                 }
                 await _authorizationService.RevokeAsync(snapshot.Value, CancellationToken.None);
-                if (await operationLease.EnsureOwnedAsync(CancellationToken.None) !=
-                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                if ((await operationLease.EnsureOwnedAsync(CancellationToken.None)).Status !=
+                    OAuthLeaseOwnershipStatus.Owned)
                 {
                     throw new InvalidOperationException("Google OAuth 跨程序 lease 已失效，保留 durable unlink intent。");
                 }
@@ -236,28 +231,25 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         private async Task<bool> RemoveMemberCheckFromDbAsync(ulong userId, string expectedEncryptedToken,
             YoutubeMemberProbeConfigurationSnapshot configurationSnapshot,
             YoutubeMemberCheckStateSnapshot checkSnapshot,
-            int checkId,
             CancellationToken cancellationToken = default)
         {
             try
             {
-                GoogleOAuthOperationLockAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
+                OAuthLeaseAcquireResult lockResult = await _googleOperationLock.TryAcquireAsync(
                     userId, cancellationToken);
-                if (lockResult.Status != GoogleOAuthOperationLockAcquireStatus.Acquired)
+                if (lockResult.Status != OAuthLeaseAcquireStatus.Acquired)
                     return false;
                 await using var operationLease = lockResult.Lease;
-                if (await operationLease.EnsureOwnedAsync(cancellationToken) !=
-                    GoogleOAuthOperationLockOwnershipStatus.Owned)
+                if ((await operationLease.EnsureOwnedAsync(cancellationToken)).Status !=
+                    OAuthLeaseOwnershipStatus.Owned)
                 {
                     return false;
                 }
-                if (!await PrepareMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken,
-                        configurationSnapshot, (checkId, checkSnapshot)) ||
-                    await operationLease.EnsureOwnedAsync(cancellationToken) !=
-                        GoogleOAuthOperationLockOwnershipStatus.Owned ||
-                    !await CompleteMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken))
-                    return false;
-                return true;
+                return await PrepareMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken,
+                        (configurationSnapshot, checkSnapshot)) &&
+                    (await operationLease.EnsureOwnedAsync(cancellationToken)).Status ==
+                        OAuthLeaseOwnershipStatus.Owned &&
+                    await CompleteMemberCheckCleanupAsync(userId, expectedEncryptedToken, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -269,8 +261,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         /// <summary>在任何 provider revoke 或本機 token 刪除之前，先保存每筆角色移除 intent。</summary>
         private async Task<bool> PrepareMemberCheckCleanupAsync(ulong userId, string expectedEncryptedToken,
             CancellationToken cancellationToken,
-            YoutubeMemberProbeConfigurationSnapshot? providerConfigurationSnapshot,
-            (int CheckId, YoutubeMemberCheckStateSnapshot Snapshot)? providerCheckSnapshot)
+            (YoutubeMemberProbeConfigurationSnapshot Configuration, YoutubeMemberCheckStateSnapshot Check)? providerSnapshot)
         {
             await using var userLock = await _operationCoordinator.LockUserAsync(userId, cancellationToken);
             ulong[] expectedGuildIds = await GetUserCheckGuildIdsAsync(userId, cancellationToken);
@@ -291,16 +282,14 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 Log.Warn($"YouTube cleanup 期間的 guild 清單已變更，保留供下次重試: {userId}");
                 return false;
             }
-            if (providerConfigurationSnapshot.HasValue || providerCheckSnapshot.HasValue)
+            if (providerSnapshot is (var configurationSnapshot, var checkSnapshot))
             {
-                if (!providerConfigurationSnapshot.HasValue || !providerCheckSnapshot.HasValue)
-                    return false;
-                YoutubeMemberCheck providerCheck = checks.SingleOrDefault(x => x.Id == providerCheckSnapshot.Value.CheckId);
+                YoutubeMemberCheck providerCheck = checks.SingleOrDefault(x => x.Id == checkSnapshot.Id);
                 GuildYoutubeMemberConfig providerConfiguration = await LockConfigurationAsync(intentDb,
-                    providerConfigurationSnapshot.Value.Id, cancellationToken);
+                    configurationSnapshot.Id, cancellationToken);
                 if (!YoutubeMemberPolicies.CanApplyProviderResult(YoutubeMemberProbeResultKind.AuthorizationInvalid,
-                        expectedEncryptedToken, token.EncryptedAccessToken, providerCheckSnapshot.Value.Snapshot,
-                        providerCheck, providerConfigurationSnapshot.Value, providerConfiguration))
+                        expectedEncryptedToken, token.EncryptedAccessToken, checkSnapshot,
+                        providerCheck, configurationSnapshot, providerConfiguration))
                 {
                     Log.Warn($"YouTube OAuth token、check 或探測設定已更新，忽略過期 authorization invalid 結果: {userId}");
                     return false;
@@ -437,10 +426,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 using var db = _dbService.GetDbContext();
                 var guildConfig = await db.GuildConfig.SingleOrDefaultAsync(
                     x => x.GuildId == guild.Id, cancellationToken);
-                if (guildConfig?.VerificationLogChannelId is not > 0)
-                    return AdminSettingsMutationResult.Rejected("verification.log-channel-required");
-                if (guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
-                    return AdminSettingsMutationResult.Rejected("verification.log-channel-missing");
+                if (AdminSettingsChannelValidator.ValidateVerificationLogChannel(guild, guildConfig) is { } rejected)
+                    return rejected;
                 int limit = guildConfig.MaxYouTubeMemberCheckCount > 0
                     ? (int)guildConfig.MaxYouTubeMemberCheckCount
                     : 5;
@@ -455,24 +442,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     guild, sourceId, role, cancellationToken);
                 if (!exists && result.IsSuccess)
                 {
-                    try
-                    {
-                        SocketGuildUser actor = guild.GetUser(actorUserId);
-                        string actorText = actor == null
-                            ? actorUserId.ToString()
-                            : $"{actor.GlobalName ?? actor.Username} ({actor} / {actorUserId})";
-                        await Bot.ApplicatonOwner.SendMessageAsync(embed: new EmbedBuilder()
-                            .WithOkColor()
-                            .WithTitle("已新增會限驗證頻道")
-                            .AddField("頻道", Format.Url(sourceId, $"https://www.youtube.com/channel/{sourceId}"), false)
-                            .AddField("伺服器", $"{guild.Name} ({guild.Id})", false)
-                            .AddField("執行者", actorText, false)
-                            .Build());
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex.Demystify(), "發送 YouTube 會限驗證新增通知給 Bot 擁有者時失敗");
-                    }
+                    await CrawlerOwnerNotifier.NotifyVerificationAddedAsync(guild, actorUserId, "已新增會限驗證頻道",
+                        Format.Url(sourceId, $"https://www.youtube.com/channel/{sourceId}"),
+                        "發送 YouTube 會限驗證新增通知給 Bot 擁有者時失敗");
                 }
                 return MapRoleResult(result.Error, sourceId);
             }
@@ -574,36 +546,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 "MemberSetting.Errors.ConfigurationDeletionPending" => AdminSettingsMutationResult.Rejected("verification.deletion-pending"),
                 _ => AdminSettingsMutationResult.Rejected("verification.role-invalid")
             };
-
-        private async Task DisableSelectMenuAsync(SocketMessageComponent component, string locale, string placeholder = "")
-        {
-            SelectMenuBuilder selectMenuBuilder = new SelectMenuBuilder()
-                .WithPlaceholder(string.IsNullOrEmpty(placeholder) ? _localizer.Get("Member.Select.Selected", locale) : placeholder)
-                .WithMinValues(1)
-                .WithMaxValues(1)
-                .AddOption("1", "2")
-                .WithCustomId("1234")
-                .WithDisabled(true);
-
-            var newComponent = new ComponentBuilder()
-                .WithSelectMenu(selectMenuBuilder)
-                .Build();
-
-            try
-            {
-                await component.UpdateAsync((act) =>
-                {
-                    act.Components = new Optional<MessageComponent>(newComponent);
-                });
-            }
-            catch
-            {
-                await component.ModifyOriginalResponseAsync((act) =>
-                {
-                    act.Components = new Optional<MessageComponent>(newComponent);
-                });
-            }
-        }
 
         /// <summary>
         /// 消費匯流排的會限影片探索 log 事件（Scraper 探索 → 各 Notifier shard 發送）。
@@ -795,9 +737,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                         catch { }
                     }
 
-                    if (dto.IsNeedRemove &&
-                        YoutubeMemberManualPinPolicy.DecideAutomaticMutation(item.IsManualVideoId) ==
-                        YoutubeMemberAutomaticMutationAction.Apply)
+                    // 管理員手動指定的探測影片不受自動刪除影響。
+                    if (dto.IsNeedRemove && !item.IsManualVideoId)
                     {
                         if (!await _roleService.MarkConfigurationDeletionPendingAsync(item, GracefulShutdown.Token))
                             Log.Warn($"YouTube 會限設定刪除標記失敗: {item.GuildId} / {item.MemberCheckChannelId}");
@@ -816,61 +757,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
     static class Ext
     {
-        // RestUser 無法序列化，暫不使用快取。
-        //private static async Task<RestUser> GetRestUserFromCatchOrCreate(ulong userId)
-        //{
-        //    try
-        //    {
-        //        var userJson = await Bot.RedisDb.StringGetAsync($"discord_stream_bot:restuser:{userId}");
-        //        if (userJson.IsNull)
-        //        {
-        //            var user = await Bot._client.Rest.GetUserAsync(userId);
-        //            if (user == null) return null;
-
-        //            await Bot.RedisDb.StringSetAsync($"discord_stream_bot:restuser:{userId}", JsonConvert.SerializeObject(user), TimeSpan.FromHours(1));
-        //            return user;
-        //        }
-        //        else
-        //        {
-        //            RestUser restUser = JsonConvert.DeserializeObject<RestUser>(userJson.ToString());
-        //            return restUser;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Error($"Member-GetRestUserFromCatchOrCreate: {userId}");
-        //        Log.Error(ex.ToString());
-        //        return null;
-        //    }
-        //}
-
         public static async Task<IUserMessage> SendConfirmMessageAsync(this ITextChannel tc, DiscordSocketClient client, ulong userId, EmbedBuilder embedBuilder)
         {
             try
             {
-                embedBuilder.WithOkColor();
-
-                var user = await client.Rest.GetUserAsync(userId);
-                if (user != null)
-                {
-                    embedBuilder
-                        .WithAuthor(user)
-                        .WithThumbnailUrl(user.GetAvatarUrl());
-                }
-
-                return await Policy.Handle<TimeoutException>()
-                    .Or<KeyNotFoundException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, (retryAttempt) =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YoutubeMemberService-SendConfirmMessageAsync 通知 | {tc.Id} / {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
-                    .ExecuteAsync(async () =>
-                    {
-                        return await tc.SendMessageAsync(embed: embedBuilder.Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                    });
+                return await SendUserEmbedAsync(tc, client, userId, embedBuilder.WithOkColor(), "SendConfirmMessageAsync");
             }
             catch (Exception ex)
             {
@@ -883,19 +774,8 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         {
             try
             {
-                return await Policy.Handle<TimeoutException>()
-                    .Or<KeyNotFoundException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, (retryAttempt) =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YoutubeMemberService-SendConfirmMessageAsync 通知 | {tc.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
-                    .ExecuteAsync(async () =>
-                    {
-                        return await tc.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec).Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                    });
+                return await SendChannelEmbedAsync(tc, new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(dec),
+                    "SendConfirmMessageAsync", $"{tc.Id}");
             }
             catch (Exception ex)
             {
@@ -905,36 +785,15 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         }
 
         public static async Task<IUserMessage> SendErrorMessageAsync(this ITextChannel tc, DiscordSocketClient client,
-            ulong userId, string channelTitle, string status, BotLocalizer localizer = null, string locale = null)
+            ulong userId, string channelTitle, string status, BotLocalizer localizer, string locale)
         {
             try
             {
                 var embedBuilder = new EmbedBuilder()
                     .WithErrorColor()
-                    .AddField(localizer?.Get("Member.Status.Channel", locale) ?? "檢查頻道", channelTitle)
-                    .AddField(localizer?.Get("Member.Status.State", locale) ?? "狀態", status);
-
-                var user = await client.Rest.GetUserAsync(userId);
-                if (user != null)
-                {
-                    embedBuilder
-                        .WithAuthor(user)
-                        .WithThumbnailUrl(user.GetAvatarUrl());
-                }
-
-                return await Policy.Handle<TimeoutException>()
-                    .Or<KeyNotFoundException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, (retryAttempt) =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YoutubeMemberService-SendErrorMessageAsync 通知 | {tc.Id} / {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
-                    .ExecuteAsync(async () =>
-                    {
-                        return await tc.SendMessageAsync(embed: embedBuilder.Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                    });
+                    .AddField(localizer.Get("Member.Status.Channel", locale), channelTitle)
+                    .AddField(localizer.Get("Member.Status.State", locale), status);
+                return await SendUserEmbedAsync(tc, client, userId, embedBuilder, "SendErrorMessageAsync");
             }
             catch (Exception ex)
             {
@@ -943,9 +802,41 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
-        public static async Task SendConfirmMessageAsync(this ulong userId, DiscordSocketClient client, string text,
-            ITextChannel tc, BotLocalizer localizer = null, string guildLocale = null)
+        public static Task SendConfirmMessageAsync(this ulong userId, DiscordSocketClient client, string text,
+            ITextChannel tc, BotLocalizer localizer, string guildLocale)
+            => SendUserDMAsync(userId, client, text, tc, localizer, guildLocale, isError: false);
+
+        public static Task SendErrorMessageAsync(this ulong userId, DiscordSocketClient client, string text,
+            ITextChannel tc, BotLocalizer localizer, string guildLocale)
+            => SendUserDMAsync(userId, client, text, tc, localizer, guildLocale, isError: true);
+
+        /// <summary>查得到使用者時以其名稱與頭像作為 embed 作者，再發送到頻道。</summary>
+        private static async Task<IUserMessage> SendUserEmbedAsync(ITextChannel tc, DiscordSocketClient client, ulong userId,
+            EmbedBuilder embedBuilder, string logTag)
         {
+            var user = await client.Rest.GetUserAsync(userId);
+            if (user != null)
+            {
+                embedBuilder
+                    .WithAuthor(user)
+                    .WithThumbnailUrl(user.GetAvatarUrl());
+            }
+
+            return await SendChannelEmbedAsync(tc, embedBuilder, logTag, $"{tc.Id} / {userId}");
+        }
+
+        /// <summary>頻道訊息與私訊不同，也會重試 <see cref="KeyNotFoundException"/>。</summary>
+        private static Task<IUserMessage> SendChannelEmbedAsync(ITextChannel tc, EmbedBuilder embedBuilder,
+            string logTag, string logTarget)
+            => DiscordRetryPolicy.Create((retryAttempt, timeSpan) =>
+                    Log.Warn($"YoutubeMemberService-{logTag} 通知 | {logTarget} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)"),
+                    retryKeyNotFound: true)
+                .ExecuteAsync(() => tc.SendMessageAsync(embed: embedBuilder.Build(), options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry }));
+
+        private static async Task SendUserDMAsync(ulong userId, DiscordSocketClient client, string text,
+            ITextChannel tc, BotLocalizer localizer, string guildLocale, bool isError)
+        {
+            string logTag = isError ? "SendUserDMErrorMessageAsync" : "SendUserDMConfirmMessageAsync";
             var user = await client.Rest.GetUserAsync(userId) as IUser;
             if (user == null)
             {
@@ -962,17 +853,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 
             try
             {
-                await Policy.Handle<TimeoutException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, (retryAttempt) =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YoutubeMemberService-SendUserDMConfirmMessageAsync 通知 | {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
+                await DiscordRetryPolicy.Create((retryAttempt, timeSpan) =>
+                        Log.Warn($"YoutubeMemberService-{logTag} 通知 | {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)"))
                     .ExecuteAsync(async () =>
                     {
-                        return await userChannel.SendMessageAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(text).Build());
+                        var embedBuilder = isError ? new EmbedBuilder().WithErrorColor() : new EmbedBuilder().WithOkColor();
+                        return await userChannel.SendMessageAsync(embed: embedBuilder.WithDescription(text).Build());
                     });
             }
             catch (Discord.Net.HttpException ex)
@@ -980,106 +866,16 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
                 {
                     Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
-                    string warning = localizer?.Format("Member.Status.DmUnavailable", guildLocale, userId)
-                        ?? $"無法傳送訊息至：<@{userId}>\n請提醒該使用者開啟 `允許來自伺服器成員的私人訊息`";
-                    await tc.SendMessageAsync(warning);
+                    await tc.SendMessageAsync(localizer.Format("Member.Status.DmUnavailable", guildLocale, userId));
                 }
                 else
                 {
-                    Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMConfirmMessageAsync - Discord 錯誤: {userId}");
+                    Log.Error(ex.Demystify(), $"YoutubeMemberService-{logTag} - Discord 錯誤: {userId}");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMConfirmMessageAsync 錯誤: {userId}");
-            }
-        }
-
-        public static async Task SendErrorMessageAsync(this ulong userId, DiscordSocketClient client, string text,
-            ITextChannel tc, BotLocalizer localizer = null, string guildLocale = null)
-        {
-            var user = await client.Rest.GetUserAsync(userId) as IUser;
-            if (user == null)
-            {
-                Log.Warn($"找不到使用者 {userId}");
-                return;
-            }
-
-            var userChannel = await user.CreateDMChannelAsync();
-            if (userChannel == null)
-            {
-                Log.Warn($"{user.Id} 無法建立使用者私訊");
-                return;
-            }
-
-            try
-            {
-                await Policy.Handle<TimeoutException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, (retryAttempt) =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YoutubeMemberService-SendUserDMErrorMessageAsync 通知 | {userId} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
-                    .ExecuteAsync(async () =>
-                    {
-                        return await userChannel.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
-                    });
-            }
-            catch (Discord.Net.HttpException ex)
-            {
-                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
-                {
-                    Log.Warn($"無法傳送訊息至: {userChannel.Name} ({userId})");
-                    string warning = localizer?.Format("Member.Status.DmUnavailable", guildLocale, userId)
-                        ?? $"無法傳送訊息至：<@{userId}>\n請提醒該使用者開啟 `允許來自伺服器成員的私人訊息`";
-                    await tc.SendMessageAsync(warning);
-                }
-                else
-                {
-                    Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {userId}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {userId}");
-            }
-        }
-
-        public static async Task SendErrorMessageAsync(this IDMChannel dc, string text)
-        {
-            if (dc == null) return;
-
-            try
-            {
-                await Policy.Handle<TimeoutException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, (retryAttempt) =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YoutubeMemberService-SendUserDMErrorMessageAsync 通知 | {dc.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
-                    .ExecuteAsync(async () =>
-                    {
-                        return await dc.SendMessageAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(text).Build());
-                    });
-            }
-            catch (Discord.Net.HttpException ex)
-            {
-                if (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
-                {
-                    Log.Warn($"無法傳送訊息至: {dc.Name}");
-                }
-                else
-                {
-                    Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync - Discord 錯誤: {dc.Name}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"YoutubeMemberService-SendUserDMErrorMessageAsync 錯誤: {dc.Name}");
+                Log.Error(ex.Demystify(), $"YoutubeMemberService-{logTag} 錯誤: {userId}");
             }
         }
     }

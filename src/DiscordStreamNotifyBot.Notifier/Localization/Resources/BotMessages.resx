@@ -153,6 +153,7 @@
   <data name="Notifications.MessageCleared" xml:space="preserve"><value>已清除 `{0}` 的「{1}」通知訊息。</value></data>
   <data name="Notifications.MessageSetSimple" xml:space="preserve"><value>已將 `{0}` 的直播通知訊息設定為：&#10;{1}</value></data>
   <data name="Notifications.MessageClearedSimple" xml:space="preserve"><value>已清除 `{0}` 的直播通知訊息。</value></data>
+  <data name="Notifications.DisabledSimple" xml:space="preserve"><value>已關閉 `{0}` 的直播通知。</value></data>
   <data name="Notifications.TypeDisabled" xml:space="preserve"><value>已關閉 `{0}` 的「{1}」通知。</value></data>
   <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>（已關閉此類通知）</value></data>
   <data name="Notifications.MessageListDescription" xml:space="preserve"><value>留空表示尚未設定訊息。Embed 中的文字不會觸發提及。</value></data>
@@ -248,7 +249,6 @@
   <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>選擇頻道</value></data>
   <data name="Member.Select.Description" xml:space="preserve"><value>請選擇這次要驗證的頻道。先前選過但這次未選擇的頻道，會移除相關身分組；若無法立即移除，Bot 會自動重試。</value></data>
   <data name="Member.Select.SelectedCount" xml:space="preserve"><value>已選擇 {0} 個頻道</value></data>
-  <data name="Member.Select.Selected" xml:space="preserve"><value>已選擇</value></data>
   <data name="Member.Select.Expired" xml:space="preserve"><value>此會員驗證選單已過期，請重新執行 `/youtube-member check`。</value></data>
   <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>你尚未在此伺服器執行會員驗證。</value></data>
   <data name="Member.CheckCancelled" xml:space="preserve"><value>已取消你在此伺服器的會員驗證，並移除相關身分組。</value></data>
@@ -335,8 +335,6 @@
   <data name="Notifications.Field.EndedAt" xml:space="preserve"><value>關台時間</value></data>
   <data name="Notifications.Field.Duration" xml:space="preserve"><value>直播時長</value></data>
   <data name="Notifications.Field.UploadedAt" xml:space="preserve"><value>上傳時間</value></data>
-  <data name="Notifications.Field.ScheduledOrUploadedAt" xml:space="preserve"><value>排定開台／上傳時間</value></data>
-  <data name="Notifications.Field.OriginalScheduledStart" xml:space="preserve"><value>原訂開台時間</value></data>
   <data name="Notifications.Field.Category" xml:space="preserve"><value>分類</value></data>
   <data name="Notifications.Field.Subtitle" xml:space="preserve"><value>副標題</value></data>
   <data name="Notifications.Duration.Days" xml:space="preserve"><value>{0} 天 {1} 小時 {2} 分 {3} 秒</value></data>
@@ -348,8 +346,6 @@
   <data name="Youtube.NotificationStatus.UpcomingChanged" xml:space="preserve"><value>尚未開台（時間已變更）</value></data>
   <data name="Youtube.NotificationStatus.EndedAsMemberOnly" xml:space="preserve"><value>直播已結束，存檔已設為會員限定</value></data>
   <data name="Youtube.NotificationStatus.Unarchived" xml:space="preserve"><value>直播已結束，存檔已設為私人</value></data>
-  <data name="Youtube.NotificationStatus.Deleted" xml:space="preserve"><value>已刪除</value></data>
-  <data name="Youtube.NotificationStatus.ScheduleDataLost" xml:space="preserve"><value>直播排程資料遺失</value></data>
   <data name="Youtube.Events.ManageEventsMissing" xml:space="preserve"><value>Bot 在此伺服器缺少「管理活動」權限。請授予權限後再次執行 {0}，以開啟自動建立活動功能。</value></data>
   <data name="Twitch.Notification.UnknownTitle" xml:space="preserve"><value>（找不到直播標題）</value></data>
   <data name="Twitch.Notification.Clips" xml:space="preserve"><value>觀看次數最高的剪輯</value></data>

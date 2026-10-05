@@ -1,4 +1,5 @@
 ﻿using DiscordStreamNotifyBot.Interaction;
+using DiscordStreamNotifyBot.Localization;
 
 namespace DiscordStreamNotifyBot.SharedService
 {
@@ -48,5 +49,16 @@ namespace DiscordStreamNotifyBot.SharedService
                 ECPayEmote = null;
             }
         }
+
+        /// <summary>開台通知附帶的隨機影片與贊助按鈕；是否停用廣告由呼叫端依 DisableNotificationsAds 判斷。</summary>
+        public MessageComponent BuildNotificationAdsComponent(BotLocalizer localizer, string locale)
+            => new ComponentBuilder()
+                .WithButton(localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
+                    emote: YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
+                .WithButton(localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
+                    emote: ECPayEmote, url: Utility.ECPayUrl, row: 1)
+                .WithButton(localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
+                    emote: PayPalEmote, url: Utility.PaypalUrl, row: 1)
+                .Build();
     }
 }

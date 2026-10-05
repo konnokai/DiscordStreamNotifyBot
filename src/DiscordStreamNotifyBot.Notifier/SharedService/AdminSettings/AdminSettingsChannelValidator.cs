@@ -1,3 +1,4 @@
+using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Shared.Messages;
 using Newtonsoft.Json.Linq;
 
@@ -15,7 +16,10 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
         {
             var channel = guild.GetChannel(channelId);
             if (channel?.ChannelType is not (ChannelType.Text or ChannelType.News))
-                return Reject("settings.channel-not-found", channelId);
+                return AdminSettingsMutationResult.Rejected("settings.channel-not-found", new JObject
+                {
+                    ["channelId"] = channelId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                });
 
             var botUser = guild.GetUser(client.CurrentUser.Id);
             if (botUser == null)
@@ -41,10 +45,14 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 });
         }
 
-        private static AdminSettingsMutationResult Reject(string code, ulong channelId)
-            => AdminSettingsMutationResult.Rejected(code, new JObject
-            {
-                ["channelId"] = channelId.ToString(System.Globalization.CultureInfo.InvariantCulture)
-            });
+        /// <summary>會員/訂閱驗證設定前必須已設定且仍存在的驗證紀錄頻道。</summary>
+        public static AdminSettingsMutationResult? ValidateVerificationLogChannel(SocketGuild guild, GuildConfig? guildConfig)
+        {
+            if (guildConfig?.VerificationLogChannelId is not > 0)
+                return AdminSettingsMutationResult.Rejected("verification.log-channel-required");
+            if (guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
+                return AdminSettingsMutationResult.Rejected("verification.log-channel-missing");
+            return null;
+        }
     }
 }

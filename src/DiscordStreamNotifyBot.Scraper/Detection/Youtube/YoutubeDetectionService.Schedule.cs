@@ -549,13 +549,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                                     Log.Error($"CheckScheduleTime-Parse: {reminder.Key} / {scheduledStartTimeRaw}");
                             }
 
-                            var action = YoutubeReminderPolicy.ReconcileBatch(new YoutubeReminderBatchFacts(
+                            var action = YoutubeReminderPolicy.ReconcileBatch(
                                 item != null,
                                 item?.LiveStreamingDetails != null,
                                 !string.IsNullOrEmpty(scheduledStartTimeRaw),
                                 startTime,
                                 reminder.Value.StreamVideo.ScheduledStartTime,
-                                DateTime.Now));
+                                DateTime.Now);
 
                             if (action == YoutubeReminderReconciliationAction.KeepExisting)
                                 continue;
@@ -586,27 +586,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 var streamVideo = BuildStreamVideo(item, startTime.Value, reminder.Value.StreamVideo.ChannelType);
 
-                                var persistedVideo = GetDbVideoByType(db, reminder.Value.StreamVideo);
-                                if (persistedVideo != null)
+                                SaveStreamVideoChange(db, GetDbVideoByType(db, reminder.Value.StreamVideo), streamVideo, (x) =>
                                 {
-                                    persistedVideo.ChannelTitle = streamVideo.ChannelTitle;
-                                    persistedVideo.VideoTitle = streamVideo.VideoTitle;
-                                    persistedVideo.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                    db.UpdateAndSave(persistedVideo);
-                                }
-                                else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                {
-                                    addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                }
-                                else
-                                {
-                                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更儲存失敗，找不到資料：{streamVideo.VideoId}");
-                                }
+                                    x.ChannelTitle = streamVideo.ChannelTitle;
+                                    x.VideoTitle = streamVideo.VideoTitle;
+                                    x.ScheduledStartTime = streamVideo.ScheduledStartTime;
+                                }, "直播時間");
 
                                 Log.Info($"直播時間已變更 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}：{previousScheduledStartTime:O} -> {startTime:O}");
 
-                                if (action is YoutubeReminderReconciliationAction.PublishChangeAndRunImmediately or
-                                    YoutubeReminderReconciliationAction.PublishChangeAndReplaceTimer)
+                                if (action == YoutubeReminderReconciliationAction.PublishChange)
                                 {
                                     await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.ChangeTime,
                                         previousScheduledStartTime: previousScheduledStartTime).ConfigureAwait(false);

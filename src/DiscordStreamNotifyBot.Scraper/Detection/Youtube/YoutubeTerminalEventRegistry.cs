@@ -4,15 +4,16 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 {
     internal sealed class YoutubeTerminalEventRegistry
     {
-        private readonly ConcurrentDictionary<YoutubeTerminalEventIdentity, ClaimState> _claims = new();
+        private readonly ConcurrentDictionary<(string VideoId, YoutubeTerminalEventKind Group), ClaimState> _claims = new();
 
         internal async Task<YoutubeTerminalEventDecision> ExecuteOnceAsync(
             string videoId,
             YoutubeTerminalEventKind eventKind,
             Func<Task> publish)
         {
-            var identity = new YoutubeTerminalEventIdentity(videoId, GetGroup(eventKind));
-            var state = _claims.GetOrAdd(identity, _ => new ClaimState());
+            // 一般關台與會限關台共用同一組，同一部影片只會發布其中一種
+            var group = eventKind == YoutubeTerminalEventKind.MemberOnly ? YoutubeTerminalEventKind.End : eventKind;
+            var state = _claims.GetOrAdd((videoId, group), _ => new ClaimState());
             await state.Gate.WaitAsync().ConfigureAwait(false);
             try
             {
@@ -49,32 +50,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 _ => null,
             };
 
-        private static YoutubeTerminalEventGroup GetGroup(YoutubeTerminalEventKind eventKind)
-            => eventKind switch
-            {
-                YoutubeTerminalEventKind.End or YoutubeTerminalEventKind.MemberOnly => YoutubeTerminalEventGroup.End,
-                YoutubeTerminalEventKind.Delete => YoutubeTerminalEventGroup.Delete,
-                YoutubeTerminalEventKind.Unarchived => YoutubeTerminalEventGroup.Unarchived,
-                _ => throw new ArgumentOutOfRangeException(nameof(eventKind), eventKind, null),
-            };
-
         private sealed class ClaimState
         {
             internal SemaphoreSlim Gate { get; } = new(1, 1);
             internal bool IsCompleted { get; set; }
             internal YoutubeTerminalEventKind ClaimedKind { get; set; }
         }
-    }
-
-    internal readonly record struct YoutubeTerminalEventIdentity(
-        string VideoId,
-        YoutubeTerminalEventGroup Group);
-
-    internal enum YoutubeTerminalEventGroup
-    {
-        End,
-        Delete,
-        Unarchived,
     }
 
     internal readonly record struct YoutubeTerminalEventDecision(

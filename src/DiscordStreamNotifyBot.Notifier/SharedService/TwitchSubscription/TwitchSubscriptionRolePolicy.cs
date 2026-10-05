@@ -4,6 +4,9 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 {
     internal static class TwitchSubscriptionRolePolicy
     {
+        /// <summary>Tier 1→3 的處理順序。</summary>
+        public static readonly IReadOnlyList<string> Tiers = ["1000", "2000", "3000"];
+
         public static ulong GetTierRoleId(GuildTwitchSubscriptionConfig config, string tier) => tier switch
         {
             "1000" => config.Tier1RoleId,
@@ -11,6 +14,24 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             "3000" => config.Tier3RoleId,
             _ => 0
         };
+
+        public static void SetTierRoleId(GuildTwitchSubscriptionConfig config, string tier, ulong roleId)
+        {
+            switch (tier)
+            {
+                case "1000": config.Tier1RoleId = roleId; break;
+                case "2000": config.Tier2RoleId = roleId; break;
+                case "3000": config.Tier3RoleId = roleId; break;
+                default: throw new ArgumentOutOfRangeException(nameof(tier), tier, null);
+            }
+        }
+
+        /// <summary>標記為待移除角色；呼叫端須先保存此狀態再碰 Discord。</summary>
+        public static void QueueRoleRemoval(TwitchSubscriptionCheck check)
+        {
+            check.IsChecked = false;
+            check.PendingRoleRemoval = true;
+        }
 
         public static IReadOnlyList<ulong> GetOtherTierRoleIds(
             GuildTwitchSubscriptionConfig config,

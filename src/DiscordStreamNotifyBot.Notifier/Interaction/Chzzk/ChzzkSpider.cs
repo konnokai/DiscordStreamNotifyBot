@@ -18,40 +18,17 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
 
         public class GuildChzzkSpiderAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(async () =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    IQueryable<DataBase.Table.ChzzkSpider> channelList;
+                using var db = Bot.DbService.GetDbContext();
+                IQueryable<DataBase.Table.ChzzkSpider> channelList = autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id
+                    ? db.ChzzkSpider
+                    : db.ChzzkSpider.AsNoTracking().Where((x) => x.GuildId == autocompleteInteraction.GuildId);
 
-                    if (autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id)
-                    {
-                        channelList = db.ChzzkSpider;
-                    }
-                    else
-                    {
-                        if (!await db.ChzzkSpider.AsNoTracking().AnyAsync((x) => x.GuildId == autocompleteInteraction.GuildId))
-                            return AutocompletionResult.FromSuccess();
-
-                        channelList = db.ChzzkSpider.AsNoTracking().Where((x) => x.GuildId == autocompleteInteraction.GuildId);
-                    }
-
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var candidates = channelList.Select(item =>
-                            new AutocompleteCandidate(item.ChannelName, item.ChannelId));
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"GuildChzzkSpiderAutocompleteHandler - {ex}");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                var candidates = channelList.Select(item =>
+                    new AutocompleteCandidate(item.ChannelName, item.ChannelId));
+                return Task.FromResult(AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error($"GuildChzzkSpiderAutocompleteHandler - {ex}")));
             }
         }
 
@@ -61,10 +38,6 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
             _clusterQuery = clusterQuery;
         }
 
-        [CommandSummary("新增 CHZZK 頻道爬蟲\n" +
-           "伺服器人數至少 200 人才可使用\n" +
-           "未來會根據情況增減可新增的頻道數量\n" +
-           "如有需求，請聯絡擁有者")]
         [CommandExample("https://chzzk.naver.com/64d76089fba26b180d9c9e48a32600d9",
            "https://chzzk.naver.com/live/64d76089fba26b180d9c9e48a32600d9")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
@@ -79,8 +52,6 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
             await SendCrawlerResultAsync(result, channelUrl, "chzzk");
         }
 
-        [CommandSummary("移除 CHZZK 頻道檢測爬蟲\n" +
-            "爬蟲必須由本伺服器新增才可移除")]
         [CommandExample("64d76089fba26b180d9c9e48a32600d9", "https://chzzk.naver.com/64d76089fba26b180d9c9e48a32600d9")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         [SlashCommand("remove", "移除 CHZZK 頻道檢測爬蟲")]
@@ -104,25 +75,10 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
 
             using (var db = _dbService.GetDbContext())
             {
-                // 跨 shard：以合併快照解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
-                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                var list = db.ChzzkSpider.AsNoTracking().AsEnumerable().Select((x) =>
-                    BotLocalizer.Format("Spider.ListEntry", locale,
-                        Format.Url(string.IsNullOrEmpty(x.ChannelName) ? x.ChannelId : x.ChannelName,
-                            ChzzkUrls.Channel(x.ChannelId)),
-                        x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
-                        (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))))
-                    .ToList();
-
-                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
-                {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle(BotLocalizer.Get("ChzzkSpider.ListTitle", locale))
-                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter(BotLocalizer.Format("Common.ChannelCountFooter", locale,
-                            Math.Min(list.Count, (page + 1) * 20), list.Count));
-                }, list.Count, 10, false).ConfigureAwait(false);
+                var spiders = db.ChzzkSpider.AsNoTracking().AsEnumerable()
+                    .Select((x) => (string.IsNullOrEmpty(x.ChannelName) ? x.ChannelId : x.ChannelName,
+                        ChzzkUrls.Channel(x.ChannelId), x.GuildId));
+                await SendSpiderListAsync(locale, page, "ChzzkSpider.ListTitle", _clusterQuery, spiders).ConfigureAwait(false);
             }
         }
     }

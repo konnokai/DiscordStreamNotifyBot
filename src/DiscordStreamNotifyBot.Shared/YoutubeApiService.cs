@@ -18,6 +18,9 @@ namespace DiscordStreamNotifyBot.Shared
     {
         public YouTubeService YouTubeService { get; }
 
+        private static readonly Regex ChannelUrlNewFormatRegex = new(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
+        private static readonly Regex ChannelUrlOldFormatRegex = new(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
+
         private readonly MainDbService _dbService;
 
         public YoutubeApiService(BotConfig botConfig, MainDbService dbService)
@@ -34,7 +37,7 @@ namespace DiscordStreamNotifyBot.Shared
         public async Task<string> GetChannelIdAsync(string channelUrl)
         {
             if (string.IsNullOrEmpty(channelUrl))
-                throw new ArgumentNullException(channelUrl);
+                throw new ArgumentNullException(nameof(channelUrl));
 
             channelUrl = channelUrl.Trim();
 
@@ -55,46 +58,22 @@ namespace DiscordStreamNotifyBot.Shared
             channelUrl = channelUrl.Replace("https://m.youtube.com", "https://www.youtube.com");
             channelUrl = channelUrl.Split('?')[0]; // 移除網址上的參數
 
-            Regex regexNewFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/@(?'CustomId'[^/]+)");
-            Regex regexOldFormat = new Regex(@"(http[s]{0,1}://){0,1}(www\.){0,1}(?'Host'[^/]+)/(?'Type'[^/]+)/(?'ChannelName'[\w%\-]+)");
-            Match matchNewFormat = regexNewFormat.Match(channelUrl);
-            Match matchOldFormat = regexOldFormat.Match(channelUrl);
+            Match matchNewFormat = ChannelUrlNewFormatRegex.Match(channelUrl);
+            Match matchOldFormat = ChannelUrlOldFormatRegex.Match(channelUrl);
 
             if (matchNewFormat.Success)
             {
                 string channelName = matchNewFormat.Groups["CustomId"].Value.ToLower();
 
-                using (var db = _dbService.GetDbContext())
+                // 只有 @handle 格式會把 InvalidOperationException 轉成 FormatException
+                try
                 {
-                    try
-                    {
-                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                        if (string.IsNullOrEmpty(channelId))
-                        {
-                            try
-                            {
-                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/@{channelName}");
-                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                                await db.SaveChangesAsync();
-                            }
-                            catch (UriFormatException ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
-                                throw;
-                            }
-                        }
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-InvalidOperationException: {channelUrl}");
-                        throw new FormatException("網址格式錯誤，請向 Bot 擁有者回報此問題");
-                    }
+                    channelId = await GetOrScrapeChannelIdAsync(channelName, $"https://www.youtube.com/@{channelName}", channelUrl);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-InvalidOperationException: {channelUrl}");
+                    throw new FormatException("網址格式錯誤，請向 Bot 擁有者回報此問題");
                 }
             }
             else if (matchOldFormat.Success)
@@ -113,31 +92,7 @@ namespace DiscordStreamNotifyBot.Shared
                 else if (type == "c" || type == "user")
                 {
                     string channelName = WebUtility.UrlDecode(matchOldFormat.Groups["ChannelName"].Value);
-
-                    using (var db = _dbService.GetDbContext())
-                    {
-                        channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
-
-                        if (string.IsNullOrEmpty(channelId))
-                        {
-                            try
-                            {
-                                channelId = await GetChannelIdByUrlAsync($"https://www.youtube.com/{type}/{channelName}");
-                                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
-                                await db.SaveChangesAsync();
-                            }
-                            catch (UriFormatException ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
-                                throw;
-                            }
-                        }
-                    }
+                    channelId = await GetOrScrapeChannelIdAsync(channelName, $"https://www.youtube.com/{type}/{channelName}", channelUrl);
                 }
                 else throw new FormatException("錯誤，網址格式不正確");
             }
@@ -151,11 +106,41 @@ namespace DiscordStreamNotifyBot.Shared
             return channelId;
         }
 
+        /// <summary>先查頻道名稱對照表，查不到才爬頻道頁取得 ID 並寫回對照表。</summary>
+        /// <param name="channelUrl">使用者輸入的原始網址，只用於 log。</param>
+        private async Task<string> GetOrScrapeChannelIdAsync(string channelName, string scrapeUrl, string channelUrl)
+        {
+            using var db = _dbService.GetDbContext();
+
+            string channelId = db.YoutubeChannelNameToId.SingleOrDefault((x) => x.ChannelName == channelName)?.ChannelId;
+            if (!string.IsNullOrEmpty(channelId))
+                return channelId;
+
+            try
+            {
+                channelId = await GetChannelIdByUrlAsync(scrapeUrl);
+                db.YoutubeChannelNameToId.Add(new DataBase.Table.YoutubeChannelNameToId() { ChannelName = channelName, ChannelId = channelId });
+                await db.SaveChangesAsync();
+            }
+            catch (UriFormatException ex)
+            {
+                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-UriFormatException: {channelUrl}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"GetChannelIdAsync-GetChannelIdByUrlAsync-Exception: {channelUrl}");
+                throw;
+            }
+
+            return channelId;
+        }
+
         private async Task<string> GetChannelIdByUrlAsync(string channelUrl)
         {
             HtmlWeb htmlWeb = new HtmlWeb();
             var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
-            var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
+            var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && (x2.Value == "channelId" || x2.Value == "identifier")));
 
             if (node == null)
                 throw new UriFormatException("錯誤，找不到頻道 ID 資訊\n" +
@@ -216,7 +201,7 @@ namespace DiscordStreamNotifyBot.Shared
             }
             catch (NullReferenceException)
             {
-                Log.Warn($"YouTube GetChannelTitle 頻道可能已被刪除：{channelId}");
+                Log.Warn($"YouTube GetChannelTitle 頻道可能已被刪除：{string.Join(", ", channelId)}");
                 return null;
             }
             catch (Exception ex)

@@ -24,7 +24,6 @@ namespace DiscordStreamNotifyBot
         private readonly SharedService.Chzzk.ChzzkService _chzzkService;
         private readonly SharedService.YoutubeMember.YoutubeMemberService _youtubeMemberService;
         private readonly NotifierMetrics _metrics;
-        private readonly Func<string, string, NotificationDeliveryProgress, Task<bool>> _dispatchAsync;
         private readonly NotificationBusConsumerOptions _options;
 
         internal NotificationBusConsumer(YoutubeStreamService youtubeStreamService,
@@ -40,23 +39,7 @@ namespace DiscordStreamNotifyBot
             _chzzkService = chzzkService;
             _youtubeMemberService = youtubeMemberService;
             _metrics = metrics;
-            _dispatchAsync = DispatchAsync;
             _options = NotificationBusConsumerOptions.Default;
-        }
-
-        internal NotificationBusConsumer(
-            Func<string, string, NotificationDeliveryProgress, Task> dispatchAsync,
-            NotificationBusConsumerOptions options = null,
-            NotifierMetrics metrics = null)
-        {
-            ArgumentNullException.ThrowIfNull(dispatchAsync);
-            _dispatchAsync = async (type, payload, progress) =>
-            {
-                await dispatchAsync(type, payload, progress);
-                return true;
-            };
-            _options = options ?? NotificationBusConsumerOptions.Default;
-            _metrics = metrics;
         }
 
         /// <summary>建立本 shard 的 consumer group 並於背景啟動消費迴圈（吃 GracefulShutdown.Token）。</summary>
@@ -145,7 +128,7 @@ namespace DiscordStreamNotifyBot
                     .ToDictionary(x => (string)x.Name, x => (string)x.Value, StringComparer.Ordinal);
                 var progress = new NotificationDeliveryProgress(completed,
                     (step, value) => db.HashSetAsync(progressKey, step, value));
-                bool dispatched = await _dispatchAsync(type, payload, progress);
+                bool dispatched = await DispatchAsync(type, payload, progress);
                 progress.ThrowIfFailed();
                 if (!dispatched)
                 {

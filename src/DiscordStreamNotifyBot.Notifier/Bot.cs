@@ -46,14 +46,10 @@ namespace DiscordStreamNotifyBot
         public enum BotPlayingStatus { Guild, Member, Stream, StreamCount, Info }
 
         private readonly static BotConfig _botConfig = new();
-        private readonly int _shardId;
-        private readonly int _totalShardCount;
         private readonly NotifierMetrics _metrics;
 
         internal Bot(int shardId, int totalShardCount, NotifierMetrics metrics)
         {
-            _shardId = shardId;
-            _totalShardCount = totalShardCount;
             _metrics = metrics;
             ShardId = shardId;
             TotalShardCount = totalShardCount;
@@ -62,7 +58,7 @@ namespace DiscordStreamNotifyBot
             DbService = new MainDbService(_botConfig.MySqlConnectionString);
             timerUpdateStatus = new Timer(TimerHandler);
 
-            Log.Info($"Shard {_shardId} / {_totalShardCount} 正在初始化⋯⋯");
+            Log.Info($"Shard {ShardId} / {TotalShardCount} 正在初始化⋯⋯");
 
             try
             {
@@ -105,8 +101,8 @@ namespace DiscordStreamNotifyBot
         {
             client = new DiscordSocketClient(new DiscordSocketConfig()
             {
-                ShardId = _shardId,
-                TotalShards = _totalShardCount,
+                ShardId = Bot.ShardId,
+                TotalShards = TotalShardCount,
                 LogLevel = Debugger.IsAttached ? LogSeverity.Debug : LogSeverity.Info,
                 ConnectionTimeout = int.MaxValue,
                 MessageCacheSize = 0,
@@ -160,37 +156,15 @@ namespace DiscordStreamNotifyBot
                         if ((guildConfig = db.GuildConfig.FirstOrDefault(x => x.GuildId == guild.Id)) != null)
                             db.GuildConfig.Remove(guildConfig);
 
-                        IEnumerable<GuildYoutubeMemberConfig> guildYoutubeMemberConfigs;
-                        if ((guildYoutubeMemberConfigs = db.GuildYoutubeMemberConfig.Where(x => x.GuildId == guild.Id)).Any())
-                            db.GuildYoutubeMemberConfig.RemoveRange(guildYoutubeMemberConfigs);
-
-                        IEnumerable<BannerChange> bannerChange;
-                        if ((bannerChange = db.BannerChange.Where(x => x.GuildId == guild.Id)).Any())
-                            db.BannerChange.RemoveRange(bannerChange);
-
-                        IEnumerable<NoticeTwitcastingStreamChannel> noticeTwitCastingStreamChannels;
-                        if ((noticeTwitCastingStreamChannels = db.NoticeTwitcastingStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
-                            db.NoticeTwitcastingStreamChannels.RemoveRange(noticeTwitCastingStreamChannels);
-
-                        IEnumerable<NoticeTwitchStreamChannel> NoticeTwitchStreamChannels;
-                        if ((NoticeTwitchStreamChannels = db.NoticeTwitchStreamChannels.Where(x => x.GuildId == guild.Id)).Any())
-                            db.NoticeTwitchStreamChannels.RemoveRange(NoticeTwitchStreamChannels);
-
-                        IEnumerable<NoticeYoutubeStreamChannel> noticeYoutubeStreamChannels;
-                        if ((noticeYoutubeStreamChannels = db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guild.Id)).Any())
-                            db.NoticeYoutubeStreamChannel.RemoveRange(noticeYoutubeStreamChannels);
-
-                        IEnumerable<YoutubeMemberCheck> youtubeMemberChecks;
-                        if ((youtubeMemberChecks = db.YoutubeMemberCheck.Where(x => x.GuildId == guild.Id)).Any())
-                            db.YoutubeMemberCheck.RemoveRange(youtubeMemberChecks);
-
-                        IEnumerable<TwitchSubscriptionCheck> twitchSubscriptionChecks;
-                        if ((twitchSubscriptionChecks = db.TwitchSubscriptionCheck.Where(x => x.GuildId == guild.Id)).Any())
-                            db.TwitchSubscriptionCheck.RemoveRange(twitchSubscriptionChecks);
-
-                        IEnumerable<GuildTwitchSubscriptionConfig> guildTwitchSubscriptionConfigs;
-                        if ((guildTwitchSubscriptionConfigs = db.GuildTwitchSubscriptionConfig.Where(x => x.GuildId == guild.Id)).Any())
-                            db.GuildTwitchSubscriptionConfig.RemoveRange(guildTwitchSubscriptionConfigs);
+                        db.GuildYoutubeMemberConfig.RemoveRange(db.GuildYoutubeMemberConfig.Where(x => x.GuildId == guild.Id));
+                        db.BannerChange.RemoveRange(db.BannerChange.Where(x => x.GuildId == guild.Id));
+                        db.NoticeTwitcastingStreamChannels.RemoveRange(db.NoticeTwitcastingStreamChannels.Where(x => x.GuildId == guild.Id));
+                        db.NoticeTwitchStreamChannels.RemoveRange(db.NoticeTwitchStreamChannels.Where(x => x.GuildId == guild.Id));
+                        db.NoticeChzzkStreamChannels.RemoveRange(db.NoticeChzzkStreamChannels.Where(x => x.GuildId == guild.Id));
+                        db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where(x => x.GuildId == guild.Id));
+                        db.YoutubeMemberCheck.RemoveRange(db.YoutubeMemberCheck.Where(x => x.GuildId == guild.Id));
+                        db.TwitchSubscriptionCheck.RemoveRange(db.TwitchSubscriptionCheck.Where(x => x.GuildId == guild.Id));
+                        db.GuildTwitchSubscriptionConfig.RemoveRange(db.GuildTwitchSubscriptionConfig.Where(x => x.GuildId == guild.Id));
 
                         var saveTime = DateTime.Now;
                         bool saveFailed;
@@ -277,7 +251,7 @@ namespace DiscordStreamNotifyBot
                 .AddSingleton<Shared.YoutubeApiService>()
                 .AddSingleton(p => SharedService.Youtube.YoutubeWebSubService.Create(
                     _botConfig, p.GetRequiredService<IHttpClientFactory>(), Redis))
-                .AddSingleton<SharedService.Youtube.IYoutubeAtomValidatorStore>(_ =>
+                .AddSingleton(_ =>
                     SharedService.Youtube.YoutubeAtomValidatorStore.Create(Redis))
                 .AddSingleton(SharedService.Google.GoogleOAuthOperationLock.Create(Redis))
                 .AddSingleton<SharedService.EmojiService>()
@@ -327,8 +301,8 @@ namespace DiscordStreamNotifyBot
             // CHZZK 為匿名網站 endpoint：失敗由呼叫端處理（新增驗證失敗即回報，不在 client 層重試）。
             services.AddHttpClient<HttpClients.Chzzk.ChzzkClient>();
 
-            services.LoadInteractionFrom(Assembly.GetAssembly(typeof(InteractionHandler)));
-            services.LoadCommandFrom(Assembly.GetAssembly(typeof(CommandHandler)));
+            services.LoadServicesFrom<IInteractionService>(Assembly.GetAssembly(typeof(InteractionHandler)));
+            services.LoadServicesFrom<ICommandService>(Assembly.GetAssembly(typeof(CommandHandler)));
 
             IServiceProvider serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
             {
@@ -354,7 +328,7 @@ namespace DiscordStreamNotifyBot
                     serviceProvider.GetService<SharedService.Chzzk.ChzzkService>(),
                     serviceProvider.GetService<SharedService.YoutubeMember.YoutubeMemberService>(),
                     _metrics);
-                await _busConsumer.StartAsync(_shardId);
+                await _busConsumer.StartAsync(ShardId);
             }
             catch (Exception ex)
             {
@@ -371,14 +345,14 @@ namespace DiscordStreamNotifyBot
                 InteractionHandler interactionHandler = serviceProvider.GetService<InteractionHandler>();
 #if DEBUG
                 string debugGuildSignature = string.Join(",", _botConfig.TestSlashCommandGuildIds.OrderBy(id => id));
-                string localCommandSignature = $"{interactionHandler.DebugCommandSignature}:{_totalShardCount}:{debugGuildSignature}";
+                string localCommandSignature = $"{interactionHandler.DebugCommandSignature}:{TotalShardCount}:{debugGuildSignature}";
 #else
                 string localCommandSignature = interactionHandler.CommandSignature;
 #endif
 #if DEBUG
                 // 雜湊鍵帶 shardId：多 shard 併跑時若共用同一鍵，先啟動的 shard 會把雜湊設成最新，其餘 shard 讀到相同值而整個略過註冊，
                 // 導致自己持有的測試伺服器沒有指令（正是 shard 1 沒指令的原因）。每個 shard 各自維護雜湊才能各自註冊自己持有的伺服器。
-                string commandSignatureKey = $"discord_stream_bot:command_signature:{_shardId}";
+                string commandSignatureKey = $"discord_stream_bot:command_signature:{ShardId}";
                 var commandSignature = (await RedisDb.StringGetAsync(commandSignatureKey)).ToString();
                 if (commandSignature != localCommandSignature)
                 {
@@ -416,7 +390,7 @@ namespace DiscordStreamNotifyBot
                 }
 #elif RELEASE
                 // 全球指令對所有伺服器生效、與 shard 無關，且註冊有速率限制、生效慢：只由 shard 0 在指令規格變更時重註冊
-                if (_shardId == 0)
+                if (ShardId == 0)
                 {
                     try
                     {
@@ -482,9 +456,6 @@ namespace DiscordStreamNotifyBot
                 var hasInvitePermission = guild.GetUser(client.CurrentUser.Id)?.GuildPermissions.CreateInstantInvite ?? false;
                 if (!hasInvitePermission)
                 {
-                    //serviceProvider.GetService<DiscordWebhookClient>().SendMessageToDiscord($"加入 {guild.Name} ({guild.Id})\n" +
-                    //    $"擁有者: {guild.OwnerId}\n" +
-                    //    $"未開放邀請權限，已離開");
                     guild.LeaveAsync().GetAwaiter().GetResult();
                     return Task.CompletedTask;
                 }
@@ -569,15 +540,15 @@ namespace DiscordStreamNotifyBot
         {
             try
             {
-                await RedisDb.HashSetAsync(hashKey, _shardId, ownCount);
+                await RedisDb.HashSetAsync(hashKey, ShardId, ownCount);
 
-                if (_totalShardCount <= 1)
+                if (TotalShardCount <= 1)
                     return ownCount;
 
                 long total = 0;
                 foreach (var entry in await RedisDb.HashGetAllAsync(hashKey))
                 {
-                    if (int.TryParse(entry.Name, out int entryShardId) && entryShardId < _totalShardCount &&
+                    if (int.TryParse(entry.Name, out int entryShardId) && entryShardId < TotalShardCount &&
                         entry.Value.TryParse(out long value))
                         total += value;
                 }
@@ -605,7 +576,7 @@ namespace DiscordStreamNotifyBot
                         try
                         {
                             await client.SetCustomStatusAsync($"服務 {await GetAggregatedShardCountAsync(Shared.RedisChannels.SharedState.MemberCountHash, client.Guilds.Sum((x) => x.MemberCount))} 個成員");
-                            Status = BotPlayingStatus.Info;
+                            Status = BotPlayingStatus.Stream;
                         }
                         catch (Exception) { Status = BotPlayingStatus.Stream; ChangeStatus(); }
                         break;
@@ -623,7 +594,7 @@ namespace DiscordStreamNotifyBot
                             else
                             {
                                 list = null;
-                                switch (new Random().Next(0, 2))
+                                switch (new Random().Next(0, 3))
                                 {
                                     case 0:
                                         list = db.HoloVideos.AsNoTracking().Cast<DataBase.Table.Video>().ToList();

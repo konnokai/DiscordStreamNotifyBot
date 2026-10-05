@@ -96,10 +96,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             }
         }
 
-        /// <summary>Discord/log 權限是可恢復的營運錯誤，不能轉成設定刪除。</summary>
-        public static bool ShouldPreserveConfigurationForOperationalFailure()
-            => true;
-
         public static IReadOnlyList<YoutubeMemberSelectionTransition> BuildSelectionTransition(
             IEnumerable<YoutubeMemberCheck> existingChecks,
             IReadOnlyCollection<string> selectedChannelIds)
@@ -227,9 +223,6 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         /// <summary>角色遷移除了有效授權，也必須清理 pending check 尚未移除的舊角色。</summary>
         public static bool RequiresRoleMigration(YoutubeMemberCheck check)
             => IsActive(check) || check.PendingRoleRemoval;
-
-        public static (ulong UserId, string VideoId) BuildProbeCacheKey(ulong userId, string memberCheckVideoId)
-            => (userId, memberCheckVideoId);
 
         /// <summary>離開 guild 的使用者無法再持有舊角色，migration 可安全完成；一般驗證授予仍必須失敗。</summary>
         public static bool IsRoleMigrationSynchronized(YoutubeMemberRoleApplyResult result)

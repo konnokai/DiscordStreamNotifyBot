@@ -1,6 +1,7 @@
 using Discord.Commands;
 using DiscordStreamNotifyBot.Command.Attribute;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Chzzk;
 

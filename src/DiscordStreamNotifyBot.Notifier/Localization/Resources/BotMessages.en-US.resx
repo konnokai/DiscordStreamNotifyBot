@@ -153,6 +153,7 @@
   <data name="Notifications.MessageCleared" xml:space="preserve"><value>The “{1}” notification message for `{0}` has been cleared.</value></data>
   <data name="Notifications.MessageSetSimple" xml:space="preserve"><value>The stream notification message for `{0}` is now:&#10;{1}</value></data>
   <data name="Notifications.MessageClearedSimple" xml:space="preserve"><value>The stream notification message for `{0}` has been cleared.</value></data>
+  <data name="Notifications.DisabledSimple" xml:space="preserve"><value>Stream notifications for `{0}` have been disabled.</value></data>
   <data name="Notifications.TypeDisabled" xml:space="preserve"><value>“{1}” notifications for `{0}` have been disabled.</value></data>
   <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>(this notification type is disabled)</value></data>
   <data name="Notifications.MessageListDescription" xml:space="preserve"><value>A blank value means no message is configured. Text in embeds does not trigger mentions.</value></data>
@@ -248,7 +249,6 @@
   <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>Select channels</value></data>
   <data name="Member.Select.Description" xml:space="preserve"><value>Select the channels to verify this time. If you previously selected a channel but leave it unselected this time, its related role will be removed. The bot will retry automatically if it cannot remove the role immediately.</value></data>
   <data name="Member.Select.SelectedCount" xml:space="preserve"><value>{0} channels selected</value></data>
-  <data name="Member.Select.Selected" xml:space="preserve"><value>Selected</value></data>
   <data name="Member.Select.Expired" xml:space="preserve"><value>This membership verification menu has expired. Run `/youtube-member check` again.</value></data>
   <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>You have not started membership verification in this server.</value></data>
   <data name="Member.CheckCancelled" xml:space="preserve"><value>Your membership verification in this server and its related roles have been removed.</value></data>
@@ -335,8 +335,6 @@
   <data name="Notifications.Field.EndedAt" xml:space="preserve"><value>Ended at</value></data>
   <data name="Notifications.Field.Duration" xml:space="preserve"><value>Stream duration</value></data>
   <data name="Notifications.Field.UploadedAt" xml:space="preserve"><value>Uploaded at</value></data>
-  <data name="Notifications.Field.ScheduledOrUploadedAt" xml:space="preserve"><value>Scheduled start / upload time</value></data>
-  <data name="Notifications.Field.OriginalScheduledStart" xml:space="preserve"><value>Original scheduled start</value></data>
   <data name="Notifications.Field.Category" xml:space="preserve"><value>Category</value></data>
   <data name="Notifications.Field.Subtitle" xml:space="preserve"><value>Subtitle</value></data>
   <data name="Notifications.Duration.Days" xml:space="preserve"><value>{0}d {1}h {2}m {3}s</value></data>
@@ -348,8 +346,6 @@
   <data name="Youtube.NotificationStatus.UpcomingChanged" xml:space="preserve"><value>Not live yet (schedule changed)</value></data>
   <data name="Youtube.NotificationStatus.EndedAsMemberOnly" xml:space="preserve"><value>Ended and changed to a members-only video</value></data>
   <data name="Youtube.NotificationStatus.Unarchived" xml:space="preserve"><value>Ended and changed to a private archive</value></data>
-  <data name="Youtube.NotificationStatus.Deleted" xml:space="preserve"><value>Deleted</value></data>
-  <data name="Youtube.NotificationStatus.ScheduleDataLost" xml:space="preserve"><value>Stream schedule data unavailable</value></data>
   <data name="Youtube.Events.ManageEventsMissing" xml:space="preserve"><value>The bot is missing the Manage Events permission in this server. Grant it, then run {0} again to enable automatic event creation.</value></data>
   <data name="Twitch.Notification.UnknownTitle" xml:space="preserve"><value>(stream title unavailable)</value></data>
   <data name="Twitch.Notification.Clips" xml:space="preserve"><value>Most-viewed clips</value></data>

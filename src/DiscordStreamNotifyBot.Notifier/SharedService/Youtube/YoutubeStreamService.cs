@@ -3,6 +3,7 @@ using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
+using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.AdminSettings;
 using DiscordStreamNotifyBot.SharedService.Cluster;
@@ -48,8 +49,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             //Niji
         }
 
-        public bool IsRecord { get; set; } = true;
-
         /// <summary>YouTube API 用戶端，委派至 Shared 的 <see cref="Shared.YoutubeApiService"/>（單一來源）。</summary>
         public YouTubeService YouTubeService => _apiService.YouTubeService;
 
@@ -69,7 +68,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         private readonly MemberOperationCoordinator _operationCoordinator;
         private readonly ClusterQueryService _clusterQuery;
         private readonly SharedService.Youtube.YoutubeWebSubService _webSubService;
-        private readonly SharedService.Youtube.IYoutubeAtomValidatorStore _atomValidators;
+        private readonly SharedService.Youtube.YoutubeAtomValidatorStore _atomValidators;
 
         public YoutubeStreamService(DiscordSocketClient client, IHttpClientFactory httpClientFactory,
             BotConfig botConfig, EmojiService emojiService, MainDbService dbService,
@@ -77,7 +76,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             GuildLocaleService guildLocaleService, CommandDisplayResolver commandDisplayResolver,
             NotifierMetrics metrics, MemberOperationCoordinator operationCoordinator,
             ClusterQueryService clusterQuery, SharedService.Youtube.YoutubeWebSubService webSubService,
-            SharedService.Youtube.IYoutubeAtomValidatorStore atomValidators)
+            SharedService.Youtube.YoutubeAtomValidatorStore atomValidators)
         {
             _client = client;
             _httpClientFactory = httpClientFactory;
@@ -162,6 +161,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     return AdminSettingsMutationResult.Rejected("crawler.source-ineligible");
 
                 int limit = await GetYoutubeCrawlerLimitAsync(db, guild.Id, cancellationToken);
+                // Bot owner 不論以自己或伺服器名義新增，都不受該 guild 爬蟲數量上限限制；官方伺服器亦同。
+                bool limitApplies = actorUserId != Bot.ApplicatonOwner.Id && !Utility.OfficialGuildContains(guild.Id);
                 var existing = await db.YoutubeChannelSpider.SingleOrDefaultAsync(
                     x => x.ChannelId == sourceId, cancellationToken);
                 if (existing != null)
@@ -173,7 +174,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     var guilds = await _clusterQuery.GetGuildNameMapAsync();
                     if (guilds.ContainsKey(existing.GuildId))
                         return AdminSettingsMutationResult.Rejected("crawler.source-owned");
-                    if (!Utility.OfficialGuildContains(guild.Id) &&
+                    if (limitApplies &&
                         await db.YoutubeChannelSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
                         return LimitReached(limit);
                     existing.GuildId = guild.Id;
@@ -181,7 +182,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     return Added(sourceId, existing.ChannelTitle);
                 }
 
-                if (!Utility.OfficialGuildContains(guild.Id) &&
+                if (limitApplies &&
                     await db.YoutubeChannelSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit)
                     return LimitReached(limit);
                 string sourceName = await GetChannelTitle(sourceId);
@@ -231,8 +232,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 return AdminSettingsMutationResult.Rejected("crawler.not-owned");
             db.YoutubeChannelSpider.Remove(crawler);
             await db.SaveChangesAsync(cancellationToken);
-            try { await PostSubscribeRequestAsync(sourceId, false); }
-            catch (Exception ex) { Log.Warn($"移除 YouTube 爬蟲後取消 PubSub 失敗: {sourceId} / {ex.GetType().Name}"); }
+            // PostSubscribeRequestAsync 為 best-effort，失敗只記錄不丟例外。
+            await PostSubscribeRequestAsync(sourceId, false);
             Log.Info($"已移除 YouTube 頻道爬蟲 | Guild: {guildId} | Source: {sourceId}");
             return AdminSettingsMutationResult.Applied("crawler.removed", new JObject { ["sourceId"] = sourceId });
         }
@@ -446,10 +447,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             await SendStreamMessageAsync(streamVideo, dto, noticeType.Value, progress).ConfigureAwait(false);
         }
 
-        /// <summary>通知匯流排消費端入口：伺服器橫幅變更事件。</summary>
-        public Task DispatchBannerFromBusAsync(BannerChangeNotification dto)
-            => ChangeGuildBannerAsync(dto.ChannelId, dto.VideoId);
-
         private YoutubeNotificationVariant BuildVariantForBus(YoutubeNotification dto, TableVideo video, string locale)
         {
             Embed embed;
@@ -502,14 +499,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             if (_botConfig.DisableNotificationsAds)
                 return null;
 
-            return new ComponentBuilder()
-                .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
-                    emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
-                    emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
-                    emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1)
-                .Build();
+            return _emojiService.BuildNotificationAdsComponent(_localizer, locale);
         }
 
         private static NoticeType? MapNoticeType(YoutubeNoticeType busNoticeType)
@@ -568,7 +558,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 return;
 #endif
 
-                var variants = new Dictionary<string, Lazy<YoutubeNotificationVariant>>(StringComparer.Ordinal);
+                var variants = new NotificationVariantCache<YoutubeNotificationVariant>(
+                    locale => BuildVariantForBus(dto, streamVideo, locale));
                 var coverBytes = new Lazy<Task<byte[]>>(
                     () => DownloadYoutubeCoverAsync(streamVideo.VideoId),
                     LazyThreadSafetyMode.ExecutionAndPublication);
@@ -579,253 +570,22 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     .Where(guild => guild != null)
                     .ToDictionary(guild => guild.Id);
                 Dictionary<ulong, string> localesByGuildId = await _guildLocaleService.GetManyAsync(guildsById.Values);
+                var delivery = new NotificationDelivery(_metrics, metricEvent, progress);
+                string source = $"YouTube 通知 ({streamVideo.VideoId})";
 
                 foreach (var item in noticeYoutubeStreamChannels)
                 {
-                    string target = $"{item.Id}:{(noticeType == NoticeType.NewVideo ? item.DiscordNoticeVideoChannelId : item.DiscordNoticeStreamChannelId)}";
-                    if (progress.IsComplete(target))
-                        continue;
-                    NotificationDeliveryResult? deliveryResult = null;
-                    Stopwatch deliveryStopwatch = null;
-                    bool primaryMessageSent = false;
-                    bool retryRequired = false;
-                    try
-                    {
-                        if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
+                    // 只有新影片會發到影片通知頻道，首播類的影片歸類在直播類型
+                    // 原則上 DiscordNoticeVideoChannelId 預設會跟 DiscordNoticeStreamChannelId 一樣，不該為空
+                    ulong noticeChannelId = noticeType == NoticeType.NewVideo ? item.DiscordNoticeVideoChannelId : item.DiscordNoticeStreamChannelId;
+                    string target = $"{item.Id}:{noticeChannelId}";
+                    await delivery.RunAsync(target, source,
+                        httpEx =>
                         {
-                            // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
-                            if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
-                                continue;
-
-                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | 找不到伺服器 {item.GuildId}");
-                            deliveryResult = NotificationDeliveryResult.MissingGuild;
-                            db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
-                            db.SaveChanges();
-                            _noticeCache.Invalidate();
-                            continue;
-                        }
-
-                        string locale = localesByGuildId[guild.Id];
-                        if (!variants.TryGetValue(locale, out var variantValue))
-                        {
-                            variantValue = new Lazy<YoutubeNotificationVariant>(
-                                () => BuildVariantForBus(dto, streamVideo, locale),
-                                LazyThreadSafetyMode.ExecutionAndPublication);
-                            variants.Add(locale, variantValue);
-                        }
-                        YoutubeNotificationVariant variant = variantValue.Value;
-
-                        // 只有新影片會發到影片通知頻道，首播類的影片歸類在直播類型
-                        // 原則上 DiscordNoticeVideoChannelId 預設會跟 DiscordNoticeStreamChannelId 一樣，不該為空
-                        var channel = guild.GetTextChannel(noticeType == NoticeType.NewVideo ? item.DiscordNoticeVideoChannelId : item.DiscordNoticeStreamChannelId);
-                        if (channel == null)
-                        {
-                            deliveryResult = NotificationDeliveryResult.MissingChannel;
-                            continue;
-                        }
-
-                        // 如果是新直播的話就建立活動，或更改活動開始時間
-                        try
-                        {
-                            if (item.IsCreateEventForNewStream)
-                            {
-                                await progress.RunAsync($"event:{target}", async () =>
-                                {
-                                    if (!guild.GetUser(_client.CurrentUser.Id).GuildPermissions.ManageEvents)
-                                    {
-                                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 無權限可建立活動，關閉此功能");
-                                        // item 來自唯讀快取，不可 Attach/Update；以 ExecuteUpdate 依 PK 直接更新，避免跨 context 追蹤衝突
-                                        db.NoticeYoutubeStreamChannel.Where((x) => x.Id == item.Id)
-                                            .ExecuteUpdate((s) => s.SetProperty((p) => p.IsCreateEventForNewStream, false));
-                                        _noticeCache.Invalidate();
-
-                                        try
-                                        {
-                                            await Policy.Handle<TimeoutException>()
-                                                .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                                                .WaitAndRetryAsync(3, (retryAttempt) =>
-                                                {
-                                                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                                    Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {channel.Id} 無權限提示發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                                    return timeSpan;
-                                                })
-                                                .ExecuteAsync(async () =>
-                                                {
-                                                    await channel.SendMessageAsync(embed: variant.ManageEventsWarning);
-                                                });
-                                        }
-                                        catch (Exception) { }
-                                    }
-                                    else
-                                    {
-                                        if (noticeType == NoticeType.NewStream)
-                                        {
-                                            Log.Info($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 嘗試建立活動");
-                                            DateTime startTime = streamVideo.ScheduledStartTime;
-
-                                            // 若預定開台時間在現在之後，就從現在時間往後推一分鐘
-                                            // The start time for an event cannot be in the past (Parameter 'startTime')
-                                            if (startTime <= DateTime.Now)
-                                            {
-                                                startTime = DateTime.Now.AddMinutes(1);
-                                            }
-
-                                            startTime = startTime.ToUniversalTime();
-
-                                            await Policy.Handle<TimeoutException>()
-                                                .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                                                .WaitAndRetryAsync(3, (retryAttempt) =>
-                                                {
-                                                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                                    Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                                    return timeSpan;
-                                                })
-                                                .ExecuteAsync(async () =>
-                                                {
-                                                    byte[] bytes = await coverBytes.Value;
-                                                    if (bytes == null)
-                                                    {
-                                                        await guild.CreateEventAsync(streamVideo.VideoTitle,
-                                                            startTime, GuildScheduledEventType.External,
-                                                            description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
-                                                            endTime: startTime.AddHours(1),
-                                                            location: $"https://youtube.com/watch?v={streamVideo.VideoId}");
-                                                    }
-                                                    else
-                                                    {
-                                                        using var coverStream = new MemoryStream(bytes, writable: false);
-                                                        await guild.CreateEventAsync(streamVideo.VideoTitle,
-                                                            startTime, GuildScheduledEventType.External,
-                                                            description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
-                                                            endTime: startTime.AddHours(1),
-                                                            location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
-                                                            coverImage: new Image(coverStream));
-                                                    }
-                                                });
-                                        }
-                                        else if (noticeType == NoticeType.ChangeTime)
-                                        {
-                                            Log.Info($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 嘗試更改活動開始時間");
-                                            await Policy.Handle<TimeoutException>()
-                                                .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                                                .WaitAndRetryAsync(3, (retryAttempt) =>
-                                                {
-                                                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                                    Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 更改活動時間失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                                    return timeSpan;
-                                                })
-                                                .ExecuteAsync(async () =>
-                                                {
-                                                    var @event = (await guild.GetEventsAsync()).FirstOrDefault((x) => x.Creator.Id == _client.CurrentUser.Id && x.Location.EndsWith(streamVideo.VideoId));
-
-                                                    if (@event == null)
-                                                    {
-                                                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 更改活動時間失敗，找不到對應的活動");
-                                                    }
-                                                    else
-                                                    {
-                                                        await @event.ModifyAsync((act) =>
-                                                        {
-                                                            act.Name = streamVideo.VideoTitle;
-                                                            act.StartTime = (DateTimeOffset)streamVideo.ScheduledStartTime.ToUniversalTime();
-                                                            act.EndTime = (DateTimeOffset)streamVideo.ScheduledStartTime.ToUniversalTime().AddHours(1);
-                                                        });
-                                                    }
-                                                });
-                                        }
-                                    }
-                                    return "1";
-                                });
-                            }
-                        }
-                        catch (Exception ex) when (NotificationTargetFailure.IsPermanent(ex))
-                        {
-                            // 活動權限不足或目標已不存在：關閉此設定的建立活動並繼續發送通知，不讓事件無限重試。
-                            Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動被拒，關閉此設定的建立活動");
-                            db.NoticeYoutubeStreamChannel.Where((x) => x.Id == item.Id)
-                                .ExecuteUpdate((s) => s.SetProperty((p) => p.IsCreateEventForNewStream, false));
-                            _noticeCache.Invalidate();
-                        }
-                        catch (Exception ex)
-                        {
-                            retryRequired = true;
-                            progress.Fail(ex);
-                            Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動失敗");
-                        }
-
-                        string sendMessage = "";
-                        switch (noticeType)
-                        {
-                            case NoticeType.NewStream:
-                                sendMessage = item.NewStreamMessage;
-                                break;
-                            case NoticeType.NewVideo:
-                                sendMessage = item.NewVideoMessage;
-                                break;
-                            case NoticeType.Start:
-                                sendMessage = item.StratMessage;
-                                break;
-                            case NoticeType.End:
-                                sendMessage = item.EndMessage;
-                                break;
-                            case NoticeType.ChangeTime:
-                                sendMessage = item.ChangeTimeMessage;
-                                break;
-                            case NoticeType.Delete:
-                                sendMessage = item.DeleteMessage;
-                                break;
-                        }
-
-                        if (sendMessage == "-")
-                        {
-                            deliveryResult = NotificationDeliveryResult.Disabled;
-                            continue;
-                        }
-
-                        deliveryStopwatch = Stopwatch.StartNew();
-                        await Policy.Handle<TimeoutException>()
-                            .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                            .WaitAndRetryAsync(3, (retryAttempt) =>
-                            {
-                                _metrics.RecordNotificationDeliveryRetry(metricEvent);
-                                var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                                Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {channel.Id} 發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                                return timeSpan;
-                            })
-                            .ExecuteAsync(() => progress.SendAsync(target, channel, async () =>
-                            {
-                                var message = await channel.SendMessageAsync(text: sendMessage, embed: variant.Embed,
-                                    components: variant.Component,
-                                    options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry });
-                                primaryMessageSent = true;
-                                return message;
-                            }, channel is INewsChannel && Utility.OfficialGuildList.Contains(guild.Id)));
-                        deliveryResult = NotificationDeliveryResult.Sent;
-                    }
-                    catch (Discord.Net.HttpException httpEx)
-                    {
-                        if (Bot.TryShutdownOnDiscordAuthorizationFailure(httpEx, $"YouTube 通知 ({streamVideo.VideoId})"))
-                        {
-                            retryRequired = true;
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.AuthorizationFailure;
-                            throw;
-                        }
-
-                        if (NotificationTargetFailure.IsPermanent(httpEx))
-                        {
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.MissingPermission;
-
                             // 真正送不出去的是這次實際使用的目的地頻道（新影片用影片頻道，其餘用直播頻道）。
-                            ulong failedChannelId = noticeType == NoticeType.NewVideo
-                                ? item.DiscordNoticeVideoChannelId
-                                : item.DiscordNoticeStreamChannelId;
-                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {failedChannelId} 永久失敗（權限或目標不存在）：{httpEx.DiscordCode}");
+                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} 永久失敗（權限或目標不存在）：{httpEx.DiscordCode}");
 
-                            // 伺服器已不存在時清除整個伺服器的設定（與上方 MissingGuild 相同的跨 shard 防護）；
+                            // 伺服器已不存在時清除整個伺服器的設定（與下方 MissingGuild 相同的跨 shard 防護）；
                             // 其餘永久失敗清除所有指向這個送不到的目的地頻道的設定。
                             if (NotificationTargetFailure.IsUnknownGuild(httpEx))
                             {
@@ -839,63 +599,187 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                             else
                             {
                                 db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where(
-                                    (x) => x.DiscordNoticeVideoChannelId == failedChannelId || x.DiscordNoticeStreamChannelId == failedChannelId));
+                                    (x) => x.DiscordNoticeVideoChannelId == noticeChannelId || x.DiscordNoticeStreamChannelId == noticeChannelId));
                                 db.SaveChanges();
                                 _noticeCache.Invalidate();
                             }
-                        }
-                        else if (((int)httpEx.HttpCode).ToString().StartsWith("50"))
+                        },
+                        // 印出這次實際發送的目的地頻道（新影片用影片頻道，其餘用直播頻道）
+                        (failure, httpEx) => failure switch
                         {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.Discord5xx;
-                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 5xx 錯誤：{httpEx.HttpCode}");
-                        }
-                        else
+                            NotificationFailureLog.Discord5xx => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} Discord 5xx 錯誤：{httpEx.HttpCode}",
+                            NotificationFailureLog.DiscordUnknownError => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} Discord 未知錯誤",
+                            NotificationFailureLog.Timeout => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} Discord 逾時",
+                            _ => $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {noticeChannelId} 未知錯誤",
+                        },
+                        async attempt =>
                         {
-                            retryRequired = true;
-                            progress.Fail(httpEx);
-                            deliveryResult = primaryMessageSent
-                                ? NotificationDeliveryResult.Sent
-                                : NotificationDeliveryResult.UnknownError;
-                            Log.Error(httpEx, $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 未知錯誤");
-                        }
-                    }
-                    catch (TimeoutException ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.Timeout;
-                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} Discord 逾時");
-                    }
-                    catch (Exception ex)
-                    {
-                        retryRequired = true;
-                        progress.Fail(ex);
-                        deliveryResult = primaryMessageSent
-                            ? NotificationDeliveryResult.Sent
-                            : NotificationDeliveryResult.UnknownError;
-                        Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {item.DiscordNoticeVideoChannelId} 未知錯誤");
-                    }
-                    finally
-                    {
-                        if (deliveryStopwatch != null)
-                        {
-                            deliveryStopwatch.Stop();
-                            _metrics.ObserveNotificationDeliveryDuration(metricEvent, deliveryStopwatch.Elapsed);
-                        }
+                            if (!guildsById.TryGetValue(item.GuildId, out SocketGuild guild))
+                            {
+                                // 多 Shard 環境：非本 Shard 持有的伺服器，或尚未 Ready，皆靜默略過，避免互刪設定
+                                if (!Bot.ShouldDeleteMissingGuild(item.GuildId))
+                                    return;
 
-                        if (deliveryResult.HasValue)
-                        {
-                            _metrics.RecordNotificationDelivery(metricEvent, deliveryResult.Value);
-                            if (!retryRequired)
-                                await progress.CompleteAsync(target);
-                        }
-                    }
+                                Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | 找不到伺服器 {item.GuildId}");
+                                attempt.Result = NotificationDeliveryResult.MissingGuild;
+                                db.NoticeYoutubeStreamChannel.RemoveRange(db.NoticeYoutubeStreamChannel.Where((x) => x.GuildId == item.GuildId));
+                                db.SaveChanges();
+                                _noticeCache.Invalidate();
+                                return;
+                            }
+
+                            YoutubeNotificationVariant variant = variants.Get(localesByGuildId[guild.Id]);
+
+                            var channel = guild.GetTextChannel(noticeChannelId);
+                            if (channel == null)
+                            {
+                                attempt.Result = NotificationDeliveryResult.MissingChannel;
+                                return;
+                            }
+
+                            // 如果是新直播的話就建立活動，或更改活動開始時間
+                            try
+                            {
+                                if (item.IsCreateEventForNewStream)
+                                {
+                                    await progress.RunAsync($"event:{target}", async () =>
+                                    {
+                                        if (!guild.GetUser(_client.CurrentUser.Id).GuildPermissions.ManageEvents)
+                                        {
+                                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 無權限可建立活動，關閉此功能");
+                                            // item 來自唯讀快取，不可 Attach/Update；以 ExecuteUpdate 依 PK 直接更新，避免跨 context 追蹤衝突
+                                            db.NoticeYoutubeStreamChannel.Where((x) => x.Id == item.Id)
+                                                .ExecuteUpdate((s) => s.SetProperty((p) => p.IsCreateEventForNewStream, false));
+                                            _noticeCache.Invalidate();
+
+                                            try
+                                            {
+                                                await DiscordRetryPolicy.Create((retryAttempt, timeSpan) =>
+                                                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} / {channel.Id} 無權限提示發送失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)"))
+                                                    .ExecuteAsync(async () =>
+                                                    {
+                                                        await channel.SendMessageAsync(embed: variant.ManageEventsWarning);
+                                                    });
+                                            }
+                                            catch (Exception) { }
+                                        }
+                                        else
+                                        {
+                                            if (noticeType == NoticeType.NewStream)
+                                            {
+                                                Log.Info($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 嘗試建立活動");
+                                                DateTime startTime = streamVideo.ScheduledStartTime;
+
+                                                // 若預定開台時間在現在之後，就從現在時間往後推一分鐘
+                                                // The start time for an event cannot be in the past (Parameter 'startTime')
+                                                if (startTime <= DateTime.Now)
+                                                {
+                                                    startTime = DateTime.Now.AddMinutes(1);
+                                                }
+
+                                                startTime = startTime.ToUniversalTime();
+
+                                                await DiscordRetryPolicy.Create((retryAttempt, timeSpan) =>
+                                                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)"))
+                                                    .ExecuteAsync(async () =>
+                                                    {
+                                                        byte[] bytes = await coverBytes.Value;
+                                                        if (bytes == null)
+                                                        {
+                                                            await guild.CreateEventAsync(streamVideo.VideoTitle,
+                                                                startTime, GuildScheduledEventType.External,
+                                                                description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
+                                                                endTime: startTime.AddHours(1),
+                                                                location: $"https://youtube.com/watch?v={streamVideo.VideoId}");
+                                                        }
+                                                        else
+                                                        {
+                                                            using var coverStream = new MemoryStream(bytes, writable: false);
+                                                            await guild.CreateEventAsync(streamVideo.VideoTitle,
+                                                                startTime, GuildScheduledEventType.External,
+                                                                description: Format.Url(streamVideo.ChannelTitle, $"https://youtube.com/channel/{streamVideo.ChannelId}"),
+                                                                endTime: startTime.AddHours(1),
+                                                                location: $"https://youtube.com/watch?v={streamVideo.VideoId}",
+                                                                coverImage: new Image(coverStream));
+                                                        }
+                                                    });
+                                            }
+                                            else if (noticeType == NoticeType.ChangeTime)
+                                            {
+                                                Log.Info($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 嘗試更改活動開始時間");
+                                                await DiscordRetryPolicy.Create((retryAttempt, timeSpan) =>
+                                                        Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 更改活動時間失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)"))
+                                                    .ExecuteAsync(async () =>
+                                                    {
+                                                        var @event = (await guild.GetEventsAsync()).FirstOrDefault((x) => x.Creator.Id == _client.CurrentUser.Id && x.Location.EndsWith(streamVideo.VideoId));
+
+                                                        if (@event == null)
+                                                        {
+                                                            Log.Warn($"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 更改活動時間失敗，找不到對應的活動");
+                                                        }
+                                                        else
+                                                        {
+                                                            await @event.ModifyAsync((act) =>
+                                                            {
+                                                                act.Name = streamVideo.VideoTitle;
+                                                                act.StartTime = (DateTimeOffset)streamVideo.ScheduledStartTime.ToUniversalTime();
+                                                                act.EndTime = (DateTimeOffset)streamVideo.ScheduledStartTime.ToUniversalTime().AddHours(1);
+                                                            });
+                                                        }
+                                                    });
+                                            }
+                                        }
+                                        return "1";
+                                    });
+                                }
+                            }
+                            catch (Exception ex) when (NotificationTargetFailure.IsPermanent(ex))
+                            {
+                                // 活動權限不足或目標已不存在：關閉此設定的建立活動並繼續發送通知，不讓事件無限重試。
+                                Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動被拒，關閉此設定的建立活動");
+                                db.NoticeYoutubeStreamChannel.Where((x) => x.Id == item.Id)
+                                    .ExecuteUpdate((s) => s.SetProperty((p) => p.IsCreateEventForNewStream, false));
+                                _noticeCache.Invalidate();
+                            }
+                            catch (Exception ex)
+                            {
+                                attempt.RetryRequired = true;
+                                progress.Fail(ex);
+                                Log.Error(ex.Demystify(), $"YouTube 通知 ({streamVideo.VideoId}) | {item.GuildId} 建立活動失敗");
+                            }
+
+                            string sendMessage = "";
+                            switch (noticeType)
+                            {
+                                case NoticeType.NewStream:
+                                    sendMessage = item.NewStreamMessage;
+                                    break;
+                                case NoticeType.NewVideo:
+                                    sendMessage = item.NewVideoMessage;
+                                    break;
+                                case NoticeType.Start:
+                                    sendMessage = item.StratMessage;
+                                    break;
+                                case NoticeType.End:
+                                    sendMessage = item.EndMessage;
+                                    break;
+                                case NoticeType.ChangeTime:
+                                    sendMessage = item.ChangeTimeMessage;
+                                    break;
+                                case NoticeType.Delete:
+                                    sendMessage = item.DeleteMessage;
+                                    break;
+                            }
+
+                            if (sendMessage == "-")
+                            {
+                                attempt.Result = NotificationDeliveryResult.Disabled;
+                                return;
+                            }
+
+                            await delivery.SendMessageAsync(attempt, target, guild, channel, sendMessage,
+                                variant.Embed, variant.Component, $"{source} | ");
+                        });
                 }
             }
         }
@@ -906,15 +790,25 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             Log.Info($"YouTube 通知 ({videoId}) | 嘗試下載封面: {url}");
             try
             {
-                return await Policy.Handle<TimeoutException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, retryAttempt =>
+                // HttpClient 失敗時拋的是 HttpRequestException / TaskCanceledException（逾時），不是 Discord 的例外，
+                // 因此不能沿用 DiscordRetryPolicy。只重試連線錯誤、5xx 與逾時；404 等用戶端錯誤代表沒有封面，直接放棄。
+                // 每次嘗試限時 10 秒：封面下載在逐伺服器發送迴圈內，卡住會拖住整個 shard 的通知；關機時不再重試。
+                return await Polly.Policy
+                    .Handle<HttpRequestException>((httpEx) => httpEx.StatusCode == null || (int)httpEx.StatusCode >= 500)
+                    .Or<TaskCanceledException>((_) => !GracefulShutdown.Token.IsCancellationRequested)
+                    .Or<TimeoutException>()
+                    .WaitAndRetryAsync(3, (retryAttempt) =>
                     {
                         var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
                         Log.Warn($"YouTube 通知 ({videoId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
                         return timeSpan;
                     })
-                    .ExecuteAsync(() => SharedHttpClient.GetByteArrayAsync(url));
+                    .ExecuteAsync(async () =>
+                    {
+                        using var cts = CancellationTokenSource.CreateLinkedTokenSource(GracefulShutdown.Token);
+                        cts.CancelAfter(TimeSpan.FromSeconds(10));
+                        return await SharedHttpClient.GetByteArrayAsync(url, cts.Token);
+                    });
             }
             catch (Exception ex)
             {
@@ -925,8 +819,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         #endregion
 
         #region 伺服器橫幅變更（消費端套用，需 GetGuild）
-        private async Task ChangeGuildBannerAsync(string channelId, string videoId)
+        /// <summary>通知匯流排消費端入口：伺服器橫幅變更事件。</summary>
+        public async Task DispatchBannerFromBusAsync(BannerChangeNotification dto)
         {
+            string channelId = dto.ChannelId;
+            string videoId = dto.VideoId;
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             return;
 #endif

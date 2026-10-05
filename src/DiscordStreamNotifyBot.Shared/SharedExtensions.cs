@@ -61,16 +61,10 @@ namespace DiscordStreamNotifyBot.Interaction
             videoId = videoId.Trim();
 
             using var db = BotState.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NonApprovedVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-
-            return null;
+            return (DataBase.Table.Video)db.HoloVideos.AsNoTracking().FirstOrDefault((x) => x.VideoId == videoId)
+                ?? (DataBase.Table.Video)db.NijisanjiVideos.AsNoTracking().FirstOrDefault((x) => x.VideoId == videoId)
+                ?? (DataBase.Table.Video)db.OtherVideos.AsNoTracking().FirstOrDefault((x) => x.VideoId == videoId)
+                ?? db.NonApprovedVideos.AsNoTracking().FirstOrDefault((x) => x.VideoId == videoId);
         }
 
         // 依預定開播時間排序時，用於聊天的待機室可能影響結果；暫時保留此方法。
@@ -79,16 +73,10 @@ namespace DiscordStreamNotifyBot.Interaction
             channelId = channelId.Trim();
 
             using var db = BotState.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.HoloVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NijisanjiVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.OtherVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NonApprovedVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-
-            return null;
+            return (DataBase.Table.Video)db.HoloVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).FirstOrDefault((x) => x.ChannelId == channelId)
+                ?? (DataBase.Table.Video)db.NijisanjiVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).FirstOrDefault((x) => x.ChannelId == channelId)
+                ?? (DataBase.Table.Video)db.OtherVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).FirstOrDefault((x) => x.ChannelId == channelId)
+                ?? db.NonApprovedVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).FirstOrDefault((x) => x.ChannelId == channelId);
         }
 
         public static bool IsChannelInDb(string channelId)
@@ -104,11 +92,9 @@ namespace DiscordStreamNotifyBot.Interaction
             return false;
         }
 
-        public static string GetNonApprovedChannelTitleByChannelId(this MainDbContext _, string channelId)
+        public static string GetNonApprovedChannelTitleByChannelId(this MainDbContext db, string channelId)
         {
             channelId = channelId.Trim();
-
-            using var db = BotState.DbService.GetDbContext();
 
             YoutubeChannelSpider youtubeChannelSpider;
             if ((youtubeChannelSpider = db.YoutubeChannelSpider.FirstOrDefault((x) => x.ChannelId == channelId)) != null)

@@ -39,7 +39,7 @@
 - `ChzzkSpider`：目前沒有錄影設定；比照 Twitch／TwitCasting 使用爬蟲本身的 `IsRecord`，不另建錄影頻道表。
 - `ChzzkUrlParser`、`ChzzkUrls`、`ChzzkClient`：沿用網址解析、頻道網址及直播狀態查詢。
 - `ChzzkStreamIdentity`：既有場次鍵為 `channelId:yyyyMMdd_HHmmss`，依平台開台時間建立；不可變更既有識別規則。
-- `RedisChannels`、`RedisContractTests`：新增跨專案 channel 常數與契約測試。
+- `RedisChannels`：新增跨專案 channel 常數；兩端 JSON 契約需手動對照。
 
 ### StreamRecordTools
 
@@ -154,9 +154,9 @@ streamlink https://chzzk.naver.com/live/4de764d9dad3b25602284be6db3ac647 best -o
 
 ## 測試與驗收
 
-### Bot 自動化測試
+### Bot 驗證
 
-使用現有測試專案，至少覆蓋以下行為；不為每一個簡單欄位另建框架：
+Bot 已無自動化測試。以 Release 實際執行手動驗證以下行為：
 
 - `IsRecord` 預設關閉；既有資料 migration 後不會自動開始錄影。
 - 新場次且開啟設定才委派；關閉時不委派。
@@ -167,7 +167,7 @@ streamlink https://chzzk.naver.com/live/4de764d9dad3b25602284be6db3ac647 best -o
 - CHZZK 新增爬蟲通知的欄位、按鈕 ID、明確設定動作及權限防護。
 - `chzzk.record` 名稱與兩端 JSON 欄位契約。
 
-執行 Bot 完整 Release build／test，命令以 Bot `AGENTS.md` 為準。未修改 Slash metadata 就不新增 Slash 指令或無關 snapshot 變更。
+執行 Bot 完整 Release build，命令以 Bot `AGENTS.md` 為準。未修改 Slash metadata 就不新增 Slash 指令或無關 snapshot 變更。
 
 ### 錄影工具驗證
 
@@ -190,7 +190,7 @@ streamlink https://chzzk.naver.com/live/4de764d9dad3b25602284be6db3ac647 best -o
 
 1. 重讀兩個儲存庫的規範、相關程式與 git status，保留其他 session 的變更。
 2. 對齊 Redis payload、CLI 與同時執行防護，先完成錄影工具及可執行檢查。
-3. 完成 Bot migration、指令、按鈕與新場次自動委派，再跑受影響測試及完整建置。
+3. 完成 Bot migration、指令、按鈕與新場次自動委派，再完成完整建置與手動驗證。
 4. 更新兩端 README 的新設定／指令／契約，以及 `docs/CHZZK_NOTIFICATION_PLAN.md` 原本「不含錄影」的範圍說明。
 5. 檢查兩個儲存庫 diff 與 whitespace，回報尚未實測的外部整合項目。
 6. 部署時先讓錄影端支援新契約，再於套用 migration 後部署 Bot；所有頻道初始自動錄影維持關閉。

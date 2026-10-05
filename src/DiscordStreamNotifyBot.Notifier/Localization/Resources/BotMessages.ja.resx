@@ -153,6 +153,7 @@
   <data name="Notifications.MessageCleared" xml:space="preserve"><value>`{0}` の「{1}」通知メッセージを消去しました。</value></data>
   <data name="Notifications.MessageSetSimple" xml:space="preserve"><value>`{0}` の配信通知メッセージを次の内容に設定しました：&#10;{1}</value></data>
   <data name="Notifications.MessageClearedSimple" xml:space="preserve"><value>`{0}` の配信通知メッセージを消去しました。</value></data>
+  <data name="Notifications.DisabledSimple" xml:space="preserve"><value>`{0}` の配信通知を無効にしました。</value></data>
   <data name="Notifications.TypeDisabled" xml:space="preserve"><value>`{0}` の「{1}」通知を無効にしました。</value></data>
   <data name="Notifications.TypeDisabledValue" xml:space="preserve"><value>（この種類の通知は無効です）</value></data>
   <data name="Notifications.MessageListDescription" xml:space="preserve"><value>空欄はメッセージ未設定を表します。Embed 内のテキストはメンションを発生させません。</value></data>
@@ -248,7 +249,6 @@
   <data name="Member.Select.ChannelPlaceholder" xml:space="preserve"><value>チャンネルを選択</value></data>
   <data name="Member.Select.Description" xml:space="preserve"><value>今回認証するチャンネルを選択してください。以前選択したチャンネルを今回選択しなかった場合、関連ロールを削除します。すぐに削除できない場合は Bot が自動で再試行します。</value></data>
   <data name="Member.Select.SelectedCount" xml:space="preserve"><value>{0} チャンネルを選択済み</value></data>
-  <data name="Member.Select.Selected" xml:space="preserve"><value>選択済み</value></data>
   <data name="Member.Select.Expired" xml:space="preserve"><value>このメンバーシップ認証メニューは期限切れです。`/youtube-member check` をもう一度実行してください。</value></data>
   <data name="Member.Errors.NoActiveCheck" xml:space="preserve"><value>このサーバーではまだメンバーシップ認証を実行していません。</value></data>
   <data name="Member.CheckCancelled" xml:space="preserve"><value>このサーバーでのメンバーシップ認証と関連ロールを削除しました。</value></data>
@@ -335,8 +335,6 @@
   <data name="Notifications.Field.EndedAt" xml:space="preserve"><value>終了時刻</value></data>
   <data name="Notifications.Field.Duration" xml:space="preserve"><value>配信時間</value></data>
   <data name="Notifications.Field.UploadedAt" xml:space="preserve"><value>投稿時刻</value></data>
-  <data name="Notifications.Field.ScheduledOrUploadedAt" xml:space="preserve"><value>配信予定／投稿時刻</value></data>
-  <data name="Notifications.Field.OriginalScheduledStart" xml:space="preserve"><value>元の配信予定時刻</value></data>
   <data name="Notifications.Field.Category" xml:space="preserve"><value>カテゴリー</value></data>
   <data name="Notifications.Field.Subtitle" xml:space="preserve"><value>サブタイトル</value></data>
   <data name="Notifications.Duration.Days" xml:space="preserve"><value>{0}日 {1}時間 {2}分 {3}秒</value></data>
@@ -348,8 +346,6 @@
   <data name="Youtube.NotificationStatus.UpcomingChanged" xml:space="preserve"><value>配信前（予定時刻変更済み）</value></data>
   <data name="Youtube.NotificationStatus.EndedAsMemberOnly" xml:space="preserve"><value>配信終了後、メンバー限定動画に変更されました</value></data>
   <data name="Youtube.NotificationStatus.Unarchived" xml:space="preserve"><value>配信終了後、非公開アーカイブに変更されました</value></data>
-  <data name="Youtube.NotificationStatus.Deleted" xml:space="preserve"><value>削除済み</value></data>
-  <data name="Youtube.NotificationStatus.ScheduleDataLost" xml:space="preserve"><value>配信予定データを取得できません</value></data>
   <data name="Youtube.Events.ManageEventsMissing" xml:space="preserve"><value>このサーバーで Bot に「イベントの管理」権限がありません。権限を付与してから {0} を再実行し、イベント自動作成を有効にしてください。</value></data>
   <data name="Twitch.Notification.UnknownTitle" xml:space="preserve"><value>（配信タイトルを取得できません）</value></data>
   <data name="Twitch.Notification.Clips" xml:space="preserve"><value>視聴回数の多いクリップ</value></data>

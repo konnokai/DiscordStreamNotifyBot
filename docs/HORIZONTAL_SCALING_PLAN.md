@@ -351,7 +351,7 @@ services:
 
 ### 階段 4：Coordinator（完成，正確性待測試環境驗）
 - [x] 心跳監控 + leader 鎖觀察 + `cluster:total_shards` 公告 + XPENDING 堆積監控。`CoordinatorService` 掛在 `PeriodicTimer` 迴圈：寫自身心跳、續公告 TOTAL_SHARDS、`ScanHeartbeatKeys` 統計 scraper/notifier 存活數、`NotificationBus.GetGroupsAsync`（`XINFO GROUPS`）監控各 group pending（門檻 500）與無 consumer 的殘留 group（§9.3）。Coordinator 另於 `:9464/metrics` 暴露 Prometheus 快照，附可直接匯入的 Grafana dashboard（見 `docs/PROMETHEUS_GRAFANA.md`）；scrape 不直接查 Redis。`ClusterService` 於階段 3 已備齊所需方法，未改。
-- [ ] （選用）shard 租約，支援方式 B。`ClusterService.TryClaimAnyShardAsync` 等已就緒，Coordinator 端主動分配待方式 B 需要時再接。
+- [ ] （選用）shard 租約，支援方式 B。`ClusterService` 目前沒有租約方法，需要方式 B 時再實作，Coordinator 端主動分配也一併處理。
 - 參考：`git show claude:src/DiscordStreamNotifyBot.Coordinator/CoordinatorService.cs`。
 
 ### 階段 5：跨 shard 指令與共享狀態（完成，正確性待測試環境驗）

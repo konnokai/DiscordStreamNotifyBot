@@ -107,9 +107,5 @@ namespace DiscordStreamNotifyBot.Interaction.TwitchSubscription
                     .Select(x => $"<@{x.DiscordUserId}>: `{x.BroadcasterDisplayName}` / {TwitchSubscription.FormatTier(x.Tier, locale)}"))),
                 count, 20, true, true);
         }
-
-        internal static bool IsEligibleBroadcaster(string broadcasterType)
-            => string.Equals(broadcasterType, "affiliate", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(broadcasterType, "partner", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -1,5 +1,4 @@
 ﻿using DiscordStreamNotifyBot.Shared;
-using System.Runtime.InteropServices;
 
 namespace DiscordStreamNotifyBot
 {
@@ -75,10 +74,8 @@ namespace DiscordStreamNotifyBot
             }
         }
 
+        // 不用 Path.Combine：fileName 為空字串時必須保留結尾的分隔符號（Program 以 GetDirectoryName 取得 Data 資料夾）
         public static string GetDataFilePath(string fileName)
-            => $"{AppDomain.CurrentDomain.BaseDirectory}Data{GetPlatformSlash()}{fileName}";
-
-        public static string GetPlatformSlash()
-            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "\\" : "/";
+            => $"{AppDomain.CurrentDomain.BaseDirectory}Data{Path.DirectorySeparatorChar}{fileName}";
     }
 }

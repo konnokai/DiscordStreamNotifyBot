@@ -8,15 +8,6 @@ namespace DiscordStreamNotifyBot.Localization
         private const string BaseResourceName = "DiscordStreamNotifyBot.Localization.Resources.InteractionCommands";
         private readonly ResourceManager _resourceManager = new(BaseResourceName, typeof(CommandDisplayResolver).Assembly);
 
-        public string GetName(string locale, params string[] canonicalPath)
-        {
-            ArgumentNullException.ThrowIfNull(canonicalPath);
-            if (canonicalPath.Length == 0)
-                throw new ArgumentException("指令路徑不可空白", nameof(canonicalPath));
-
-            return canonicalPath[^1];
-        }
-
         public string GetDescription(string locale, params string[] canonicalPath)
             => GetResource(locale, canonicalPath, "description");
 
@@ -37,9 +28,6 @@ namespace DiscordStreamNotifyBot.Localization
 
         public string GetModuleDescription(string locale, ModuleInfo module)
             => GetDescription(locale, GetCanonicalModulePath(module).ToArray());
-
-        public string GetCommandName(string locale, SlashCommandInfo command)
-            => command.Name;
 
         public string GetCommandDescription(string locale, SlashCommandInfo command)
             => GetDescription(locale, GetCanonicalCommandPath(command).ToArray());

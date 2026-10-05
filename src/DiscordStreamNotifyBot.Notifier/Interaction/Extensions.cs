@@ -4,7 +4,6 @@ using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
-using System.Management;
 using System.Reflection;
 
 namespace DiscordStreamNotifyBot.Interaction
@@ -17,90 +16,6 @@ namespace DiscordStreamNotifyBot.Interaction
         // WithOkColor/WithErrorColor/WithRecordColor/ConvertDateTimeToDiscordMarkdown/
         // GetProductionType/GetProductionName 已移至 Shared 的 SharedExtensions（同命名空間 Interaction，
         // 供 Scraper 偵測層共用，計畫 §3-3）；此處刪除以免與其重複定義（擴充方法模稜兩可）。
-
-        public static string GetCommandLine(this Process process)
-        {
-            if (!OperatingSystem.IsWindows()) return "";
-
-            try
-            {
-                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + process.Id))
-                using (ManagementObjectCollection objects = searcher.Get())
-                {
-                    return objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString();
-                }
-            }
-            catch
-            {
-                return "";
-            }
-        }
-
-        public static IEnumerable<T> Distinct<T, V>(this IEnumerable<T> source, Func<T, V> keySelector)
-        {
-            return source.Distinct(new CommonEqualityComparer<T, V>(keySelector));
-        }
-
-        public static bool HasStreamVideoByVideoId(string videoId)
-        {
-            videoId = videoId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId)) return true;
-
-            return false;
-        }
-
-        public static DataBase.Table.Video GetStreamVideoByVideoId(string videoId)
-        {
-            videoId = videoId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.HoloVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NijisanjiVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.OtherVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.VideoId == videoId))
-                return db.NonApprovedVideos.AsNoTracking().First((x) => x.VideoId == videoId);
-
-            return null;
-        }
-
-        // 依直播開始時間排序可能無法正確處理聊天用待機室，暫時保留此函式供後續評估。
-        public static DataBase.Table.Video GetLastStreamVideoByChannelId(string channelId)
-        {
-            channelId = channelId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.HoloVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NijisanjiVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.OtherVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId))
-                return db.NonApprovedVideos.AsNoTracking().OrderByDescending((x) => x.ScheduledStartTime).First((x) => x.ChannelId == channelId);
-
-            return null;
-        }
-
-        public static bool IsChannelInDb(string channelId)
-        {
-            channelId = channelId.Trim();
-
-            using var db = Bot.DbService.GetDbContext();
-            if (db.HoloVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            if (db.NijisanjiVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            if (db.OtherVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-            if (db.NonApprovedVideos.AsNoTracking().Any((x) => x.ChannelId == channelId)) return true;
-
-            return false;
-        }
 
         public static string GetYoutubeChannelTitleByChannelId(this MainDbContext _, string channelId)
         {
@@ -175,14 +90,6 @@ namespace DiscordStreamNotifyBot.Interaction
                 : localeResolver.ResolvePublic(guildLocale, interaction.GuildLocale);
         }
 
-        public static Task SendConfirmAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = false)
-        {
-            if (isFollowerup || di.HasResponded)
-                return di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
-            else
-                return di.RespondAsync(embed: new EmbedBuilder().WithOkColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
-        }
-
         public static Task SendConfirmAsync(this IDiscordInteraction di, BotLocalizer localizer, string locale,
             string resourceKey, bool isFollowerup = false, bool ephemeral = false, params object[] arguments)
             => di.SendConfirmAsync(localizer.Format(resourceKey, locale, arguments), isFollowerup, ephemeral);
@@ -197,30 +104,15 @@ namespace DiscordStreamNotifyBot.Interaction
             return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithDescription(des).Build(), ephemeral: ephemeral);
         }
 
-        public static Task SendErrorAsync(this IDiscordInteraction di, string title, string des, bool isFollowerup = false, bool ephemeral = true)
-        {
-            if (isFollowerup || di.HasResponded)
-                return di.FollowupAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
-            else
-                return di.RespondAsync(embed: new EmbedBuilder().WithErrorColor().WithTitle(title).WithDescription(des).Build(), ephemeral: ephemeral);
-        }
-
         public static Task SendErrorAsync(this IDiscordInteraction di, BotLocalizer localizer, string locale,
             string resourceKey, bool isFollowerup = false, bool ephemeral = true, params object[] arguments)
             => di.SendErrorAsync(localizer.Format(resourceKey, locale, arguments), isFollowerup, ephemeral);
 
-        public static IMessage DeleteAfter(this IUserMessage msg, int seconds)
-        {
-            Task.Run(async () =>
-            {
-                await Task.Delay(seconds * 1000).ConfigureAwait(false);
-                try { await msg.DeleteAsync().ConfigureAwait(false); }
-                catch { }
-            });
-            return msg;
-        }
-
-        public static IEnumerable<Type> LoadInteractionFrom(this IServiceCollection collection, Assembly assembly)
+        /// <summary>
+        /// 掃描組件內實作 <typeparamref name="TMarker"/> 的服務並註冊為 Singleton；
+        /// 若服務另實作繼承 <typeparamref name="TMarker"/> 的介面，則以該介面註冊。
+        /// </summary>
+        public static IEnumerable<Type> LoadServicesFrom<TMarker>(this IServiceCollection collection, Assembly assembly)
         {
             List<Type> addedTypes = new List<Type>();
 
@@ -236,14 +128,14 @@ namespace DiscordStreamNotifyBot.Interaction
             }
 
             var services = new Queue<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(TMarker))
                         && !x.GetTypeInfo().IsInterface && !x.GetTypeInfo().IsAbstract)
                     .ToArray());
 
             addedTypes.AddRange(services);
 
             var interfaces = new HashSet<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(TMarker))
                         && x.GetTypeInfo().IsInterface));
 
             while (services.Count > 0)
@@ -267,15 +159,6 @@ namespace DiscordStreamNotifyBot.Interaction
 
             return addedTypes;
         }
-
-        public static Task<IUserMessage> EmbedAsync(this IDiscordInteraction di, EmbedBuilder embed, string msg = "", bool ephemeral = false)
-            => di.FollowupAsync(msg, embed: embed.Build(),
-                options: new RequestOptions() { RetryMode = RetryMode.AlwaysRetry }, ephemeral: ephemeral);
-
-        public static Task<IUserMessage> EmbedAsync(this IDiscordInteraction di, string msg = "", bool ephemeral = false)
-           => di.FollowupAsync(embed: new EmbedBuilder().WithOkColor().WithDescription(msg).Build(),
-               options: new RequestOptions { RetryMode = RetryMode.AlwaysRetry }, ephemeral: ephemeral);
-
 
         public static Task SendPaginatedConfirmAsync(this IInteractionContext ctx, int currentPage, Func<int, EmbedBuilder> pageFunc, int totalElements, int itemsPerPage, bool addPaginatedFooter = true, bool ephemeral = false, bool isFollowup = false)
             => ctx.SendPaginatedConfirmAsync(currentPage, (x) => Task.FromResult(pageFunc(x)), totalElements, itemsPerPage, addPaginatedFooter, ephemeral, isFollowup);

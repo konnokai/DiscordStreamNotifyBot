@@ -1,4 +1,5 @@
 ﻿using Discord.Commands;
+using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Command.Normal
@@ -6,13 +7,11 @@ namespace DiscordStreamNotifyBot.Command.Normal
     public class Normal : TopLevelModule
     {
         private readonly DiscordSocketClient _client;
-        private readonly HttpClients.DiscordWebhookClient _discordWebhookClient;
         private readonly ClusterQueryService _clusterQuery;
 
-        public Normal(DiscordSocketClient client, HttpClients.DiscordWebhookClient discordWebhookClient, ClusterQueryService clusterQuery)
+        public Normal(DiscordSocketClient client, ClusterQueryService clusterQuery)
         {
             _client = client;
-            _discordWebhookClient = discordWebhookClient;
             _clusterQuery = clusterQuery;
         }
 

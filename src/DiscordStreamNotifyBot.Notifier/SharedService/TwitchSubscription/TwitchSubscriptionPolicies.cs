@@ -2,52 +2,6 @@ using DiscordStreamNotifyBot.DataBase.Table;
 
 namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 {
-    internal enum TwitchAuthorizationLocalState
-    {
-        Active,
-        Missing,
-        PersistedInvalid,
-        TemporaryFailure
-    }
-
-    internal static class TwitchAuthorizationLocalStatePolicy
-    {
-        public static TwitchAuthorizationLocalState ClassifyEntity(
-            bool exists,
-            bool isPersistedRevoked,
-            bool clientIdMatches,
-            bool hasCiphertext,
-            bool hasRequiredScope)
-        {
-            if (!exists)
-                return TwitchAuthorizationLocalState.Missing;
-            if (isPersistedRevoked)
-                return TwitchAuthorizationLocalState.PersistedInvalid;
-            return clientIdMatches && hasCiphertext && hasRequiredScope
-                ? TwitchAuthorizationLocalState.Active
-                : TwitchAuthorizationLocalState.TemporaryFailure;
-        }
-
-        public static TwitchAuthorizationLocalState ClassifyToken(
-            bool hasAccessToken,
-            bool hasRefreshToken,
-            bool hasTokenType,
-            bool twitchUserIdMatches,
-            bool scopeMatches)
-            => hasAccessToken && hasRefreshToken && hasTokenType && twitchUserIdMatches && scopeMatches
-                ? TwitchAuthorizationLocalState.Active
-                : TwitchAuthorizationLocalState.TemporaryFailure;
-    }
-
-    internal static class TwitchAuthorizationEventPolicy
-    {
-        public static bool ShouldCleanup(string status, bool rowExists, bool isPersistedRevoked)
-        {
-            string normalized = status?.Trim().ToLowerInvariant();
-            return rowExists && isPersistedRevoked && normalized is "invalid" or "revoked" or "unlinked";
-        }
-    }
-
     internal enum TwitchRefreshPersistenceDecision
     {
         WriteReplacement,
@@ -79,6 +33,10 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
 
         public static bool CanSaveConfiguration(int configurationCount, bool alreadyExists)
             => alreadyExists || configurationCount < MaximumConfigurationsPerGuild;
+
+        public static bool IsEligibleBroadcaster(string broadcasterType)
+            => string.Equals(broadcasterType, "affiliate", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(broadcasterType, "partner", StringComparison.OrdinalIgnoreCase);
 
         public static string ValidateCommonRole(
             ulong commonRoleId,
@@ -115,12 +73,6 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             return null;
         }
 
-        public static bool ShouldCompensateCreatedRoles(bool configurationPersisted)
-            => !configurationPersisted;
-
-        public static bool CanApplyDiscordMutations(bool configurationPersisted)
-            => configurationPersisted;
-
         public static string ValidateUpdateState(
             GuildTwitchSubscriptionConfig config,
             ulong requestedSubscriberRoleId)
@@ -144,10 +96,6 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
         public static IQueryable<GuildTwitchSubscriptionConfig> ActiveConfigurations(
             this IQueryable<GuildTwitchSubscriptionConfig> source)
             => source.Where(x => !x.DeletionPending);
-
-        public static IQueryable<GuildTwitchSubscriptionConfig> DeletionPendingConfigurations(
-            this IQueryable<GuildTwitchSubscriptionConfig> source)
-            => source.Where(x => x.DeletionPending);
     }
 
     internal sealed class TwitchRefreshRotationLifecycle
@@ -313,11 +261,5 @@ namespace DiscordStreamNotifyBot.SharedService.TwitchSubscription
             public void Dispose()
                 => Interlocked.Exchange(ref _owner, null)?.CompleteRefresh();
         }
-    }
-
-    internal static class TwitchRateLimitPolicy
-    {
-        public static bool IsBlocked(DateTimeOffset now, DateTimeOffset? retryAfter)
-            => retryAfter.HasValue && retryAfter.Value > now;
     }
 }

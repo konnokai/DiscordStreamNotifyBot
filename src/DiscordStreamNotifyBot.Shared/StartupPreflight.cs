@@ -15,20 +15,14 @@ namespace DiscordStreamNotifyBot.Shared
         /// <param name="timeout">單一檢查項目的重試總時限。</param>
         public static async Task EnsureAsync(BotRole role, BotConfig cfg, TimeSpan timeout)
         {
-            var checks = new List<(string name, Func<Task> probe)>();
-
             // MySQL：scraper / notifier 需要
             if (role is BotRole.Scraper or BotRole.Notifier)
-                checks.Add(("MySQL", () => ProbeMySqlAsync(cfg.MySqlConnectionString)));
+                await RetryWithBackoffAsync("MySQL", () => ProbeMySqlAsync(cfg.MySqlConnectionString), timeout, TimeProvider.System);
 
             // Redis：全角色需要（控制平面 / 錄影 IPC / 匯流排）
-            checks.Add(("Redis", () => ProbeRedisAsync(cfg.RedisOption)));
+            await RetryWithBackoffAsync("Redis", () => ProbeRedisAsync(cfg.RedisOption), timeout, TimeProvider.System);
 
-            // TODO 階段 3：新增 scraper 對 bot:notify 的 XADD 測試，以及 notifier 的 XGROUP CREATE Redis Streams 啟動前檢查（§4.4）
             // Discord 由 notifier 既有登入流程驗證，不在此處理
-
-            foreach (var (name, probe) in checks)
-                await RetryWithBackoffAsync(name, probe, timeout, TimeProvider.System);
 
             Log.Info($"啟動連線檢查通過（角色：{role}）");
         }
@@ -48,12 +42,11 @@ namespace DiscordStreamNotifyBot.Shared
             await db.PingAsync();
         }
 
-        internal static async Task RetryWithBackoffAsync(
+        private static async Task RetryWithBackoffAsync(
             string name,
             Func<Task> probe,
             TimeSpan timeout,
-            TimeProvider timeProvider,
-            Func<TimeSpan, Task> delayAsync = null)
+            TimeProvider timeProvider)
         {
             var deadline = timeProvider.GetUtcNow() + timeout;
             int attempt = 0;
@@ -82,10 +75,7 @@ namespace DiscordStreamNotifyBot.Shared
                         delay = remaining;
 
                     Log.Warn($"[Preflight] {name} 連線失敗（第 {attempt} 次）：{ex.Message}；{delay.TotalSeconds:0} 秒後重試");
-                    if (delayAsync == null)
-                        await Task.Delay(delay, timeProvider).ConfigureAwait(false);
-                    else
-                        await delayAsync(delay).ConfigureAwait(false);
+                    await Task.Delay(delay, timeProvider).ConfigureAwait(false);
                 }
             }
 

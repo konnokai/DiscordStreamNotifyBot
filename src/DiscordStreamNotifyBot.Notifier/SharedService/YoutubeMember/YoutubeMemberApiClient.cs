@@ -18,11 +18,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         LocalContractFailure
     }
 
-    internal readonly record struct YoutubeMemberProbeResult(YoutubeMemberProbeResultKind Kind)
-    {
-        public bool PreservesEntitlement => Kind is not YoutubeMemberProbeResultKind.NotMember and
-            not YoutubeMemberProbeResultKind.AuthorizationInvalid;
-    }
+    internal readonly record struct YoutubeMemberProbeResult(YoutubeMemberProbeResultKind Kind);
 
     /// <summary>封裝會員限定影片留言探測，避免呼叫端依賴 Google SDK 的例外訊息文字。</summary>
     public sealed class YoutubeMemberApiClient
@@ -58,38 +54,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (credential == null)
                 return new(YoutubeMemberProbeResultKind.LocalContractFailure);
 
-            try
+            return await ExecuteAsync(credential, service =>
             {
-                var request = new YouTubeService(new BaseClientService.Initializer
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "Discord Youtube Member Check"
-                }).Channels.List("id");
+                var request = service.Channels.List("id");
                 request.Mine = true;
-                await request.ExecuteAsync(cancellationToken).ConfigureAwait(false);
-                return new(YoutubeMemberProbeResultKind.Member);
-            }
-            catch (GoogleApiException exception)
-            {
-                return new(Classify((int)exception.HttpStatusCode,
-                    exception.Error?.Errors?.Select(error => error.Reason)));
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (OperationCanceledException)
-            {
-                return new(YoutubeMemberProbeResultKind.TemporaryFailure);
-            }
-            catch (HttpRequestException)
-            {
-                return new(YoutubeMemberProbeResultKind.TemporaryFailure);
-            }
-            catch
-            {
-                return new(YoutubeMemberProbeResultKind.LocalContractFailure);
-            }
+                return request.ExecuteAsync(cancellationToken);
+            }, authorizationValidated: false, cancellationToken);
         }
 
         internal async Task<YoutubeMemberProbeResult> ProbeAsync(
@@ -101,15 +71,28 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (credential == null || string.IsNullOrWhiteSpace(videoId) || videoId == "-")
                 return new(YoutubeMemberProbeResultKind.LocalContractFailure);
 
+            return await ExecuteAsync(credential, service =>
+            {
+                var request = service.CommentThreads.List("id");
+                request.VideoId = videoId;
+                return request.ExecuteAsync(cancellationToken);
+            }, authorizationValidated, cancellationToken);
+        }
+
+        /// <summary>request 成功即視為 Member；例外依 Google 錯誤或本機失敗分類，不讀例外訊息文字。</summary>
+        private static async Task<YoutubeMemberProbeResult> ExecuteAsync(
+            GoogleCredential credential,
+            Func<YouTubeService, Task> execute,
+            bool authorizationValidated,
+            CancellationToken cancellationToken)
+        {
             try
             {
-                var request = new YouTubeService(new BaseClientService.Initializer
+                await execute(new YouTubeService(new BaseClientService.Initializer
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = "Discord Youtube Member Check"
-                }).CommentThreads.List("id");
-                request.VideoId = videoId;
-                await request.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+                })).ConfigureAwait(false);
                 return new(YoutubeMemberProbeResultKind.Member);
             }
             catch (GoogleApiException exception)
@@ -168,9 +151,5 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             => exception != null && exception.HttpStatusCode == HttpStatusCode.Forbidden &&
                 exception.Error?.Errors?.Any(error =>
                     string.Equals(error.Reason, "forbidden", StringComparison.OrdinalIgnoreCase)) == true;
-
-        internal static bool HasReason(GoogleApiException exception, string reason)
-            => exception?.Error?.Errors?.Any(error =>
-                string.Equals(error.Reason, reason, StringComparison.OrdinalIgnoreCase)) == true;
     }
 }

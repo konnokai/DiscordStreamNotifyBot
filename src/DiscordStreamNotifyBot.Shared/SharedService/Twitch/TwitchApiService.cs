@@ -148,11 +148,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 _appAccessTokenExpiresAtUtc = DateTime.UtcNow.AddSeconds(Math.Max(0, tokenResponse.ExpiresIn - 60));
                 return _appAccessToken;
             }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "取得 Twitch App Access Token 失敗");
-                throw;
-            }
+            // 失敗不在這裡記錄：所有呼叫端都會攔截並記錄例外
             finally
             {
                 _appTokenLock.Release();
@@ -215,44 +211,30 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             if (string.IsNullOrWhiteSpace(broadcasterUserId))
             {
                 Log.Error("建立 Twitch EventSub 時 broadcaster user ID 不可為空");
-                return new TwitchEventSubEnsureResult { Mode = mode };
+                return new TwitchEventSubEnsureResult();
             }
             if (!IsEnable)
-                return new TwitchEventSubEnsureResult { Mode = mode };
+                return new TwitchEventSubEnsureResult();
 
             var current = await GetEventSubSubscriptionsResultAsync(broadcasterUserId);
             if (!current.IsSuccess)
-                return CreateEnsureFailure(mode, current);
+                return new TwitchEventSubEnsureResult { Subscriptions = current };
 
             var plan = TwitchEventSubReconcilePolicy.Plan(mode, broadcasterUserId, EventSubCallbackUrl,
                 current.Subscriptions.Select(ToEventSubFact).ToArray());
 
             string appAccessToken;
-            int deletedCount = 0;
             try
             {
                 appAccessToken = await GetAppAccessTokenAsync();
-                foreach (string subscriptionId in plan.Delete)
-                {
-                    bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
-                        subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
-                    if (!deleted)
-                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID：{subscriptionId}");
-                    deletedCount++;
-                }
+                await DeleteEventSubSubscriptionsByIdAsync(plan.Delete, appAccessToken);
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"清理 broadcaster {broadcasterUserId} 的 Twitch EventSub 失敗");
-                return new TwitchEventSubEnsureResult
-                {
-                    Mode = mode,
-                    DeletedCount = deletedCount,
-                    Subscriptions = current
-                };
+                return new TwitchEventSubEnsureResult { Subscriptions = current };
             }
 
-            int createdCount = 0;
             try
             {
                 foreach (var spec in plan.Create)
@@ -261,19 +243,12 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                         spec.Type, spec.Version, new() { ["broadcaster_user_id"] = broadcasterUserId },
                         EventSubTransportMethod.Webhook, webhookCallback: EventSubCallbackUrl,
                         webhookSecret: WebHookSecret, clientId: _twitchClientId, accessToken: appAccessToken);
-                    createdCount++;
                 }
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"建立 broadcaster {broadcasterUserId} 的 Twitch EventSub 失敗");
-                return new TwitchEventSubEnsureResult
-                {
-                    Mode = mode,
-                    CreatedCount = createdCount,
-                    DeletedCount = deletedCount,
-                    Subscriptions = current
-                };
+                return new TwitchEventSubEnsureResult { Subscriptions = current };
             }
 
             var final = await GetEventSubSubscriptionsResultAsync(broadcasterUserId);
@@ -285,21 +260,21 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             return new TwitchEventSubEnsureResult
             {
                 IsSuccess = final.IsSuccess && finalDecision.IsSuccess,
-                Mode = mode,
-                CreatedCount = createdCount,
-                DeletedCount = deletedCount,
-                IsPermanentCostValid = finalDecision.IsPermanentCostValid,
                 Subscriptions = final
             };
         }
 
-        private TwitchEventSubEnsureResult CreateEnsureFailure(
-            TwitchEventSubEnsureMode mode, TwitchEventSubSubscriptionsResult subscriptions)
-            => new()
+        /// <summary>逐一刪除指定的 EventSub；Twitch API 回傳失敗時拋出例外，由呼叫端記錄。</summary>
+        private async Task DeleteEventSubSubscriptionsByIdAsync(IEnumerable<string> subscriptionIds, string appAccessToken)
+        {
+            foreach (string subscriptionId in subscriptionIds)
             {
-                Mode = mode,
-                Subscriptions = subscriptions
-            };
+                bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
+                    subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
+                if (!deleted)
+                    throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID：{subscriptionId}");
+            }
+        }
 
         private static TwitchEventSubFact ToEventSubFact(EventSubSubscription subscription)
         {
@@ -464,9 +439,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
         }
 
-        public async Task<IReadOnlyList<Stream>> GetNowStreamsAsync(params string[] twitchUserIds)
-            => (await GetNowStreamsResultAsync(twitchUserIds)).Streams;
-
         public async Task<TwitchEventSubSubscriptionsResult> GetEventSubSubscriptionsResultAsync(string userId = null)
         {
             if (!IsEnable)
@@ -478,14 +450,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 string cursor = null;
                 var seenCursors = new HashSet<string>(StringComparer.Ordinal);
                 var subscriptions = new List<EventSubSubscription>();
-                int total = 0, totalCost = 0, maxTotalCost = 0;
+                int totalCost = 0, maxTotalCost = 0;
 
                 do
                 {
                     var page = await TwitchApi.Value.Helix.EventSub.GetEventSubSubscriptionsAsync(
                         userId: userId, after: cursor, clientId: _twitchClientId, accessToken: appAccessToken);
                     subscriptions.AddRange(page.Subscriptions ?? Array.Empty<EventSubSubscription>());
-                    total = page.Total;
                     totalCost = page.TotalCost;
                     maxTotalCost = page.MaxTotalCost;
                     cursor = page.Pagination?.Cursor;
@@ -499,7 +470,6 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 {
                     IsSuccess = true,
                     Subscriptions = subscriptions,
-                    Total = total,
                     TotalCost = totalCost,
                     MaxTotalCost = maxTotalCost
                 };
@@ -547,34 +517,18 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             if (subscriptionIds.Length == 0)
                 return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.NoSubscriptions };
 
-            var deletedIds = new List<string>();
             try
             {
                 string appAccessToken = await GetAppAccessTokenAsync();
-                foreach (string subscriptionId in subscriptionIds)
-                {
-                    bool deleted = await TwitchApi.Value.Helix.EventSub.DeleteEventSubSubscriptionAsync(
-                        subscriptionId, clientId: _twitchClientId, accessToken: appAccessToken);
-                    if (!deleted)
-                        throw new InvalidOperationException($"Twitch EventSub 刪除 API 回傳失敗，subscription ID：{subscriptionId}");
-                    deletedIds.Add(subscriptionId);
-                }
+                await DeleteEventSubSubscriptionsByIdAsync(subscriptionIds, appAccessToken);
 
-                Log.Info($"已刪除 broadcaster {userId} 的 {deletedIds.Count} 筆 Twitch EventSub");
-                return new TwitchEventSubDeleteResult
-                {
-                    Status = TwitchEventSubDeleteStatus.Deleted,
-                    DeletedSubscriptionIds = deletedIds
-                };
+                Log.Info($"已刪除 broadcaster {userId} 的 {subscriptionIds.Length} 筆 Twitch EventSub");
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.Deleted };
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), $"刪除 broadcaster {userId} 的 Twitch EventSub 失敗");
-                return new TwitchEventSubDeleteResult
-                {
-                    Status = TwitchEventSubDeleteStatus.ApiFailure,
-                    DeletedSubscriptionIds = deletedIds
-                };
+                return new TwitchEventSubDeleteResult { Status = TwitchEventSubDeleteStatus.ApiFailure };
             }
         }
 

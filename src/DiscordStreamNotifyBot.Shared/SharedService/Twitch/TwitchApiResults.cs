@@ -34,19 +34,14 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
     {
         public bool IsSuccess { get; init; }
         public IReadOnlyList<EventSubSubscription> Subscriptions { get; init; } = Array.Empty<EventSubSubscription>();
-        public int Total { get; init; }
         public int TotalCost { get; init; }
         public int MaxTotalCost { get; init; }
     }
 
-    /// <summary>EventSub 精確同步作業的變更與最終狀態。</summary>
+    /// <summary>EventSub 精確同步作業的最終狀態。</summary>
     public sealed class TwitchEventSubEnsureResult
     {
         public bool IsSuccess { get; init; }
-        public TwitchEventSubEnsureMode Mode { get; init; }
-        public int CreatedCount { get; init; }
-        public int DeletedCount { get; init; }
-        public bool IsPermanentCostValid { get; init; }
         public TwitchEventSubSubscriptionsResult Subscriptions { get; init; } = new();
     }
 
@@ -54,6 +49,5 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
     public sealed class TwitchEventSubDeleteResult
     {
         public TwitchEventSubDeleteStatus Status { get; init; }
-        public IReadOnlyList<string> DeletedSubscriptionIds { get; init; } = Array.Empty<string>();
     }
 }

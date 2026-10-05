@@ -110,16 +110,12 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
         {
             try
             {
-                var list = client.Guilds
-                    .Select((g) => new GuildSnapshot { Id = g.Id, Name = g.Name, OwnerId = g.OwnerId, MemberCount = g.MemberCount })
-                    .ToList();
-
                 var envelope = new GuildSnapshotEnvelope
                 {
                     ShardId = Bot.ShardId,
                     UpdatedAtUtc = DateTime.UtcNow,
                     IsConnected = client.ConnectionState == ConnectionState.Connected,
-                    Guilds = list
+                    Guilds = SnapshotLocalGuilds(client)
                 };
 
                 await Bot.RedisDb.HashSetAsync(RedisChannels.SharedState.GuildSnapshotHash, Bot.ShardId, JsonConvert.SerializeObject(envelope));
@@ -136,9 +132,7 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
         /// </summary>
         public async Task<List<GuildSnapshot>> ReadMergedGuildsAsync()
         {
-            var result = _client.Guilds
-                .Select((g) => new GuildSnapshot { Id = g.Id, Name = g.Name, OwnerId = g.OwnerId, MemberCount = g.MemberCount })
-                .ToList();
+            var result = SnapshotLocalGuilds(_client);
 
             if (Bot.TotalShardCount <= 1)
                 return result;
@@ -163,6 +157,11 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
 
             return result;
         }
+
+        private static List<GuildSnapshot> SnapshotLocalGuilds(DiscordSocketClient client)
+            => client.Guilds
+                .Select((g) => new GuildSnapshot { Id = g.Id, Name = g.Name, OwnerId = g.OwnerId, MemberCount = g.MemberCount })
+                .ToList();
 
         private static List<GuildSnapshot> DeserializeGuildSnapshot(string json)
         {
@@ -200,7 +199,12 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
                     configured.Add(id);
                 foreach (var id in db.NoticeTwitcastingStreamChannels.AsNoTracking().Select((x) => x.GuildId).Distinct())
                     configured.Add(id);
+                foreach (var id in db.NoticeChzzkStreamChannels.AsNoTracking().Select((x) => x.GuildId).Distinct())
+                    configured.Add(id);
                 foreach (var id in db.GuildYoutubeMemberConfig.AsNoTracking().Select((x) => x.GuildId).Distinct())
+                    configured.Add(id);
+                // 等待刪除中的設定也算：身分組清理完成前 Bot 若先退出伺服器，就無法再移除那些身分組
+                foreach (var id in db.GuildTwitchSubscriptionConfig.AsNoTracking().Select((x) => x.GuildId).Distinct())
                     configured.Add(id);
             }
 
@@ -212,10 +216,7 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
             IEnumerable<ulong> configuredGuildIds,
             IEnumerable<ulong> officialGuildIds)
         {
-            ArgumentNullException.ThrowIfNull(guilds);
-            ArgumentNullException.ThrowIfNull(configuredGuildIds);
-            ArgumentNullException.ThrowIfNull(officialGuildIds);
-
+            // null 參數由 LINQ 丟出 ArgumentNullException。
             var excluded = configuredGuildIds.Concat(officialGuildIds).ToHashSet();
             return guilds
                 .Where(guild => !excluded.Contains(guild.Id))
@@ -444,6 +445,9 @@ namespace DiscordStreamNotifyBot.SharedService.Cluster
 
                             foreach (var item in db.NoticeTwitcastingStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
                                 AddTarget(guilds[item.GuildId], "TwitCasting", "直播", item.DiscordChannelId);
+
+                            foreach (var item in db.NoticeChzzkStreamChannels.AsNoTracking().Where(x => guildIds.Contains(x.GuildId)))
+                                AddTarget(guilds[item.GuildId], "CHZZK", "直播", item.DiscordChannelId);
                         }
 
                         response.CheckedCount = targets.Count;

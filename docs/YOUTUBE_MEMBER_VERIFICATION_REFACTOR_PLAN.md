@@ -535,12 +535,11 @@ Redis publish 失敗不得回滾已 durable 保存的 unlink intent；Bot 週期
 
 ```powershell
 dotnet build DiscordStreamNotifyBot.sln -c Release
-dotnet test DiscordStreamNotifyBot.sln -c Release --no-build
 dotnet ef migrations has-pending-model-changes --project src/DiscordStreamNotifyBot.Shared --configuration Release
 git diff --check
 ```
 
-有 MySQL/Redis component environment 時必須實跑，不可只接受 skip。
+Bot 已無自動化測試，行為改以 Release 實際執行手動驗證。
 
 ### 16.2 Backend
 

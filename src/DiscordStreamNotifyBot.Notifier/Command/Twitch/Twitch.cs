@@ -2,6 +2,7 @@
 using DiscordStreamNotifyBot.Command.Attribute;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.Shared;
 
 namespace DiscordStreamNotifyBot.Command.Twitch
