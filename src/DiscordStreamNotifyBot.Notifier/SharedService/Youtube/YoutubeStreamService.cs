@@ -161,8 +161,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                     return AdminSettingsMutationResult.Rejected("crawler.source-ineligible");
 
                 int limit = await GetYoutubeCrawlerLimitAsync(db, guild.Id, cancellationToken);
-                // Owner 歸屬（GuildId=0）不占操作 guild 名額，也不受該 guild 上限限制（與 CHZZK 一致）。
-                bool limitApplies = !addForBotOwner && !Utility.OfficialGuildContains(guild.Id);
+                // Bot owner 不論以自己或伺服器名義新增，都不受該 guild 爬蟲數量上限限制；官方伺服器亦同。
+                bool limitApplies = actorUserId != Bot.ApplicatonOwner.Id && !Utility.OfficialGuildContains(guild.Id);
                 var existing = await db.YoutubeChannelSpider.SingleOrDefaultAsync(
                     x => x.ChannelId == sourceId, cancellationToken);
                 if (existing != null)

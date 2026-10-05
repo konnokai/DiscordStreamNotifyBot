@@ -121,8 +121,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             bool usedOAuthBypass = !generallyEligible && oauthEligible;
 
             int limit = await GetTwitchCrawlerLimitAsync(db, guild.Id, cancellationToken);
-            // Owner 歸屬（GuildId=0）不占操作 guild 名額，也不受該 guild 上限限制（與 CHZZK 一致）。
-            bool limitReached = !addForBotOwner && !Utility.OfficialGuildContains(guild.Id) &&
+            // Bot owner 不論以自己或伺服器名義新增，都不受該 guild 爬蟲數量上限限制；官方伺服器亦同。
+            bool limitReached = actorUserId != Bot.ApplicatonOwner.Id && !Utility.OfficialGuildContains(guild.Id) &&
                 await db.TwitchSpider.AsNoTracking().CountAsync(x => x.GuildId == guild.Id, cancellationToken) >= limit;
             var existing = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == user.Id, cancellationToken);
             if (existing != null)
