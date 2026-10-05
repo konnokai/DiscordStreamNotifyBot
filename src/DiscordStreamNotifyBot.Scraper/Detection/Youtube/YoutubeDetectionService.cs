@@ -194,11 +194,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.addstream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
             {
-                videoId = GetVideoId(videoId);
-                Log.Info($"{channel} - （手動新增） {videoId}");
-
                 try
                 {
+                    videoId = GetVideoId(videoId);
+                    Log.Info($"{channel} - （手動新增） {videoId}");
+
                     var item = await GetManualAddVideoAsync(videoId, $"{videoId} 已存在，略過", $"找不到影片：{videoId}").ConfigureAwait(false);
                     if (item == null)
                         return;
@@ -265,12 +265,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.pubsub.Deleted", RedisChannel.PatternMode.Literal), async (channel, youtubeNotificationJson) =>
             {
-                YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
-
-                Log.Info($"{channel} - {youtubePubSubNotification.VideoId}");
-
                 try
                 {
+                    YoutubePubSubNotification youtubePubSubNotification = JsonConvert.DeserializeObject<YoutubePubSubNotification>(youtubeNotificationJson.ToString());
+
+                    Log.Info($"{channel} - {youtubePubSubNotification.VideoId}");
+
                     var streamVideo = SharedExtensions.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
                     if (streamVideo != null)
                         await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);

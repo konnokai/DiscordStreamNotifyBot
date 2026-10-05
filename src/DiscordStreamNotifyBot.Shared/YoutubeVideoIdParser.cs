@@ -7,7 +7,7 @@ namespace DiscordStreamNotifyBot.Shared
         internal static string Parse(string videoUrlOrId)
         {
             if (string.IsNullOrEmpty(videoUrlOrId))
-                throw new ArgumentNullException(videoUrlOrId);
+                throw new ArgumentNullException(nameof(videoUrlOrId));
 
             if (TryParse(videoUrlOrId, out string videoId))
                 return videoId;

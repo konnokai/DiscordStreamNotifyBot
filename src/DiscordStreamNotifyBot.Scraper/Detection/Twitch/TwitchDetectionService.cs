@@ -33,6 +33,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         private readonly ConcurrentDictionary<string, CancellationTokenSource> _streamOfflineReminders = new(StringComparer.Ordinal);
         // EventSub callback、輪詢與 reconcile 可能同時處理同一 broadcaster，必須依使用者序列化狀態變更。
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _userLocks = new(StringComparer.Ordinal);
+        // 每次開台流程寫入直播狀態前遞增（只在持有使用者鎖時變更）；關台流程釋放鎖後再寫入時用來判斷期間是否已有新的開台狀態。
+        private readonly ConcurrentDictionary<string, long> _streamStartVersions = new(StringComparer.Ordinal);
         // 尚未完成安全清理的頻道會加入高頻輪詢，直到能確認直播與授權狀態。
         private readonly ConcurrentDictionary<string, byte> _pendingCleanup = new(StringComparer.Ordinal);
         // 延後清理原因只供 metrics 分類；是否待重試以 _pendingCleanup 為準。
@@ -348,6 +350,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     StreamStartAt = stream.StartedAt
                 };
                 bool resumedBeforeOfflineConfirmation = CancelOfflineReminder(stream.UserId);
+                // 下方兩條路徑都會寫入直播狀態；先遞增版本，讓已釋放鎖的關台流程不會再覆蓋這次的狀態。
+                _streamStartVersions.AddOrUpdate(stream.UserId, 1, (_, version) => version + 1);
                 bool databaseDuplicate = await db.TwitchStreams.AsNoTracking().AnyAsync(x => x.StreamId == stream.Id);
                 bool processDuplicate = RecordAndCheckProcessDuplicate(
                     _handledStreamIds, stream.Id, resumedBeforeOfflineConfirmation);
@@ -710,6 +714,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             };
             if (!removalAllowed)
             {
+                // 最新評估已恢復符合資格，視同無需清理，與一般資格評估的 Eligible 分支一致。
+                if (latestEligibility == TwitchGuildEligibilityStatus.Eligible)
+                {
+                    ClearPending(expectedSpider.UserId);
+                    return true;
+                }
+
                 SetPending(expectedSpider.UserId,
                     latestEligibility == TwitchGuildEligibilityStatus.NotifierUnavailable
                         ? TwitchEventSubCleanupDeferredMetricReason.NotifierUnavailable
@@ -786,10 +797,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         {
             HelixStream resumedStream;
             TwitchStream twitchStream = null;
+            long startVersion;
             var userLock = GetUserLock(userId);
             await userLock.WaitAsync();
             try
             {
+                startVersion = _streamStartVersions.GetValueOrDefault(userId);
                 var streams = await _apiService.GetNowStreamsResultAsync(userId);
                 if (!streams.IsSuccess)
                 {
@@ -895,13 +908,29 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
             async Task SaveStreamEndAsync(TwitchStream endedStream)
             {
-                if (endedStream != null)
+                // 釋放鎖後（查 VOD、發布通知期間）可能已有新的開台流程寫入 Redis；
+                // 重新取得鎖並確認期間沒有開台流程，才寫入關台狀態，避免以已結束的場次覆蓋較新的直播狀態。
+                await userLock.WaitAsync();
+                try
                 {
-                    endedStream.StreamEndAt = endAtUtc;
-                    await SetStreamStateAsync(endedStream);
+                    if (_streamStartVersions.GetValueOrDefault(userId) != startVersion)
+                    {
+                        Log.Info($"Twitch 關台處理期間已有新的開台狀態，略過關台狀態寫入：{userId}");
+                        return;
+                    }
+
+                    if (endedStream != null)
+                    {
+                        endedStream.StreamEndAt = endAtUtc;
+                        await SetStreamStateAsync(endedStream);
+                    }
+                    if (!string.IsNullOrEmpty(endedStream?.StreamId))
+                        _handledStreamIds.TryRemove(endedStream.StreamId, out _);
                 }
-                if (!string.IsNullOrEmpty(endedStream?.StreamId))
-                    _handledStreamIds.TryRemove(endedStream.StreamId, out _);
+                finally
+                {
+                    userLock.Release();
+                }
             }
         }
 

@@ -37,7 +37,7 @@ namespace DiscordStreamNotifyBot.Shared
         public async Task<string> GetChannelIdAsync(string channelUrl)
         {
             if (string.IsNullOrEmpty(channelUrl))
-                throw new ArgumentNullException(channelUrl);
+                throw new ArgumentNullException(nameof(channelUrl));
 
             channelUrl = channelUrl.Trim();
 
@@ -140,7 +140,7 @@ namespace DiscordStreamNotifyBot.Shared
         {
             HtmlWeb htmlWeb = new HtmlWeb();
             var htmlDocument = await htmlWeb.LoadFromWebAsync(channelUrl);
-            var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && x2.Value == "channelId" || x2.Value == "identifier"));
+            var node = htmlDocument.DocumentNode.Descendants().FirstOrDefault((x) => x.Name == "meta" && x.Attributes.Any((x2) => x2.Name == "itemprop" && (x2.Value == "channelId" || x2.Value == "identifier")));
 
             if (node == null)
                 throw new UriFormatException("錯誤，找不到頻道 ID 資訊\n" +
@@ -201,7 +201,7 @@ namespace DiscordStreamNotifyBot.Shared
             }
             catch (NullReferenceException)
             {
-                Log.Warn($"YouTube GetChannelTitle 頻道可能已被刪除：{channelId}");
+                Log.Warn($"YouTube GetChannelTitle 頻道可能已被刪除：{string.Join(", ", channelId)}");
                 return null;
             }
             catch (Exception ex)
