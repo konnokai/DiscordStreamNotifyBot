@@ -28,43 +28,27 @@ namespace DiscordStreamNotifyBot.Interaction.YoutubeMember
         {
             public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(async () =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    if (!await db.GuildYoutubeMemberConfig.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
-                        return AutocompletionResult.FromSuccess();
+                using var db = Bot.DbService.GetDbContext();
+                var configuredChannels = await db.GuildYoutubeMemberConfig
+                    .AsNoTracking()
+                    .Where((x) => x.GuildId == context.Guild.Id)
+                    .Select(x => new { x.MemberCheckChannelTitle, x.MemberCheckChannelId })
+                    .ToListAsync();
+                var duplicateTitles = configuredChannels
+                    .Where(x => !string.IsNullOrWhiteSpace(x.MemberCheckChannelTitle))
+                    .GroupBy(x => x.MemberCheckChannelTitle, StringComparer.OrdinalIgnoreCase)
+                    .Where(group => group.Count() > 1)
+                    .Select(group => group.Key)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var candidates = configuredChannels.Select(x => new AutocompleteCandidate(
+                    x.MemberCheckChannelTitle,
+                    string.IsNullOrWhiteSpace(x.MemberCheckChannelTitle) || duplicateTitles.Contains(x.MemberCheckChannelTitle)
+                        ? x.MemberCheckChannelId
+                        : x.MemberCheckChannelTitle,
+                    x.MemberCheckChannelId));
 
-                    var configuredChannels = await db.GuildYoutubeMemberConfig
-                        .AsNoTracking()
-                        .Where((x) => x.GuildId == context.Guild.Id)
-                        .Select(x => new { x.MemberCheckChannelTitle, x.MemberCheckChannelId })
-                        .ToListAsync();
-                    var duplicateTitles = configuredChannels
-                        .Where(x => !string.IsNullOrWhiteSpace(x.MemberCheckChannelTitle))
-                        .GroupBy(x => x.MemberCheckChannelTitle, StringComparer.OrdinalIgnoreCase)
-                        .Where(group => group.Count() > 1)
-                        .Select(group => group.Key)
-                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    var candidates = configuredChannels.Select(x => new AutocompleteCandidate(
-                        x.MemberCheckChannelTitle,
-                        string.IsNullOrWhiteSpace(x.MemberCheckChannelTitle) || duplicateTitles.Contains(x.MemberCheckChannelTitle)
-                            ? x.MemberCheckChannelId
-                            : x.MemberCheckChannelTitle,
-                        x.MemberCheckChannelId));
-
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"GuildYoutubeMemberCheckChannelIdAutocompleteHandler - {ex}");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                return AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error($"GuildYoutubeMemberCheckChannelIdAutocompleteHandler - {ex}"));
             }
         }
 

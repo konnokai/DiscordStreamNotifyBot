@@ -28,8 +28,10 @@ namespace DiscordStreamNotifyBot.Tests
         [Fact]
         public async Task StopDrainWaitsForTrackedLifecycleTask()
         {
+            var registry = new YoutubeMemberLifecycleTaskRegistry();
             var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            Task drain = YoutubeMemberLifecyclePolicy.DrainAsync([release.Task]);
+            Assert.True(registry.TryRegister(release.Task));
+            Task drain = Task.WhenAll(registry.StopAndSnapshot());
 
             Assert.False(drain.IsCompleted);
             release.SetResult();
@@ -42,12 +44,12 @@ namespace DiscordStreamNotifyBot.Tests
             var registry = new YoutubeMemberLifecycleTaskRegistry();
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            Assert.True(registry.TryRegister(completion.Task, out long taskId));
+            Assert.True(registry.TryRegister(completion.Task));
             Task[] draining = registry.StopAndSnapshot();
             Assert.Contains(completion.Task, draining);
-            Assert.False(registry.TryRegister(Task.CompletedTask, out _));
+            Assert.False(registry.TryRegister(Task.CompletedTask));
 
-            registry.Complete(taskId);
+            registry.Complete(completion.Task);
         }
     }
 }

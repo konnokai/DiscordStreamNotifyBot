@@ -122,7 +122,7 @@ namespace DiscordStreamNotifyBot.Interaction.Help
                 .Where(command => string.Join('.', CommandDisplayResolver.GetCanonicalModulePath(command.Module))
                     .Equals(module, StringComparison.OrdinalIgnoreCase))
                 .OrderBy(command => CommandDisplayResolver.GetCommandPath(locale, command), StringComparer.Ordinal)
-                .Distinct(new CommandTextEqualityComparer())
+                .DistinctBy(command => string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(command)))
                 .ToList();
             if (commands.Count == 0)
             {
@@ -190,15 +190,5 @@ namespace DiscordStreamNotifyBot.Interaction.Help
                 (Command: command, Result: await command.CheckPreconditionsAsync(context, services).ConfigureAwait(false))));
             return checks.Where(item => item.Result.IsSuccess).Select(item => item.Command).ToList();
         }
-    }
-
-    public class CommandTextEqualityComparer : IEqualityComparer<SlashCommandInfo>
-    {
-        public bool Equals(SlashCommandInfo x, SlashCommandInfo y)
-            => string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(x)) ==
-               string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(y));
-
-        public int GetHashCode(SlashCommandInfo obj)
-            => string.Join('.', CommandDisplayResolver.GetCanonicalCommandPath(obj)).GetHashCode(StringComparison.Ordinal);
     }
 }

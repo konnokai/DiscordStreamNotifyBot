@@ -130,11 +130,7 @@ namespace DiscordStreamNotifyBot.HttpClients.Chzzk
             => result.IsSuccess ? TryGetKnownStatus(result.Status!.Status) : null;
 
         /// <summary>解析狀態字串；僅 OPEN/CLOSE 為已知狀態，其餘回傳 null。</summary>
-        public static string? TryGetKnownStatus(string status) => status switch
-        {
-            ChzzkLiveStatusValues.Open => ChzzkLiveStatusValues.Open,
-            ChzzkLiveStatusValues.Close => ChzzkLiveStatusValues.Close,
-            _ => null
-        };
+        public static string? TryGetKnownStatus(string status)
+            => status is ChzzkLiveStatusValues.Open or ChzzkLiveStatusValues.Close ? status : null;
     }
 }

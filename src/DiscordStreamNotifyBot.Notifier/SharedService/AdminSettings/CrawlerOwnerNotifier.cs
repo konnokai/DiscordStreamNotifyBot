@@ -26,17 +26,13 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
         {
             try
             {
-                SocketGuildUser actor = guild.GetUser(actorUserId);
-                string actorText = actor == null
-                    ? actorUserId.ToString()
-                    : $"{actor.GlobalName ?? actor.Username} ({actor} / {actorUserId})";
                 var message = BuildAddedMessage(
                     platform,
                     sourceId,
                     sourceName,
                     sourcePath,
                     addForBotOwner ? "擁有者" : $"{guild.Name} ({guild.Id})",
-                    actorText,
+                    DescribeActor(guild, actorUserId),
                     oauthBypass);
                 await Bot.ApplicatonOwner.SendMessageAsync(embed: message.Embed, components: message.Components);
             }
@@ -44,6 +40,38 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             {
                 Log.Error(ex.Demystify(), $"發送 {platform} 爬蟲新增通知給 Bot 擁有者時失敗");
             }
+        }
+
+        /// <summary>在會員/訂閱驗證設定首次新增後私訊 Bot 擁有者；失敗只記錄，不影響設定結果。</summary>
+        public static async Task NotifyVerificationAddedAsync(
+            SocketGuild guild,
+            ulong actorUserId,
+            string title,
+            string sourceField,
+            string failureLog)
+        {
+            try
+            {
+                await Bot.ApplicatonOwner.SendMessageAsync(embed: new EmbedBuilder()
+                    .WithOkColor()
+                    .WithTitle(title)
+                    .AddField("頻道", sourceField, false)
+                    .AddField("伺服器", $"{guild.Name} ({guild.Id})", false)
+                    .AddField("執行者", DescribeActor(guild, actorUserId), false)
+                    .Build());
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), failureLog);
+            }
+        }
+
+        private static string DescribeActor(SocketGuild guild, ulong actorUserId)
+        {
+            SocketGuildUser actor = guild.GetUser(actorUserId);
+            return actor == null
+                ? actorUserId.ToString()
+                : $"{actor.GlobalName ?? actor.Username} ({actor} / {actorUserId})";
         }
 
         internal static (Embed Embed, MessageComponent Components) BuildAddedMessage(

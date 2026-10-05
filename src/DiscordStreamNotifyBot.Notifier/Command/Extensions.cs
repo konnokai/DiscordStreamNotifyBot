@@ -1,7 +1,6 @@
 ﻿using Discord.Commands;
-using Microsoft.Extensions.DependencyInjection;
+using DiscordStreamNotifyBot.Interaction;
 using System.Data;
-using System.Reflection;
 
 namespace DiscordStreamNotifyBot.Command
 {
@@ -10,17 +9,8 @@ namespace DiscordStreamNotifyBot.Command
         private static readonly IEmote arrow_left = new Emoji("⬅");
         private static readonly IEmote arrow_right = new Emoji("➡");
 
-        public static EmbedBuilder WithOkColor(this EmbedBuilder eb) =>
-           eb.WithColor(00, 229, 132);
-        public static EmbedBuilder WithErrorColor(this EmbedBuilder eb) =>
-           eb.WithColor(40, 40, 40);
-        public static string ConvertDateTimeToDiscordMarkdown(this DateTime dateTime)
-        {
-            long UTCTime = ((DateTimeOffset)dateTime).ToUnixTimeSeconds();
-            return $"<t:{UTCTime}:F> (<t:{UTCTime}:R>)";
-        }
-        public static string GetProductionName(this DataBase.Table.Video.YTChannelType channelType) =>
-                channelType == DataBase.Table.Video.YTChannelType.Holo ? "Hololive" : channelType == DataBase.Table.Video.YTChannelType.Nijisanji ? "彩虹社" : "其他";
+        // WithOkColor/WithErrorColor/ConvertDateTimeToDiscordMarkdown/GetProductionName 與 Shared 的 SharedExtensions 相同，
+        // 已移除改用該版本（Command 檔案需 using DiscordStreamNotifyBot.Interaction）。
 
         public static Task<IUserMessage> SendConfirmAsync(this IMessageChannel ch, string des)
              => ch.SendMessageAsync("", embed: new EmbedBuilder().WithOkColor().WithDescription(des).Build());
@@ -40,54 +30,6 @@ namespace DiscordStreamNotifyBot.Command
                 catch { }
             });
             return msg;
-        }
-
-        public static IEnumerable<Type> LoadCommandFrom(this IServiceCollection collection, Assembly assembly)
-        {
-            List<Type> addedTypes = new List<Type>();
-
-            Type[] allTypes;
-            try
-            {
-                allTypes = assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                Console.WriteLine(ex.Message + "\n" + ex.Source);
-                return Enumerable.Empty<Type>();
-            }
-
-            var services = new Queue<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(ICommandService))
-                        && !x.GetTypeInfo().IsInterface && !x.GetTypeInfo().IsAbstract)
-                    .ToArray());
-
-            addedTypes.AddRange(services);
-
-            var interfaces = new HashSet<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(ICommandService))
-                        && x.GetTypeInfo().IsInterface));
-
-            while (services.Count > 0)
-            {
-                var serviceType = services.Dequeue();
-
-                if (collection.FirstOrDefault(x => x.ServiceType == serviceType) != null)
-                    continue;
-
-                var interfaceType = interfaces.FirstOrDefault(x => serviceType.GetInterfaces().Contains(x));
-                if (interfaceType != null)
-                {
-                    addedTypes.Add(interfaceType);
-                    collection.AddSingleton(interfaceType, serviceType);
-                }
-                else
-                {
-                    collection.AddSingleton(serviceType, serviceType);
-                }
-            }
-
-            return addedTypes;
         }
 
         public static Task<IUserMessage> EmbedAsync(this IMessageChannel ch, EmbedBuilder embed, string msg = "")

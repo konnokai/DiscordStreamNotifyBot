@@ -12,45 +12,47 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
     [Group("youtube", "YouTube 通知設定")]
     public class Youtube : TopLevelModule<YoutubeStreamService>
     {
-        private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
 
         public class GuildNoticeYoutubeChannelIdAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(async () =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    if (!await db.NoticeYoutubeStreamChannel.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
-                        return AutocompletionResult.FromSuccess();
+                ulong guildId = context.Guild.Id;
+                using var db = Bot.DbService.GetDbContext();
+                var candidates = db.NoticeYoutubeStreamChannel
+                    .AsNoTracking()
+                    .Where((x) => x.GuildId == guildId)
+                    .Select((x) => new AutocompleteCandidate(
+                        db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId), x.YouTubeChannelId));
 
-                    var candidates = db.NoticeYoutubeStreamChannel
-                        .AsNoTracking()
-                        .Where((x) => x.GuildId == context.Guild.Id)
-                        .Select((x) => new AutocompleteCandidate(
-                            db.GetYoutubeChannelTitleByChannelId(x.YouTubeChannelId), x.YouTubeChannelId));
-
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex.Demystify(), $"GuildNoticeYoutubeChannelIdAutocompleteHandler");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                return Task.FromResult(AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error(ex.Demystify(), $"GuildNoticeYoutubeChannelIdAutocompleteHandler")));
             }
         }
 
-        public Youtube(DiscordSocketClient client, MainDbService dbService)
+        public Youtube(MainDbService dbService)
         {
-            _client = client;
             _dbService = dbService;
+        }
+
+        /// <summary>解析 YouTube 頻道網址；網址格式錯誤或未填寫時回覆錯誤並回傳 null。</summary>
+        private async Task<string> GetChannelIdOrReplyErrorAsync(string channelUrl)
+        {
+            try
+            {
+                return await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
+            }
+            catch (FormatException)
+            {
+                await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true).ConfigureAwait(false);
+            }
+            catch (ArgumentNullException)
+            {
+                await SendLocalizedErrorAsync("Errors.UrlRequired", true).ConfigureAwait(false);
+            }
+
+            return null;
         }
 
         [RequireContext(ContextType.Guild)]
@@ -193,21 +195,9 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             try
             {
-                string channelId = "";
-                try
-                {
-                    channelId = await _service.GetChannelIdAsync(channelName).ConfigureAwait(false);
-                }
-                catch (FormatException)
-                {
-                    await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true);
+                string channelId = await GetChannelIdOrReplyErrorAsync(channelName);
+                if (channelId == null)
                     return;
-                }
-                catch (ArgumentNullException)
-                {
-                    await SendLocalizedErrorAsync("Errors.UrlRequired", true);
-                    return;
-                }
 
                 using var db = _dbService.GetDbContext();
                 var noticeYoutubeStreamChannel = db.NoticeYoutubeStreamChannel.First((x) => x.GuildId == Context.Guild.Id && x.YouTubeChannelId == channelId);
@@ -283,21 +273,9 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
                     await DeferAsync().ConfigureAwait(false);
 
-                    string channelId = "";
-                    try
-                    {
-                        channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-                    }
-                    catch (FormatException)
-                    {
-                        await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true).ConfigureAwait(false);
+                    string channelId = await GetChannelIdOrReplyErrorAsync(channelUrl);
+                    if (channelId == null)
                         return;
-                    }
-                    catch (ArgumentNullException)
-                    {
-                        await SendLocalizedErrorAsync("Errors.UrlRequired", true).ConfigureAwait(false);
-                        return;
-                    }
 
                     string channelTitle = await _service.GetChannelTitle(channelId);
                     if (channelTitle == "")
@@ -337,38 +315,12 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
                 var textChannel = channel as IGuildChannel;
                 string locale = await GetLocaleAsync(true);
-                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-                if (!permissions.ViewChannel || !permissions.SendMessages)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                            BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                            BotLocalizer.Get("Permissions.Name.SendMessages", locale))).ConfigureAwait(false);
+                if (!await EnsureBotCanPostAsync(textChannel, locale).ConfigureAwait(false))
                     return;
-                }
 
-                if (!permissions.EmbedLinks)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale)).ConfigureAwait(false);
+                string channelId = await GetChannelIdOrReplyErrorAsync(channelUrl);
+                if (channelId == null)
                     return;
-                }
-
-                string channelId = "";
-                try
-                {
-                    channelId = await _service.GetChannelIdAsync(channelUrl);
-                }
-                catch (FormatException)
-                {
-                    await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true).ConfigureAwait(false);
-                    return;
-                }
-                catch (ArgumentNullException)
-                {
-                    await SendLocalizedErrorAsync("Errors.UrlRequired", true).ConfigureAwait(false);
-                    return;
-                }
 
                 using (var db = _dbService.GetDbContext())
                 {
@@ -450,21 +402,9 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         {
             await DeferAsync(true).ConfigureAwait(false);
 
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelName).ConfigureAwait(false);
-            }
-            catch (FormatException)
-            {
-                await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true);
+            string channelId = await GetChannelIdOrReplyErrorAsync(channelName);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await SendLocalizedErrorAsync("Errors.UrlRequired", true);
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {
@@ -521,38 +461,12 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             var textChannel = channel as IGuildChannel;
             string locale = await GetLocaleAsync(true);
-            var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-            if (!permissions.ViewChannel || !permissions.SendMessages)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                        BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                        BotLocalizer.Get("Permissions.Name.SendMessages", locale))).ConfigureAwait(false);
+            if (!await EnsureBotCanPostAsync(textChannel, locale).ConfigureAwait(false))
                 return;
-            }
 
-            if (!permissions.EmbedLinks)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale)).ConfigureAwait(false);
+            string channelId = await GetChannelIdOrReplyErrorAsync(channelName);
+            if (channelId == null)
                 return;
-            }
-
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelName);
-            }
-            catch (FormatException)
-            {
-                await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true).ConfigureAwait(false);
-                return;
-            }
-            catch (ArgumentNullException)
-            {
-                await SendLocalizedErrorAsync("Errors.UrlRequired", true).ConfigureAwait(false);
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {
@@ -643,21 +557,9 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         {
             await DeferAsync(true).ConfigureAwait(false);
 
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException)
-            {
-                await SendLocalizedErrorAsync("Errors.InvalidYoutubeChannel", true);
+            string channelId = await GetChannelIdOrReplyErrorAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await SendLocalizedErrorAsync("Errors.UrlRequired", true);
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {
@@ -721,14 +623,11 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                 db.SaveChanges();
                 _service.InvalidateNoticeCache();
 
-                if (message == "-")
+                // 只有 "-" 時 result 可能已帶有建立活動的前綴
+                result += FormatNoticeMessageResult(message, locale, channelTitle, noticeTypeString,
+                    "Youtube.Notifications.TypeDisabled");
+                if (message != "-" && message != "")
                 {
-                    result += BotLocalizer.Format("Youtube.Notifications.TypeDisabled", locale, channelTitle, noticeTypeString);
-                }
-                else if (message != "")
-                {
-                    result += BotLocalizer.Format("Notifications.MessageSet", locale, channelTitle, noticeTypeString, message);
-
                     if (noticeType == YoutubeStreamService.NoticeType.End && !db.RecordYoutubeChannel.AsNoTracking().Any((x) => x.YoutubeChannelId == channelId))
                     {
                         result += BotLocalizer.Get("Youtube.Notifications.NoEndWarning", locale);
@@ -739,17 +638,10 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                         result += BotLocalizer.Get("Youtube.Notifications.VideoOnlyWarning", locale);
                     }
                 }
-                else
-                {
-                    result = BotLocalizer.Format("Notifications.MessageCleared", locale, channelTitle, noticeTypeString);
-                }
 
                 await Context.Interaction.SendConfirmAsync(result, true, true).ConfigureAwait(false);
             }
         }
-
-        string GetCurrectMessage(string message, string locale)
-            => message == "-" ? BotLocalizer.Get("Notifications.TypeDisabledValue", locale) : message;
 
         [RequireContext(ContextType.Guild)]
         [RequireUserPermission(GuildPermission.ManageMessages)]
@@ -778,12 +670,12 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
                         dic.Add(channelTitle,
                             BotLocalizer.Format("Youtube.Messages.ListValue", locale,
                                 BotLocalizer.Get(item.IsCreateEventForNewStream ? "Common.Yes" : "Common.No", locale),
-                                GetCurrectMessage(item.NewStreamMessage, locale),
-                                GetCurrectMessage(item.NewVideoMessage, locale),
-                                GetCurrectMessage(item.StratMessage, locale),
-                                GetCurrectMessage(item.EndMessage, locale),
-                                GetCurrectMessage(item.ChangeTimeMessage, locale),
-                                GetCurrectMessage(item.DeleteMessage, locale)));
+                                GetCurrentMessage(item.NewStreamMessage, locale),
+                                GetCurrentMessage(item.NewVideoMessage, locale),
+                                GetCurrentMessage(item.StratMessage, locale),
+                                GetCurrentMessage(item.EndMessage, locale),
+                                GetCurrentMessage(item.ChangeTimeMessage, locale),
+                                GetCurrentMessage(item.DeleteMessage, locale)));
                     }
 
                     await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, (page) =>

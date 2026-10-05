@@ -73,14 +73,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (_flow == null || string.IsNullOrWhiteSpace(discordUserId))
                 return new(YoutubeMemberAuthorizationStatus.LocalContractFailure, null, null);
 
-            string encryptedTokenPayload;
-            using (var db = _dbService.GetDbContext())
-            {
-                encryptedTokenPayload = await db.YoutubeMemberAccessToken.AsNoTracking()
-                    .Where(x => x.DiscordUserId == ulong.Parse(discordUserId))
-                    .Select(x => x.EncryptedAccessToken)
-                    .SingleOrDefaultAsync(cancellationToken);
-            }
+            string encryptedTokenPayload = await GetEncryptedTokenPayloadAsync(discordUserId, cancellationToken);
             if (string.IsNullOrEmpty(encryptedTokenPayload))
                 return new(YoutubeMemberAuthorizationStatus.LocalContractFailure, null, null);
 
@@ -196,14 +189,7 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
         {
             if (_flow == null || string.IsNullOrWhiteSpace(discordUserId))
                 throw new InvalidOperationException("Google OAuth 尚未設定。");
-            string encryptedTokenPayload;
-            using (var db = _dbService.GetDbContext())
-            {
-                encryptedTokenPayload = await db.YoutubeMemberAccessToken.AsNoTracking()
-                    .Where(x => x.DiscordUserId == ulong.Parse(discordUserId))
-                    .Select(x => x.EncryptedAccessToken)
-                    .SingleOrDefaultAsync(cancellationToken);
-            }
+            string encryptedTokenPayload = await GetEncryptedTokenPayloadAsync(discordUserId, cancellationToken);
             if (string.IsNullOrEmpty(encryptedTokenPayload))
                 return null;
             TokenResponse token = await _dataStore.GetAsync<TokenResponse>(discordUserId);

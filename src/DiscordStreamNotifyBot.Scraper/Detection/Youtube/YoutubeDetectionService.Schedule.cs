@@ -586,22 +586,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             {
                                 var streamVideo = BuildStreamVideo(item, startTime.Value, reminder.Value.StreamVideo.ChannelType);
 
-                                var persistedVideo = GetDbVideoByType(db, reminder.Value.StreamVideo);
-                                if (persistedVideo != null)
+                                SaveStreamVideoChange(db, GetDbVideoByType(db, reminder.Value.StreamVideo), streamVideo, (x) =>
                                 {
-                                    persistedVideo.ChannelTitle = streamVideo.ChannelTitle;
-                                    persistedVideo.VideoTitle = streamVideo.VideoTitle;
-                                    persistedVideo.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                                    db.UpdateAndSave(persistedVideo);
-                                }
-                                else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                                {
-                                    addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                                }
-                                else
-                                {
-                                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更儲存失敗，找不到資料：{streamVideo.VideoId}");
-                                }
+                                    x.ChannelTitle = streamVideo.ChannelTitle;
+                                    x.VideoTitle = streamVideo.VideoTitle;
+                                    x.ScheduledStartTime = streamVideo.ScheduledStartTime;
+                                }, "直播時間");
 
                                 Log.Info($"直播時間已變更 {streamVideo.ChannelTitle} - {streamVideo.VideoTitle}：{previousScheduledStartTime:O} -> {startTime:O}");
 

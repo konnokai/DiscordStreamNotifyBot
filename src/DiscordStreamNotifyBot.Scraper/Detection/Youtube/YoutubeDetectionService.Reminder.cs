@@ -38,16 +38,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     return;
                 }
 
-                try
-                {
-                    remT.Change(dueTime, Timeout.InfiniteTimeSpan);
-                }
-                catch
-                {
-                    Reminders.TryRemove(new KeyValuePair<string, ReminderItem>(streamVideo.VideoId, reminder));
-                    remT.Dispose();
-                    throw;
-                }
+                // dueTime 由 PlanStart 限制在 0 ~ 14 天，不會超出 Timer 範圍
+                remT.Change(dueTime, Timeout.InfiniteTimeSpan);
             }
             catch (Exception ex)
             {
@@ -56,23 +48,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
         }
 
+        /// <summary>Timer 的 state 一律是 <see cref="ReminderItem"/>；<see cref="ReminderTimerActionAsync"/> 內部已攔截例外。</summary>
         private void TimerCallbackWrapper(object state)
         {
-            _ = SafeReminderTimerActionAsync(state);
-        }
-
-        private async Task SafeReminderTimerActionAsync(object rObj)
-        {
-            var owner = rObj as ReminderItem;
-            var streamVideo = owner?.StreamVideo ?? (TableVideo)rObj;
-            try
-            {
-                await ReminderTimerActionAsync(streamVideo, owner);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), $"SafeReminderTimerActionAsync: {streamVideo.VideoId}");
-            }
+            var owner = (ReminderItem)state;
+            _ = ReminderTimerActionAsync(owner.StreamVideo, owner);
         }
 
         /// <summary>
@@ -163,19 +143,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             var video = GetDbVideoByType(db, streamVideo);
             try
             {
-                if (video != null)
-                {
-                    video.VideoTitle = streamVideo.VideoTitle;
-                    db.UpdateAndSave(video);
-                }
-                else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                {
-                    addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                }
-                else
-                {
-                    Log.Error($"({streamVideo.ChannelType}) 直播標題變更儲存失敗，找不到資料：{streamVideo.VideoId}");
-                }
+                SaveStreamVideoChange(db, video, streamVideo, (x) => x.VideoTitle = streamVideo.VideoTitle, "直播標題");
             }
             catch (Exception ex)
             {
@@ -228,19 +196,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             var video = GetDbVideoByType(db, streamVideo);
             try
             {
-                if (video != null)
-                {
-                    video.ScheduledStartTime = streamVideo.ScheduledStartTime;
-                    db.UpdateAndSave(video);
-                }
-                else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
-                {
-                    addNewStreamVideo[streamVideo.VideoId] = streamVideo;
-                }
-                else
-                {
-                    Log.Error($"({streamVideo.ChannelType}) 直播時間變更儲存失敗，找不到資料：{streamVideo.VideoId}");
-                }
+                SaveStreamVideoChange(db, video, streamVideo, (x) => x.ScheduledStartTime = streamVideo.ScheduledStartTime, "直播時間");
             }
             catch (Exception ex)
             {
@@ -254,42 +210,14 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return published;
         }
 
+        /// <summary>
+        /// 沒有 owner（排程直接呼叫）時，只有尚無提醒才可執行；有 owner 時必須能原子取走自己那筆提醒，
+        /// 過期的 callback 不能搶走較新的替換提醒。
+        /// </summary>
         private bool TryClaimReminderAction(TableVideo streamVideo, ReminderItem owner)
-        {
-            if (!TryClaimReminderAction(
-                Reminders,
-                streamVideo.VideoId,
-                streamVideo,
-                owner,
-                out var reminder))
-                return false;
-
-            if (reminder != null)
-            {
-                reminder.Timer?.Change(Timeout.Infinite, Timeout.Infinite);
-                reminder.Timer?.Dispose();
-            }
-            return true;
-        }
-
-        internal static bool TryClaimReminderAction(
-            ConcurrentDictionary<string, ReminderItem> reminders,
-            string videoId,
-            TableVideo expectedStreamVideo,
-            ReminderItem expectedReminder,
-            out ReminderItem reminder)
-        {
-            reminder = null;
-            if (expectedReminder == null)
-                return !reminders.ContainsKey(videoId);
-
-            return TryTakeReminder(
-                reminders,
-                videoId,
-                expectedStreamVideo,
-                expectedReminder,
-                out reminder);
-        }
+            => owner == null
+                ? !Reminders.ContainsKey(streamVideo.VideoId)
+                : RemoveReminder(streamVideo.VideoId, streamVideo, owner);
 
         private bool RemoveReminder(
             string videoId,
@@ -366,6 +294,30 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             return true;
         }
 
+        /// <summary>
+        /// 把影片變更寫回資料庫；還沒寫入資料庫的影片改替換 <see cref="addNewStreamVideo"/> 裡的那筆，兩邊都找不到才記錄錯誤。
+        /// </summary>
+        /// <param name="persistedVideo">呼叫端以 <see cref="GetDbVideoByType"/> 取得的資料庫資料，可為 null。</param>
+        /// <param name="applyChange">要套用到資料庫資料上的變更。</param>
+        /// <param name="changeName">log 用的變更名稱，例如「直播標題」。</param>
+        private static void SaveStreamVideoChange(MainDbContext db, TableVideo persistedVideo, TableVideo streamVideo,
+            Action<TableVideo> applyChange, string changeName)
+        {
+            if (persistedVideo != null)
+            {
+                applyChange(persistedVideo);
+                db.UpdateAndSave(persistedVideo);
+            }
+            else if (addNewStreamVideo.ContainsKey(streamVideo.VideoId))
+            {
+                addNewStreamVideo[streamVideo.VideoId] = streamVideo;
+            }
+            else
+            {
+                Log.Error($"({streamVideo.ChannelType}) {changeName}變更儲存失敗，找不到資料：{streamVideo.VideoId}");
+            }
+        }
+
         private TableVideo GetDbVideoByType(MainDbContext db, TableVideo streamVideo)
         {
             return streamVideo.ChannelType switch
@@ -400,35 +352,24 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
         public async Task<bool> GetCommentThreadsIsDisabledAsync(string videoId)
         {
-            var pBreaker = Policy<bool>
-                .Handle<Exception>()
-                .WaitAndRetryAsync(3, (retryAttempt) =>
-                {
-                    var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                    Log.Warn($"YouTube GetCommentThreadsIsDisabledAsync ({videoId}) 失敗，將於 {timeSpan.TotalSeconds} 秒後重試（第 {retryAttempt} 次重試）");
-                    return timeSpan;
-                });
+            // API 例外一律在這裡轉成結果，不需要重試
+            var listComment = YouTubeService.CommentThreads.List("id");
+            listComment.VideoId = videoId;
 
-            return await pBreaker.ExecuteAsync(async () =>
+            try
             {
-                var listComment = YouTubeService.CommentThreads.List("id");
-                listComment.VideoId = videoId;
-
-                try
-                {
-                    await listComment.ExecuteAsync().ConfigureAwait(false);
-                    return false;
-                }
-                catch (GoogleApiException apiEx) when ((apiEx.HttpStatusCode == System.Net.HttpStatusCode.Forbidden) || (apiEx.HttpStatusCode == System.Net.HttpStatusCode.BadRequest))
-                {
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, $"GetCommentThreadsIsDisabledAsync: {videoId} 未知錯誤");
-                    return true;
-                }
-            });
+                await listComment.ExecuteAsync().ConfigureAwait(false);
+                return false;
+            }
+            catch (GoogleApiException apiEx) when ((apiEx.HttpStatusCode == System.Net.HttpStatusCode.Forbidden) || (apiEx.HttpStatusCode == System.Net.HttpStatusCode.BadRequest))
+            {
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"GetCommentThreadsIsDisabledAsync: {videoId} 未知錯誤");
+                return true;
+            }
         }
     }
 }

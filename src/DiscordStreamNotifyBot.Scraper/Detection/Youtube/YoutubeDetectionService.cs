@@ -84,8 +84,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     var item = await GetVideoAsync(videoId).ConfigureAwait(false);
                     if (item == null)
                     {
-                        Log.Warn($"找不到影片，發布刪除事件：{videoId}");
-                        await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
+                        await PublishDeleteStreamAsync(videoId);
                         return;
                     }
 
@@ -110,24 +109,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 {
                     Log.Info($"{channel} - {videoId}");
 
-                    var item = await GetVideoAsync(videoId.ToString()).ConfigureAwait(false);
-                    if (item == null)
-                    {
-                        Log.Warn($"找不到影片，發布刪除事件：{videoId}");
-                        await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
+                    if (await GetEndedVideoAsync(videoId).ConfigureAwait(false) is not { } ended)
                         return;
-                    }
 
-                    if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualEndTimeRaw))
-                    {
-                        Log.Warn("還沒關台");
-                        return;
-                    }
-
-                    var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
-                    var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
-
-                    await PublishByVideoIdAsync(item.Id, YoutubeNoticeType.End, actualStart: startTime, actualEnd: endTime, item: item).ConfigureAwait(false);
+                    await PublishByVideoIdAsync(ended.Item.Id, YoutubeNoticeType.End, actualStart: ended.Start, actualEnd: ended.End, item: ended.Item).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -141,29 +126,15 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 try
                 {
-                    if (SharedExtensions.HasStreamVideoByVideoId(videoId))
-                    {
-                        var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
-                        var item = await GetVideoAsync(videoId).ConfigureAwait(false);
+                    // 與 endstream 不同：只處理資料庫已有的影片，並一律以會限結束通知
+                    var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    if (streamVideo == null)
+                        return;
 
-                        if (item == null)
-                        {
-                            Log.Warn($"找不到影片，發布刪除事件：{videoId}");
-                            await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
-                            return;
-                        }
+                    if (await GetEndedVideoAsync(videoId).ConfigureAwait(false) is not { } ended)
+                        return;
 
-                        if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualEndTimeRaw))
-                        {
-                            Log.Warn("還沒關台");
-                            return;
-                        }
-
-                        var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
-                        var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
-
-                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.End, actualStart: startTime, actualEnd: endTime, isMemberOnly: true).ConfigureAwait(false);
-                    }
+                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.End, actualStart: ended.Start, actualEnd: ended.End, isMemberOnly: true).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -177,11 +148,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 try
                 {
-                    if (SharedExtensions.HasStreamVideoByVideoId(videoId))
-                    {
-                        var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    if (streamVideo != null)
                         await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -195,12 +164,10 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 try
                 {
-                    if (SharedExtensions.HasStreamVideoByVideoId(videoId))
-                    {
-                        var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    if (streamVideo != null)
                         await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete,
                             isUnarchived: true).ConfigureAwait(false);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -215,11 +182,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 try
                 {
-                    if (SharedExtensions.HasStreamVideoByVideoId(videoId))
-                    {
-                        var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    if (streamVideo != null)
                         await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Start).ConfigureAwait(false);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -234,27 +199,17 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 try
                 {
-                    if (!addNewStreamVideo.ContainsKey(videoId) && !SharedExtensions.HasStreamVideoByVideoId(videoId))
-                    {
-                        var item = await GetVideoAsync(videoId).ConfigureAwait(false);
-                        if (item == null)
-                        {
-                            Log.Warn($"找不到影片：{videoId}");
-                            return;
-                        }
+                    var item = await GetManualAddVideoAsync(videoId, $"{videoId} 已存在，略過", $"找不到影片：{videoId}").ConfigureAwait(false);
+                    if (item == null)
+                        return;
 
-                        try
-                        {
-                            await AddOtherDataAsync(item);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(ex.Demystify(), $"PubSub-AddStream: {item.Id}");
-                        }
-                    }
-                    else
+                    try
                     {
-                        Log.Warn($"{videoId} 已存在，略過");
+                        await AddOtherDataAsync(item);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), $"PubSub-AddStream: {item.Id}");
                     }
                 }
                 catch (Exception ex)
@@ -316,14 +271,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 try
                 {
-                    if (SharedExtensions.HasStreamVideoByVideoId(youtubePubSubNotification.VideoId))
-                    {
-                        DataBase.Table.Video streamVideo = SharedExtensions.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
-                        if (streamVideo != null)
-                        {
-                            await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
-                        }
-                    }
+                    var streamVideo = SharedExtensions.GetStreamVideoByVideoId(youtubePubSubNotification.VideoId);
+                    if (streamVideo != null)
+                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -386,18 +336,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 try
                 {
                     string id = GetVideoId(videoId);
-                    if (addNewStreamVideo.ContainsKey(id) || SharedExtensions.HasStreamVideoByVideoId(id))
-                    {
-                        Log.Warn($"[控制] addVideo: {id} 已存在，略過");
-                        return;
-                    }
-
-                    var item = await GetVideoAsync(id).ConfigureAwait(false);
+                    var item = await GetManualAddVideoAsync(id, $"[控制] addVideo: {id} 已存在，略過", $"[控制] addVideo: {id} 不存在").ConfigureAwait(false);
                     if (item == null)
-                    {
-                        Log.Warn($"[控制] addVideo: {id} 不存在");
                         return;
-                    }
 
                     await AddOtherDataAsync(item);
                 }
@@ -558,6 +499,55 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             }
         }
 
+        /// <summary>API 查無影片時，改發布 youtube.deletestream 交給刪除流程處理。</summary>
+        private static async Task PublishDeleteStreamAsync(string videoId)
+        {
+            Log.Warn($"找不到影片，發布刪除事件：{videoId}");
+            await Bot.RedisSub.PublishAsync(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), videoId);
+        }
+
+        /// <summary>
+        /// 錄影程序 endstream / memberonly 共用：向 API 確認影片已關台並取得開播與關台時間。
+        /// 查無影片會發布刪除事件；尚未關台只記錄 log。兩者皆回傳 null。
+        /// </summary>
+        private async Task<(YTApiVideo Item, DateTime Start, DateTime End)?> GetEndedVideoAsync(string videoId)
+        {
+            var item = await GetVideoAsync(videoId).ConfigureAwait(false);
+            if (item == null)
+            {
+                await PublishDeleteStreamAsync(videoId);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(item.LiveStreamingDetails.ActualEndTimeRaw))
+            {
+                Log.Warn("還沒關台");
+                return null;
+            }
+
+            var startTime = DateTime.Parse(item.LiveStreamingDetails.ActualStartTimeRaw);
+            var endTime = DateTime.Parse(item.LiveStreamingDetails.ActualEndTimeRaw);
+            return (item, startTime, endTime);
+        }
+
+        /// <summary>
+        /// 手動新增影片（youtube.addstream / youtube.control.addVideo）共用：已知影片或 API 查無時記錄對應 log 並回傳 null。
+        /// </summary>
+        private async Task<YTApiVideo> GetManualAddVideoAsync(string videoId, string alreadyExistsLog, string notFoundLog)
+        {
+            if (IsKnownVideo(videoId))
+            {
+                Log.Warn(alreadyExistsLog);
+                return null;
+            }
+
+            var item = await GetVideoAsync(videoId).ConfigureAwait(false);
+            if (item == null)
+                Log.Warn(notFoundLog);
+
+            return item;
+        }
+
         #endregion
 
         #region API 委派（Shared.YoutubeApiService 單一來源）
@@ -617,11 +607,15 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// </summary>
         private UnknownVideoClaim ClaimUnknownVideo(string videoId, YoutubeVideoClaimCache.Batch claims)
         {
-            if (addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId))
+            if (IsKnownVideo(videoId))
                 return UnknownVideoClaim.AlreadyKnown;
 
             return claims.TryClaim(videoId) ? UnknownVideoClaim.Claimed : UnknownVideoClaim.Busy;
         }
+
+        /// <summary>影片已在待寫入集合或資料庫中。</summary>
+        private static bool IsKnownVideo(string videoId)
+            => addNewStreamVideo.ContainsKey(videoId) || SharedExtensions.HasStreamVideoByVideoId(videoId);
 
         private bool TryClaimUnknownVideo(string videoId, YoutubeVideoClaimCache.Batch claims)
             => ClaimUnknownVideo(videoId, claims) == UnknownVideoClaim.Claimed;

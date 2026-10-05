@@ -13,14 +13,10 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
     [Group("server-admin", "伺服器管理")]
     public sealed class ServerAdministration : TopLevelModule<UtilityService>
     {
-        private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
 
-        public ServerAdministration(
-            DiscordSocketClient client,
-            MainDbService dbService)
+        public ServerAdministration(MainDbService dbService)
         {
-            _client = client;
             _dbService = dbService;
         }
 
@@ -76,23 +72,9 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
             await DeferAsync(true);
 
             using var db = _dbService.GetDbContext();
-            var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
             string locale = await GetLocaleAsync(true);
-            if (!permissions.ViewChannel || !permissions.SendMessages)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                        BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                        BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
+            if (!await EnsureBotCanPostAsync(textChannel, locale))
                 return;
-            }
-
-            if (!permissions.EmbedLinks)
-            {
-                await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                    $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
-                return;
-            }
 
             await CheckIsFirstSetNoticeAndSendWarningMessageAsync(db);
 
@@ -120,22 +102,8 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
             {
                 string locale = await GetLocaleAsync(true);
                 var textChannel = channel as IGuildChannel;
-                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-                if (!permissions.ViewChannel || !permissions.SendMessages)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", false, true,
-                        $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                            BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                            BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
+                if (!await EnsureBotCanPostAsync(textChannel, locale, isFollowup: false))
                     return;
-                }
-
-                if (!permissions.EmbedLinks)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", false, true,
-                        $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
-                    return;
-                }
 
                 var result = await _service.SetGlobalNoticeChannelAsync(
                     Context.Guild,

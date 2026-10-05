@@ -1,5 +1,6 @@
 ﻿using Discord.Commands;
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.Interaction;
 using DiscordStreamNotifyBot.SharedService.Cluster;
 
 namespace DiscordStreamNotifyBot.Command.Admin

@@ -16,8 +16,6 @@ namespace DiscordStreamNotifyBot.Interaction
         private readonly IServiceProvider _services;
         private readonly BotLocalizer _botLocalizer;
         private readonly CommandDisplayResolver _commandDisplayResolver;
-        private readonly GuildLocaleService _guildLocaleService;
-        private readonly LocaleResolver _localeResolver;
         private const string CommandResourceName = "DiscordStreamNotifyBot.Localization.Resources.InteractionCommands";
         private const string LocalizationPolicyMarker =
             "localization-policy|canonical-english-names|name-localizations:none|descriptions:zh-TW,en-US,ja";
@@ -56,24 +54,24 @@ namespace DiscordStreamNotifyBot.Interaction
             sb.Append('[').Append(sectionName).AppendLine("]");
             var commands = _interactions.SlashCommands
                 .Where(includeCommand)
-                .OrderBy(command => string.Join(".", GetCommandPath(command)), StringComparer.Ordinal)
+                .OrderBy(command => string.Join(".", CommandDisplayResolver.GetCanonicalCommandPath(command)), StringComparer.Ordinal)
                 .ToList();
 
             foreach (var module in commands
                 .Where(command => command.Module.IsSlashGroup)
                 .Select(command => command.Module)
                 .Distinct()
-                .OrderBy(module => string.Join(".", GetModulePath(module)), StringComparer.Ordinal))
+                .OrderBy(module => string.Join(".", CommandDisplayResolver.GetCanonicalModulePath(module)), StringComparer.Ordinal))
             {
                 sb.Append("group /")
-                    .Append(string.Join(" ", GetModulePath(module)))
+                    .Append(string.Join(" ", CommandDisplayResolver.GetCanonicalModulePath(module)))
                     .AppendLine();
             }
 
             foreach (SlashCommandInfo command in commands)
             {
                 sb.Append("command /")
-                    .Append(string.Join(" ", GetCommandPath(command)))
+                    .Append(string.Join(" ", CommandDisplayResolver.GetCanonicalCommandPath(command)))
                     .Append(" permissions=").Append(command.DefaultMemberPermissions?.ToString() ?? "-")
                     .Append(" dm=").Append(command.IsEnabledInDm.ToString().ToLowerInvariant())
                     .Append(" nsfw=").Append(command.IsNsfw.ToString().ToLowerInvariant())
@@ -134,13 +132,13 @@ namespace DiscordStreamNotifyBot.Interaction
                 .Where(cmd => (includeDontAutoRegister || !cmd.Module.DontAutoRegister) && cmd.Module.IsSlashGroup)
                 .Select(cmd => cmd.Module)
                 .Distinct()
-                .OrderBy(module => string.Join(".", GetModulePath(module)), StringComparer.Ordinal)
+                .OrderBy(module => string.Join(".", CommandDisplayResolver.GetCanonicalModulePath(module)), StringComparer.Ordinal)
                 .ToList();
 
             foreach (var module in modules)
             {
                 sb.Append("group|")
-                    .Append(string.Join(".", GetModulePath(module))).Append('|')
+                    .Append(string.Join(".", CommandDisplayResolver.GetCanonicalModulePath(module))).Append('|')
                     .Append(module.Description).Append('|')
                     .Append(module.DefaultMemberPermissions?.ToString() ?? "-").Append('\n');
             }
@@ -149,7 +147,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 .Where(cmd => includeDontAutoRegister || !cmd.Module.DontAutoRegister)
                 .Select(cmd =>
                 {
-                    string commandPath = string.Join(".", GetCommandPath(cmd));
+                    string commandPath = string.Join(".", CommandDisplayResolver.GetCanonicalCommandPath(cmd));
                     var parameters = cmd.Parameters
                         .Select((p, index) =>
                         {
@@ -193,17 +191,13 @@ namespace DiscordStreamNotifyBot.Interaction
             InteractionService interactions,
             DiscordSocketClient client,
             BotLocalizer botLocalizer,
-            CommandDisplayResolver commandDisplayResolver,
-            GuildLocaleService guildLocaleService,
-            LocaleResolver localeResolver)
+            CommandDisplayResolver commandDisplayResolver)
         {
             _client = client;
             _interactions = interactions;
             _services = services;
             _botLocalizer = botLocalizer;
             _commandDisplayResolver = commandDisplayResolver;
-            _guildLocaleService = guildLocaleService;
-            _localeResolver = localeResolver;
         }
 
         public async Task InitializeAsync()
@@ -222,7 +216,7 @@ namespace DiscordStreamNotifyBot.Interaction
         {
             var commands = _interactions.SlashCommands
                 .Where(command => !command.Module.DontAutoRegister)
-                .OrderBy(command => string.Join(".", GetCommandPath(command)), StringComparer.Ordinal)
+                .OrderBy(command => string.Join(".", CommandDisplayResolver.GetCanonicalCommandPath(command)), StringComparer.Ordinal)
                 .ToList();
             var expectedKeys = new HashSet<string>(StringComparer.Ordinal);
             var scopedNames = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
@@ -231,16 +225,16 @@ namespace DiscordStreamNotifyBot.Interaction
                 .Where(command => command.Module.IsSlashGroup)
                 .Select(command => command.Module)
                 .Distinct()
-                .OrderBy(module => string.Join(".", GetModulePath(module)), StringComparer.Ordinal))
+                .OrderBy(module => string.Join(".", CommandDisplayResolver.GetCanonicalModulePath(module)), StringComparer.Ordinal))
             {
-                IList<string> modulePath = GetModulePath(module);
+                IList<string> modulePath = CommandDisplayResolver.GetCanonicalModulePath(module).ToList();
                 ValidateCanonicalName(module.SlashGroupName, "group", string.Join(".", modulePath.Take(modulePath.Count - 1)), scopedNames);
                 ValidateDescriptionOnlyTarget(modulePath, LocalizationTarget.Group, expectedKeys);
             }
 
             foreach (SlashCommandInfo command in commands)
             {
-                IList<string> commandPath = GetCommandPath(command);
+                IList<string> commandPath = CommandDisplayResolver.GetCanonicalCommandPath(command).ToList();
                 string parentPath = string.Join(".", commandPath.Take(commandPath.Count - 1));
                 ValidateCanonicalName(command.Name, "command", parentPath, scopedNames);
                 ValidateDescriptionOnlyTarget(commandPath, LocalizationTarget.Command, expectedKeys);
@@ -333,27 +327,6 @@ namespace DiscordStreamNotifyBot.Interaction
                 .ToDictionary(entry => (string)entry.Key, entry => (string)entry.Value, StringComparer.Ordinal);
         }
 
-        private static IList<string> GetModulePath(ModuleInfo module)
-        {
-            var path = new List<string>();
-            for (ModuleInfo current = module; current != null; current = current.Parent)
-            {
-                if (current.IsSlashGroup)
-                    path.Insert(0, current.SlashGroupName);
-            }
-            return path;
-        }
-
-        private static IList<string> GetCommandPath(SlashCommandInfo command)
-        {
-            if (command.IgnoreGroupNames)
-                return new List<string> { command.Name };
-
-            IList<string> path = GetModulePath(command.Module);
-            path.Add(command.Name);
-            return path;
-        }
-
         private static IEnumerable<(string DisplayName, string Value)> GetChoices(SlashCommandParameterInfo parameter)
         {
             foreach (ParameterChoice choice in parameter.Choices)
@@ -394,7 +367,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 Log.Error(ex.Demystify(), $"處理互動時發生未攔截例外：{arg.Type} / {arg.User?.Id}");
                 try
                 {
-                    string locale = await ResolveResponseLocaleAsync(arg, true);
+                    string locale = await arg.ResolveLocaleAsync(_services, true);
                     await arg.SendErrorAsync(_botLocalizer, locale, "Errors.Unknown", arg.HasResponded, true);
                 }
                 catch (Exception responseException)
@@ -421,7 +394,7 @@ namespace DiscordStreamNotifyBot.Interaction
             else
             {
                 Log.Error($"[{location}] {arg2.User.Username} 執行 `{slashCommand}` 發生錯誤\r\n{arg3.ErrorReason}");
-                string locale = await ResolveResponseLocaleAsync(arg2.Interaction, true);
+                string locale = await arg2.Interaction.ResolveLocaleAsync(_services, true);
                 string contactPath = arg3.Error == InteractionCommandError.UnmetPrecondition
                     ? _commandDisplayResolver.GetCommandPath(locale, "server-admin", "send-message-to-bot-owner")
                     : null;
@@ -432,17 +405,6 @@ namespace DiscordStreamNotifyBot.Interaction
             }
         }
 
-        private async Task<string> ResolveResponseLocaleAsync(IDiscordInteraction interaction, bool isPrivate)
-        {
-            string guildLocale = null;
-            if (interaction.GuildId is ulong guildId)
-                guildLocale = await _guildLocaleService.GetAsync(guildId, _client.GetGuild(guildId));
-
-            return isPrivate
-                ? _localeResolver.ResolvePrivate(interaction.UserLocale, guildLocale, interaction.GuildLocale)
-                : _localeResolver.ResolvePublic(guildLocale, interaction.GuildLocale);
-        }
-
         private string GetOptionsValue(SocketSlashCommandDataOption socketSlashCommandDataOption)
         {
             try
@@ -450,7 +412,9 @@ namespace DiscordStreamNotifyBot.Interaction
                 if (socketSlashCommandDataOption.Type != ApplicationCommandOptionType.SubCommand && socketSlashCommandDataOption.Type != ApplicationCommandOptionType.SubCommandGroup && !socketSlashCommandDataOption.Options.Any())
                     return $" {socketSlashCommandDataOption.Value}";
 
-                if (socketSlashCommandDataOption.Type == ApplicationCommandOptionType.SubCommand || socketSlashCommandDataOption.Type == ApplicationCommandOptionType.SubCommandGroup) GetOptionsValue(socketSlashCommandDataOption.Options.First());
+                // 子指令（群組）沒有任何參數時回傳空字串
+                if ((socketSlashCommandDataOption.Type == ApplicationCommandOptionType.SubCommand || socketSlashCommandDataOption.Type == ApplicationCommandOptionType.SubCommandGroup) && !socketSlashCommandDataOption.Options.Any())
+                    return "";
                 return " " + string.Join(' ', socketSlashCommandDataOption.Options.Select(option => option.Value));
             }
             catch (Exception)

@@ -37,7 +37,7 @@ namespace DiscordStreamNotifyBot.Tests
 
             await interactions.AddModulesAsync(typeof(DescriptionOnlyLocalizationManager).Assembly, services);
 
-            var handler = new InteractionHandler(services, interactions, client, null, null, null, null);
+            var handler = new InteractionHandler(services, interactions, client, null, null);
             return new InteractionMetadataFixture(client, interactions, handler);
         }
 

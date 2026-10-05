@@ -102,10 +102,12 @@ public class BotConfig
             Environment.Exit(3);
         }
 
-        var config = JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText("bot_config.json"));
+        // 呼叫端一律傳入剛建立的實例，直接填入即可：JSON 沒有的鍵維持屬性預設值，與反序列化成新物件的結果相同
+        JsonConvert.PopulateObject(File.ReadAllText("bot_config.json"), this);
 
         // 先以環境變數覆寫（正式環境 / Docker Compose 用 .env 注入），再進行必填驗證 (計畫 §3)
-        config.ApplyEnvironmentOverrides();
+        ApplyEnvironmentOverrides();
+        TestSlashCommandGuildIds ??= [];
 
         try
         {
@@ -115,45 +117,15 @@ public class BotConfig
 
             if (needsDiscord)
             {
-                RequireField(config.DiscordToken, nameof(DiscordToken));
-                RequireField(config.WebHookUrl, nameof(WebHookUrl));
+                RequireField(DiscordToken, nameof(DiscordToken));
+                RequireField(WebHookUrl, nameof(WebHookUrl));
             }
 
             if (needsYoutube)
             {
-                RequireField(config.GoogleApiKey, nameof(GoogleApiKey));
-                RequireField(config.ApiServerDomain, nameof(ApiServerDomain));
+                RequireField(GoogleApiKey, nameof(GoogleApiKey));
+                RequireField(ApiServerDomain, nameof(ApiServerDomain));
             }
-
-            MySqlConnectionString = config.MySqlConnectionString;
-            RedisOption = config.RedisOption;
-            ProviderTokenEncryptionKey = config.ProviderTokenEncryptionKey;
-            ApiServerDomain = config.ApiServerDomain;
-            DiscordToken = config.DiscordToken;
-            WebHookUrl = config.WebHookUrl;
-            GoogleApiKey = config.GoogleApiKey;
-            TestSlashCommandGuildIds = config.TestSlashCommandGuildIds ?? [];
-            TwitCastingClientId = config.TwitCastingClientId;
-            TwitCastingClientSecret = config.TwitCastingClientSecret;
-            TwitchCookieAuthToken = config.TwitchCookieAuthToken;
-            TwitchClientId = config.TwitchClientId;
-            TwitchClientSecret = config.TwitchClientSecret;
-            GoogleClientId = config.GoogleClientId;
-            GoogleClientSecret = config.GoogleClientSecret;
-            UptimeKumaPushUrl = config.UptimeKumaPushUrl;
-            LokiUrl = config.LokiUrl;
-            YouTubeEmoteId = config.YouTubeEmoteId;
-            PayPalEmoteId = config.PayPalEmoteId;
-            ECPayEmoteId = config.ECPayEmoteId;
-            EnableGuildMembersIntent = config.EnableGuildMembersIntent;
-            TotalShards = config.TotalShards;
-            HeartbeatIntervalSeconds = config.HeartbeatIntervalSeconds;
-            HeartbeatTtlSeconds = config.HeartbeatTtlSeconds;
-            DisableNotificationsAds = config.DisableNotificationsAds;
-            DisableRecording = config.DisableRecording;
-            DisableYoutubeMember = config.DisableYoutubeMember;
-            DisableTwitcasting = config.DisableTwitcasting;
-            DisableHoloNijisanji = config.DisableHoloNijisanji;
 
             if (needsDiscord)
                 ValidateProviderTokenEncryptionKey(ProviderTokenEncryptionKey);

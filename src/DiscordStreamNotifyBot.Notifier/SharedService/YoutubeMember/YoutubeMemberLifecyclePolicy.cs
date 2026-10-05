@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 {
     internal static class YoutubeMemberLifecyclePolicy
@@ -11,32 +9,23 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                 next = next.AddDays(1);
             return next - now;
         }
-
-        public static Task DrainAsync(IEnumerable<Task> tasks)
-            => Task.WhenAll(tasks ?? []);
     }
 
     /// <summary>Stop 與事件註冊共用 gate，避免 drain 看見空集合後才新增工作。</summary>
     internal sealed class YoutubeMemberLifecycleTaskRegistry
     {
         private readonly object _gate = new();
-        private readonly ConcurrentDictionary<long, Task> _tasks = new();
-        private long _sequence;
+        private readonly HashSet<Task> _tasks = new();
         private bool _stopping;
 
-        public bool TryRegister(Task completion, out long taskId)
+        public bool TryRegister(Task completion)
         {
             lock (_gate)
             {
                 if (_stopping)
-                {
-                    taskId = 0;
                     return false;
-                }
 
-                taskId = Interlocked.Increment(ref _sequence);
-                if (!_tasks.TryAdd(taskId, completion))
-                    throw new InvalidOperationException("無法登記 YouTube 會員生命週期工作。");
+                _tasks.Add(completion);
                 return true;
             }
         }
@@ -46,10 +35,14 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             lock (_gate)
             {
                 _stopping = true;
-                return _tasks.Values.ToArray();
+                return _tasks.ToArray();
             }
         }
 
-        public void Complete(long taskId) => _tasks.TryRemove(taskId, out _);
+        public void Complete(Task completion)
+        {
+            lock (_gate)
+                _tasks.Remove(completion);
+        }
     }
 }

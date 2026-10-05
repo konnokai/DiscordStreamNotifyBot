@@ -113,7 +113,11 @@ namespace DiscordStreamNotifyBot.Interaction
             string resourceKey, bool isFollowerup = false, bool ephemeral = true, params object[] arguments)
             => di.SendErrorAsync(localizer.Format(resourceKey, locale, arguments), isFollowerup, ephemeral);
 
-        public static IEnumerable<Type> LoadInteractionFrom(this IServiceCollection collection, Assembly assembly)
+        /// <summary>
+        /// 掃描組件內實作 <typeparamref name="TMarker"/> 的服務並註冊為 Singleton；
+        /// 若服務另實作繼承 <typeparamref name="TMarker"/> 的介面，則以該介面註冊。
+        /// </summary>
+        public static IEnumerable<Type> LoadServicesFrom<TMarker>(this IServiceCollection collection, Assembly assembly)
         {
             List<Type> addedTypes = new List<Type>();
 
@@ -129,14 +133,14 @@ namespace DiscordStreamNotifyBot.Interaction
             }
 
             var services = new Queue<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(TMarker))
                         && !x.GetTypeInfo().IsInterface && !x.GetTypeInfo().IsAbstract)
                     .ToArray());
 
             addedTypes.AddRange(services);
 
             var interfaces = new HashSet<Type>(allTypes
-                    .Where(x => x.GetInterfaces().Contains(typeof(IInteractionService))
+                    .Where(x => x.GetInterfaces().Contains(typeof(TMarker))
                         && x.GetTypeInfo().IsInterface));
 
             while (services.Count > 0)

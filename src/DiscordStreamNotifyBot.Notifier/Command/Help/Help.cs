@@ -1,4 +1,5 @@
 ﻿using Discord.Commands;
+using DiscordStreamNotifyBot.Interaction;
 
 namespace DiscordStreamNotifyBot.Command.Help
 {
@@ -33,7 +34,7 @@ namespace DiscordStreamNotifyBot.Command.Help
             module = module?.Trim();
             if (string.IsNullOrWhiteSpace(module)) return;
 
-            var cmds = _cmds.Commands.Where(c => c.Module.Name.ToUpperInvariant().StartsWith(module.ToUpperInvariant(), StringComparison.InvariantCulture)).OrderBy(c => c.Aliases[0]).Distinct(new CommandTextEqualityComparer());
+            var cmds = _cmds.Commands.Where(c => c.Module.Name.ToUpperInvariant().StartsWith(module.ToUpperInvariant(), StringComparison.InvariantCulture)).OrderBy(c => c.Aliases[0]).DistinctBy(c => c.Aliases[0]);
             if (cmds.Count() == 0) { await Context.Channel.SendConfirmAsync($"找不到 {module} 模組"); return; }
 
             var succ = new HashSet<CommandInfo>((await Task.WhenAll(cmds.Select(async x =>
@@ -94,13 +95,5 @@ namespace DiscordStreamNotifyBot.Command.Help
 
             await ReplyAsync("", false, _service.GetCommandHelp(commandInfo).Build());
         }
-    }
-
-    public class CommandTextEqualityComparer : IEqualityComparer<CommandInfo>
-    {
-        public bool Equals(CommandInfo x, CommandInfo y) => x.Aliases[0] == y.Aliases[0];
-
-        public int GetHashCode(CommandInfo obj) => obj.Aliases[0].GetHashCode(StringComparison.InvariantCulture);
-
     }
 }

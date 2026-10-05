@@ -28,7 +28,7 @@ namespace DiscordStreamNotifyBot.Tests
             TwitchEventSubEnsureResult ensure = await service.EnsureEventSubSubscriptionsAsync(
                 "123", TwitchEventSubEnsureMode.Fallback);
             Assert.False(ensure.IsSuccess);
-            Assert.Equal(TwitchEventSubEnsureMode.Fallback, ensure.Mode);
+            Assert.False(ensure.Subscriptions.IsSuccess);
             Assert.False(await service.CreateEventSubSubscriptionAsync("123"));
 
             TwitchEventSubDeleteResult deletion = await service.DeleteEventSubSubscriptionResultAsync("123");

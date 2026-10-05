@@ -16,40 +16,17 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
         private readonly ClusterQueryService _clusterQuery;
         public class GuildYoutubeChannelSpiderAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(() =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    IQueryable<DataBase.Table.YoutubeChannelSpider> channelList;
+                using var db = Bot.DbService.GetDbContext();
+                IQueryable<DataBase.Table.YoutubeChannelSpider> channelList = autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id
+                    ? db.YoutubeChannelSpider
+                    : db.YoutubeChannelSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
 
-                    if (autocompleteInteraction.User.Id == Bot.ApplicatonOwner.Id)
-                    {
-                        channelList = db.YoutubeChannelSpider;
-                    }
-                    else
-                    {
-                        if (!db.YoutubeChannelSpider.Any((x) => x.GuildId == autocompleteInteraction.GuildId))
-                            return AutocompletionResult.FromSuccess();
-
-                        channelList = db.YoutubeChannelSpider.Where((x) => x.GuildId == autocompleteInteraction.GuildId);
-                    }
-
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var candidates = channelList.Select(item =>
-                            new AutocompleteCandidate(item.ChannelTitle, item.ChannelId));
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"GuildYoutubeChannelSpiderAutocompleteHandler - {ex}");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                var candidates = channelList.Select(item =>
+                    new AutocompleteCandidate(item.ChannelTitle, item.ChannelId));
+                return Task.FromResult(AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error($"GuildYoutubeChannelSpiderAutocompleteHandler - {ex}")));
             }
         }
 
@@ -109,24 +86,10 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
-                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                var list = db.YoutubeChannelSpider.Where((x) => x.IsTrustedChannel).Select((x) =>
-                    BotLocalizer.Format("Spider.ListEntry", locale,
-                        Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"),
-                        x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
-                        (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))));
-                int warningChannelNum = db.YoutubeChannelSpider.Count((x) => !x.IsTrustedChannel);
-
-                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
-                {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle(BotLocalizer.Get("YoutubeSpider.ListTitle", locale))
-                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter(BotLocalizer.Format("Spider.ListFooter", locale,
-                            Math.Min(list.Count(), (page + 1) * 20), list.Count(), warningChannelNum));
-                }, list.Count(), 10, false).ConfigureAwait(false);
+                var spiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => x.IsTrustedChannel).AsEnumerable()
+                    .Select((x) => (x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}", x.GuildId));
+                await SendSpiderListAsync(locale, page, "YoutubeSpider.ListTitle", _clusterQuery, spiders,
+                    db.YoutubeChannelSpider.Count((x) => !x.IsTrustedChannel)).ConfigureAwait(false);
             }
         }
 
@@ -139,23 +102,10 @@ namespace DiscordStreamNotifyBot.Interaction.Youtube
 
             using (var db = _dbService.GetDbContext())
             {
-                // 跨 shard：以合併快照（B1）解析持有伺服器名稱，別 shard 持有的伺服器不會被誤標為已退出
-                var guildMap = await _clusterQuery.GetGuildNameMapAsync();
-                var list = db.YoutubeChannelSpider.Where((x) => !x.IsTrustedChannel).Select((x) =>
-                    BotLocalizer.Format("Spider.ListEntry", locale,
-                        Format.Url(x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}"),
-                        x.GuildId == 0 ? BotLocalizer.Get("Common.BotOwner", locale) :
-                        (guildMap.ContainsKey(x.GuildId) ? guildMap[x.GuildId] : BotLocalizer.Get("Common.LeftGuild", locale))));
-
-                await Context.SendPaginatedConfirmAsync(BotLocalizer, locale, page, page =>
-                {
-                    return new EmbedBuilder()
-                        .WithOkColor()
-                        .WithTitle(BotLocalizer.Get("YoutubeSpider.UntrustedListTitle", locale))
-                        .WithDescription(string.Join('\n', list.Skip(page * 20).Take(20)))
-                        .WithFooter(BotLocalizer.Format("Common.ChannelCountFooter", locale,
-                            Math.Min(list.Count(), (page + 1) * 20), list.Count()));
-                }, list.Count(), 10, false, true).ConfigureAwait(false);
+                var spiders = db.YoutubeChannelSpider.AsNoTracking().Where((x) => !x.IsTrustedChannel).AsEnumerable()
+                    .Select((x) => (x.ChannelTitle, $"https://www.youtube.com/channel/{x.ChannelId}", x.GuildId));
+                await SendSpiderListAsync(locale, page, "YoutubeSpider.UntrustedListTitle", _clusterQuery, spiders,
+                    ephemeral: true).ConfigureAwait(false);
             }
         }
     }

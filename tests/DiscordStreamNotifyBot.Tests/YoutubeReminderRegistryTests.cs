@@ -61,7 +61,8 @@ namespace DiscordStreamNotifyBot.Tests
             var reminders = new ConcurrentDictionary<string, ReminderItem>();
             reminders[video.VideoId] = replacement;
 
-            bool claimed = YoutubeDetectionService.TryClaimReminderAction(
+            // 有 owner 的 callback 要先原子取走自己那筆提醒才可執行動作
+            bool claimed = YoutubeDetectionService.TryTakeReminder(
                 reminders,
                 video.VideoId,
                 video,

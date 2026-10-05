@@ -54,20 +54,21 @@ namespace DiscordStreamNotifyBot.Interaction.Help.Service
         private string[] GetCommandRequirements(SlashCommandInfo command, string locale)
             => command.Preconditions
                 .Where(attribute => attribute is RequireOwnerAttribute || attribute is RequireUserPermissionAttribute)
-                .SelectMany(attribute => attribute is RequireOwnerAttribute
-                    ? new[] { _localizer.Get("Permissions.BotOwnerOnly", locale) }
-                    : GetPermissionNames((RequireUserPermissionAttribute)attribute, locale, "Permissions.UserRequirement"))
+                .SelectMany(attribute => attribute is RequireUserPermissionAttribute userPermission
+                    ? GetPermissionNames(userPermission.GuildPermission, userPermission.ChannelPermission, locale, "Permissions.UserRequirement")
+                    : new[] { _localizer.Get("Permissions.BotOwnerOnly", locale) })
                 .ToArray();
 
         private string[] GetBotCommandRequirements(SlashCommandInfo command, string locale)
             => command.Preconditions
                 .OfType<RequireBotPermissionAttribute>()
-                .SelectMany(attribute => GetPermissionNames(attribute, locale, "Permissions.BotRequirement"))
+                .SelectMany(attribute => GetPermissionNames(attribute.GuildPermission, attribute.ChannelPermission, locale, "Permissions.BotRequirement"))
                 .ToArray();
 
-        private IEnumerable<string> GetPermissionNames(RequireUserPermissionAttribute attribute, string locale, string templateKey)
+        private IEnumerable<string> GetPermissionNames(GuildPermission? guildPermission, ChannelPermission? channelPermission,
+            string locale, string templateKey)
         {
-            if (attribute.GuildPermission is GuildPermission guildPermissions)
+            if (guildPermission is GuildPermission guildPermissions)
             {
                 foreach (GuildPermission permission in Enum.GetValues<GuildPermission>())
                 {
@@ -76,28 +77,10 @@ namespace DiscordStreamNotifyBot.Interaction.Help.Service
                         yield return _localizer.Format(templateKey, locale, _localizer.Get($"Permissions.Name.{permission}", locale));
                 }
             }
-            else if (attribute.ChannelPermission is ChannelPermission channelPermission)
+            else if (channelPermission is ChannelPermission singleChannelPermission)
             {
                 yield return _localizer.Format(templateKey, locale,
-                    _localizer.Get($"Permissions.Name.{channelPermission}", locale));
-            }
-        }
-
-        private IEnumerable<string> GetPermissionNames(RequireBotPermissionAttribute attribute, string locale, string templateKey)
-        {
-            if (attribute.GuildPermission is GuildPermission guildPermissions)
-            {
-                foreach (GuildPermission permission in Enum.GetValues<GuildPermission>())
-                {
-                    ulong value = Convert.ToUInt64(permission);
-                    if (value != 0 && (value & (value - 1)) == 0 && guildPermissions.HasFlag(permission))
-                        yield return _localizer.Format(templateKey, locale, _localizer.Get($"Permissions.Name.{permission}", locale));
-                }
-            }
-            else if (attribute.ChannelPermission is ChannelPermission channelPermission)
-            {
-                yield return _localizer.Format(templateKey, locale,
-                    _localizer.Get($"Permissions.Name.{channelPermission}", locale));
+                    _localizer.Get($"Permissions.Name.{singleChannelPermission}", locale));
             }
         }
 

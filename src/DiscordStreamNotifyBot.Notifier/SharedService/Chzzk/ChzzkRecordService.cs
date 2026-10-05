@@ -29,35 +29,28 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
         /// 明確設定自動錄影的目標值（不是反轉）。爬蟲必須存在，不隱含新增爬蟲或改變其 guild 歸屬；
         /// 關閉時不停止已經執行中的錄影工作。
         /// </summary>
-        public async Task<AdminSettingsMutationResult> SetAutoRecordAsync(
+        public Task<AdminSettingsMutationResult> SetAutoRecordAsync(
             string channelId, bool enabled, CancellationToken cancellationToken)
-        {
-            using var db = _dbService.GetDbContext();
-            var spider = await db.ChzzkSpider.SingleOrDefaultAsync(x => x.ChannelId == channelId, cancellationToken);
-            if (spider == null)
-                return AdminSettingsMutationResult.Rejected("record.not-configured");
-
-            return await ApplyAutoRecordAsync(db, spider, enabled, cancellationToken);
-        }
+            => UpdateAutoRecordAsync(channelId, _ => enabled, cancellationToken);
 
         /// <summary>
         /// 依目前狀態反轉自動錄影（爬蟲管理按鈕語意，對齊 Twitch／TwitCasting 的切換按鈕）；
         /// 與 <see cref="SetAutoRecordAsync"/> 共用同一段讀取與儲存邏輯。
         /// </summary>
-        public async Task<AdminSettingsMutationResult> ToggleAutoRecordAsync(
+        public Task<AdminSettingsMutationResult> ToggleAutoRecordAsync(
             string channelId, CancellationToken cancellationToken)
+            => UpdateAutoRecordAsync(channelId, current => !current, cancellationToken);
+
+        /// <summary>爬蟲必須存在；resolveEnabled 依目前 IsRecord 決定要寫入的值。</summary>
+        private async Task<AdminSettingsMutationResult> UpdateAutoRecordAsync(
+            string channelId, Func<bool, bool> resolveEnabled, CancellationToken cancellationToken)
         {
             using var db = _dbService.GetDbContext();
             var spider = await db.ChzzkSpider.SingleOrDefaultAsync(x => x.ChannelId == channelId, cancellationToken);
             if (spider == null)
                 return AdminSettingsMutationResult.Rejected("record.not-configured");
 
-            return await ApplyAutoRecordAsync(db, spider, !spider.IsRecord, cancellationToken);
-        }
-
-        private static async Task<AdminSettingsMutationResult> ApplyAutoRecordAsync(
-            MainDbContext db, ChzzkSpider spider, bool enabled, CancellationToken cancellationToken)
-        {
+            bool enabled = resolveEnabled(spider.IsRecord);
             spider.IsRecord = enabled;
             await db.SaveChangesAsync(cancellationToken);
             Log.Info($"CHZZK 自動錄影已{(enabled ? "開啟" : "關閉")}：{spider.ChannelId}");

@@ -13,47 +13,32 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
     [Group("chzzk", "CHZZK 通知設定")]
     public class Chzzk : TopLevelModule<ChzzkService>
     {
-        private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
 
         public class GuildNoticeChzzkChannelIdAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(async () =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    var notices = db.NoticeChzzkStreamChannels.AsNoTracking()
-                        .Where((x) => x.GuildId == context.Guild.Id).ToList();
-                    if (notices.Count == 0)
-                        return AutocompletionResult.FromSuccess();
+                using var db = Bot.DbService.GetDbContext();
+                var notices = db.NoticeChzzkStreamChannels.AsNoTracking()
+                    .Where((x) => x.GuildId == context.Guild.Id).ToList();
+                if (notices.Count == 0)
+                    return Task.FromResult(AutocompletionResult.FromSuccess());
 
-                    var names = db.ChzzkSpider.AsNoTracking().ToDictionary(x => x.ChannelId, x => x.ChannelName);
-                    var candidates = notices.Select(x => new AutocompleteCandidate(
-                        string.IsNullOrEmpty(names.GetValueOrDefault(x.NoticeChzzkChannelId))
-                            ? x.NoticeChzzkChannelId
-                            : names[x.NoticeChzzkChannelId],
-                        x.NoticeChzzkChannelId));
+                var names = db.ChzzkSpider.AsNoTracking().ToDictionary(x => x.ChannelId, x => x.ChannelName);
+                var candidates = notices.Select(x => new AutocompleteCandidate(
+                    string.IsNullOrEmpty(names.GetValueOrDefault(x.NoticeChzzkChannelId))
+                        ? x.NoticeChzzkChannelId
+                        : names[x.NoticeChzzkChannelId],
+                    x.NoticeChzzkChannelId));
 
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"GuildNoticeChzzkChannelIdAutocompleteHandler - {ex}");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                return Task.FromResult(AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error($"GuildNoticeChzzkChannelIdAutocompleteHandler - {ex}")));
             }
         }
 
-        public Chzzk(DiscordSocketClient client, MainDbService dbService)
+        public Chzzk(MainDbService dbService)
         {
-            _client = client;
             _dbService = dbService;
         }
 
@@ -77,22 +62,8 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
                 var textChannel = channel as IGuildChannel;
                 string locale = await GetLocaleAsync(true);
 
-                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-                if (!permissions.ViewChannel || !permissions.SendMessages)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                            BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                            BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
+                if (!await EnsureBotCanPostAsync(textChannel, locale))
                     return;
-                }
-
-                if (!permissions.EmbedLinks)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
-                    return;
-                }
 
                 var channelData = await _service.GetChannelAsync(channelId, GracefulShutdown.Token);
                 if (channelData == null)
@@ -263,26 +234,11 @@ namespace DiscordStreamNotifyBot.Interaction.Chzzk
 
                 string channelName = db.ChzzkSpider.AsNoTracking()
                     .FirstOrDefault((x) => x.ChannelId == channelId)?.ChannelName ?? channelId;
-                string result;
-                if (message == "-")
-                {
-                    result = BotLocalizer.Format("Notifications.TypeDisabled", locale, channelName, noticeTypeString);
-                }
-                else if (message != "")
-                {
-                    result = BotLocalizer.Format("Notifications.MessageSet", locale, channelName, noticeTypeString, message);
-                }
-                else
-                {
-                    result = BotLocalizer.Format("Notifications.MessageCleared", locale, channelName, noticeTypeString);
-                }
+                string result = FormatNoticeMessageResult(message, locale, channelName, noticeTypeString);
 
                 await Context.Interaction.SendConfirmAsync(result, true, true).ConfigureAwait(false);
             }
         }
-
-        string GetCurrentMessage(string message, string locale)
-            => message == "-" ? BotLocalizer.Get("Notifications.TypeDisabledValue", locale) : message;
 
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("list-message", "列出已設定的 CHZZK 直播通知訊息")]

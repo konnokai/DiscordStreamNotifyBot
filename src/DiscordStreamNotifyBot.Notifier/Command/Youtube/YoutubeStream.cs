@@ -39,26 +39,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 return;
             }
 
-            if (videoId.Length != 11)
-            {
-                var match = Regex.Match(videoId, @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})");
-
-                if (match.Success)
-                {
-                    videoId = match.Groups["VideoId"].Value;
-                }
-                else
-                {
-                    await Context.Channel.SendConfirmAsync("網址格式驗證失敗，請確認網址是否正確").ConfigureAwait(false);
-                    return;
-                }
-
-                if (videoId.Length != 11)
-                {
-                    await Context.Channel.SendConfirmAsync("Video ID 格式錯誤，必須為 11 個字元").ConfigureAwait(false);
-                    return;
-                }
-            }
+            videoId = await ParseVideoIdOrReplyAsync(videoId);
+            if (videoId == null)
+                return;
 
             var nowRecordStreamList = Utility.GetNowRecordStreamList();
 
@@ -122,26 +105,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         {
             await Context.Channel.TriggerTypingAsync();
 
-            if (videoId.Length != 11)
-            {
-                var match = Regex.Match(videoId, @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})");
-
-                if (match.Success)
-                {
-                    videoId = match.Groups["VideoId"].Value;
-                }
-                else
-                {
-                    await Context.Channel.SendConfirmAsync("網址格式驗證失敗，請確認網址是否正確").ConfigureAwait(false);
-                    return;
-                }
-
-                if (videoId.Length != 11)
-                {
-                    await Context.Channel.SendConfirmAsync("Video ID 格式錯誤，必須為 11 個字元").ConfigureAwait(false);
-                    return;
-                }
-            }
+            videoId = await ParseVideoIdOrReplyAsync(videoId);
+            if (videoId == null)
+                return;
 
             Google.Apis.YouTube.v3.Data.Video video;
             try
@@ -197,21 +163,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 return;
             }
 
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             using var db = _dbService.GetDbContext();
 
@@ -257,21 +211,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         {
             await Context.Channel.TriggerTypingAsync();
 
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             using var db = _dbService.GetDbContext();
 
@@ -307,21 +249,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [RequireOwner]
         public async Task AddRecordChannel([Summary("頻道網址")] string channelUrl)
         {
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {
@@ -331,7 +261,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                     return;
                 }
 
-                string channelTitle = await GetChannelTitle(channelId);
+                string channelTitle = await _service.GetChannelTitle(channelId);
 
                 if (channelTitle == "")
                 {
@@ -352,21 +282,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [RequireOwner]
         public async Task RemoveRecordChannel([Summary("頻道網址")] string channelUrl)
         {
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {
@@ -376,7 +294,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                     return;
                 }
 
-                string channelTitle = await GetChannelTitle(channelId);
+                string channelTitle = await _service.GetChannelTitle(channelId);
                 if (string.IsNullOrEmpty(channelTitle)) channelTitle = channelId;
 
                 db.RecordYoutubeChannel.Remove(await db.RecordYoutubeChannel.FirstAsync((x) => x.YoutubeChannelId == channelId));
@@ -403,7 +321,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
 
                     for (int i = 0; i < nowRecordList.Count; i += 50)
                     {
-                        list.AddRange(await GetChannelTitle(nowRecordList.Skip(i).Take(50)));
+                        list.AddRange(await _service.GetChannelTitle(nowRecordList.Skip(i).Take(50), true));
                     }
 
                     list.Sort();
@@ -477,21 +395,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [Alias("SCT")]
         public async Task SetChannelType([Summary("頻道網址")] string channelUrl = "", DataBase.Table.Video.YTChannelType channelType = DataBase.Table.Video.YTChannelType.Other)
         {
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             if (string.IsNullOrWhiteSpace(channelId))
             {
@@ -499,7 +405,7 @@ namespace DiscordStreamNotifyBot.Command.Youtube
                 return;
             }
 
-            var title = await GetChannelTitle(channelId);
+            var title = await _service.GetChannelTitle(channelId);
             if (string.IsNullOrWhiteSpace(title))
             {
                 await Context.Channel.SendErrorAsync($"找不到頻道 {channelId}").ConfigureAwait(false);
@@ -585,36 +491,41 @@ namespace DiscordStreamNotifyBot.Command.Youtube
             }
         }
 
-        private async Task<string> GetChannelTitle(string channelId)
+        /// <summary>
+        /// 解析頻道網址；格式錯誤或空白時直接回覆錯誤訊息並回傳 null（GetChannelIdAsync 成功時不會回傳 null）。
+        /// </summary>
+        private async Task<string> GetChannelIdOrReplyAsync(string channelUrl)
         {
             try
             {
-                var channel = _service.YouTubeService.Channels.List("snippet");
-                channel.Id = channelId;
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                return response.Items[0].Snippet.Title;
+                return await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (FormatException fex)
             {
-                Log.Error(ex.Demystify(), "GetChannelTitle");
-                return "";
+                await Context.Channel.SendErrorAsync(fex.Message);
+                return null;
+            }
+            catch (ArgumentNullException)
+            {
+                await Context.Channel.SendErrorAsync("網址不可空白");
+                return null;
             }
         }
 
-        private async Task<List<string>> GetChannelTitle(IEnumerable<string> channelId)
+        /// <summary>
+        /// 非 11 字元時視為網址並擷取 Video ID；擷取失敗時直接回覆錯誤訊息並回傳 null。
+        /// </summary>
+        private async Task<string> ParseVideoIdOrReplyAsync(string videoId)
         {
-            try
-            {
-                var channel = _service.YouTubeService.Channels.List("snippet");
-                channel.Id = string.Join(",", channelId);
-                var response = await channel.ExecuteAsync().ConfigureAwait(false);
-                return response.Items.Select((x) => Format.Url(x.Snippet.Title, $"https://www.youtube.com/channel/{x.Id}")).ToList();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.Demystify(), "GetChannelTitle");
-                return null;
-            }
+            if (videoId.Length == 11)
+                return videoId;
+
+            var match = Regex.Match(videoId, @"(?<=youtu\.be\/|youtube\.com\/(?:watch\?.*v=|live\/))(?'VideoId'[\w-]{11})");
+            if (match.Success)
+                return match.Groups["VideoId"].Value;
+
+            await Context.Channel.SendConfirmAsync("網址格式驗證失敗，請確認網址是否正確").ConfigureAwait(false);
+            return null;
         }
     }
 }

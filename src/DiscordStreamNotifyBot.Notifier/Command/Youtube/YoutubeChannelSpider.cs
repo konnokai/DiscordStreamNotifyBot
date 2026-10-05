@@ -1,6 +1,7 @@
 ﻿using Discord.Commands;
 using DiscordStreamNotifyBot.Command.Attribute;
 using DiscordStreamNotifyBot.DataBase.Table;
+using DiscordStreamNotifyBot.Interaction;
 
 namespace DiscordStreamNotifyBot.Command.Youtube
 {
@@ -219,21 +220,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [Alias("ttc")]
         public async Task ToggleIsTrustedChannel([Summary("頻道網址")] string channelUrl = "")
         {
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {
@@ -261,21 +250,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [Alias("scsg")]
         public async Task SetChannelSpiderGuildId([Summary("頻道網址")] string channelUrl = "", ulong guildId = 0)
         {
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {
@@ -303,21 +280,9 @@ namespace DiscordStreamNotifyBot.Command.Youtube
         [Alias("rcs")]
         public async Task RemoveChannelSpider([Summary("頻道網址")] string channelUrl = "")
         {
-            string channelId = "";
-            try
-            {
-                channelId = await _service.GetChannelIdAsync(channelUrl).ConfigureAwait(false);
-            }
-            catch (FormatException fex)
-            {
-                await Context.Channel.SendErrorAsync(fex.Message);
+            string channelId = await GetChannelIdOrReplyAsync(channelUrl);
+            if (channelId == null)
                 return;
-            }
-            catch (ArgumentNullException)
-            {
-                await Context.Channel.SendErrorAsync("網址不可空白");
-                return;
-            }
 
             using (var db = _dbService.GetDbContext())
             {

@@ -296,16 +296,16 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
         /// </summary>
         internal async Task DispatchFromBusAsync(ChzzkNotification dto, NotificationDeliveryProgress progress)
         {
-            NoticeType noticeType = dto.NoticeType switch
+            NoticeType? noticeType = dto.NoticeType switch
             {
                 ChzzkNoticeType.StartStream => NoticeType.StartStream,
                 ChzzkNoticeType.EndStream => NoticeType.EndStream,
-                _ => (NoticeType)(-1)
+                _ => null
             };
-            if ((int)noticeType < 0)
+            if (noticeType == null)
                 return;
 
-            await SendStreamMessageAsync(dto, noticeType, progress).ConfigureAwait(false);
+            await SendStreamMessageAsync(dto, noticeType.Value, progress).ConfigureAwait(false);
         }
 
         private ChzzkNotificationVariant BuildVariant(ChzzkNotification dto, NoticeType noticeType, string locale)
@@ -315,14 +315,7 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
                 : ChzzkEmbedBuilderFactory.CreateStreamEnded(dto, _localizer, locale).Build();
             // 沿用既有非平台專屬通知按鈕（僅開台訊息附帶）。
             MessageComponent component = noticeType == NoticeType.StartStream && !_botConfig.DisableNotificationsAds
-                ? new ComponentBuilder()
-                    .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
-                        emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                    .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
-                        emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                    .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
-                        emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1)
-                    .Build()
+                ? _emojiService.BuildNotificationAdsComponent(_localizer, locale)
                 : null;
             return new ChzzkNotificationVariant(embed, component);
         }

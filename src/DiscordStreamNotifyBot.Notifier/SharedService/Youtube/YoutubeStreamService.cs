@@ -229,8 +229,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 return AdminSettingsMutationResult.Rejected("crawler.not-owned");
             db.YoutubeChannelSpider.Remove(crawler);
             await db.SaveChangesAsync(cancellationToken);
-            try { await PostSubscribeRequestAsync(sourceId, false); }
-            catch (Exception ex) { Log.Warn($"移除 YouTube 爬蟲後取消 PubSub 失敗: {sourceId} / {ex.GetType().Name}"); }
+            // PostSubscribeRequestAsync 為 best-effort，失敗只記錄不丟例外。
+            await PostSubscribeRequestAsync(sourceId, false);
             Log.Info($"已移除 YouTube 頻道爬蟲 | Guild: {guildId} | Source: {sourceId}");
             return AdminSettingsMutationResult.Applied("crawler.removed", new JObject { ["sourceId"] = sourceId });
         }
@@ -444,10 +444,6 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             await SendStreamMessageAsync(streamVideo, dto, noticeType.Value, progress).ConfigureAwait(false);
         }
 
-        /// <summary>通知匯流排消費端入口：伺服器橫幅變更事件。</summary>
-        public Task DispatchBannerFromBusAsync(BannerChangeNotification dto)
-            => ChangeGuildBannerAsync(dto.ChannelId, dto.VideoId);
-
         private YoutubeNotificationVariant BuildVariantForBus(YoutubeNotification dto, TableVideo video, string locale)
         {
             Embed embed;
@@ -500,14 +496,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             if (_botConfig.DisableNotificationsAds)
                 return null;
 
-            return new ComponentBuilder()
-                .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
-                    emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
-                    emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
-                    emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1)
-                .Build();
+            return _emojiService.BuildNotificationAdsComponent(_localizer, locale);
         }
 
         private static NoticeType? MapNoticeType(YoutubeNoticeType busNoticeType)
@@ -904,14 +893,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             Log.Info($"YouTube 通知 ({videoId}) | 嘗試下載封面: {url}");
             try
             {
-                return await Policy.Handle<TimeoutException>()
-                    .Or<Discord.Net.HttpException>((httpEx) => ((int)httpEx.HttpCode).ToString().StartsWith("50"))
-                    .WaitAndRetryAsync(3, retryAttempt =>
-                    {
-                        var timeSpan = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        Log.Warn($"YouTube 通知 ({videoId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)");
-                        return timeSpan;
-                    })
+                return await DiscordRetryPolicy.Create((retryAttempt, timeSpan) =>
+                        Log.Warn($"YouTube 通知 ({videoId}) | 封面下載失敗，將於 {timeSpan.TotalSeconds} 秒後重試 (第 {retryAttempt} 次重試)"))
                     .ExecuteAsync(() => SharedHttpClient.GetByteArrayAsync(url));
             }
             catch (Exception ex)
@@ -923,8 +906,11 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
         #endregion
 
         #region 伺服器橫幅變更（消費端套用，需 GetGuild）
-        private async Task ChangeGuildBannerAsync(string channelId, string videoId)
+        /// <summary>通知匯流排消費端入口：伺服器橫幅變更事件。</summary>
+        public async Task DispatchBannerFromBusAsync(BannerChangeNotification dto)
         {
+            string channelId = dto.ChannelId;
+            string videoId = dto.VideoId;
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
             return;
 #endif

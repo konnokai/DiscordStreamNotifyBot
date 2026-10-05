@@ -13,44 +13,27 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
     [Group("twitch", "Twitch 通知設定")]
     public class Twitch : TopLevelModule<TwitchService>
     {
-        private readonly DiscordSocketClient _client;
         private readonly MainDbService _dbService;
 
         public class GuildNoticeTwitchChannelIdAutocompleteHandler : AutocompleteHandler
         {
-            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            public override Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
             {
-                return await Task.Run(async () =>
-                {
-                    using var db = Bot.DbService.GetDbContext();
-                    if (!await db.NoticeTwitchStreamChannels.AsNoTracking().AnyAsync((x) => x.GuildId == context.Guild.Id))
-                        return AutocompletionResult.FromSuccess();
+                ulong guildId = context.Guild.Id;
+                using var db = Bot.DbService.GetDbContext();
+                var candidates = db.NoticeTwitchStreamChannels
+                    .AsNoTracking()
+                    .Where((x) => x.GuildId == guildId)
+                    .Select((x) => new AutocompleteCandidate(
+                        db.GetTwitchUserNameByUserId(x.NoticeTwitchUserId), x.NoticeTwitchUserId));
 
-                    var candidates = db.NoticeTwitchStreamChannels
-                        .AsNoTracking()
-                        .Where((x) => x.GuildId == context.Guild.Id)
-                        .Select((x) => new AutocompleteCandidate(
-                            db.GetTwitchUserNameByUserId(x.NoticeTwitchUserId), x.NoticeTwitchUserId));
-
-                    try
-                    {
-                        string value = autocompleteInteraction.Data.Current.Value?.ToString();
-                        var results = AutocompleteSearch.Filter(candidates, value)
-                            .Select(item => new AutocompleteResult(item.Name, item.Value));
-                        return AutocompletionResult.FromSuccess(results);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error($"GuildNoticeTwitchChannelIdAutocompleteHandler - {ex}");
-                        return AutocompletionResult.FromSuccess();
-                    }
-                });
+                return Task.FromResult(AutocompleteResponse.FromCandidates(autocompleteInteraction, candidates,
+                    ex => Log.Error($"GuildNoticeTwitchChannelIdAutocompleteHandler - {ex}")));
             }
         }
 
-        public Twitch(DiscordSocketClient client, MainDbService dbService)
+        public Twitch(MainDbService dbService)
         {
-            _client = client;
             _dbService = dbService;
         }
 
@@ -74,22 +57,8 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                 var textChannel = channel as IGuildChannel;
                 string locale = await GetLocaleAsync(true);
 
-                var permissions = Context.Guild.GetUser(_client.CurrentUser.Id).GetPermissions(textChannel);
-                if (!permissions.ViewChannel || !permissions.SendMessages)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Format("Permissions.List", locale,
-                            BotLocalizer.Get("Permissions.Name.ViewChannel", locale),
-                            BotLocalizer.Get("Permissions.Name.SendMessages", locale)));
+                if (!await EnsureBotCanPostAsync(textChannel, locale))
                     return;
-                }
-
-                if (!permissions.EmbedLinks)
-                {
-                    await SendLocalizedErrorAsync("Permissions.MissingChannelPermissions", true, true,
-                        $"`{textChannel}`", BotLocalizer.Get("Permissions.Name.EmbedLinks", locale));
-                    return;
-                }
 
                 var userData = await _service.GetUserAsync(twitchUserLogin: _service.GetUserLoginByUrl(twitchUrl));
                 if (userData == null)
@@ -260,29 +229,13 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                     db.SaveChanges();
                     _service.InvalidateNoticeCache();
 
-                    if (message == "-")
-                    {
-                        result = BotLocalizer.Format("Notifications.TypeDisabled", locale,
-                            db.GetTwitchUserNameByUserId(twitchId), noticeTypeString);
-                    }
-                    else if (message != "")
-                    {
-                        result = BotLocalizer.Format("Notifications.MessageSet", locale,
-                            db.GetTwitchUserNameByUserId(twitchId), noticeTypeString, message);
-                    }
-                    else
-                    {
-                        result = BotLocalizer.Format("Notifications.MessageCleared", locale,
-                            db.GetTwitchUserNameByUserId(twitchId), noticeTypeString);
-                    }
+                    result = FormatNoticeMessageResult(message, locale,
+                        db.GetTwitchUserNameByUserId(twitchId), noticeTypeString);
 
                     await Context.Interaction.SendConfirmAsync(result, true, true).ConfigureAwait(false);
                 }
             }
         }
-
-        string GetCurrectMessage(string message, string locale)
-            => message == "-" ? BotLocalizer.Get("Notifications.TypeDisabledValue", locale) : message;
 
         [DefaultMemberPermissions(GuildPermission.ManageMessages)]
         [SlashCommand("list-message", "列出已設定的 Twitch 直播通知訊息")]
@@ -302,9 +255,9 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
                         {
                             dic.Add(db.GetTwitchUserNameByUserId(item.NoticeTwitchUserId),
                                 BotLocalizer.Format("Twitch.Messages.ListValue", locale,
-                                    GetCurrectMessage(item.StartStreamMessage, locale),
-                                    GetCurrectMessage(item.EndStreamMessage, locale),
-                                    GetCurrectMessage(item.ChangeStreamDataMessage, locale)));
+                                    GetCurrentMessage(item.StartStreamMessage, locale),
+                                    GetCurrentMessage(item.EndStreamMessage, locale),
+                                    GetCurrentMessage(item.ChangeStreamDataMessage, locale)));
                         }
 
                         try

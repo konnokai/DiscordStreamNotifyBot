@@ -235,7 +235,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 Bot.IsServerOnThisShard,
                 out ulong guildId,
                 out ulong actorUserId);
-            if (route == RequestRoute.Ignore || request == null)
+            if (route == RequestRoute.Ignore)
                 return;
 
             var guild = _client.GetGuild(guildId);

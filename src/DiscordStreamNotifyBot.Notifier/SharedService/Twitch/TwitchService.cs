@@ -393,14 +393,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             }
 
             MessageComponent component = noticeType == NoticeType.StartStream && !_botConfig.DisableNotificationsAds
-                ? new ComponentBuilder()
-                    .WithButton(_localizer.Get("Notifications.Button.RandomVideo", locale), style: ButtonStyle.Link,
-                        emote: _emojiService.YouTubeEmote, url: "https://api.konnokai.me/randomvideo")
-                    .WithButton(_localizer.Get("Notifications.Button.SupportEcpay", locale), style: ButtonStyle.Link,
-                        emote: _emojiService.ECPayEmote, url: Utility.ECPayUrl, row: 1)
-                    .WithButton(_localizer.Get("Notifications.Button.SupportPaypal", locale), style: ButtonStyle.Link,
-                        emote: _emojiService.PayPalEmote, url: Utility.PaypalUrl, row: 1)
-                    .Build()
+                ? _emojiService.BuildNotificationAdsComponent(_localizer, locale)
                 : null;
             return new TwitchNotificationVariant(embed, component);
         }

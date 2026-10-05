@@ -111,7 +111,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             }
         }
 
-        public void InvalidateNoticeCache() => _noticeCache?.Invalidate();
+        public void InvalidateNoticeCache() => _noticeCache.Invalidate();
 
         public async Task<AdminSettingsMutationResult> AddCrawlerAsync(
             SocketGuild guild,
