@@ -85,7 +85,7 @@ namespace DiscordStreamNotifyBot.Command.Twitch
         [RequireContext(ContextType.DM)]
         [RequireOwner]
         [Command("TwitchToggleIsTrustedChannel")]
-        [Summary("切換頻道是否為認可頻道")]
+        [Summary("切換頻道是否為警告頻道")]
         [CommandExample("https://twitch.tv/998rrr")]
         [Alias("tttc")]
         public async Task ToggleIsTrustedChannel([Summary("頻道網址")] string channelUrl = "")
@@ -102,7 +102,7 @@ namespace DiscordStreamNotifyBot.Command.Twitch
                     await db.SaveChangesAsync();
                     await PublishReconcileRequestedAsync(twitchSpider.UserId, "warning_changed");
 
-                    await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 為 __" + (twitchSpider.IsWarningUser ? "已" : "未") + "__ 認可頻道").ConfigureAwait(false);
+                    await Context.Channel.SendConfirmAsync($"已設定 `{twitchSpider.UserName}` (`{twitchSpider.UserLogin}`) 為 __" + (twitchSpider.IsWarningUser ? "已" : "未") + "__ 警告頻道").ConfigureAwait(false);
                 }
                 else
                 {
