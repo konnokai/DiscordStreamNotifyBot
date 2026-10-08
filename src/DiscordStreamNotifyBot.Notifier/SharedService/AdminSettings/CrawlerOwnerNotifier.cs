@@ -32,7 +32,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     sourceName,
                     sourcePath,
                     addForBotOwner ? "擁有者" : $"{guild.Name} ({guild.Id})",
-                    DescribeActor(guild, actorUserId),
+                    await DescribeActorAsync(guild, actorUserId),
                     oauthBypass);
                 await Bot.ApplicatonOwner.SendMessageAsync(embed: message.Embed, components: message.Components);
             }
@@ -57,7 +57,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     .WithTitle(title)
                     .AddField("頻道", sourceField, false)
                     .AddField("伺服器", $"{guild.Name} ({guild.Id})", false)
-                    .AddField("執行者", DescribeActor(guild, actorUserId), false)
+                    .AddField("執行者", await DescribeActorAsync(guild, actorUserId), false)
                     .Build());
             }
             catch (Exception ex)
@@ -66,9 +66,22 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             }
         }
 
-        private static string DescribeActor(SocketGuild guild, ulong actorUserId)
+        private static async Task<string> DescribeActorAsync(SocketGuild guild, ulong actorUserId)
         {
-            SocketGuildUser actor = guild.GetUser(actorUserId);
+            IUser actor = guild.GetUser(actorUserId);
+            // 網頁請求不會讓使用者進快取，快取沒有時改用 REST 取得；取不到只退回純 ID，不能讓通知整則失敗。
+            if (actor == null)
+            {
+                try
+                {
+                    actor = await ((IGuild)guild).GetUserAsync(actorUserId, CacheMode.AllowDownload).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn($"無法取得爬蟲執行者資料: {actorUserId} / {ex.GetType().Name}");
+                }
+            }
+
             return actor == null
                 ? actorUserId.ToString()
                 : $"{actor.GlobalName ?? actor.Username} ({actor} / {actorUserId})";
