@@ -277,7 +277,7 @@ streamKey = channelId + ":" + 正規化 openDate
 - [~] 驗證 Redis 暫時失敗與重啟處理，記錄 DB 到 Redis 中斷風險；不以對齊 Twitch 宣稱發布前事件也有持久化補送保證。程式沿用既有 at-least-once 路徑；**Redis 實際中斷與補送尚未實測**。
 - [x] 加入 Slash 設定、三語訊息、目的地/權限驗證與可用性顯示。`/chzzk`、`/chzzk-spider`、三語 resx、snapshot `detectionEnabled`。
 - [ ] 驗證 Owner Slash 的歸屬詢問兩條路徑、Owner 來源 GuildId=0 且不受操作 guild 上限限制、一般管理員不能偽造 owner 來源、guild 清理不誤刪 owner 來源。**程式已實作（owner 新增不套用 guild 名額；GuildId=0 不計入計數），未經正式 Discord 實測**。
-- [ ] 驗證 200 人資格門檻及 Owner/官方 guild 豁免、官方 guild 名額豁免、0 或缺設定回退 3、跨 shard 來源接管、移除爬蟲保留通知、空字串與 `-` 語意，以及 IsWarningUser 相關功能確實未加入。**程式已實作，未經正式 Discord 實測**；已知限制：Web 前端的「新增爬蟲」按鈕以 `count >= limit` 停用，官方 guild 的伺服器端豁免未反映在 snapshot，沿用 Twitch 現行表示方式。
+- [ ] 驗證 200 人資格門檻及 Owner/官方 guild 豁免、官方 guild 名額豁免、0 或缺設定回退 3、跨 shard 來源接管、移除爬蟲保留通知、空字串與 `-` 語意，以及 IsWarningUser 相關功能確實未加入。**程式已實作，未經正式 Discord 實測**；已知限制：官方 guild 與 Bot 擁有者的名額豁免以 snapshot 的 `unlimited` 旗標表示（依請求的 `actorUserId` 判斷），Web 前端據此不停用「新增爬蟲」按鈕。
 - [ ] 驗證 GuildConfig 新舊紀錄的 MaxChzzkSpiderCount 預設為 3、讀取調整後的上限、達上限拒絕新增、重複新增不占名額、併發不超額，以及 owner 來源不計入 guild 名額；Slash/Web 與 snapshot 必須一致。**migration 的 `DEFAULT 3` 已人工審查；MySQL 併發與既有資料列升級未實測（本機無測試 DB）**。
 - [ ] 驗證 `(GuildId, NoticeChzzkChannelId)` 唯一約束、變更目的地更新原紀錄、併發新增不重複，以及不同 guild 可訂閱同一來源。**唯一索引已在 migration 建立；未經 MySQL 實測**。
 - [ ] 以測試環境驗證同頻道多 guild 只輪詢一次、各 shard 只發自己的 guild、部分目標失敗可補送。**未實測（需 Redis＋多 shard＋Discord）**。
@@ -355,7 +355,7 @@ streamKey 的 openDate 正規化（使用者 2026-09-15 指定）：`2026-09-15 
 - 多 shard：同頻道只輪詢一次、各 shard 只發自己的 guild。
 - 真實頻道長時間觀察：同頻道 OPEN→CLOSE→重開、斷線恢復、平台是否變更 openDate。
 - Web 端：實際 Backend＋Bot 連線下的表單操作與錯誤狀態顯示（未在瀏覽器實測）。
-- 已知限制：Web 前端新增爬蟲按鈕以 `count >= limit` 停用，官方 guild 的伺服器端豁免未反映在 snapshot（沿用 Twitch 現行表示方式）；場次存在不等於 Discord 已送達，DB→Redis 程序中斷仍可能漏送；同鍵場次列已存在時（例如移除爬蟲後重新加入）接回既有場次且不重發。
+- 已知限制：場次存在不等於 Discord 已送達，DB→Redis 程序中斷仍可能漏送；同鍵場次列已存在時（例如移除爬蟲後重新加入）接回既有場次且不重發。
 
 ## 14. 關台通知修正（2026-09-16）
 

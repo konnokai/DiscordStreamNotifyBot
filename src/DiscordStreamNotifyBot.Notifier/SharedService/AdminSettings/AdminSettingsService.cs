@@ -258,7 +258,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
 
                 if (route == RequestRoute.Snapshot)
                 {
-                    var snapshot = await BuildSnapshotAsync(guild, requestToken);
+                    var snapshot = await BuildSnapshotAsync(guild, actorUserId, requestToken);
                     await PublishResponseAsync(request, snapshot, guildId, actorUserId,
                         "applied", "settings.snapshot", requestToken);
                     return;
@@ -505,6 +505,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
 
         private async Task<AdminSettingsSnapshot> BuildSnapshotAsync(
             SocketGuild guild,
+            ulong actorUserId,
             CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -565,6 +566,8 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             int twitchCrawlerLimit = await TwitchService.GetTwitchCrawlerLimitAsync(db, guild.Id, cancellationToken);
             int twitcastingCrawlerLimit = await TwitcastingService.GetTwitcastingCrawlerLimitAsync(db, guild.Id, cancellationToken);
             int chzzkCrawlerLimit = await ChzzkService.GetChzzkCrawlerLimitAsync(db, guild.Id, cancellationToken);
+            // 與各平台 AddCrawlerAsync 的 limitApplies 一致：官方伺服器與 Bot 擁有者不受爬蟲數量上限限制。
+            bool crawlerUnlimited = Utility.OfficialGuildContains(guild.Id) || actorUserId == Bot.ApplicatonOwner.Id;
 
             foreach (string sourceId in twitch.Select(x => x.NoticeTwitchUserId).Distinct())
             {
@@ -730,13 +733,13 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 },
                 Crawlers = new AdminSettingsCrawlers
                 {
-                    Youtube = CrawlerPlatform(true, youtubeCrawlerLimit,
+                    Youtube = CrawlerPlatform(true, youtubeCrawlerLimit, crawlerUnlimited,
                         ownedYoutubeSpiders.Select(x => (x.ChannelId, x.ChannelTitle))),
-                    Twitch = CrawlerPlatform(_twitchService.IsEnable, twitchCrawlerLimit,
+                    Twitch = CrawlerPlatform(_twitchService.IsEnable, twitchCrawlerLimit, crawlerUnlimited,
                         ownedTwitchSpiders.Select(x => (x.UserId, x.UserName))),
-                    Twitcasting = CrawlerPlatform(_twitcastingService.IsEnable, twitcastingCrawlerLimit,
+                    Twitcasting = CrawlerPlatform(_twitcastingService.IsEnable, twitcastingCrawlerLimit, crawlerUnlimited,
                         ownedTwitcastingSpiders.Select(x => (x.ScreenId, x.ChannelTitle))),
-                    Chzzk = CrawlerPlatform(true, chzzkCrawlerLimit,
+                    Chzzk = CrawlerPlatform(true, chzzkCrawlerLimit, crawlerUnlimited,
                         ownedChzzkSpiders.Select(x => (x.ChannelId, x.ChannelName)))
                 },
                 Verification = new AdminSettingsVerification
@@ -782,6 +785,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
         private static AdminSettingsCrawlerPlatform CrawlerPlatform(
             bool enabled,
             int limit,
+            bool unlimited,
             IEnumerable<(string Id, string Name)> items)
         {
             var result = items.Select(x => new AdminSettingsCrawlerItem
@@ -794,6 +798,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 Enabled = enabled,
                 Count = result.Count,
                 Limit = limit,
+                Unlimited = unlimited,
                 Items = result
             };
         }

@@ -397,6 +397,10 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         [JsonProperty("limit")]
         public int Limit { get; set; }
 
+        /// <summary>官方伺服器與 Bot 擁有者不受 <see cref="Limit"/> 限制；舊前端不認得此欄位，仍依 limit 判斷。</summary>
+        [JsonProperty("unlimited")]
+        public bool Unlimited { get; set; }
+
         [JsonProperty("items")]
         public List<AdminSettingsCrawlerItem> Items { get; set; } = [];
     }

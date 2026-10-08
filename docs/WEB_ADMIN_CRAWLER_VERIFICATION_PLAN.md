@@ -154,9 +154,9 @@ Payload：
     "roles": []
   },
   "crawlers": {
-    "youtube": { "enabled": true, "count": 0, "limit": 3, "items": [] },
-    "twitch": { "enabled": true, "count": 0, "limit": 3, "items": [] },
-    "twitcasting": { "enabled": true, "count": 0, "limit": 2, "items": [] }
+    "youtube": { "enabled": true, "count": 0, "limit": 3, "unlimited": false, "items": [] },
+    "twitch": { "enabled": true, "count": 0, "limit": 3, "unlimited": false, "items": [] },
+    "twitcasting": { "enabled": true, "count": 0, "limit": 2, "unlimited": false, "items": [] }
   },
   "verification": {
     "youtube": [],
@@ -165,7 +165,7 @@ Payload：
 }
 ```
 
-範例中的 limit 只示意欄位形狀，實際值必須來自現有 domain rule／`GuildConfig`，不得把範例數字寫成新的政策。
+`unlimited` 為官方 guild／Bot 擁有者豁免旗標（缺欄位視為 false，舊前端忽略）；範例中的 limit 只示意欄位形狀，實際值必須來自現有 domain rule／`GuildConfig`，不得把範例數字寫成新的政策。
 
 `resources.roles[]`：
 
@@ -357,7 +357,7 @@ Backend 維持 thin transport：
 
 ### 8.1 爬蟲頁
 
-- 以平台顯示目前 count／limit、來源清單與新增表單。
+- 以平台顯示目前 count／limit（`unlimited` 為真時顯示「不限數量」且不因 count 停用新增）、來源清單與新增表單。
 - Add 欄位標示可接受 URL、login 或 ID；送出後由 Bot canonicalize。
 - Remove 使用快照 `sourceId`，採 inline 二次確認，不用 fake modal。
 - API 停用或資格不足時保留既有設定與移除能力，只停用新增並顯示原因。
