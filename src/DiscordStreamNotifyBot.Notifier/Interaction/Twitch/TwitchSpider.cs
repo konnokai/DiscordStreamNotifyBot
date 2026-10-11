@@ -43,7 +43,7 @@ namespace DiscordStreamNotifyBot.Interaction.Twitch
         {
             await DeferAsync(true).ConfigureAwait(false);
             bool addForBotOwner = Context.User.Id == Bot.ApplicatonOwner.Id &&
-                !await PromptUserConfirmAsync("Spider.UseForCurrentGuildPrompt");
+                !await PromptUserConfirmAsync(true, "Spider.UseForCurrentGuildPrompt");
             var result = await _service.AddCrawlerAsync(
                 Context.Guild, Context.User.Id, twitchUrl, GracefulShutdown.Token, addForBotOwner);
             await SendCrawlerResultAsync(result, twitchUrl, "twitch");

@@ -43,8 +43,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     await DescribeActorAsync(guild, actorUserId),
                     oauthBypass,
                     addSource,
-                    guild.Id,
-                    Utility.OfficialGuildContains(guild.Id));
+                    // 以擁有者名義新增時沒有對應的伺服器，不提供官方伺服器切換。
+                    addForBotOwner ? 0 : guild.Id,
+                    !addForBotOwner && Utility.OfficialGuildContains(guild.Id));
                 await Bot.ApplicatonOwner.SendMessageAsync(embed: message.Embed, components: message.Components);
             }
             catch (Exception ex)
@@ -130,8 +131,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 .AddField("頻道", Format.Url(sourceName, sourceUrl), false)
                 .AddField("伺服器", guild, false)
                 .AddField("執行者", actor, false)
-                .AddField("新增來源", addSource == CrawlerAddSource.SettingsPage ? "設定頁面" : "指令", true)
-                .AddField("官方伺服器", isOfficialGuild ? "是" : "否", true);
+                .AddField("新增來源", addSource == CrawlerAddSource.SettingsPage ? "設定頁面" : "指令", true);
+            if (guildId != 0)
+                embed.AddField("官方伺服器", isOfficialGuild ? "是" : "否", true);
             var components = new ComponentBuilder();
 
             if (platform == CrawlerPlatform.Youtube)
