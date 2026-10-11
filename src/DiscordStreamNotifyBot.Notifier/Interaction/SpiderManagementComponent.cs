@@ -1,4 +1,5 @@
 using Discord.Interactions;
+using DiscordStreamNotifyBot.Command.Admin;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Chzzk;
@@ -9,12 +10,51 @@ namespace DiscordStreamNotifyBot.Interaction
     {
         private readonly MainDbService _dbService;
         private readonly ChzzkRecordService _chzzkRecordService;
+        private readonly AdministrationService _administrationService;
 
-        public SpiderManagementComponent(MainDbService dbService, ChzzkRecordService chzzkRecordService)
+        public SpiderManagementComponent(MainDbService dbService, ChzzkRecordService chzzkRecordService,
+            AdministrationService administrationService)
         {
             _dbService = dbService;
             _chzzkRecordService = chzzkRecordService;
+            _administrationService = administrationService;
         }
+
+        [ComponentInteraction("spider_official:*", true)]
+        public Task HandleOfficialGuildAsync(ulong guildId)
+            => RunOwnerButtonAsync("官方伺服器", async button =>
+            {
+                string locale = await GetLocaleAsync(true);
+
+                // 切換語意：已在白名單就移除，否則加入；寫入失敗時還原記憶體狀態並回報。
+                bool wasOfficial = Utility.OfficialGuildList.Contains(guildId);
+                if (wasOfficial)
+                    Utility.OfficialGuildList.Remove(guildId);
+                else
+                    Utility.OfficialGuildList.Add(guildId);
+
+                if (!await _administrationService.SaveAndBroadcastOfficialGuildListAsync())
+                {
+                    if (wasOfficial)
+                        Utility.OfficialGuildList.Add(guildId);
+                    else
+                        Utility.OfficialGuildList.Remove(guildId);
+
+                    await button.SendErrorAsync("更新官方伺服器名單失敗", true);
+                    return;
+                }
+
+                await button.SendConfirmAsync(
+                    $"已{(wasOfficial ? "從官方伺服器名單移除" : "將伺服器設為官方伺服器")}：{guildId}", true);
+
+                var embed = button.Message.Embeds.First().ToEmbedBuilder();
+                embed.Fields.RemoveAll((x) => x.Name == "官方伺服器");
+                embed.AddField("官方伺服器", wasOfficial ? "否" : "是", true);
+                await button.ModifyOriginalResponseAsync((func) =>
+                {
+                    func.Embed = embed.Build();
+                });
+            });
 
         [ComponentInteraction("spider_youtube:*:*", true)]
         public Task HandleYoutubeAsync(string action, string channelId)
@@ -232,12 +272,20 @@ namespace DiscordStreamNotifyBot.Interaction
         {
             var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
             var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
-            return new EmbedBuilder()
+            var addSource = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "新增來源").Value;
+            var official = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "官方伺服器").Value;
+            var builder = new EmbedBuilder()
                 .WithOkColor()
                 .WithTitle(title)
                 .AddField("頻道", channelField, false)
                 .AddField("伺服器", guild, false)
                 .AddField("執行者", user, false);
+            // 舊訊息沒有這兩個欄位時不補上，避免顯示錯誤資訊。
+            if (addSource != null)
+                builder.AddField("新增來源", addSource, true);
+            if (official != null)
+                builder.AddField("官方伺服器", official, true);
+            return builder;
         }
 
         private static Task UpdateChzzkSpiderMessageAsync(
@@ -248,13 +296,15 @@ namespace DiscordStreamNotifyBot.Interaction
                 .AddField("錄影頻道", isRecord ? "開啟" : "關閉", true)
                 .Build();
             var components = new ComponentBuilder()
-                .WithButton("切換自動錄影", $"spider_chzzk:record:{channelId}", ButtonStyle.Success)
-                .Build();
+                .WithButton("切換自動錄影", $"spider_chzzk:record:{channelId}", ButtonStyle.Success);
+            foreach (var row in button.Message.Components)
+                foreach (var c in row.Components.OfType<ButtonComponent>().Where((x) => x.CustomId.StartsWith("spider_official:")))
+                    components.WithButton(c.Label, c.CustomId, ButtonStyle.Secondary);
 
             return button.ModifyOriginalResponseAsync((func) =>
             {
                 func.Embed = embed;
-                func.Components = components;
+                func.Components = components.Build();
             });
         }
     }

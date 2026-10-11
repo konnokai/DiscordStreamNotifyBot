@@ -114,7 +114,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             ulong actorUserId,
             string source,
             CancellationToken cancellationToken,
-            bool addForBotOwner = false)
+            bool addForBotOwner = false,
+            CrawlerAddSource addSource = CrawlerAddSource.Command)
         {
             if (!IsEnable)
                 return AdminSettingsMutationResult.Rejected("crawler.platform-disabled");
@@ -177,7 +178,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             }
             await CrawlerOwnerNotifier.NotifyAddedAsync(
                 CrawlerPlatform.Twitcasting, guild, actorUserId, broadcaster.ScreenId,
-                broadcaster.Name, broadcaster.ScreenId, addForBotOwner);
+                broadcaster.Name, broadcaster.ScreenId, addForBotOwner,
+                addSource: addSource);
             Log.Info($"已新增 TwitCasting 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {broadcaster.ScreenId}");
             return Added(broadcaster.ScreenId, broadcaster.Name);
         }
