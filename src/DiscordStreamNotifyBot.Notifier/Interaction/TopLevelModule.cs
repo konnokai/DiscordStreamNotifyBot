@@ -197,7 +197,11 @@ namespace DiscordStreamNotifyBot.Interaction
             }
         }
 
-        public async Task<bool> PromptUserConfirmAsync(string resourceKey, params object[] arguments)
+        public Task<bool> PromptUserConfirmAsync(string resourceKey, params object[] arguments)
+            => PromptUserConfirmAsync(false, resourceKey, arguments);
+
+        /// <summary>與 <see cref="PromptUserConfirmAsync(string, object[])"/> 相同，但可指定逾時未回應時視為「是」或「否」。</summary>
+        public async Task<bool> PromptUserConfirmAsync(bool timeoutResult, string resourceKey, params object[] arguments)
         {
             string guid = Guid.NewGuid().ToString().Replace("-", "");
             string locale = await GetLocaleAsync(true);
@@ -223,7 +227,7 @@ namespace DiscordStreamNotifyBot.Interaction
 
                 if ((await Task.WhenAny(userInputTask.Task, Task.Delay(5000)).ConfigureAwait(false)) != userInputTask.Task)
                 {
-                    return false;
+                    return timeoutResult;
                 }
 
                 return await userInputTask.Task.ConfigureAwait(false);

@@ -1,4 +1,5 @@
 using Discord.Interactions;
+using DiscordStreamNotifyBot.Command.Admin;
 using DiscordStreamNotifyBot.DataBase;
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.SharedService.Chzzk;
@@ -9,12 +10,45 @@ namespace DiscordStreamNotifyBot.Interaction
     {
         private readonly MainDbService _dbService;
         private readonly ChzzkRecordService _chzzkRecordService;
+        private readonly AdministrationService _administrationService;
 
-        public SpiderManagementComponent(MainDbService dbService, ChzzkRecordService chzzkRecordService)
+        public SpiderManagementComponent(MainDbService dbService, ChzzkRecordService chzzkRecordService,
+            AdministrationService administrationService)
         {
             _dbService = dbService;
             _chzzkRecordService = chzzkRecordService;
+            _administrationService = administrationService;
         }
+
+        [ComponentInteraction("spider_official:*", true)]
+        public Task HandleOfficialGuildAsync(ulong guildId)
+            => RunOwnerButtonAsync("官方伺服器", async button =>
+            {
+                // 切換語意：以 Redis 為準，已在白名單就移除，否則加入。
+                var result = await _administrationService.ToggleOfficialGuildAsync(guildId);
+                if (!result.Success)
+                {
+                    await button.SendErrorAsync("更新官方伺服器名單失敗", true);
+                    return;
+                }
+
+                string message = $"已{(result.IsOfficial ? "將伺服器設為官方伺服器" : "從官方伺服器名單移除")}：{guildId}";
+                if (!result.Broadcasted)
+                    message += "\n（已寫入 Redis，但廣播其他 shard 重新載入失敗，請稍後確認各 shard 名單）";
+                await button.SendConfirmAsync(message, true);
+
+                var embed = button.Message.Embeds.First().ToEmbedBuilder();
+                string value = result.IsOfficial ? "是" : "否";
+                var field = embed.Fields.FirstOrDefault((x) => x.Name == "官方伺服器");
+                if (field != null)
+                    field.Value = value;
+                else
+                    embed.AddField("官方伺服器", value, true);
+                await button.ModifyOriginalResponseAsync((func) =>
+                {
+                    func.Embed = embed.Build();
+                });
+            });
 
         [ComponentInteraction("spider_youtube:*:*", true)]
         public Task HandleYoutubeAsync(string action, string channelId)
@@ -232,12 +266,39 @@ namespace DiscordStreamNotifyBot.Interaction
         {
             var guild = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "伺服器").Value;
             var user = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "執行者").Value;
-            return new EmbedBuilder()
+            var addSource = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == "新增來源").Value;
+            var oauthBypass = button.Message.Embeds.First().Fields.FirstOrDefault((x) => x.Name == OAuthBypassFieldName).Value;
+            var builder = new EmbedBuilder()
                 .WithOkColor()
                 .WithTitle(title)
                 .AddField("頻道", channelField, false)
                 .AddField("伺服器", guild, false)
                 .AddField("執行者", user, false);
+            // 舊訊息沒有這些欄位時不補上，避免顯示錯誤資訊。
+            if (addSource != null)
+                builder.AddField("新增來源", addSource, true);
+
+            // 官方狀態可能已在別處（指令或其他通知）變更，依按鈕上的 guildId 重新計算，不照抄舊訊息的值。
+            ulong? officialGuildId = GetOfficialButtonGuildId(button);
+            if (officialGuildId.HasValue)
+                builder.AddField("官方伺服器",
+                    DiscordStreamNotifyBot.Utility.OfficialGuildContains(officialGuildId.Value) ? "是" : "否", true);
+
+            if (oauthBypass != null)
+                builder.AddField(OAuthBypassFieldName, oauthBypass, false);
+            return builder;
+        }
+
+        private const string OAuthBypassFieldName = "是否使用 OAuth 忽略人數要求";
+
+        private static ulong? GetOfficialButtonGuildId(SocketMessageComponent button)
+        {
+            foreach (var row in button.Message.Components.OfType<ActionRowComponent>())
+                foreach (var c in row.Components.OfType<ButtonComponent>())
+                    if (c.CustomId.StartsWith("spider_official:") &&
+                        ulong.TryParse(c.CustomId["spider_official:".Length..], out ulong guildId))
+                        return guildId;
+            return null;
         }
 
         private static Task UpdateChzzkSpiderMessageAsync(
@@ -248,13 +309,15 @@ namespace DiscordStreamNotifyBot.Interaction
                 .AddField("錄影頻道", isRecord ? "開啟" : "關閉", true)
                 .Build();
             var components = new ComponentBuilder()
-                .WithButton("切換自動錄影", $"spider_chzzk:record:{channelId}", ButtonStyle.Success)
-                .Build();
+                .WithButton("切換自動錄影", $"spider_chzzk:record:{channelId}", ButtonStyle.Success);
+            foreach (var row in button.Message.Components.OfType<ActionRowComponent>())
+                foreach (var c in row.Components.OfType<ButtonComponent>().Where((x) => x.CustomId.StartsWith("spider_official:")))
+                    components.WithButton(c.Label, c.CustomId, ButtonStyle.Secondary);
 
             return button.ModifyOriginalResponseAsync((func) =>
             {
                 func.Embed = embed;
-                func.Components = components;
+                func.Components = components.Build();
             });
         }
     }

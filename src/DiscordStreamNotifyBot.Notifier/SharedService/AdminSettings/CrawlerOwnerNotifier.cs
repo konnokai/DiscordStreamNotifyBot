@@ -11,6 +11,13 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
         Chzzk
     }
 
+    /// <summary>爬蟲新增的入口：Slash 指令，或網頁設定頁面。</summary>
+    public enum CrawlerAddSource
+    {
+        Command,
+        SettingsPage
+    }
+
     /// <summary>在爬蟲成功新增後私訊 Bot 擁有者，提供與 Slash 指令相同的維運按鈕。</summary>
     internal static class CrawlerOwnerNotifier
     {
@@ -22,7 +29,8 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             string sourceName,
             string sourcePath,
             bool addForBotOwner,
-            bool oauthBypass = false)
+            bool oauthBypass = false,
+            CrawlerAddSource addSource = CrawlerAddSource.Command)
         {
             try
             {
@@ -33,7 +41,11 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     sourcePath,
                     addForBotOwner ? "擁有者" : $"{guild.Name} ({guild.Id})",
                     await DescribeActorAsync(guild, actorUserId),
-                    oauthBypass);
+                    oauthBypass,
+                    addSource,
+                    // 以擁有者名義新增時沒有對應的伺服器，不提供官方伺服器切換。
+                    addForBotOwner ? 0 : guild.Id,
+                    !addForBotOwner && Utility.OfficialGuildContains(guild.Id));
                 await Bot.ApplicatonOwner.SendMessageAsync(embed: message.Embed, components: message.Components);
             }
             catch (Exception ex)
@@ -94,7 +106,10 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             string sourcePath,
             string guild,
             string actor,
-            bool oauthBypass = false)
+            bool oauthBypass = false,
+            CrawlerAddSource addSource = CrawlerAddSource.Command,
+            ulong guildId = 0,
+            bool isOfficialGuild = false)
         {
             string platformName = platform switch
             {
@@ -115,7 +130,10 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 .WithTitle($"已新增 {platformName} 頻道爬蟲")
                 .AddField("頻道", Format.Url(sourceName, sourceUrl), false)
                 .AddField("伺服器", guild, false)
-                .AddField("執行者", actor, false);
+                .AddField("執行者", actor, false)
+                .AddField("新增來源", addSource == CrawlerAddSource.SettingsPage ? "設定頁面" : "指令", true);
+            if (guildId != 0)
+                embed.AddField("官方伺服器", isOfficialGuild ? "是" : "否", true);
             var components = new ComponentBuilder();
 
             if (platform == CrawlerPlatform.Youtube)
@@ -143,6 +161,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     .WithButton("切換頻道狀態", $"{buttonPrefix}:warning:{sourceId}", ButtonStyle.Danger)
                     .WithButton("切換頻道錄影", $"{buttonPrefix}:record:{sourceId}", ButtonStyle.Success);
             }
+
+            if (guildId != 0)
+                components.WithButton("切換官方伺服器", $"spider_official:{guildId}", ButtonStyle.Secondary);
 
             return (embed.Build(), components.Build());
         }

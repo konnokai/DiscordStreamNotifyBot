@@ -147,7 +147,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             ulong actorUserId,
             string source,
             CancellationToken cancellationToken,
-            bool addForBotOwner = false)
+            bool addForBotOwner = false,
+            CrawlerAddSource addSource = CrawlerAddSource.Command)
         {
             string sourceId = "";
             try
@@ -197,7 +198,7 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 await db.SaveChangesAsync(cancellationToken);
                 await CrawlerOwnerNotifier.NotifyAddedAsync(
                     CrawlerPlatform.Youtube, guild, actorUserId, sourceId, sourceName,
-                    sourceId, addForBotOwner);
+                    sourceId, addForBotOwner, addSource: addSource);
                 Log.Info($"已新增 YouTube 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {sourceId}");
                 return Added(sourceId, sourceName);
             }

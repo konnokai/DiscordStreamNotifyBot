@@ -439,13 +439,17 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     return action switch
                     {
                         AdminSettingsContract.YoutubeCrawlerAddAction => await _youtubeService.AddCrawlerAsync(
-                            guild, actorUserId, addCrawler.Source, cancellationToken),
+                            guild, actorUserId, addCrawler.Source, cancellationToken,
+                            addSource: CrawlerAddSource.SettingsPage),
                         AdminSettingsContract.TwitchCrawlerAddAction => await _twitchService.AddCrawlerAsync(
-                            guild, actorUserId, addCrawler.Source, cancellationToken),
+                            guild, actorUserId, addCrawler.Source, cancellationToken,
+                            addSource: CrawlerAddSource.SettingsPage),
                         AdminSettingsContract.ChzzkCrawlerAddAction => await _chzzkService.AddCrawlerAsync(
-                            guild, actorUserId, addCrawler.Source, cancellationToken),
+                            guild, actorUserId, addCrawler.Source, cancellationToken,
+                            addSource: CrawlerAddSource.SettingsPage),
                         _ => await _twitcastingService.AddCrawlerAsync(
-                            guild, actorUserId, addCrawler.Source, cancellationToken)
+                            guild, actorUserId, addCrawler.Source, cancellationToken,
+                            addSource: CrawlerAddSource.SettingsPage)
                     };
 
                 case AdminSettingsContract.YoutubeCrawlerRemoveAction:

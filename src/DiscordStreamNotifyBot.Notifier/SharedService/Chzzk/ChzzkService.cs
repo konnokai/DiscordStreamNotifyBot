@@ -78,7 +78,8 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
             ulong actorUserId,
             string source,
             CancellationToken cancellationToken,
-            bool addForBotOwner = false)
+            bool addForBotOwner = false,
+            CrawlerAddSource addSource = CrawlerAddSource.Command)
         {
             if (!ChzzkUrlParser.TryParseChannelId(source, out string channelId))
                 return AdminSettingsMutationResult.Rejected("crawler.source-not-found");
@@ -149,7 +150,8 @@ namespace DiscordStreamNotifyBot.SharedService.Chzzk
                     : AdminSettingsMutationResult.Rejected("crawler.source-owned");
             }
             await CrawlerOwnerNotifier.NotifyAddedAsync(
-                CrawlerPlatform.Chzzk, guild, actorUserId, channelId, channel.ChannelName, channelId, addForBotOwner);
+                CrawlerPlatform.Chzzk, guild, actorUserId, channelId, channel.ChannelName, channelId, addForBotOwner,
+                addSource: addSource);
             Log.Info($"已新增 CHZZK 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {channelId}");
             return Added(channelId, channel.ChannelName);
         }

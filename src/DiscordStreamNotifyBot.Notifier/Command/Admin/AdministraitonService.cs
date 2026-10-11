@@ -125,22 +125,57 @@ namespace DiscordStreamNotifyBot.Command.Admin
         }
 
         /// <summary>儲存白名單至 Redis 並廣播變更，讓所有 shard 重新載入（階段 5）。</summary>
-        internal async Task<bool> SaveAndBroadcastOfficialGuildListAsync()
+        /// <summary>官方伺服器名單變更的結果：<see cref="IsOfficial"/> 為變更後的狀態，<see cref="Broadcasted"/> 為廣播是否成功。</summary>
+        internal readonly record struct OfficialGuildChangeResult(bool Success, bool IsOfficial, bool Broadcasted);
+
+        /// <summary>
+        /// 以 Redis 為真實來源切換單一伺服器的官方狀態：只對 SET 單一成員做原子的 SADD／SREM，
+        /// 不整份覆寫，避免與其他 shard 或連續點擊互相蓋掉；寫入後再廣播讓各 shard（含自己）重新載入。
+        /// </summary>
+        internal Task<OfficialGuildChangeResult> ToggleOfficialGuildAsync(ulong guildId)
+            => ChangeOfficialGuildAsync(guildId, null);
+
+        /// <summary>明確加入或移除單一伺服器（<paramref name="official"/>），與 <see cref="ToggleOfficialGuildAsync"/> 共用 Redis 原子寫入流程。</summary>
+        internal Task<OfficialGuildChangeResult> SetOfficialGuildAsync(ulong guildId, bool official)
+            => ChangeOfficialGuildAsync(guildId, official);
+
+        private async Task<OfficialGuildChangeResult> ChangeOfficialGuildAsync(ulong guildId, bool? desired)
         {
+            bool isOfficial;
             try
             {
-                if (!await Utility.SaveOfficialGuildListToRedisAsync())
-                    return false;
-
-                await Bot.RedisSub.PublishAsync(new RedisChannel(_reloadOfficialGuildListKey, RedisChannel.PatternMode.Literal), "");
+                var db = RedisConnection.Instance.ConnectionMultiplexer.GetDatabase();
+                bool wasOfficial = await db.SetContainsAsync(RedisChannels.SharedState.OfficialGuildList, guildId);
+                isOfficial = desired ?? !wasOfficial;
+                if (!isOfficial)
+                    await db.SetRemoveAsync(RedisChannels.SharedState.OfficialGuildList, guildId);
+                else
+                    await db.SetAddAsync(RedisChannels.SharedState.OfficialGuildList, guildId);
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), "SaveAndBroadcastOfficialGuildList Error");
-                return false;
+                Log.Error(ex.Demystify(), $"ToggleOfficialGuild 寫入 Redis 失敗: {guildId}");
+                return new OfficialGuildChangeResult(false, false, false);
             }
 
-            return true;
+            // 以複本整個替換，避免和其他執行緒讀取同一個 HashSet 時發生併發修改。
+            var next = new HashSet<ulong>(Utility.OfficialGuildList);
+            if (isOfficial)
+                next.Add(guildId);
+            else
+                next.Remove(guildId);
+            Utility.OfficialGuildList = next;
+
+            try
+            {
+                await Bot.RedisSub.PublishAsync(new RedisChannel(_reloadOfficialGuildListKey, RedisChannel.PatternMode.Literal), "");
+                return new OfficialGuildChangeResult(true, isOfficial, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"ToggleOfficialGuild 廣播失敗: {guildId}");
+                return new OfficialGuildChangeResult(true, isOfficial, false);
+            }
         }
 
         internal IReadOnlyCollection<SocketGuild> GetNoNotifyGuilds()

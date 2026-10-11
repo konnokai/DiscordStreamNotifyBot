@@ -355,9 +355,8 @@ namespace DiscordStreamNotifyBot.Command.Admin
                 return;
             }
 
-            Utility.OfficialGuildList.Add(guildId);
-
-            if (await _service.SaveAndBroadcastOfficialGuildListAsync())
+            var result = await _service.SetOfficialGuildAsync(guildId, true);
+            if (result.Success && result.Broadcasted)
             {
                 await Context.Channel.SendConfirmAsync($"已新增 {guildId} 至官方伺服器名單");
             }
@@ -380,9 +379,8 @@ namespace DiscordStreamNotifyBot.Command.Admin
                 return;
             }
 
-            Utility.OfficialGuildList.Remove(guildId);
-
-            if (await _service.SaveAndBroadcastOfficialGuildListAsync())
+            var result = await _service.SetOfficialGuildAsync(guildId, false);
+            if (result.Success && result.Broadcasted)
             {
                 await Context.Channel.SendConfirmAsync($"已從官方伺服器名單內移除 {guildId}");
             }

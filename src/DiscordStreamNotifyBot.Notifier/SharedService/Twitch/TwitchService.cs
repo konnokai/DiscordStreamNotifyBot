@@ -96,7 +96,8 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             ulong actorUserId,
             string source,
             CancellationToken cancellationToken,
-            bool addForBotOwner = false)
+            bool addForBotOwner = false,
+            CrawlerAddSource addSource = CrawlerAddSource.Command)
         {
             if (!_apiService.IsEnable)
                 return AdminSettingsMutationResult.Rejected("crawler.platform-disabled");
@@ -169,7 +170,7 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             await PublishReconcileRequestedAsync(user.Id, usedOAuthBypass ? "oauth_bypass_addition" : "spider_added");
             await CrawlerOwnerNotifier.NotifyAddedAsync(
                 CrawlerPlatform.Twitch, guild, actorUserId, user.Id, user.DisplayName,
-                user.Login, addForBotOwner, usedOAuthBypass);
+                user.Login, addForBotOwner, usedOAuthBypass, addSource);
             Log.Info($"已新增 Twitch 頻道爬蟲 | Guild: {guild.Id} | Actor: {actorUserId} | Source: {user.Id}");
             return Added(user.Id, user.DisplayName);
         }
