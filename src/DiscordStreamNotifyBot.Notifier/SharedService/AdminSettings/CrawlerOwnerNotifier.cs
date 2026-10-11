@@ -12,7 +12,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
     }
 
     /// <summary>爬蟲新增的入口：Slash 指令，或網頁設定頁面。</summary>
-    internal enum CrawlerAddSource
+    public enum CrawlerAddSource
     {
         Command,
         SettingsPage

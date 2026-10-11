@@ -27,18 +27,18 @@ namespace DiscordStreamNotifyBot.Interaction
                 string locale = await GetLocaleAsync(true);
 
                 // 切換語意：已在白名單就移除，否則加入；寫入失敗時還原記憶體狀態並回報。
-                bool wasOfficial = Utility.OfficialGuildList.Contains(guildId);
+                bool wasOfficial = DiscordStreamNotifyBot.Utility.OfficialGuildList.Contains(guildId);
                 if (wasOfficial)
-                    Utility.OfficialGuildList.Remove(guildId);
+                    DiscordStreamNotifyBot.Utility.OfficialGuildList.Remove(guildId);
                 else
-                    Utility.OfficialGuildList.Add(guildId);
+                    DiscordStreamNotifyBot.Utility.OfficialGuildList.Add(guildId);
 
                 if (!await _administrationService.SaveAndBroadcastOfficialGuildListAsync())
                 {
                     if (wasOfficial)
-                        Utility.OfficialGuildList.Add(guildId);
+                        DiscordStreamNotifyBot.Utility.OfficialGuildList.Add(guildId);
                     else
-                        Utility.OfficialGuildList.Remove(guildId);
+                        DiscordStreamNotifyBot.Utility.OfficialGuildList.Remove(guildId);
 
                     await button.SendErrorAsync("更新官方伺服器名單失敗", true);
                     return;
@@ -297,7 +297,7 @@ namespace DiscordStreamNotifyBot.Interaction
                 .Build();
             var components = new ComponentBuilder()
                 .WithButton("切換自動錄影", $"spider_chzzk:record:{channelId}", ButtonStyle.Success);
-            foreach (var row in button.Message.Components)
+            foreach (var row in button.Message.Components.OfType<ActionRowComponent>())
                 foreach (var c in row.Components.OfType<ButtonComponent>().Where((x) => x.CustomId.StartsWith("spider_official:")))
                     components.WithButton(c.Label, c.CustomId, ButtonStyle.Secondary);
 
