@@ -252,6 +252,7 @@ verification.limit-reached
 verification.guild-member-requirement
 verification.log-channel-required
 verification.log-channel-missing
+verification.log-channel-missing-permissions
 verification.manage-roles-required
 verification.role-invalid
 verification.role-too-high

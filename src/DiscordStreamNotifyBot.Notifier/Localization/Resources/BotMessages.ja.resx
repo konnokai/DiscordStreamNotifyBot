@@ -276,6 +276,7 @@
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord の選択メニューは最大 {0} 項目です。不要なメンバーシップ認証チャンネルを削除してください。</value></data>
   <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>このサーバーにはメンバーシップとサブスク認証のログチャンネルがありません。チャンネルを作成し、表示、メッセージ送信、リンク埋め込みを許可してから {0} を使用してください。ログチャンネルは必須です。</value></data>
   <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>設定済みのメンバーシップとサブスク認証のログチャンネルが削除されました。新しいチャンネルを作成し、必要な権限を付与してから {0} を再実行してください。</value></data>
+  <data name="MemberSetting.Errors.LogChannelMissingPermissions" xml:space="preserve"><value>メンバーシップとサブスク認証のログチャンネル {0} で Bot の権限が不足しているため、認証ログを書き込めません。表示、メッセージ送信、リンク埋め込みを許可してから再度お試しください。</value></data>
   <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>`{0}` をメンバーシップ認証チャンネルに設定しました。認証成功時に `{1}` ロールを付与します。{2}</value></data>
   <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>すぐに認証を開始できます。</value></data>
   <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>約 5 分後に認証を開始してください。</value></data>

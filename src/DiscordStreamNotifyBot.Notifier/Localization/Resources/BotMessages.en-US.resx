@@ -276,6 +276,7 @@
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord select menus support at most {0} options. Remove unused membership verification channels first.</value></data>
   <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>This server has no membership and subscription verification log channel. Create one, grant View Channel, Send Messages, and Embed Links, then use {0}. A log channel is required.</value></data>
   <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>The configured membership and subscription verification log channel was deleted. Create a new channel, grant the required permissions, and use {0} again.</value></data>
+  <data name="MemberSetting.Errors.LogChannelMissingPermissions" xml:space="preserve"><value>The bot is missing permissions in the membership and subscription verification log channel {0}, so verification logs cannot be written. Grant View Channel, Send Messages, and Embed Links, then try again.</value></data>
   <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>`{0}` is now a membership verification channel. Verified members receive the `{1}` role. {2}</value></data>
   <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>Verification can start immediately.</value></data>
   <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>Wait about five minutes before starting verification.</value></data>

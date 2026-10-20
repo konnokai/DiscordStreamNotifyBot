@@ -276,6 +276,7 @@
   <data name="MemberSetting.Errors.SelectLimit" xml:space="preserve"><value>Discord 選單最多支援 {0} 個選項，請先移除未使用的會員驗證頻道。</value></data>
   <data name="MemberSetting.Errors.LogChannelRequired" xml:space="preserve"><value>此伺服器尚未設定會員與訂閱驗證紀錄頻道。請先建立頻道，授予 Bot 查看頻道、傳送訊息與嵌入連結權限，再使用 {0} 完成設定。驗證功能必須先有紀錄頻道才能使用。</value></data>
   <data name="MemberSetting.Errors.LogChannelDeleted" xml:space="preserve"><value>原本設定的會員與訂閱驗證紀錄頻道已被刪除。請建立新頻道，授予 Bot 所需權限，再使用 {0} 重新設定。</value></data>
+  <data name="MemberSetting.Errors.LogChannelMissingPermissions" xml:space="preserve"><value>Bot 在會員與訂閱驗證紀錄頻道 {0} 缺少權限，驗證紀錄會寫不進去。請授予 Bot 查看頻道、傳送訊息與嵌入連結權限後再試一次。</value></data>
   <data name="MemberSetting.ChannelConfigured" xml:space="preserve"><value>已使用 `{0}` 作為會員驗證頻道；驗證成功的成員會取得 `{1}` 身分組。{2}</value></data>
   <data name="MemberSetting.ReadyNow" xml:space="preserve"><value>現在即可開始驗證。</value></data>
   <data name="MemberSetting.ReadyLater" xml:space="preserve"><value>請等待約五分鐘後再開始驗證。</value></data>
