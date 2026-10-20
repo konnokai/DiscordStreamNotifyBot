@@ -137,6 +137,10 @@ namespace DiscordStreamNotifyBot.Interaction
                 case "verification.log-channel-missing":
                     await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelDeleted", true, true, setLogPath);
                     break;
+                case "verification.log-channel-missing-permissions":
+                    await SendLocalizedErrorAsync("MemberSetting.Errors.LogChannelMissingPermissions", true, true,
+                        $"<#{result.Arguments.Value<string>("channelId")}>");
+                    break;
                 case "verification.manage-roles-required":
                     await SendLocalizedErrorAsync(
                         twitch ? "TwitchMemberSetting.Errors.MissingManageRoles" : "MemberSetting.Errors.ManageRolesRequired",

@@ -45,14 +45,33 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 });
         }
 
-        /// <summary>會員/訂閱驗證設定前必須已設定且仍存在的驗證紀錄頻道。</summary>
+        /// <summary>會員/訂閱驗證設定前必須已設定、仍存在且 Bot 能寫入的驗證紀錄頻道。</summary>
         public static AdminSettingsMutationResult? ValidateVerificationLogChannel(SocketGuild guild, GuildConfig? guildConfig)
         {
             if (guildConfig?.VerificationLogChannelId is not > 0)
                 return AdminSettingsMutationResult.Rejected("verification.log-channel-required");
-            if (guild.GetTextChannel(guildConfig.VerificationLogChannelId) == null)
+            var channel = guild.GetTextChannel(guildConfig.VerificationLogChannelId);
+            if (channel == null)
                 return AdminSettingsMutationResult.Rejected("verification.log-channel-missing");
-            return null;
+
+            // 設定當下有權限，之後可能被拿掉；沒權限時驗證紀錄寫不進去，跟 YoutubeMemberService 寫紀錄前的檢查一致
+            // 成員快取還沒載入時拿不到 Bot 自己，這時不擋，維持舊行為
+            if (guild.CurrentUser?.GetPermissions(channel) is not { } permissions)
+                return null;
+            var missing = new JArray();
+            if (!permissions.ViewChannel)
+                missing.Add("viewChannel");
+            if (!permissions.SendMessages)
+                missing.Add("sendMessages");
+            if (!permissions.EmbedLinks)
+                missing.Add("embedLinks");
+            return missing.Count == 0
+                ? null
+                : AdminSettingsMutationResult.Rejected("verification.log-channel-missing-permissions", new JObject
+                {
+                    ["channelId"] = channel.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    ["permissions"] = missing
+                });
         }
     }
 }
