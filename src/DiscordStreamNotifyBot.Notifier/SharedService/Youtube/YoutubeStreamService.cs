@@ -448,6 +448,55 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             await SendStreamMessageAsync(streamVideo, dto, noticeType.Value, progress).ConfigureAwait(false);
         }
 
+        /// <summary>存檔轉移私訊：所有 DM 都走 shard 0，所以只由 shard 0 發送一次，其他 shard 直接略過。</summary>
+        internal async Task DispatchArchiveOwnerNoticeFromBusAsync(YoutubeNotification dto)
+        {
+            if (Bot.ShardId != 0)
+                return;
+
+            if (!Bot.IsConnect || Bot.ApplicatonOwner == null)
+                throw new InvalidOperationException("Discord 尚未就緒，保留存檔轉移私訊等待重試。");
+
+            var video = new TableVideo
+            {
+                VideoId = dto.VideoId,
+                ChannelId = dto.ChannelId,
+                ChannelTitle = dto.ChannelTitle,
+                VideoTitle = dto.VideoTitle,
+                ScheduledStartTime = dto.ScheduledStartTime,
+                ChannelType = dto.ChannelType,
+            };
+
+            // 擁有者訊息屬於營運訊息，固定用繁體中文
+            const string locale = SupportedLocale.TraditionalChinese;
+            string text;
+            Embed embed;
+            if (dto.IsMemberOnly)
+            {
+                text = "已關台並變更為會限影片";
+                embed = EmbedBuilderFactory.CreateStreamEndedAsMemberOnly(video,
+                    dto.ActualStartTime ?? dto.ScheduledStartTime,
+                    dto.ActualEndTime ?? DateTime.UtcNow, _localizer, locale).Build();
+            }
+            else
+            {
+                text = "已關台並變更為私人存檔";
+                embed = EmbedBuilderFactory.CreateStreamUnarchived(video, _localizer, locale).Build();
+            }
+
+            Log.New($"發送存檔轉移私訊: {dto.ChannelTitle} - {dto.VideoTitle} ({dto.VideoId})");
+
+            try
+            {
+                await Bot.ApplicatonOwner.SendMessageAsync(text, embed: embed).ConfigureAwait(false);
+            }
+            catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+            {
+                // 擁有者關閉私訊時重試也送不到，記錄後放行，避免事件一直卡在佇列
+                Log.Warn($"存檔轉移私訊無法送達 Bot 擁有者: {dto.VideoId}");
+            }
+        }
+
         private YoutubeNotificationVariant BuildVariantForBus(YoutubeNotification dto, TableVideo video, string locale)
         {
             Embed embed;

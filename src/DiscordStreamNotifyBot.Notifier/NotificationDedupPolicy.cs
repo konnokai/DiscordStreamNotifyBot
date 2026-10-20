@@ -37,6 +37,7 @@ namespace DiscordStreamNotifyBot
                         : $"notified:{shardId}:cz:{jo.Value<string>("StreamKey")}:{jo.Value<int?>("NoticeType")}",
                     NotifyType.Banner => $"notified:{shardId}:banner:{jo.Value<string>("ChannelId")}:{jo.Value<string>("VideoId")}",
                     NotifyType.YoutubeMemberVideoLog => $"notified:{shardId}:ytmv:{jo.Value<string>("CheckChannelId")}:{StableHash(json)}",
+                    NotifyType.YoutubeArchiveOwner => $"notified:{shardId}:ytarchive:{jo.Value<string>("VideoId")}:{jo.Value<int?>("NoticeType")}",
                     _ => null,
                 };
             }

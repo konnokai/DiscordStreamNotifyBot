@@ -171,6 +171,12 @@ namespace DiscordStreamNotifyBot
                     await _youtubeStreamService.DispatchFromBusAsync(youtubeDto, progress);
                     return true;
 
+                case NotifyType.YoutubeArchiveOwner:
+                    var archiveDto = JsonConvert.DeserializeObject<YoutubeNotification>(json);
+                    if (archiveDto == null) return false;
+                    await _youtubeStreamService.DispatchArchiveOwnerNoticeFromBusAsync(archiveDto);
+                    return true;
+
                 case NotifyType.Twitch:
                     var twitchDto = JsonConvert.DeserializeObject<TwitchNotification>(json);
                     if (twitchDto == null) return false;

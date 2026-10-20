@@ -17,6 +17,12 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public const string Chzzk = "chzzk";
         public const string Banner = "banner";
         public const string YoutubeMemberVideoLog = "youtube_member_video_log";
+
+        /// <summary>
+        /// 存檔轉移私訊：payload 沿用 <see cref="YoutubeNotification"/>（會限為 End + IsMemberOnly，私人存檔為 Delete + IsUnarchived）。
+        /// 跟一般 YouTube 通知分開，因為伺服器的關台通知可能已先發過，私訊仍要送。
+        /// </summary>
+        public const string YoutubeArchiveOwner = "youtube_archive_owner";
     }
 
     /// <summary>
