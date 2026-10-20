@@ -518,15 +518,19 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 .FirstOrDefaultAsync(x => x.GuildId == guild.Id, cancellationToken);
             var youtube = await db.NoticeYoutubeStreamChannel.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id)
+                .OrderByDescending(x => x.Id)
                 .ToListAsync(cancellationToken);
             var twitch = await db.NoticeTwitchStreamChannels.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id)
+                .OrderByDescending(x => x.Id)
                 .ToListAsync(cancellationToken);
             var twitcasting = await db.NoticeTwitcastingStreamChannels.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id)
+                .OrderByDescending(x => x.Id)
                 .ToListAsync(cancellationToken);
             var chzzk = await db.NoticeChzzkStreamChannels.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id)
+                .OrderByDescending(x => x.Id)
                 .ToListAsync(cancellationToken);
             var youtubeSpiders = await db.YoutubeChannelSpider.AsNoTracking()
                 .Select(x => x.ChannelId)
@@ -539,17 +543,17 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             var chzzkSpiders = await db.ChzzkSpider.AsNoTracking()
                 .ToDictionaryAsync(x => x.ChannelId, x => x.ChannelName, cancellationToken);
             var ownedYoutubeSpiders = await db.YoutubeChannelSpider.AsNoTracking()
-                .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
+                .Where(x => x.GuildId == guild.Id).OrderByDescending(x => x.DateAdded).ToListAsync(cancellationToken);
             var ownedTwitchSpiders = await db.TwitchSpider.AsNoTracking()
-                .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
+                .Where(x => x.GuildId == guild.Id).OrderByDescending(x => x.DateAdded).ToListAsync(cancellationToken);
             var ownedTwitcastingSpiders = await db.TwitcastingSpider.AsNoTracking()
-                .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
+                .Where(x => x.GuildId == guild.Id).OrderByDescending(x => x.Id).ToListAsync(cancellationToken);
             var ownedChzzkSpiders = await db.ChzzkSpider.AsNoTracking()
-                .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
+                .Where(x => x.GuildId == guild.Id).OrderByDescending(x => x.DateAdded).ToListAsync(cancellationToken);
             var youtubeVerification = await db.GuildYoutubeMemberConfig.AsNoTracking()
-                .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
+                .Where(x => x.GuildId == guild.Id).OrderByDescending(x => x.Id).ToListAsync(cancellationToken);
             var twitchVerification = await db.GuildTwitchSubscriptionConfig.AsNoTracking()
-                .Where(x => x.GuildId == guild.Id).ToListAsync(cancellationToken);
+                .Where(x => x.GuildId == guild.Id).OrderByDescending(x => x.Id).ToListAsync(cancellationToken);
             var youtubeVerifiedCounts = await db.YoutubeMemberCheck.AsNoTracking()
                 .Where(x => x.GuildId == guild.Id && x.IsChecked)
                 .GroupBy(x => x.CheckYTChannelId)
