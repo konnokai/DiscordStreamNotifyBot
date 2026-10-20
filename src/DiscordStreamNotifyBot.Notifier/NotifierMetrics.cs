@@ -486,6 +486,7 @@ namespace DiscordStreamNotifyBot
             NotifyType.Chzzk => "chzzk",
             NotifyType.Banner => "banner",
             NotifyType.YoutubeMemberVideoLog => "youtube_member_video_log",
+            NotifyType.YoutubeArchiveOwner => "youtube_archive_owner",
             _ => "unknown"
         };
     }

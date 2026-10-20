@@ -135,6 +135,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                         return;
 
                     await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.End, actualStart: ended.Start, actualEnd: ended.End, isMemberOnly: true).ConfigureAwait(false);
+                    await PublishArchiveOwnerNoticeAsync(streamVideo, YoutubeNoticeType.End, actualStart: ended.Start, actualEnd: ended.End, isMemberOnly: true).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -165,9 +166,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 try
                 {
                     var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
-                    if (streamVideo != null)
-                        await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete,
-                            isUnarchived: true).ConfigureAwait(false);
+                    if (streamVideo == null)
+                        return;
+
+                    await PublishYoutubeNotificationAsync(streamVideo, YoutubeNoticeType.Delete,
+                        isUnarchived: true).ConfigureAwait(false);
+                    await PublishArchiveOwnerNoticeAsync(streamVideo, YoutubeNoticeType.Delete,
+                        isUnarchived: true).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -394,21 +399,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             DateTime? previousScheduledStartTime = null, bool isUnarchived = false)
         {
             var terminalKind = YoutubeTerminalEventRegistry.Classify(noticeType, isMemberOnly, isUnarchived);
-            var dto = new YoutubeNotification
-            {
-                NoticeType = noticeType,
-                VideoId = streamVideo.VideoId,
-                ChannelId = streamVideo.ChannelId,
-                ChannelTitle = streamVideo.ChannelTitle,
-                VideoTitle = streamVideo.VideoTitle,
-                ScheduledStartTime = streamVideo.ScheduledStartTime,
-                PreviousScheduledStartTime = previousScheduledStartTime,
-                ActualStartTime = actualStart,
-                ActualEndTime = actualEnd,
-                IsMemberOnly = isMemberOnly,
-                IsUnarchived = isUnarchived,
-                ChannelType = streamVideo.ChannelType,
-            };
+            var dto = CreateYoutubeNotification(streamVideo, noticeType, actualStart, actualEnd, isMemberOnly,
+                previousScheduledStartTime, isUnarchived);
 
             try
             {
@@ -434,6 +426,42 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 return false;
             }
         }
+
+        /// <summary>
+        /// 發布存檔轉移私訊。不經過終止事件去重：同一部影片的一般關台通知可能已先發過，私訊仍要送。
+        /// </summary>
+        private async Task PublishArchiveOwnerNoticeAsync(TableVideo streamVideo, YoutubeNoticeType noticeType,
+            DateTime? actualStart = null, DateTime? actualEnd = null, bool isMemberOnly = false, bool isUnarchived = false)
+        {
+            try
+            {
+                var dto = CreateYoutubeNotification(streamVideo, noticeType, actualStart, actualEnd, isMemberOnly,
+                    null, isUnarchived);
+                await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.YoutubeArchiveOwner, dto).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"PublishArchiveOwnerNoticeAsync: {streamVideo.VideoId} / {noticeType}");
+            }
+        }
+
+        private static YoutubeNotification CreateYoutubeNotification(TableVideo streamVideo, YoutubeNoticeType noticeType,
+            DateTime? actualStart, DateTime? actualEnd, bool isMemberOnly, DateTime? previousScheduledStartTime, bool isUnarchived)
+            => new()
+            {
+                NoticeType = noticeType,
+                VideoId = streamVideo.VideoId,
+                ChannelId = streamVideo.ChannelId,
+                ChannelTitle = streamVideo.ChannelTitle,
+                VideoTitle = streamVideo.VideoTitle,
+                ScheduledStartTime = streamVideo.ScheduledStartTime,
+                PreviousScheduledStartTime = previousScheduledStartTime,
+                ActualStartTime = actualStart,
+                ActualEndTime = actualEnd,
+                IsMemberOnly = isMemberOnly,
+                IsUnarchived = isUnarchived,
+                ChannelType = streamVideo.ChannelType,
+            };
 
         /// <summary>偵測端：以 videoId 查找（DB / addNewStreamVideo / API item）後 publish。對應原 SendStreamMessageAsync(string,...) 行為。</summary>
         private async Task PublishByVideoIdAsync(string videoId, YoutubeNoticeType noticeType,
