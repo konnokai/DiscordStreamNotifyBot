@@ -58,7 +58,8 @@ description: >
 ## 想確認訊息真的有進匯流排 / 有沒有堆積
 - 偵測端在 `PublishAsync` 前後加暫時 log，或在 consumer `ProcessEntryAsync` 入口 log type。
 - 用 `redis-cli`：`XLEN bot:notify`、`XINFO GROUPS bot:notify`（看各 group 的 pending 與 consumer 數）、
-  `XPENDING bot:notify shard-{id}`。Coordinator 也會定期 log 匯流排 pending 堆積與無 consumer 的殘留 group。
+  `XPENDING bot:notify shard-{id}`。Coordinator 在 group 開始堆積（pending ≥ 30）、沒有 consumer 或恢復正常時各寫一次 log；
+  平時的 pending 數字看 Prometheus 的 `discord_stream_notify_bus_pending_messages`。
 
 ## 關鍵檔
 - `Shared/NotificationBus.cs`（XADD/XREADGROUP/XACK/XAUTOCLAIM 封裝）、`Shared/Messages/Notifications.cs`（DTO + `NotifyType`）
