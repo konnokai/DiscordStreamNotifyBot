@@ -21,6 +21,8 @@ namespace DiscordStreamNotifyBot.Shared
             public const string DeleteStream = "youtube.deletestream";
             public const string Unarchived = "youtube.unarchived";
             public const string MemberOnly = "youtube.memberonly";
+            /// <summary>錄影工具每日檢查發現錄完後才轉會限；只送擁有者私訊，不發直播結束通知。</summary>
+            public const string MemberOnlyLate = "youtube.memberonly.late";
             public const string Record = "youtube.record";
             public const string Error429 = "youtube.429error";
             public const string Test = "youtube.test";
