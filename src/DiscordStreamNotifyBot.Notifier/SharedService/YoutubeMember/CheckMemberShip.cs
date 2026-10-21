@@ -1,5 +1,6 @@
 using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.Shared;
+using DiscordStreamNotifyBot.SharedService.Youtube;
 
 namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
 {
@@ -95,6 +96,11 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                     continue;
 
                 string guildLocale = await _guildLocaleService.GetAsync(guild.Id, guild);
+                // 探測影片轉私人、刪除或公開後，留言 API 的結果不能代表會員資格，改走影片失效流程
+                YoutubeVideoPageStatus probeVideoStatus = await YoutubeVideoPage.GetStatusAsync(
+                    configuration.MemberCheckVideoId, cancellationToken);
+                bool isProbeVideoGone = probeVideoStatus is YoutubeVideoPageStatus.Public or
+                    YoutubeVideoPageStatus.Private or YoutubeVideoPageStatus.Unavailable;
                 int configurationMembers = 0;
                 YoutubeMemberProbeConfigurationSnapshot configurationSnapshot =
                     YoutubeMemberPolicies.CaptureProbeConfiguration(configuration);
@@ -120,10 +126,12 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
                                     authorization.Credential, cancellationToken);
                                 authorizationValidation[check.UserId] = validation;
                             }
-                            YoutubeMemberProbeResult probeResult = validation.Kind == YoutubeMemberProbeResultKind.Member
-                                ? await _apiClient.ProbeAsync(authorization.Credential, configuration.MemberCheckVideoId,
-                                    authorizationValidated: true, cancellationToken: cancellationToken)
-                                : validation;
+                            YoutubeMemberProbeResult probeResult = validation.Kind != YoutubeMemberProbeResultKind.Member
+                                ? validation
+                                : isProbeVideoGone
+                                    ? new(YoutubeMemberProbeResultKind.ProbeVideoInvalid)
+                                    : await _apiClient.ProbeAsync(authorization.Credential, configuration.MemberCheckVideoId,
+                                        authorizationValidated: true, cancellationToken: cancellationToken);
                             probeExecution = new(probeResult, authorization.EncryptedTokenPayload);
                         }
                         else

@@ -19,6 +19,7 @@
 - `MemberRoleOwnershipService`：合併 YouTube/Twitch role reference 與 verified entitlement，保護既有跨平台 role collision。
 - `YoutubeMemberComponent`：只接受 `youtube-member-check:{guildId}:{userId}`；舊 `member:check:*:*` 只回 expired。
 - `YoutubeMemberApiClient`：以 typed result 區分會員、非會員、授權失效、probe video、quota/rate limit、暫時與本機錯誤。
+- `YoutubeVideoPage`（Shared）：讀未登入觀看頁的 `playabilityStatus`，分出公開、會限、私人與已刪除影片。自動探索、手動指定與週期驗證都先看它；頁面判斷是公開、私人或已刪除時，探測影片視為失效，不呼叫留言 API，也不會把使用者判成非會員。讀不到頁面時退回原本的 API 錯誤碼判斷。
 - `YoutubeMemberAuthorizationService`：保留既有 Google flow、共享 token table 與密文格式。
 - `YoutubeMemberRoleService`：唯一的 YouTube Discord role mutation 入口，處理 grant/remove/migration/deletion/rejoin/orphan。
 - `YoutubeMemberService`：使用 `PeriodicRunner` 執行週期工作，並由 `Start()`／`StopAsync()` 管理 Redis、`UserJoined` 與背景 task。
