@@ -62,6 +62,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             var modified = new List<ChannelFeed>();
             var candidates = new List<string>();
             var seenVideoIds = new HashSet<string>(StringComparer.Ordinal);
+            // YouTube feed 端點常整批回 404／500，逐頻道 WARN 會洗版，改成每輪依狀態碼彙整一行。
+            var httpFailures = new SortedDictionary<int, List<string>>();
             int notModified = 0, fetchFailed = 0, foreignEntries = 0;
 
             foreach (string channelId in channelIds)
@@ -94,6 +96,13 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
 
                 if (fetch.Kind == ChannelFetchKind.Failed)
                 {
+                    if (fetch.HttpStatusCode is int statusCode)
+                    {
+                        if (!httpFailures.TryGetValue(statusCode, out List<string> failedChannels))
+                            httpFailures[statusCode] = failedChannels = [];
+                        failedChannels.Add(channelId);
+                    }
+
                     // 只有 Hub 明確的限流（429／Retry-After）才視為全域性限制並停止本輪。
                     if (fetch.StopRound)
                         break;
@@ -112,6 +121,12 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     if (seenVideoIds.Add(videoId))
                         candidates.Add(videoId);
                 }
+            }
+
+            if (httpFailures.Count > 0)
+            {
+                Log.Warn("Atom fallback feed HTTP 失敗："
+                    + string.Join("；", httpFailures.Select(static x => $"{x.Key} ×{x.Value.Count}（{string.Join(", ", x.Value)}）")));
             }
 
             if (modified.Count == 0)
@@ -193,12 +208,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                     Interlocked.Exchange(ref _notBeforeUtcTicks, DateTimeOffset.UtcNow.Add(retryAfter.Value).UtcTicks);
                     Log.Warn($"Atom fallback 收到 Retry-After：{channelId} / HTTP {statusCode} / {retryAfter.Value.TotalSeconds:0} 秒");
                 }
-                else
-                {
-                    Log.Warn($"Atom fallback feed HTTP {statusCode}：{channelId}");
-                }
 
-                return ChannelFetch.Failed(stopRound: stopRound);
+                return ChannelFetch.Failed(stopRound: stopRound, httpStatusCode: statusCode);
             }
 
             byte[] content = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
@@ -268,17 +279,18 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
             string LastModified,
             int SkippedEntryCount,
             int ForeignEntryCount,
-            bool StopRound)
+            bool StopRound,
+            int? HttpStatusCode)
         {
             internal static ChannelFetch Modified(
                 IReadOnlyList<string> videoIds, string etag, string lastModified, int skippedEntryCount, int foreignEntryCount)
-                => new(ChannelFetchKind.Modified, videoIds, etag, lastModified, skippedEntryCount, foreignEntryCount, false);
+                => new(ChannelFetchKind.Modified, videoIds, etag, lastModified, skippedEntryCount, foreignEntryCount, false, null);
 
             internal static ChannelFetch NotModified()
-                => new(ChannelFetchKind.NotModified, [], null, null, 0, 0, false);
+                => new(ChannelFetchKind.NotModified, [], null, null, 0, 0, false, null);
 
-            internal static ChannelFetch Failed(bool stopRound = false)
-                => new(ChannelFetchKind.Failed, [], null, null, 0, 0, stopRound);
+            internal static ChannelFetch Failed(bool stopRound = false, int? httpStatusCode = null)
+                => new(ChannelFetchKind.Failed, [], null, null, 0, 0, stopRound, httpStatusCode);
         }
     }
 }

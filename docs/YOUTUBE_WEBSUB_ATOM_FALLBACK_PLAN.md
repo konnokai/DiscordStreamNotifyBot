@@ -80,7 +80,8 @@ MySQL schema 仍由 Bot 儲存庫管理。本計畫不需要 schema 變更。
 ## 5. 不可偏離的設計決策
 
 1. WebSub 是主要來源，Atom 是一直啟用的低頻 reconciliation，不等到確認故障才啟動。
-2. Atom 輪詢涵蓋 **WebSub 訂閱沒有在續訂週期內被 challenge 確認的** `YoutubeChannelSpider`（`LastSubscribeTime < 現在 − 7 天`，含從未成功者），同一 YouTube channel 全域只抓一次，不依 guild 或通知目的地重複抓取。
+2. Atom 輪詢涵蓋 **WebSub 訂閱超過續訂週期加一天仍未被 challenge 確認的** `YoutubeChannelSpider`（`LastSubscribeTime < 現在 − 8 天`，含從未成功者），同一 YouTube channel 全域只抓一次，不依 guild 或通知目的地重複抓取。
+   - 2026-10-21 使用者決策變更：原本與續訂共用 7 天門檻，續訂剛送出、challenge 還沒回來的頻道會被 Atom 一起抓，改成多給一天緩衝。
    - 2026-09-19 使用者決策變更：原設計是「涵蓋全部 crawler」，但實測 feed 端點不支援條件式 GET（見 §17.3），全頻道輪詢等於每輪全量下載，因此改為只補疑似失效的頻道、間隔由 5 分鐘拉長為 15 分鐘。
    - 已知代價：Hub 靜默停止送通知但訂閱仍被續訂確認的頻道不會被 Atom 覆蓋；這類故障需要靠 WebSub 端（Hub 通知延遲、NeedRegister、log）與營運監控發現。
 3. Atom 使用 `https://www.youtube.com/feeds/videos.xml?channel_id={channelId}`。
@@ -163,7 +164,7 @@ Scraper
 
 ```text
 Scraper leader 每 15 分鐘執行一次、不重入
-  -> 讀取 LastSubscribeTime 超過續訂週期（7 天）或從未確認的 YoutubeChannelSpider
+  -> 讀取 LastSubscribeTime 超過 8 天（續訂週期 7 天＋1 天緩衝）或從未確認的 YoutubeChannelSpider
   -> 每個 channel GET canonical Atom feed
      -> 帶 If-None-Match / If-Modified-Since（若已有；實測端點不提供 validator，見 §17.3）
      -> 304：結束該頻道
@@ -335,7 +336,7 @@ Backend 必須：
 - 在 `YoutubeDetectionService` 使用既有 `PeriodicRunner` 與 `GracefulShutdown.Token`。
 - 間隔為 15 分鐘（2026-09-19 由 5 分鐘調整，見 §5.2），不新增設定項。
 - 只由 Scraper leader 執行；`PeriodicRunner` 不重入。
-- 查詢 `YoutubeChannelSpider.AsNoTracking()` 中 `LastSubscribeTime` 超過續訂週期或從未確認的頻道，以 channel ID 去重。
+- 查詢 `YoutubeChannelSpider.AsNoTracking()` 中 `LastSubscribeTime` 超過續訂週期加一天（8 天）或從未確認的頻道，以 channel ID 去重。
 - 單一頻道失敗不得中止其他頻道；全域 YouTube／網路故障時避免無限制立即重試。
 - 不改動 `OtherScheduleAsync` 的 `RecordYoutubeChannel` 篩選與 HTML 頁面用途。
 
@@ -346,6 +347,7 @@ Backend 必須：
 - 304 不解析 body、不呼叫 YouTube API。
 - 200 才解析 Atom。
 - 404、410、429、5xx 與 timeout 都只記錄診斷，不刪 crawler、不清除既有影片狀態。
+- HTTP 錯誤狀態碼每輪彙整成一行 WARN（依狀態碼列出頻道數與 channel ID），不逐頻道各寫一行；YouTube feed 端點常整批回 404／500。`Retry-After` 仍逐筆記錄。
 - 429 遵守有效 `Retry-After`，不以密集重試繞過限制。
 - 不下載或記錄影片描述、縮圖等 fallback 不需要的內容。
 
@@ -703,7 +705,7 @@ git diff --check                                     # 無輸出（僅既有 LF/
 - **denied 的 CAS 失敗會重讀重試**：pending 真的被換掉才視為 superseded；仍同一筆要求時再標記一次。
 - **`hub.reason` 與 pending 解析錯誤不再可能帶出 token**：denied 記錄前移除 callback token（含 URL-encoded 形式），`TryParse` 的錯誤訊息不再夾帶 `JsonException.Message`。
 - **待重試訊息的識別不再用雜湊**：改用 `channel|payload`，不同頻道的 `NeedRegister` 不會互相覆蓋。
-- **Atom 只補疑似失效的頻道、間隔 15 分鐘**（2026-09-19 使用者決策）：候選條件為 `LastSubscribeTime < 現在 − 7 天`（含從未成功者），與續訂判斷共用 `YoutubeWebSubContract.RenewAfter`；沒有候選頻道時整輪不發任何 HTTP。測試：`YoutubeAtomFallbackTests.NoCandidateChannelsMakesNoRequest`。
+- **Atom 只補疑似失效的頻道、間隔 15 分鐘**（2026-09-19 使用者決策）：候選條件為 `LastSubscribeTime < 現在 − 7 天`（含從未成功者），與續訂判斷共用 `YoutubeWebSubContract.RenewAfter`；沒有候選頻道時整輪不發任何 HTTP。測試：`YoutubeAtomFallbackTests.NoCandidateChannelsMakesNoRequest`。2026-10-21 起門檻改為 `RenewAfter` 加一天（8 天），見 §5.2。
 
 已知但不修（觸發條件是 Redis 發布失敗或連線異常，影響可接受）：
 

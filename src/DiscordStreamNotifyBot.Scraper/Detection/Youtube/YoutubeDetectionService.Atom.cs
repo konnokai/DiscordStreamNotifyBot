@@ -14,6 +14,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         /// <summary>單次 <c>videos.list</c> 批次大小；單輪可處理多個批次。</summary>
         private const int AtomVideoBatchSize = 50;
 
+        /// <summary>
+        /// 比續訂週期多給一天：續訂剛送出、challenge 還沒回來的頻道不該立刻被當成失效，否則每次續訂都會觸發一批 Atom 抓取。
+        /// </summary>
+        private static readonly TimeSpan AtomFallbackAfter = YoutubeWebSubContract.RenewAfter + TimeSpan.FromDays(1);
+
         private readonly YoutubeWebSubService _webSubService;
         private readonly YoutubeAtomFallback _atomFallback;
 
@@ -21,17 +26,17 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
         private Task AtomFallbackAsync() => _atomFallback.RunAsync(GracefulShutdown.Token);
 
         /// <summary>
-        /// Atom fallback 的候選頻道：WebSub 訂閱沒有在續訂週期內被 challenge 確認過的頻道
+        /// Atom fallback 的候選頻道：WebSub 訂閱超過 <see cref="AtomFallbackAfter"/> 沒被 challenge 確認過的頻道
         /// （`LastSubscribeTime` 過舊或從未成功，後者為 <see cref="DateTime.MinValue"/>），同一 channel 只抓一次。
         /// 已確認的頻道不輪詢；否則會對全體頻道做無條件下載，而 feed 端點不支援條件式 GET。
         /// </summary>
         private async Task<IReadOnlyList<string>> ListAtomChannelIdsAsync(CancellationToken cancellationToken)
         {
-            DateTime renewBefore = DateTime.Now.Subtract(YoutubeWebSubContract.RenewAfter);
+            DateTime staleBefore = DateTime.Now.Subtract(AtomFallbackAfter);
             using var db = _dbService.GetDbContext();
             return await db.YoutubeChannelSpider
                 .AsNoTracking()
-                .Where((x) => x.LastSubscribeTime < renewBefore)
+                .Where((x) => x.LastSubscribeTime < staleBefore)
                 .Select(static x => x.ChannelId)
                 .Distinct()
                 .ToListAsync(cancellationToken)
