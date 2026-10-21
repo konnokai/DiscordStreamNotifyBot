@@ -143,6 +143,28 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
             });
 
+            Bot.RedisSub.Subscribe(new RedisChannel("youtube.memberonly.late", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
+            {
+                Log.Info($"{channel} - {videoId}");
+
+                try
+                {
+                    // 錄影工具隔天才發現轉會限，直播結束通知早就發過，只補擁有者私訊
+                    var streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    if (streamVideo == null)
+                        return;
+
+                    if (await GetEndedVideoAsync(videoId).ConfigureAwait(false) is not { } ended)
+                        return;
+
+                    await PublishArchiveOwnerNoticeAsync(streamVideo, YoutubeNoticeType.End, actualStart: ended.Start, actualEnd: ended.End, isMemberOnly: true).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Record-MemberOnlyLate {ex}");
+                }
+            });
+
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
             {
                 Log.Info($"{channel} - {videoId}");
