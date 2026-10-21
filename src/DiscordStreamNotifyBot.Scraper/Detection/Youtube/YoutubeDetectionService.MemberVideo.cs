@@ -1,5 +1,6 @@
 using DiscordStreamNotifyBot.Shared;
 using DiscordStreamNotifyBot.Shared.Messages;
+using DiscordStreamNotifyBot.SharedService.Youtube;
 using Google;
 
 using Bot = DiscordStreamNotifyBot.Shared.BotState;
@@ -54,6 +55,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             var videoSnippet = videoList[candidateIndex];
                             videoList.RemoveAt(candidateIndex);
                             var videoId = videoSnippet.Snippet.ResourceId.VideoId;
+                            // 會限清單裡轉私人或已刪除的影片，留言 API 也可能回 403 被誤選，先用觀看頁排除
+                            var pageStatus = await YoutubeVideoPage.GetStatusAsync(videoId).ConfigureAwait(false);
+                            if (pageStatus is YoutubeVideoPageStatus.Public or YoutubeVideoPageStatus.Private or YoutubeVideoPageStatus.Unavailable)
+                                continue;
+
                             var commentRequest = YouTubeService.CommentThreads.List("snippet");
                             commentRequest.VideoId = videoId;
 
