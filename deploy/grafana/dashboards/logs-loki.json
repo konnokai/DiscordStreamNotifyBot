@@ -63,7 +63,7 @@
       }
     ]
   },
-  "description": "直播小幫手 Loki log 查詢：依 service、role、level 與訊息內容篩選，並顯示錯誤數與各層級流量。",
+  "description": "直播小幫手（含 Backend）Loki log 查詢：依 service、role、level 與訊息內容篩選，並顯示錯誤數與各層級流量。",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
