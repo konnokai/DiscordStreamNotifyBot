@@ -6,7 +6,7 @@
 [2026/07/21 15:04:05] [notifier:0] [INFO] | 初始化完成
 ```
 
-角色 prefix 可能省略；容器部署時 Coordinator、Scraper、Notifier 都會設定角色。標準 level 為：
+角色 prefix 可能省略；容器部署時 Coordinator、Scraper、Notifier 都會設定角色。[DiscordStreamBotBackend](https://github.com/konnokai/DiscordStreamBotBackend) 也用同一格式，角色固定為 `backend`。標準 level 為：
 
 ```text
 TRACE DEBUG INFO WARN ERROR CRITICAL
@@ -72,16 +72,18 @@ Loki stream labels：
 | Label | 範例 | 說明 |
 |---|---|---|
 | `app` | `discord-stream-notify-bot` | 固定應用程式名稱 |
-| `service` | `notifier` | `coordinator` / `scraper` / `notifier` |
-| `role` | `notifier:0` | 含 shard 的程序角色 |
+| `service` | `notifier` | `coordinator` / `scraper` / `notifier` / `backend` |
+| `role` | `notifier:0` | 含 shard 的程序角色；Backend 固定為 `backend` |
 | `level` | `ERROR` | facade 的標準大寫 log level |
 
 只有以上四個 label。message、exception、timestamp、guild/channel/user/video ID 與其他 structured property 都保留在 JSON body，不提升為 label。
 
+Backend 在自己儲存庫的 `appsettings.Production.json` 設定 `LokiUrl`，推送的 labels 與 JSON body 格式和 Bot 相同。Backend 的 logger 名稱放在 JSON body 的 `SourceContext`。
+
 Grafana Loki LogQL：
 
 ```logql
-{app="discord-stream-notify-bot", service=~"coordinator|scraper|notifier", level=~"ERROR|CRITICAL"}
+{app="discord-stream-notify-bot", service=~"coordinator|scraper|notifier|backend", level=~"ERROR|CRITICAL"}
 | json
 ```
 
@@ -97,7 +99,7 @@ Grafana Loki LogQL：
 2. 上傳 `deploy/grafana/dashboards/logs-loki.json`。
 3. 選擇接收上述 stream labels 的 Loki datasource。
 
-Dashboard 預設顯示最近 6 小時並每 10 秒更新，可依 service、role、level 與內容 regex 篩選。錯誤統計固定計算 `ERROR`／`CRITICAL`，不受 level 選項影響；展開 Logs panel 的單筆資料可檢視 exception 與其他 structured properties。
+Dashboard 預設顯示最近 6 小時並每 10 秒更新，可依 service（含 `backend`）、role、level 與內容 regex 篩選。錯誤統計固定計算 `ERROR`／`CRITICAL`，不受 level 選項影響；展開 Logs panel 的單筆資料可檢視 exception 與其他 structured properties。
 
 ## Console 備援
 
