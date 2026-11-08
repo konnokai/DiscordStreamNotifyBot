@@ -6,6 +6,7 @@ using TwitchLib.Api.Core.Enums;
 using TwitchLib.Api.Core.Exceptions;
 using TwitchLib.Api.Helix.Models.EventSub;
 using Bot = DiscordStreamNotifyBot.Shared.BotState;
+using ChannelInformation = TwitchLib.Api.Helix.Models.Channels.GetChannelInformation.ChannelInformation;
 using Clip = TwitchLib.Api.Helix.Models.Clips.GetClips.Clip;
 using Stream = TwitchLib.Api.Helix.Models.Streams.GetStreams.Stream;
 using User = TwitchLib.Api.Helix.Models.Users.GetUsers.User;
@@ -436,6 +437,28 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             {
                 Log.Error(ex.Demystify(), $"無法取得 Twitch 資料，請確認 {nameof(BotConfig.TwitchClientId)} 或 {nameof(BotConfig.TwitchClientSecret)} 是否正常");
                 return new TwitchStreamsResult();
+            }
+        }
+
+        /// <summary>
+        /// 取得頻道目前或上次的標題與分類。此端點不看直播狀態，不受 Get Streams 的偵測延遲影響。
+        /// </summary>
+        public async Task<ChannelInformation> GetChannelInformationAsync(string broadcasterId)
+        {
+            if (!IsEnable || string.IsNullOrWhiteSpace(broadcasterId))
+                return null;
+
+            try
+            {
+                string appAccessToken = await GetAppAccessTokenAsync();
+                var response = await TwitchApi.Value.Helix.Channels.GetChannelInformationAsync(
+                    broadcasterId, appAccessToken);
+                return response?.Data?.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"無法取得 Twitch 頻道資料：{broadcasterId}");
+                return null;
             }
         }
 

@@ -18,6 +18,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
     public class TwitchDetectionService
     {
         private static readonly TimeSpan OfflineDebounce = TimeSpan.FromMinutes(3);
+        // 超過這個年齡的 online 事件視為過期；直播若仍在進行，低頻輪詢會補發。
+        private static readonly TimeSpan StreamOnlineMaxAge = TimeSpan.FromMinutes(10);
         private static TimeSpan StreamNotificationTtl { get; } = TimeSpan.FromDays(1);
 
         private readonly TwitchApiService _apiService;
@@ -92,19 +94,40 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     Log.Warn("收到缺少 TwitchUserId 的 stream_online payload，已忽略");
                     return;
                 }
-
-                var streams = await _apiService.GetNowStreamsResultAsync(payload.BroadcasterUserId);
-                if (!streams.IsSuccess)
-                    return;
-
-                var stream = streams.Streams.FirstOrDefault(x => x.UserId == payload.BroadcasterUserId);
-                if (stream == null)
+                if (string.IsNullOrWhiteSpace(payload.Id) || !payload.StartedAt.HasValue)
                 {
-                    Log.Warn($"收到 Twitch stream_online，但 Helix 尚未查到直播：{payload.BroadcasterUserId}");
+                    Log.Warn($"收到缺少 stream id 或 started_at 的 Twitch stream_online，交由輪詢補償：{payload.BroadcasterUserId}");
                     return;
                 }
 
-                await HandleStreamStartedAsync(stream);
+                DateTime startedAtUtc = payload.StartedAt.Value.UtcDateTime;
+                if (DateTime.UtcNow - startedAtUtc > StreamOnlineMaxAge)
+                {
+                    Log.Warn($"收到過期的 Twitch stream_online，交由輪詢補償：{payload.BroadcasterUserId}（{startedAtUtc:O}）");
+                    return;
+                }
+
+                // 標題與分類走 Get Channel Information，不依賴 Get Streams 的直播偵測；
+                // 查不到時沿用既有狀態或空值，不阻擋通知。
+                var channelInfo = await _apiService.GetChannelInformationAsync(payload.BroadcasterUserId);
+                TwitchStream previous = null;
+                if (channelInfo == null)
+                {
+                    previous = await GetStreamStateAsync(payload.BroadcasterUserId);
+                    Log.Warn($"無法取得 Twitch 頻道資料，使用既有狀態或空值發送開台通知：{payload.BroadcasterUserId}");
+                }
+
+                await HandleStreamStartedAsync(new TwitchStream
+                {
+                    StreamId = payload.Id,
+                    StreamTitle = channelInfo?.Title ?? previous?.StreamTitle ?? string.Empty,
+                    GameName = channelInfo?.GameName ?? previous?.GameName ?? string.Empty,
+                    ThumbnailUrl = BuildLiveThumbnailUrl(payload.BroadcasterUserLogin),
+                    UserId = payload.BroadcasterUserId,
+                    UserLogin = payload.BroadcasterUserLogin,
+                    UserName = payload.BroadcasterUserName,
+                    StreamStartAt = startedAtUtc
+                });
             }
             catch (Exception ex)
             {
@@ -300,7 +323,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
             var liveIds = streams.Streams.Select(x => x.UserId).ToHashSet(StringComparer.Ordinal);
             foreach (var stream in streams.Streams)
-                await HandleStreamStartedAsync(stream);
+                await HandleStreamStartedAsync(ToTwitchStream(stream));
 
             foreach (string userId in ids.Where(x => !liveIds.Contains(x)))
             {
@@ -318,44 +341,33 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             return true;
         }
 
-        private async Task HandleStreamStartedAsync(HelixStream stream)
+        private async Task HandleStreamStartedAsync(TwitchStream twitchStream)
         {
-            if (string.IsNullOrWhiteSpace(stream.Id) || string.IsNullOrWhiteSpace(stream.UserId))
+            if (string.IsNullOrWhiteSpace(twitchStream?.StreamId) || string.IsNullOrWhiteSpace(twitchStream.UserId))
                 return;
 
-            var userLock = GetUserLock(stream.UserId);
+            var userLock = GetUserLock(twitchStream.UserId);
             await userLock.WaitAsync();
             try
             {
                 using var db = _dbService.GetDbContext();
-                var spider = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == stream.UserId);
+                var spider = await db.TwitchSpider.SingleOrDefaultAsync(x => x.UserId == twitchStream.UserId);
                 if (spider == null)
                 {
-                    if (SetPending(stream.UserId, TwitchEventSubCleanupDeferredMetricReason.StreamLive))
-                        Log.Warn($"Twitch 開台事件沒有對應 spider，交由同步程序清理：{stream.UserId}");
+                    if (SetPending(twitchStream.UserId, TwitchEventSubCleanupDeferredMetricReason.StreamLive))
+                        Log.Warn($"Twitch 開台事件沒有對應 spider，交由同步程序清理：{twitchStream.UserId}");
                     return;
                 }
 
                 var authorization = await db.TwitchBroadcasterAuthorization.AsNoTracking()
-                    .SingleOrDefaultAsync(x => x.TwitchUserId == stream.UserId);
-                var twitchStream = new TwitchStream
-                {
-                    StreamId = stream.Id,
-                    StreamTitle = stream.Title,
-                    GameName = stream.GameName,
-                    ThumbnailUrl = (stream.ThumbnailUrl ?? string.Empty).Replace("{width}", "854").Replace("{height}", "480"),
-                    UserId = stream.UserId,
-                    UserLogin = stream.UserLogin,
-                    UserName = stream.UserName,
-                    StreamStartAt = stream.StartedAt
-                };
-                bool resumedBeforeOfflineConfirmation = CancelOfflineReminder(stream.UserId);
+                    .SingleOrDefaultAsync(x => x.TwitchUserId == twitchStream.UserId);
+                bool resumedBeforeOfflineConfirmation = CancelOfflineReminder(twitchStream.UserId);
                 // 下方兩條路徑都會寫入直播狀態；先遞增版本，讓已釋放鎖的關台流程不會再覆蓋這次的狀態。
-                _streamStartVersions.AddOrUpdate(stream.UserId, 1, (_, version) => version + 1);
-                bool databaseDuplicate = await db.TwitchStreams.AsNoTracking().AnyAsync(x => x.StreamId == stream.Id);
+                _streamStartVersions.AddOrUpdate(twitchStream.UserId, 1, (_, version) => version + 1);
+                bool databaseDuplicate = await db.TwitchStreams.AsNoTracking().AnyAsync(x => x.StreamId == twitchStream.StreamId);
                 bool processDuplicate = RecordAndCheckProcessDuplicate(
-                    _handledStreamIds, stream.Id, resumedBeforeOfflineConfirmation);
-                bool redisDuplicate = !processDuplicate && await IsStreamNotificationPublishedAsync(stream.Id);
+                    _handledStreamIds, twitchStream.StreamId, resumedBeforeOfflineConfirmation);
+                bool redisDuplicate = !processDuplicate && await IsStreamNotificationPublishedAsync(twitchStream.StreamId);
 
                 if (databaseDuplicate || processDuplicate || redisDuplicate)
                 {
@@ -367,7 +379,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                     }
 
                     await SetStreamStateAsync(twitchStream);
-                    await MaintainLiveSubscriptionsAsync(spider, authorization, stream.StartedAt);
+                    await MaintainLiveSubscriptionsAsync(spider, authorization, twitchStream.StreamStartAt);
                     return;
                 }
 
@@ -382,7 +394,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
                 db.TwitchStreams.Add(twitchStream);
                 await SetStreamStateAsync(twitchStream);
-                await MaintainLiveSubscriptionsAsync(spider, authorization, stream.StartedAt);
+                await MaintainLiveSubscriptionsAsync(spider, authorization, twitchStream.StreamStartAt);
 
                 bool isRecord = !_botConfig.DisableRecording && spider.IsRecord && await RecordTwitchAsync(twitchStream);
                 RedisValue messageId = await NotificationBus.PublishAsync(Bot.RedisDb, NotifyType.Twitch,
@@ -399,19 +411,44 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                         StreamStartAt = twitchStream.StreamStartAt,
                         IsRecord = isRecord
                     });
-                await MarkStreamNotificationPublishedAsync(stream.Id, messageId);
-                _handledStreamIds[stream.Id] = 0;
+                await MarkStreamNotificationPublishedAsync(twitchStream.StreamId, messageId);
+                _handledStreamIds[twitchStream.StreamId] = 0;
                 await db.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Demystify(), $"處理 Twitch 開台失敗：{stream.UserId}");
+                Log.Error(ex.Demystify(), $"處理 Twitch 開台失敗：{twitchStream.UserId}");
             }
             finally
             {
                 userLock.Release();
             }
         }
+
+        /// <summary>把 Helix 的直播資料轉成統一的場次物件，供輪詢與恢復直播共用。</summary>
+        private static TwitchStream ToTwitchStream(HelixStream stream)
+        {
+            if (stream == null)
+                return null;
+
+            return new TwitchStream
+            {
+                StreamId = stream.Id,
+                StreamTitle = stream.Title,
+                GameName = stream.GameName,
+                ThumbnailUrl = (stream.ThumbnailUrl ?? string.Empty).Replace("{width}", "854").Replace("{height}", "480"),
+                UserId = stream.UserId,
+                UserLogin = stream.UserLogin,
+                UserName = stream.UserName,
+                StreamStartAt = stream.StartedAt
+            };
+        }
+
+        /// <summary>Twitch 直播縮圖格式與 Helix 回傳的 thumbnail_url 相同，只是替換成固定尺寸。</summary>
+        private static string BuildLiveThumbnailUrl(string userLogin) =>
+            string.IsNullOrWhiteSpace(userLogin)
+                ? string.Empty
+                : $"https://static-cdn.jtvnw.net/previews-ttv/live_user_{userLogin}-854x480.jpg";
 
         private async Task MaintainLiveSubscriptionsAsync(TwitchSpider spider,
             TwitchBroadcasterAuthorization authorization, DateTime streamStartedAt)
@@ -771,7 +808,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 {
                     await Task.Delay(OfflineDebounce, cancellationToken);
                     await HandleStreamEndedAsync(userId, userLogin, userName, DateTime.UtcNow - OfflineDebounce,
-                        publishEndNotification);
+                        publishEndNotification, cancellation);
                 }
                 catch (OperationCanceledException)
                 {
@@ -793,7 +830,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
         /// 去抖動後再次向 Helix 確認；若已恢復直播則回到開台流程，否則校正訂閱，並依觸發來源決定是否發布關台通知。
         /// </summary>
         private async Task HandleStreamEndedAsync(string userId, string userLogin, string userName, DateTime endAtUtc,
-            bool publishEndNotification)
+            bool publishEndNotification, CancellationTokenSource cancellation)
         {
             HelixStream resumedStream;
             TwitchStream twitchStream = null;
@@ -813,6 +850,11 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
                 resumedStream = streams.Streams.FirstOrDefault(x => x.UserId == userId);
                 if (resumedStream == null)
                 {
+                    // 離線已確認；先移除本輪 debounce，讓之後到達的 online 視為新場次，
+                    // 避免新場次被當成恢復直播而漏掉開台通知。
+                    _streamOfflineReminders.TryRemove(
+                        new KeyValuePair<string, CancellationTokenSource>(userId, cancellation));
+
                     twitchStream = await GetStreamStateAsync(userId);
                     var state = await LoadUserStateAsync(userId);
                     // 先處理 EventSub 與授權失效清理，再決定是否能安全發布關台通知。
@@ -837,7 +879,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
             // 恢復直播時先釋放鎖，再回到開台流程。
             if (resumedStream != null)
             {
-                await HandleStreamStartedAsync(resumedStream);
+                await HandleStreamStartedAsync(ToTwitchStream(resumedStream));
                 return;
             }
 
@@ -1251,6 +1293,9 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitch
 
         private sealed class TwitchStreamEventPayload
         {
+            // stream.online 會帶 stream id 與開始時間；stream.offline 沒有這兩個欄位。
+            public string Id { get; set; }
+            public DateTimeOffset? StartedAt { get; set; }
             public string BroadcasterUserId { get; set; }
             public string BroadcasterUserLogin { get; set; }
             public string BroadcasterUserName { get; set; }

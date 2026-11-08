@@ -385,7 +385,9 @@ RedisChannels.Twitch.AuthorizationChanged = "twitch:authorization_changed";
 
 - 訂閱 `twitch:stream_online` 與 `twitch:authorization_changed`。
 - 抽出 Webhook 與 polling 共用的直播開始處理流程。
-- 收到 online callback 後呼叫 Helix `Get Streams` 補齊完整直播資料。
+- 收到 online callback 後以 payload 的 stream id 與 `started_at` 建立場次，不等待 Helix `Get Streams`。
+- 標題與分類取自 Helix `Get Channel Information`；查詢失敗時沿用既有 Redis 狀態或空值，不阻擋通知。
+- `started_at` 超過 10 分鐘的 online 視為過期，交由低頻輪詢補償。
 - 以 Stream ID、DB 紀錄、Redis state 去重。
 - 已授權 broadcaster 排除於高頻一般輪詢，但保留低頻補償 reconcile。
 - `IsWarningUser` 在授權有效時不再阻止 Redis stream state與 EventSub。
