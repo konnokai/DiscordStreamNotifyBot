@@ -15,8 +15,10 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
                 .WithDescription(Format.Url(twitchStream.UserName, $"https://twitch.tv/{twitchStream.UserLogin}"))
                 .WithUrl($"https://twitch.tv/{twitchStream.UserLogin}")
                 .WithThumbnailUrl(profileImageUrl)
-                .WithImageUrl($"{twitchStream.ThumbnailUrl}?t={thumbnailCacheBuster}")
                 .AddField(localizer.Get("Notifications.Field.Status", locale), localizer.Get("Twitch.StreamStatus.Live", locale));
+
+            if (!string.IsNullOrEmpty(twitchStream.ThumbnailUrl))
+                embedBuilder.WithImageUrl($"{twitchStream.ThumbnailUrl}?t={thumbnailCacheBuster}");
 
             if (!string.IsNullOrEmpty(twitchStream.GameName))
                 embedBuilder.AddField(localizer.Get("Notifications.Field.Category", locale), twitchStream.GameName, true);
