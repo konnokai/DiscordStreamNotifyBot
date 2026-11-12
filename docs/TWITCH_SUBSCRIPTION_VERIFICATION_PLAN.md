@@ -1,6 +1,6 @@
 # Twitch 訂閱驗證實作計畫
 
-> 狀態：程式實作完成；待正式 DB migration 與 Twitch/Discord 手動驗收
+> 狀態：程式實作完成並已部署（migration 由 Bot 啟動時自動套用）；Twitch/Discord 手動驗收結果未記錄
 >
 > 建立日期：2026-08-03
 
@@ -215,9 +215,8 @@ DateAdded
 1. 新增兩個 entity 與 `DbSet`。
 2. 在 `MainDbContext.OnModelCreating` 設定唯一索引及欄位長度。
 3. 產生 migration。
-4. 產生上一版至新版的冪等增量 SQL。
-5. 更新 `migrate_sql/all.sql`。
-6. Backend 不映射這兩張表，因為訂閱驗證狀態與 Discord 身分組只由 Bot 管理。
+4. 產生上一版至新版的冪等增量 SQL 供審查（輸出到暫存路徑，不進 repo）。
+5. Backend 不映射這兩張表，因為訂閱驗證狀態與 Discord 身分組只由 Bot 管理。
 
 ## 7. 自動角色管理
 

@@ -47,7 +47,8 @@ namespace DiscordStreamNotifyBot
 
             Log.RolePrefix = $"notifier:{shardId}";
 
-            // 啟動連線檢查（計畫 §5.3）：進入主邏輯前確認 MySQL / Redis 可連線，失敗印訊息後 Exit(1) 交給 Compose restart
+            // 啟動連線檢查（計畫 §5.3）：進入主邏輯前確認 MySQL / Redis 可連線並套用 migration；
+            // 失敗印訊息後 Exit(1)，notifier 的 restart 是 "no"，不會自動重啟，需人工處理
             var preflightConfig = new BotConfig();
             preflightConfig.InitBotConfig();
             Log.ConfigureLoki(preflightConfig.LokiUrl);

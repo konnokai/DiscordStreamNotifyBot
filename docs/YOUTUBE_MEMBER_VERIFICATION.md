@@ -28,4 +28,4 @@
 
 先在所有 DB writer 停止後執行 `docs/YOUTUBE_MEMBER_VERIFICATION_PREFLIGHT.sql`。任何 duplicate、orphan、無效 ID 或跨平台 role collision 都必須由人工判斷；migration 不會自動修正 production data。
 
-Bot 是唯一 migration owner。正式環境只人工執行 reviewed idempotent SQL，不使用 `dotnet ef database update`。完整部署與人工 acceptance 清單見 `YOUTUBE_MEMBER_VERIFICATION_REFACTOR_PLAN.md`。
+Bot 是唯一 migration owner。正式環境由 scraper／notifier 啟動時自動套用 migration（見 `README.md`），不要對正式庫執行 `dotnet ef database update`。完整部署與人工 acceptance 清單見 `YOUTUBE_MEMBER_VERIFICATION_REFACTOR_PLAN.md`。

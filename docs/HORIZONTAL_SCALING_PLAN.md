@@ -367,14 +367,14 @@ services:
 
 ### 階段 7（收尾）：制度回填（完成）
 - [x] 更新 CLAUDE.md（架構段已四專案版；「目前狀態」改為階段 0-7 程式碼完成、僅編譯驗證；架構要點加 Coordinator + 跨 shard；適用 Skills 列三個本專案 skill）。
-- [x] 收割 claude 分支的 `.claude/skills/`（`add-detection-platform`、`debug-detection-bus`、`ef-migration-baseline`），RabbitMQ→Redis Streams，且校準到現行樹實名（`NotificationBus.PublishAsync`/`NotifyType`/`DispatchAsync` switch/`bot:notify` group `shard-{id}`/shard 公式 `(guildId>>22)%total`）。順手修掉 shard 0 啟動的 `EnsureCreated`（違 EF 鐵則的 master 遺留）：`Bot.cs` 改為啟動不碰 DB，遷移一律 Script-Migration。
+- [x] 收割 claude 分支的 `.claude/skills/`（`add-detection-platform`、`debug-detection-bus`、`ef-migration-baseline`），RabbitMQ→Redis Streams，且校準到現行樹實名（`NotificationBus.PublishAsync`/`NotifyType`/`DispatchAsync` switch/`bot:notify` group `shard-{id}`/shard 公式 `(guildId>>22)%total`）。順手修掉 shard 0 啟動的 `EnsureCreated`（違 EF 鐵則的 master 遺留）：`Bot.cs` 改為啟動不碰 DB；migration 現由 `StartupPreflight` 在 scraper／notifier 啟動時自動套用（2026-11 起，見 `AGENTS.md`）。
 
 ---
 
 ## 9. 正確性必辦（不做會在正式環境出錯）
 
 1. **SIGTERM 優雅關閉**：`docker stop` 送 SIGTERM，`Console.CancelKeyPress` 只攔 SIGINT → 現行清理（存 DB、Unsubscribe）不會執行。用 `AppDomain`/`PosixSignalRegistration` 統一處理（參考 `claude:src/DiscordStreamNotifyBot.Shared/GracefulShutdown.cs`），全部長迴圈吃它的 `CancellationToken`。
-2. **EF Migrations 不可重新生成**：正式 DB 的 `__EFMigrationsHistory` **已記錄 claude 分支的 migration ID**（`20250320095452_RefactorDbContext` … `20260611015819_SyncModelDrift`，基線化已於 2026-06 完成）。重做時把 `claude:src/DiscordStreamNotifyBot.Shared/Migrations/` **整個資料夾照搬**（含 ModelSnapshot），否則新生成的 migration ID 對不上正式 DB，`Migrate()` 會嘗試重建既有表。（master 樹已含前三個 migration，缺 `SyncModelDrift` 與 baseline SQL — 照搬整個資料夾即補齊。）搬完後跑 `dotnet ef migrations has-pending-model-changes --project src/DiscordStreamNotifyBot.Shared` 確認無 drift。**禁用 EnsureCreated**；正式環境套用一律 Script-Migration（見 CLAUDE.md EF 鐵則）。
+2. **EF Migrations 不可重新生成**：正式 DB 的 `__EFMigrationsHistory` **已記錄 claude 分支的 migration ID**（`20250320095452_RefactorDbContext` … `20260611015819_SyncModelDrift`，基線化已於 2026-06 完成）。重做時把 `claude:src/DiscordStreamNotifyBot.Shared/Migrations/` **整個資料夾照搬**（含 ModelSnapshot），否則新生成的 migration ID 對不上正式 DB，`Migrate()` 會嘗試重建既有表。（master 樹已含前三個 migration，缺 `SyncModelDrift` 與 baseline SQL — 照搬整個資料夾即補齊。）搬完後跑 `dotnet ef migrations has-pending-model-changes --project src/DiscordStreamNotifyBot.Shared` 確認無 drift。**禁用 EnsureCreated**；正式環境由 `StartupPreflight` 啟動時自動套用 migration，部署前先產生冪等 SQL 審查。
 3. **Streams 堆積上限**：XADD 一律帶 `MAXLEN ~`；毒訊息按 §4.3 丟棄機制處理。無人消費的 group（例如縮容後）pending 會留著 — Coordinator 的 XPENDING 監控要涵蓋「group 存在但無 consumer」。
 
 ---

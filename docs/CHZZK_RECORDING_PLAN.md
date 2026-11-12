@@ -82,7 +82,7 @@
 ### 資料庫與自動委派
 
 - `ChzzkSpider` 新增 `IsRecord`，預設 `false`。
-- 在 Bot 儲存庫建立 migration，同步 EF snapshot 與 `migrate_sql/all.sql`；不套用正式資料庫。
+- 在 Bot 儲存庫建立 migration，同步 EF snapshot；不套用正式資料庫。
 - 僅在建立新場次、發布 StartStream 通知的流程檢查 `IsRecord` 並發布錄影請求。
 - 不放入 Notifier 的各 guild 通知處理，避免同頻道多個通知訂閱造成多份錄影。
 - 不放入同場更新、既有場次接回或關台流程；不新增輪詢補送。
@@ -193,6 +193,6 @@ Bot 已無自動化測試。以 Release 實際執行手動驗證以下行為：
 3. 完成 Bot migration、指令、按鈕與新場次自動委派，再完成完整建置與手動驗證。
 4. 更新兩端 README 的新設定／指令／契約，以及 `docs/CHZZK_NOTIFICATION_PLAN.md` 原本「不含錄影」的範圍說明。
 5. 檢查兩個儲存庫 diff 與 whitespace，回報尚未實測的外部整合項目。
-6. 部署時先讓錄影端支援新契約，再於套用 migration 後部署 Bot；所有頻道初始自動錄影維持關閉。
+6. 部署時先讓錄影端支援新契約，再部署 Bot（啟動時自動套用 migration）；所有頻道初始自動錄影維持關閉。
 
 本計畫不授權部署、正式 migration、啟動實際錄影或發送 Discord 訊息。不要自動提交或更新 graphify；程式實作完成後提醒使用者自行更新各儲存庫圖譜。

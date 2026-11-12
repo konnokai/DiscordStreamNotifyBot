@@ -776,11 +776,11 @@ pnpm lint:script
 pnpm lint:style
 ```
 
-正式 DB 禁止執行 `dotnet ef database update`。只允許人工審核後於維護窗口套用 idempotent SQL。
+正式 DB 禁止執行 `dotnet ef database update`。migration 由 Bot 啟動時自動套用；上線前仍要人工審核冪等 SQL。
 
 ## 19. 部署順序
 
-1. 備份並套用經審核的 DB migration SQL。
+1. 備份 DB，確認冪等 migration SQL 內容與新舊版相容性（migration 於步驟 4 由 Bot 啟動時套用）。
 2. 部署 Backend的新 schema mapping、OAuth API、token validation、Webhook與 metrics。
 3. 確認 MySQL `twitch_broadcaster_authorization` 是唯一 token 資料來源，Redis DB 1 僅用於 refresh lock。
 4. 部署 Bot/Scraper的新 EventSub雙模式、guild policy與 metrics。

@@ -201,8 +201,7 @@ public bool PendingRoleRemoval { get; set; }
 - 不自動修正跨平台 role collision。
 - 不新增 composite FK。
 - Migration 前先執行 read-only preflight；若有重複或孤兒資料，停止 deployment 並人工處理。
-- 產生一份目標 migration 的增量冪等 SQL，並更新 `migrate_sql/all.sql`。
-- 重新產生 SQL 後需逐檔比對 checked-in output。
+- 產生一份目標 migration 的增量冪等 SQL 供部署前審查（輸出到暫存路徑，不進 repo）。
 
 ### 8.4 Preflight 查詢
 

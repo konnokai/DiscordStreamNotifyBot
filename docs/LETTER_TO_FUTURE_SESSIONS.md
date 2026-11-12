@@ -21,7 +21,7 @@
 
 這不是綠地專案。master 的程式碼**正在線上服務真實伺服器**，而且：
 
-- **正式 DB 是共享的活狀態**：已基線化（2026-06）、只接受人工審核過的冪等 SQL script，永遠不要對它 `dotnet ef database update`。改 schema 前先想「這條 SQL 在維護窗口跑下去會怎樣」。
+- **正式 DB 是共享的活狀態**：已基線化（2026-06）。scraper / notifier 啟動時會自動套用 pending migration，所以「部署」等於「套用 schema 變更」。改 schema 前先產冪等 SQL 審查，先想「這條 SQL 在正式庫跑下去會怎樣」，含 `DROP` 的先備份。
 - **Redis 頻道名是跨 repo 契約**：`youtube.startstream`、`twitch:channel_update` 這些字串的另一端是兩個你看不到的 repo（錄影工具、webhook 後端）。重構時可以搬程式碼，**不能改字串**。
 - **Debug 組態是殘缺的**：`#if` 會關掉登入、指令註冊等大量功能。「Debug 下跑起來了」不代表任何事，驗證一律 Release。
 - **沒有測試**。你的安全網只有兩層：commit 前全 solution Release build（一次都不能省 — 之前有 session 只建單一專案，把壞 commit 推了出去），以及計畫 §11 的多程序手動驗證清單。改了共用程式碼，grep 所有呼叫端。
@@ -35,7 +35,7 @@
 1. 三層拆分：Scraper（叢集唯一）/ Notifier（多 shard）/ Coordinator（輕量，不管 Process.Start，重啟交給 Compose）。
 2. 匯流排 = Redis Streams，**不新增任何套件或服務**。
 3. 從 master 重做；claude 分支僅供參考。
-4. 正式 DB 遷移 = Script-Migration 人工套用。
+4. 正式 DB 遷移 = 服務啟動時自動套用 migration（部署前仍要審過冪等 SQL）。
 5. 繁體中文：註解、log、UI 字串、commit 訊息。
 6. 指令的使用者文件在 Notion，repo 不重複維護。
 

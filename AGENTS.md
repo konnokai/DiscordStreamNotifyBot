@@ -57,12 +57,11 @@ MySQL schema 由本儲存庫管理。Backend 只映射既有資料表，不建�
 
 ```powershell
 dotnet ef migrations add <Name> --project src/DiscordStreamNotifyBot.Shared
-dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate_sql\all.sql
 ```
 
-- 新增 migration 後，同步更新 `migrate_sql/all.sql`。
 - 既有 migration ID 是資料庫歷史的一部分，不可重新產生或改名。
-- `database update` 只可用於本機或開發資料庫。正式環境使用審核過的 SQL。
+- Scraper 與 Notifier 啟動時會自動套用尚未執行的 migration（`StartupPreflight`；併發由 Pomelo 內建的 `__{db}_EFMigrationsLock` 處理）。這是唯一的套用方式，不再手動套 SQL。
+- 部署前想先確認這次會改什麼，可產生冪等 SQL 審查：`dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Shared`（輸出到暫存路徑，不進 repo）。含 `DROP` 的變更先備份資料庫，並確認舊版 Bot／Backend 在過渡期仍可運作。
 - 禁止以 `EnsureCreated` 取代 migration。
 
 ## 跨專案契約

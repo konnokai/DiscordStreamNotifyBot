@@ -3,7 +3,7 @@ name: ef-migration-baseline
 description: >
   在「直播小幫手」做 EF Core schema 變更、新增/套用 migration、或處理「舊的 EnsureCreated 正式庫要基線化」時用。
   涵蓋本專案特有的眉角：EF 工具指向 Shared 專案（已有 MainDbContextFactory 設計階段工廠，免 startup project）、
-  連線字串解析順序、正式環境一律 Script-Migration、以及一次性基線化腳本 _Baseline_ExistingDb.sql。
+  連線字串解析順序、啟動時自動套用 migration 與上線前的 SQL 審查、以及一次性基線化腳本 _Baseline_ExistingDb.sql。
   只要使用者說「加欄位/改表」「新增 migration」「update database」「schema 變更」「資料表」「基線化」
   「EnsureCreated 的舊庫」，就用這個 skill。注意：本專案的 dotnet-claude-kit `/migrate` 是引導式變體，
   需要逐步審 SQL 時可改用它。
@@ -42,26 +42,37 @@ dotnet ef migrations add <Name> --project src/DiscordStreamNotifyBot.Shared
   ```powershell
   dotnet ef database update --project src/DiscordStreamNotifyBot.Shared
   ```
-- **正式環境**：**不**對正式 DB 直接 `database update`。改用 Script-Migration 產生 SQL、人工審過後，
-  手動連到對應資料庫執行：
+- **正式環境**：服務啟動時會自動套用（見下節），所以**不需要**再手動 `database update`。
+  上線前先產生冪等 SQL 審查這次會改什麼，確認沒有預料外的 `DROP`：
   ```powershell
-  # 產生「冪等」腳本（內含 __EFMigrationsHistory 判斷，重跑/不確定已套到哪都安全）
+  # 內含 __EFMigrationsHistory 判斷，重跑/不確定已套到哪都安全
   dotnet ef migrations script --idempotent --project src/DiscordStreamNotifyBot.Shared -o migrate.sql
   # 或只產生某個範圍： dotnet ef migrations script <FromMigration> <ToMigration> --idempotent ... -o migrate.sql
   ```
-  審完 `migrate.sql` 再到正式 DB 上跑。理由：正式庫變更要可審、可控、可在維護窗口手動執行，
-  不讓工具直連正式庫。
+  含破壞性變更時先備份資料庫，也可以在維護窗口手動執行審過的 SQL，讓啟動時只剩「已是最新」。
 
 > YouTube 影片四表（`HoloVideos` / `NijisanjiVideos` / `OtherVideos` / `NonApprovedVideos`）共同繼承
 > `DataBase.Table.Video` 基底，加共用欄位時是改 base，會同時影響四張表——審 migration 時確認四張都有動到。
 
-## 啟動時不碰資料庫（重要）
+## 啟動時自動套用 migration（重要）
 
-`Notifier/Bot.cs` 啟動**不做任何建表/遷移**（原 shard 0 的 `EnsureCreated()` 已移除）。理由：正式 DB 已基線化
-（有 `__EFMigrationsHistory`），`EnsureCreated` 對全新庫會建出無遷移歷史的 schema，之後所有 migration 都會失敗；
-自動 `Migrate()` 又等同 database-update 直連，違反鐵則。**別加回任何啟動自動建表/遷移。**
+`Shared/StartupPreflight.cs` 在 MySQL 連線檢查通過後直接套用 migration（scraper 與 notifier 都是）。重點：
 
-**正確流程**：schema 變更一律走上面的「正式環境 Script-Migration」，部署前人工套完冪等 SQL；本地/開發庫自行 `database update`。
+- **不碰 `EnsureCreated`**：正式 DB 已基線化（有 `__EFMigrationsHistory`），`EnsureCreated` 對全新庫會建出無遷移歷史的
+  schema，之後所有 migration 都會失敗。只能用 migration。
+- **併發由 Pomelo 內建鎖處理**：scraper 與各 shard 同時啟動時，EF 的 `MigrateAsync` 會用
+  `GET_LOCK('__{database}_EFMigrationsLock', 259200)` 互斥並重讀歷史，不需要自己加鎖。
+- **migration 的指令逾時放寬到 1 小時**：大表 `ALTER TABLE` 超過預設 30 秒會被取消，DDL 不可交易，會留下半套 schema。
+- **資料庫本身要先存在**：程式不會建立 database。
+- **migration 失敗＝程序不啟動**：notifier 的 compose `restart` 是 `no`，失敗後不會自己重啟，要看 log 修。
+
+**流程**：改 model → `migrations add` → 審 `Up()/Down()` → 產冪等 SQL 審查（見上節）→ 部署，啟動時自動套用。
+
+## 上線順序與回退
+
+- migration 必須讓舊版 Bot 與 Backend 還能跑（先加欄位／表、之後才刪）。做不到就停掉所有服務再部署。
+- 新版程序一啟動就套用 schema；Backend 在另一個 repo，不會跟著重啟。
+- 回退 image 不會退 schema；要還原得自己執行 `Down()` 對應的 SQL。
 
 ## 一次性基線化（舊的 EnsureCreated 正式庫）
 

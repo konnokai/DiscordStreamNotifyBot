@@ -92,9 +92,8 @@ namespace DiscordStreamNotifyBot
                 return;
             }
 
-            // 不在啟動時建立/遷移資料庫：正式 DB 已基線化，禁用 EnsureCreated（會建立無遷移歷史的庫）；
-            // 遷移一律用 Script-Migration 產生冪等 SQL、人工審核後於維護窗口手動套用（見 CLAUDE.md EF 鐵則）。
-            // 本地/開發庫請自行 dotnet ef database update。
+            // 資料庫 migration 已由 StartupPreflight 在啟動時套用，這裡不建立也不遷移資料庫。
+            // 禁用 EnsureCreated：它會建出沒有 __EFMigrationsHistory 的庫，之後所有 migration 都會失敗。
         }
 
         public async Task StartAndBlockAsync()

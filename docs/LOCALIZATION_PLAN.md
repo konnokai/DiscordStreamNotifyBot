@@ -229,7 +229,7 @@ public string Locale { get; set; }
 ### 7.3 Migration 鐵則
 
 - 使用 `dotnet ef migrations add AddLocalizationSettings --project src/DiscordStreamNotifyBot.Shared` 產生 migration。
-- 正式 DB 不直接執行 `database update`。
+- 正式 DB 不直接執行 `database update`；服務啟動時由 `StartupPreflight` 自動套用 migration。
 - 產生冪等 SQL：
 
 ```powershell

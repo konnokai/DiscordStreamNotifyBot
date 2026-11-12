@@ -286,7 +286,7 @@ streamKey = channelId + ":" + 正規化 openDate
 
 - [x] 同步 Bot、Backend、Frontend 的 capability、action、snapshot、表單及驗證。Bot 新增 capability/action/snapshot 區塊；Backend 為 pass-through 無需改動；Frontend 新增 CHZZK 表單、型別與 action。三 repo 檢查皆通過。
 - [ ] 驗證 Slash/Web 共用行為、未授權存取、無效頻道、API 不可用與功能停用。**未實測（需實際 Backend＋Bot＋Discord 登入）**。
-- [x] 按 repo 規則產生單次增量及完整冪等 migration SQL，人工審查；不可直連正式 DB 執行 database update。`migrate_sql/20260915073735_AddChzzkNotification.sql`、`migrate_sql/all.sql`（未執行）。
+- [x] 按 repo 規則產生單次增量及完整冪等 migration SQL，人工審查；正式環境由 Bot 啟動時自動套用 migration，不直連正式 DB 執行 database update。產生的 SQL 只用於審查，不保存在 repo。
 - [x] 執行 Bot 完整 Release build/test、Backend 與前端適用的既有檢查，以及相關 diff 檢查。Bot：build 0 警告/錯誤、681 passed／38 skipped（Redis/MySQL component tests 因環境跳過）；Backend：76 passed；Frontend：`vue-tsc`／eslint／stylelint／vite build 皆通過；三 repo `git diff --check` 乾淨。
 - [ ] 經授權才在測試 Discord guild 傳訊息；外部 API、正式 Discord、正式 DB 或多 shard 尚未驗證者明列，不以 unit tests 宣稱已通過。
 - [x] 更新必要文件與 AGENTS.md 狀態，不自動部署、commit、push 或 graphify update。
@@ -319,7 +319,7 @@ dotnet build DiscordStreamNotifyBot.sln -c Release
 | HTTP client／模型 | `Shared/HttpClients/Chzzk/ChzzkClient.cs`、`ChzzkModels.cs` |
 | streamKey／時間／URL | `Shared/SharedService/Chzzk/ChzzkStreamIdentity.cs`、`ChzzkUrlParser.cs` |
 | 資料表 | `Shared/DataBase/Table/ChzzkSpider.cs`、`ChzzkStream.cs`、`NoticeChzzkStreamChannel.cs`；`GuildConfig.MaxChzzkSpiderCount` |
-| Migration | `Shared/Migrations/20260915073735_AddChzzkNotification.cs`；`migrate_sql/20260915073735_AddChzzkNotification.sql`、`migrate_sql/all.sql` |
+| Migration | `Shared/Migrations/20260915073735_AddChzzkNotification.cs` |
 | 通知 DTO／去重 | `Shared/Messages/Notifications.cs`（`NotifyType.Chzzk`、`ChzzkNotification`）、`Notifier/NotificationDedupPolicy.cs` |
 | 偵測 | `Scraper/Detection/Chzzk/ChzzkDetectionService.cs`、`ChzzkStateDecisions.cs`、`Scraper/DetectionHost.cs` |
 | 發送 | `Notifier/SharedService/Chzzk/ChzzkService.cs`、`ChzzkEmbedBuilderFactory.cs`、`Notifier/NotificationBusConsumer.cs`、`Notifier/NotifierMetrics.cs` |
