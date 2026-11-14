@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 
 namespace DiscordStreamNotifyBot.SharedService.Youtube
 {
-    public enum YoutubeVideoPageStatus { Unknown, Public, MembersOnly, Private, Unavailable }
+    public enum YoutubeVideoPageStatus { Unknown, Public, MembersOnly, Private, Unavailable, AgeRestricted }
 
     /// <summary>
     /// 以未登入的觀看頁 playabilityStatus 判斷影片狀態。
@@ -29,6 +29,8 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 YoutubeVideoPageStatus status = Parse(html);
                 if (status == YoutubeVideoPageStatus.Unknown)
                     Log.Warn($"YouTube 觀看頁無法判斷影片狀態: {videoId}");
+                else if (status == YoutubeVideoPageStatus.AgeRestricted)
+                    Log.Info($"此為年齡限制影片: {videoId}");
                 return status;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
@@ -61,7 +63,10 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             string reason = playability?.Value<string>("reason") ?? string.Empty;
             if (playability?.SelectToken("errorScreen.playerLegacyDesktopYpcOfferRenderer.offerId")?.ToString() == "sponsors_only_video")
                 return YoutubeVideoPageStatus.MembersOnly;
-            // 年齡限制與「確認你不是機器人」也是 LOGIN_REQUIRED，要再看 reason
+            // 年齡限制、私人與「確認你不是機器人」都是 LOGIN_REQUIRED，要看 reason 才分得出來
+            // 已刪除的 ERROR 先排除，避免 reason 字串誤命中
+            if (status != "ERROR" && IsAgeRestricted(status, reason))
+                return YoutubeVideoPageStatus.AgeRestricted;
             if (status == "LOGIN_REQUIRED" && reason.Contains("private", StringComparison.OrdinalIgnoreCase))
                 return YoutubeVideoPageStatus.Private;
 
@@ -72,6 +77,13 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
                 _ => YoutubeVideoPageStatus.Unknown
             };
         }
+
+        // 頁面固定 hl=en，字串集合與 yt-dlp 的 age gate 判斷一致；命中代表影片存在且公開
+        private static bool IsAgeRestricted(string status, string reason)
+            => status is "AGE_VERIFICATION_REQUIRED" or "AGE_CHECK_REQUIRED"
+                || reason.Contains("confirm your age", StringComparison.OrdinalIgnoreCase)
+                || reason.Contains("age-restricted", StringComparison.OrdinalIgnoreCase)
+                || reason.Contains("inappropriate", StringComparison.OrdinalIgnoreCase);
 
         private static HttpClient CreateHttpClient()
         {

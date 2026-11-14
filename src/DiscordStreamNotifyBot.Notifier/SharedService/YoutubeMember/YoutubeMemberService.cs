@@ -486,9 +486,9 @@ namespace DiscordStreamNotifyBot.SharedService.YoutubeMember
             if (string.IsNullOrWhiteSpace(videoId))
                 return AdminSettingsMutationResult.Rejected("verification.probe-video-invalid");
 
-            // 觀看頁明確不是會限就拒絕；讀不到頁面時沿用留言 API 判斷
+            // 觀看頁明確不是會限就拒絕；讀不到頁面或有年齡限制時沿用留言 API 判斷
             YoutubeVideoPageStatus pageStatus = await YoutubeVideoPage.GetStatusAsync(videoId, cancellationToken);
-            if (pageStatus is not (YoutubeVideoPageStatus.MembersOnly or YoutubeVideoPageStatus.Unknown))
+            if (pageStatus is not (YoutubeVideoPageStatus.MembersOnly or YoutubeVideoPageStatus.Unknown or YoutubeVideoPageStatus.AgeRestricted))
                 return AdminSettingsMutationResult.Rejected("verification.probe-video-invalid");
 
             try

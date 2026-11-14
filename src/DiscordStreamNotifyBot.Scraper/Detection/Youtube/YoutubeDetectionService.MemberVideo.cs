@@ -56,6 +56,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                             videoList.RemoveAt(candidateIndex);
                             var videoId = videoSnippet.Snippet.ResourceId.VideoId;
                             // 會限清單裡轉私人或已刪除的影片，留言 API 也可能回 403 被誤選，先用觀看頁排除
+                            // 年齡限制可能蓋掉會限資訊，不跳過，交給留言 API 判斷
                             var pageStatus = await YoutubeVideoPage.GetStatusAsync(videoId).ConfigureAwait(false);
                             if (pageStatus is YoutubeVideoPageStatus.Public or YoutubeVideoPageStatus.Private or YoutubeVideoPageStatus.Unavailable)
                                 continue;
