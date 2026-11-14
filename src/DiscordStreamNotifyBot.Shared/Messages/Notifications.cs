@@ -19,6 +19,12 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public const string YoutubeMemberVideoLog = "youtube_member_video_log";
 
         /// <summary>
+        /// TwitCasting 爬蟲自動移除私訊：payload 為 <see cref="TwitcastingSpiderRemovedNotification"/>。
+        /// Scraper 偵測到直播頻道不存在後刪除爬蟲，Notifier 只在 shard 0 私訊 Bot 擁有者。
+        /// </summary>
+        public const string TwitcastingSpiderRemoved = "twitcasting_spider_removed";
+
+        /// <summary>
         /// 存檔轉移私訊：payload 沿用 <see cref="YoutubeNotification"/>（會限為 End + IsMemberOnly，私人存檔為 Delete + IsUnarchived）。
         /// 跟一般 YouTube 通知分開，因為伺服器的關台通知可能已先發過，私訊仍要送。
         /// </summary>
@@ -182,6 +188,23 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public DateTime StreamStartAt { get; set; }
         public bool IsPrivate { get; set; }
         public bool IsRecord { get; set; }
+    }
+
+    /// <summary>
+    /// 跨層：TwitCasting 直播頻道已不存在，Scraper 自動移除爬蟲後通知 Bot 擁有者。
+    /// </summary>
+    public class TwitcastingSpiderRemovedNotification
+    {
+        /// <summary>TwitCasting 使用者 Id（twitcasting_spider.channel_id）。</summary>
+        public string UserId { get; set; }
+
+        /// <summary>TwitCasting screen_id（使用者可能已改名，僅供顯示連結）。</summary>
+        public string ScreenId { get; set; }
+
+        public string ChannelTitle { get; set; }
+
+        /// <summary>爬蟲擁有者清單；0 代表 Bot 擁有者。同一 ChannelId 可能因 screen_id 變更而有多筆。</summary>
+        public List<ulong> GuildIds { get; set; } = new();
     }
 
     /// <summary>跨層伺服器橫幅變更事件（開台時換 banner，需 notifier 端 GetGuild）。</summary>

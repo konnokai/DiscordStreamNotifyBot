@@ -483,6 +483,7 @@ namespace DiscordStreamNotifyBot
             NotifyType.Youtube => "youtube",
             NotifyType.Twitch => "twitch",
             NotifyType.Twitcasting => "twitcasting",
+            NotifyType.TwitcastingSpiderRemoved => "twitcasting_spider_removed",
             NotifyType.Chzzk => "chzzk",
             NotifyType.Banner => "banner",
             NotifyType.YoutubeMemberVideoLog => "youtube_member_video_log",
