@@ -189,6 +189,12 @@ namespace DiscordStreamNotifyBot
                     await _twitcastingService.DispatchFromBusAsync(twitcastingDto, progress);
                     return true;
 
+                case NotifyType.TwitcastingSpiderRemoved:
+                    var twitcastingSpiderRemovedDto = JsonConvert.DeserializeObject<TwitcastingSpiderRemovedNotification>(json);
+                    if (twitcastingSpiderRemovedDto == null) return false;
+                    await _twitcastingService.DispatchSpiderRemovedFromBusAsync(twitcastingSpiderRemovedDto);
+                    return true;
+
                 case NotifyType.Chzzk:
                     var chzzkDto = JsonConvert.DeserializeObject<ChzzkNotification>(json);
                     if (chzzkDto == null) return false;

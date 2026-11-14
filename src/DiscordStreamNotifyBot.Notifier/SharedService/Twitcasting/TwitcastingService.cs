@@ -336,6 +336,54 @@ namespace DiscordStreamNotifyBot.SharedService.Twitcasting
             }, dto.IsPrivate, dto.IsRecord, progress);
         }
 
+        /// <summary>
+        /// 通知匯流排消費端入口：直播頻道不存在、Scraper 已移除爬蟲後，私訊 Bot 擁有者。
+        /// 私訊一律由 shard 0 發送；失敗時不吞例外，留在 PEL 等待重試。
+        /// </summary>
+        internal async Task DispatchSpiderRemovedFromBusAsync(TwitcastingSpiderRemovedNotification dto)
+        {
+            if (_botConfig.DisableTwitcasting || Bot.ShardId != 0)
+                return;
+
+            if (!Bot.IsConnect || Bot.ApplicatonOwner == null)
+                throw new InvalidOperationException("Discord 尚未就緒，保留 TwitCasting 爬蟲移除私訊等待重試。");
+
+            string owner = await DescribeOwnersAsync(dto.GuildIds);
+            string channelTitle = Format.Sanitize(dto.ChannelTitle ?? dto.ScreenId);
+
+            Log.New($"發送 TwitCasting 爬蟲自動移除私訊: {dto.ScreenId} ({dto.UserId})");
+
+            try
+            {
+                await Bot.ApplicatonOwner.SendMessageAsync(embed: new EmbedBuilder()
+                    .WithErrorColor()
+                    .WithTitle("已自動移除 TwitCasting 頻道爬蟲")
+                    .AddField("頻道", Format.Url(channelTitle, $"https://twitcasting.tv/{dto.ScreenId}"), false)
+                    .AddField("擁有者", owner, false)
+                    .AddField("原因", "TwitCasting 回報頻道不存在（Webhook 註冊 404），已自動移除；若是誤判，請重新加入爬蟲。", false)
+                    .Build()).ConfigureAwait(false);
+            }
+            catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+            {
+                // 擁有者關閉私訊時重試也送不到，記錄後放行，避免事件一直卡在佇列
+                Log.Warn($"TwitCasting 爬蟲移除私訊無法送達 Bot 擁有者: {dto.UserId}");
+            }
+        }
+
+        /// <summary>把爬蟲擁有者清單轉成私訊內容；查不到名稱時只顯示 Id，避免把離線 shard 誤標成已退群。</summary>
+        private async Task<string> DescribeOwnersAsync(List<ulong> guildIds)
+        {
+            if (guildIds == null || guildIds.Count == 0)
+                return "未知";
+
+            var guilds = await _clusterQuery.GetGuildNameMapAsync();
+            return string.Join('\n', guildIds.Select(guildId => guildId == 0
+                ? "Bot 擁有者"
+                : guilds.TryGetValue(guildId, out string guildName)
+                    ? $"{guildName} ({guildId})"
+                    : $"未知伺服器 ({guildId})"));
+        }
+
         private async Task SendStreamMessageAsync(TwitcastingStream twitcastingStream, bool isPrivate, bool isRecord,
             NotificationDeliveryProgress progress)
         {

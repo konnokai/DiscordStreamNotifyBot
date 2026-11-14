@@ -1,4 +1,5 @@
 using DiscordStreamNotifyBot.DataBase;
+using DiscordStreamNotifyBot.DataBase.Table;
 using DiscordStreamNotifyBot.HttpClients;
 using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
 using DiscordStreamNotifyBot.Shared;
@@ -128,8 +129,15 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                 {
                     if (action.Kind == TwitcastingWebhookActionKind.RegisterLiveStart)
                     {
-                        await _twitcastingClient.RegisterWebHookAsync(action.UserId);
-                        Log.Info($"註冊 TwitCasting Webhook：{action.UserId}");
+                        var result = await _twitcastingClient.RegisterWebHookAsync(action.UserId);
+                        if (result == TwitcastingWebhookRegistrationResult.UserNotFound)
+                        {
+                            await RemoveDeletedSpiderAsync(db, spiderList, action.UserId);
+                            continue;
+                        }
+
+                        if (result == TwitcastingWebhookRegistrationResult.Success)
+                            Log.Info($"註冊 TwitCasting Webhook：{action.UserId}");
                     }
                     else
                     {
@@ -141,6 +149,73 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             catch (Exception ex) { Log.Error(ex.Demystify(), "TwitCastingService-Timer"); }
 
             await db.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// WebHook 註冊回 404 時再次確認使用者是否存在；確認不存在才發通知並刪除爬蟲。
+        /// 通知設定保留，與手動移除爬蟲的行為一致。
+        /// </summary>
+        private async Task RemoveDeletedSpiderAsync(MainDbContext db, List<TwitcastingSpider> spiderList, string channelId)
+        {
+            var spiders = spiderList.Where(item => string.Equals(item.ChannelId, channelId, StringComparison.Ordinal)).ToList();
+            if (spiders.Count == 0)
+                return;
+
+            var spider = spiders[0];
+
+            // POST /webhooks 的 404 未列在官方文件，改用有明列 404 的 GET /users 確認；無法確認就下一輪再試。
+            bool? userExists = await _twitcastingClient.GetUserExistsAsync(spider.ChannelId);
+            if (userExists == null)
+            {
+                Log.Warn($"TwitCasting Webhook 註冊回傳 404，但無法確認直播頻道是否存在，暫不移除：{spider.ChannelId}");
+                return;
+            }
+            if (userExists == true)
+            {
+                Log.Warn($"TwitCasting Webhook 註冊回傳 404，但直播頻道仍存在，請確認 user_id 格式：{spider.ChannelId}");
+                return;
+            }
+
+            if (!await PublishSpiderRemovedAsync(spider, spiders))
+                return;
+
+            try
+            {
+                int deleted = await db.TwitcastingSpider.Where(item => item.ChannelId == channelId).ExecuteDeleteAsync();
+                if (deleted > 0)
+                    Log.Warn($"TwitCasting 直播頻道已不存在，已移除 {deleted} 筆爬蟲：{spider.ScreenId} ({spider.ChannelId})");
+            }
+            catch (Exception ex)
+            {
+                // 不中斷這一輪其他頻道的處理；下一輪會重試，通知由 PublishOnce 去重。
+                Log.Error(ex.Demystify(), $"移除 TwitCasting 爬蟲失敗，下一輪重試: {spider.ChannelId}");
+            }
+        }
+
+        /// <summary>先發布私訊事件再刪除爬蟲；發布失敗時保留爬蟲，下一輪重試。</summary>
+        private async Task<bool> PublishSpiderRemovedAsync(TwitcastingSpider spider, List<TwitcastingSpider> spiders)
+        {
+            try
+            {
+                await NotificationBus.PublishOnceAsync(
+                    Bot.RedisDb,
+                    $"twitcasting:spider_removed:{spider.ChannelId}",
+                    TimeSpan.FromDays(1),
+                    NotifyType.TwitcastingSpiderRemoved,
+                    new TwitcastingSpiderRemovedNotification
+                    {
+                        UserId = spider.ChannelId,
+                        ScreenId = spider.ScreenId,
+                        ChannelTitle = spider.ChannelTitle,
+                        GuildIds = spiders.Select(item => item.GuildId).Distinct().ToList()
+                    }).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), $"PublishTwitcastingSpiderRemoved: {spider.ChannelId}");
+                return false;
+            }
         }
 
         /// <summary>偵測到開台：publish DTO 至通知匯流排（取代直接送 Discord）。</summary>

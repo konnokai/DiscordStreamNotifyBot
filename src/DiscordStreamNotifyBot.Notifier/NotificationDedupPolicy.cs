@@ -31,6 +31,8 @@ namespace DiscordStreamNotifyBot
                         ? null
                         : $"notified:{shardId}:tw:{jo.Value<string>("StreamId")}:{jo.Value<int?>("NoticeType")}",
                     NotifyType.Twitcasting => $"notified:{shardId}:tc:{jo.Value<string>("ChannelId")}:{jo.Value<int?>("StreamId")}",
+                    // TwitCasting 爬蟲自動移除私訊只在 shard 0 發送，各 shard 仍需自己的去重鍵。
+                    NotifyType.TwitcastingSpiderRemoved => $"notified:{shardId}:tcremoved:{jo.Value<string>("UserId")}",
                     // CHZZK 以場次鍵去重（開台／關台各一鍵，互不覆蓋）。
                     NotifyType.Chzzk => string.IsNullOrEmpty(jo.Value<string>("StreamKey"))
                         ? null

@@ -1,10 +1,19 @@
 ﻿using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
+using Newtonsoft.Json.Linq;
 using System.Text;
 
 #nullable enable
 
 namespace DiscordStreamNotifyBot.HttpClients
 {
+    /// <summary><see cref="TwitcastingClient.RegisterWebHookAsync"/> 的結果。</summary>
+    public enum TwitcastingWebhookRegistrationResult
+    {
+        Success,
+        UserNotFound,
+        Failed
+    }
+
     public class TwitcastingClient
     {
         private readonly HttpClient _httpClient;
@@ -134,6 +143,59 @@ namespace DiscordStreamNotifyBot.HttpClients
             }
         }
 
+        /// <summary>
+        /// 確認使用者是否存在
+        /// </summary>
+        /// <param name="userIdOrScreenId">使用者 id 或 screen_id</param>
+        /// <returns>存在回傳 <see langword="true"/>、不存在回傳 <see langword="false"/>；無法判定時回傳 <see langword="null"/>。</returns>
+        public async Task<bool?> GetUserExistsAsync(string userIdOrScreenId)
+        {
+            if (_apiHttpClient == null)
+                throw new NullReferenceException(nameof(_apiHttpClient));
+
+            if (string.IsNullOrEmpty(userIdOrScreenId))
+                throw new ArgumentNullException(nameof(userIdOrScreenId));
+
+            try
+            {
+                using var responseMessage = await _apiHttpClient.GetAsync($"users/{userIdOrScreenId}");
+                if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    if (await IsTwitcastingNotFoundAsync(responseMessage))
+                        return false;
+                    return null;
+                }
+
+                responseMessage.EnsureSuccessStatusCode();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Demystify(), "TwitCastingClient.GetUserExistsAsync");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 404 也要是 TwitCasting 的 JSON 錯誤格式（<c>{"error":{"code":404}}</c>）才視為使用者不存在；
+        /// 避免 CDN／路由回傳的 HTML 404 被當成使用者已刪除。
+        /// </summary>
+        private static async Task<bool> IsTwitcastingNotFoundAsync(HttpResponseMessage responseMessage)
+        {
+            if (responseMessage.StatusCode != System.Net.HttpStatusCode.NotFound)
+                return false;
+
+            try
+            {
+                var json = await responseMessage.Content.ReadAsStringAsync();
+                return JObject.Parse(json)["error"]?["code"]?.Value<int>() == 404;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         #region WebHook
         /// <summary>
         /// 取得所有已註冊的 WebHook
@@ -181,9 +243,9 @@ namespace DiscordStreamNotifyBot.HttpClients
         /// 註冊 WebHook
         /// </summary>
         /// <param name="channelId"></param>
-        /// <returns></returns>
+        /// <returns>註冊結果；404 代表 TwitCasting 找不到該使用者。</returns>
         /// <exception cref="NullReferenceException"></exception>
-        public async Task<bool?> RegisterWebHookAsync(string channelId)
+        public async Task<TwitcastingWebhookRegistrationResult> RegisterWebHookAsync(string channelId)
         {
             if (_apiHttpClient == null)
                 throw new NullReferenceException(nameof(_apiHttpClient));
@@ -193,20 +255,24 @@ namespace DiscordStreamNotifyBot.HttpClients
 
             try
             {
-                var responseMessage = await _apiHttpClient.PostAsync("webhooks", new StringContent(JsonConvert.SerializeObject(new
+                using var responseMessage = await _apiHttpClient.PostAsync("webhooks", new StringContent(JsonConvert.SerializeObject(new
                 {
                     user_id = channelId,
                     events = _events
                 })));
 
+                if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotFound &&
+                    await IsTwitcastingNotFoundAsync(responseMessage))
+                    return TwitcastingWebhookRegistrationResult.UserNotFound;
+
                 responseMessage.EnsureSuccessStatusCode();
 
-                return true;
+                return TwitcastingWebhookRegistrationResult.Success;
             }
             catch (Exception ex)
             {
                 Log.Error(ex.Demystify(), "TwitCastingClient.RegisterWebHookAsync");
-                return null;
+                return TwitcastingWebhookRegistrationResult.Failed;
             }
         }
 

@@ -179,7 +179,8 @@ DiscordStreamNotifyBot.sln
 - **單一 stream**：`bot:notify`。
 - **每個 shard 一個 consumer group**：`shard-{shardId}`，各 group 都會收到全部訊息（= 廣播 + 各自過濾，scraper 與通知設定零耦合）。
 - **每個 group 只有一個 consumer**（名稱固定用 `notifier-{shardId}`；重啟後同名接手自己的 pending）。
-- **訊息欄位**：`type` = `youtube` / `twitch` / `twitcasting` / `banner`；`payload` = DTO 的 JSON（Newtonsoft）。
+- **訊息欄位**：`type` = `youtube` / `twitch` / `twitcasting` / `twitcasting_spider_removed` / `chzzk` / `banner` / `youtube_member_video_log` / `youtube_archive_owner`；`payload` = DTO 的 JSON（Newtonsoft）。
+- **新增 type 的部署順序**：先部署 Notifier、再部署 Scraper。舊版 Notifier 會把未知 type 當格式錯誤 ACK 丟棄，Scraper 先送會遺失通知。
 - **修剪**：`XADD bot:notify MAXLEN ~ 10000 ...` — 上限修剪取代 RabbitMQ 的 x-message-ttl，防無人消費時無限堆積（正常通知量遠低於此）。
 - **函式庫**：StackExchange.Redis 內建（`StreamAdd` / `StreamReadGroup` / `StreamAcknowledge` / `StreamAutoClaim`），**零新套件**。
 
@@ -190,6 +191,7 @@ DiscordStreamNotifyBot.sln
 - `YoutubeNotification`（`YoutubeNoticeType`: NewStream/NewVideo/Start/End/ChangeTime/Delete + videoId/channelId/標題/時間/IsMemberOnly/ChannelType）
 - `TwitchNotification`（StartStream/EndStream/ChangeStreamData + 標題/分類/縮圖/起訖時間/IsRecord/Clips/Description；Profile 圖由消費端查 DB）
 - `TwitcastingNotification`（欄位對應 `TwitcastingStream` 表）
+- `TwitcastingSpiderRemovedNotification`（直播頻道不存在時，Scraper 刪除爬蟲後通知 Bot 擁有者；只有 shard 0 發送私訊）
 - `BannerChangeNotification`（channelId + videoId）
 
 原則：**傳結構化資料，不序列化 `Embed`**；線路 enum 與 UI enum（帶 `[ChoiceDisplay]`）分離，成員順序須對應。
