@@ -29,6 +29,9 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
             string locale = await GetLocaleAsync(true);
             var modalBuilder = new ModalBuilder().WithTitle(BotLocalizer.Get("Utility.Contact.Title", locale))
                 .WithCustomId("send-message-to-bot-owner")
+                // 模態視窗只能用 TextDisplay 顯示文字與連結，一般的 content 不支援
+                .AddTextDisplay(BotLocalizer.Format("Utility.Contact.SupportHint", locale,
+                    DiscordStreamNotifyBot.Utility.SupportServerUrl))
                 .AddTextInput(BotLocalizer.Get("Utility.Contact.MessageLabel", locale), "message", TextInputStyle.Paragraph,
                     BotLocalizer.Get("Utility.Contact.MessagePlaceholder", locale), 10, null, true)
                 .AddFileUpload(BotLocalizer.Get("Utility.Contact.AttachmentsLabel", locale), "file", maxValues: 4,

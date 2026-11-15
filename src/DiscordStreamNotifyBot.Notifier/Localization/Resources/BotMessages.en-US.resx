@@ -130,6 +130,7 @@
   <data name="Utility.Contact.AttachmentsDescription" xml:space="preserve"><value>Optionally upload screenshots related to your message.</value></data>
   <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>Contact details</value></data>
   <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>Provide your contact details</value></data>
+  <data name="Utility.Contact.SupportHint" xml:space="preserve"><value>Need a faster answer or have a more complex issue? Ask in the [support server]({0}).</value></data>
   <data name="Utility.Contact.Received" xml:space="preserve"><value>Your message has been received. Make sure your contact details are correct and enable direct messages from server members. The bot owner usually replies through the bot.</value></data>
   <data name="Utility.Contact.AttachmentCount" xml:space="preserve"><value>Attached files</value></data>
   <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>The reply could not be sent. Check the logs for details.</value></data>

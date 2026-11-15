@@ -7,6 +7,7 @@ namespace DiscordStreamNotifyBot
         public const string ECPayUrl = "https://p.ecpay.com.tw/B8CCC";
         public const string PaypalUrl = "https://paypal.me/jun112561";
         public const string WebsiteSettingsUrl = "https://stream-bot.konnokai.me/settings";
+        public const string SupportServerUrl = "https://discord.gg/2JWDXfPBQ4";
 
         //static Regex videoIdRegex = new Regex(@"youtube_(?'ChannelId'[\w\-]{24})_(?'Date'[\d]{8})_(?'Time'[\d]{6})_(?'VideoId'[\w\-]{11}).mp4.part");
         public static HashSet<ulong> OfficialGuildList { get; set; } = new HashSet<ulong>();

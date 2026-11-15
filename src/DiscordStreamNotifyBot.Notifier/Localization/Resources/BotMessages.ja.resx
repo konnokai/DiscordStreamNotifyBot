@@ -130,6 +130,7 @@
   <data name="Utility.Contact.AttachmentsDescription" xml:space="preserve"><value>必要に応じて関連するスクリーンショットを添付できます。</value></data>
   <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>連絡先</value></data>
   <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>連絡先を入力してください</value></data>
+  <data name="Utility.Contact.SupportHint" xml:space="preserve"><value>より早い回答や複雑な相談が必要ですか？[サポートサーバー]({0}) で直接お尋ねください。</value></data>
   <data name="Utility.Contact.Received" xml:space="preserve"><value>メッセージを受け取りました。連絡先が正しいことを確認し、サーバーメンバーからのダイレクトメッセージを許可してください。Bot の所有者は通常 Bot 経由で返信します。</value></data>
   <data name="Utility.Contact.AttachmentCount" xml:space="preserve"><value>添付ファイル数</value></data>
   <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>返信を送信できませんでした。詳細はログを確認してください。</value></data>

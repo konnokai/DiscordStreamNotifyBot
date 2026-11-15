@@ -130,6 +130,7 @@
   <data name="Utility.Contact.AttachmentsDescription" xml:space="preserve"><value>如有相關截圖，可在此上傳（非必要）。</value></data>
   <data name="Utility.Contact.MethodLabel" xml:space="preserve"><value>聯絡方式</value></data>
   <data name="Utility.Contact.MethodPlaceholder" xml:space="preserve"><value>請留下聯絡方式</value></data>
+  <data name="Utility.Contact.SupportHint" xml:space="preserve"><value>需要更即時的回覆，或是有比較複雜的問題嗎？歡迎到 [支援伺服器]({0}) 直接詢問。</value></data>
   <data name="Utility.Contact.Received" xml:space="preserve"><value>訊息已送出。請確認聯絡資訊正確，並開啟「允許來自伺服器成員的私人訊息」。Bot 擁有者通常會優先透過 Bot 回覆。</value></data>
   <data name="Utility.Contact.AttachmentCount" xml:space="preserve"><value>已附加的檔案數量</value></data>
   <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>無法傳送回覆，請查看 Log 取得詳細資訊。</value></data>
