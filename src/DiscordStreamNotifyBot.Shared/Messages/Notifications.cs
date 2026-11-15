@@ -20,7 +20,7 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         /// <summary>
         /// TwitCasting 爬蟲自動移除私訊：payload 為 <see cref="TwitcastingSpiderRemovedNotification"/>。
-        /// Scraper 偵測到直播頻道不存在後刪除爬蟲，Notifier 只在 shard 0 私訊 Bot 擁有者。
+        /// Scraper 在 Webhook 註冊回 404 後刪除爬蟲，Notifier 只在 shard 0 私訊 Bot 擁有者。
         /// </summary>
         public const string TwitcastingSpiderRemoved = "twitcasting_spider_removed";
 
