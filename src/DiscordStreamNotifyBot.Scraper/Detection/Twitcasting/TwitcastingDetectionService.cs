@@ -125,6 +125,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                 var plan = TwitcastingWebhookRegistrationPlanner.Plan(
                     spiderList.Select(item => item.ChannelId),
                     registeredWebhooks.Select(item => new TwitcastingWebhookRegistration(item.UserId, item.Event)));
+                var notFoundUserIds = new List<string>();
                 foreach (var action in plan)
                 {
                     if (action.Kind == TwitcastingWebhookActionKind.RegisterLiveStart)
@@ -132,7 +133,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                         var result = await _twitcastingClient.RegisterWebHookAsync(action.UserId);
                         if (result == TwitcastingWebhookRegistrationResult.UserNotFound)
                         {
-                            await RemoveDeletedSpiderAsync(db, spiderList, action.UserId);
+                            notFoundUserIds.Add(action.UserId);
                             continue;
                         }
 
@@ -145,6 +146,8 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
                         Log.Info($"移除 TwitCasting Webhook：{action.UserId}");
                     }
                 }
+
+                await RemoveDeletedSpidersAsync(db, spiderList, notFoundUserIds);
             }
             catch (Exception ex) { Log.Error(ex.Demystify(), "TwitCastingService-Timer"); }
 
@@ -152,43 +155,62 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
         }
 
         /// <summary>
-        /// WebHook 註冊回 404 時再次確認使用者是否存在；確認不存在才發通知並刪除爬蟲。
+        /// WebHook 註冊回 404 代表這個頻道已無法監測：發通知後刪除爬蟲。
         /// 通知設定保留，與手動移除爬蟲的行為一致。
         /// </summary>
-        private async Task RemoveDeletedSpiderAsync(MainDbContext db, List<TwitcastingSpider> spiderList, string channelId)
+        private async Task RemoveDeletedSpidersAsync(MainDbContext db, List<TwitcastingSpider> spiderList, List<string> channelIds)
         {
-            var spiders = spiderList.Where(item => string.Equals(item.ChannelId, channelId, StringComparison.Ordinal)).ToList();
-            if (spiders.Count == 0)
+            if (channelIds.Count == 0)
                 return;
 
-            var spider = spiders[0];
+            int distinctChannelCount = spiderList
+                .Where(item => !string.IsNullOrWhiteSpace(item.ChannelId))
+                .Select(item => item.ChannelId)
+                .Distinct(StringComparer.Ordinal)
+                .Count();
 
-            // POST /webhooks 的 404 未列在官方文件，改用有明列 404 的 GET /users 確認；無法確認就下一輪再試。
-            bool? userExists = await _twitcastingClient.GetUserExistsAsync(spider.ChannelId);
-            if (userExists == null)
+            // 一次大量 404 可能是 API 或 CDN 異常；先用 GET /users 逐一確認，確認不了就整批不刪。
+            if (channelIds.Count > 3 && channelIds.Count > distinctChannelCount / 10)
             {
-                Log.Warn($"TwitCasting Webhook 註冊回傳 404，但無法確認直播頻道是否存在，暫不移除：{spider.ChannelId}");
-                return;
+                var confirmed = new List<string>();
+                foreach (string channelId in channelIds)
+                {
+                    if (await _twitcastingClient.GetUserExistsAsync(channelId) == false)
+                        confirmed.Add(channelId);
+                }
+
+                if (confirmed.Count == 0)
+                {
+                    Log.Error($"TwitCasting Webhook 註冊一次有 {channelIds.Count} 個頻道回 404，GET /users 無法確認，暫不刪除：{string.Join(", ", channelIds)}");
+                    return;
+                }
+
+                channelIds = confirmed;
             }
-            if (userExists == true)
-            {
-                Log.Warn($"TwitCasting Webhook 註冊回傳 404，但直播頻道仍存在，請確認 user_id 格式：{spider.ChannelId}");
-                return;
-            }
 
-            if (!await PublishSpiderRemovedAsync(spider, spiders))
-                return;
+            foreach (string channelId in channelIds)
+            {
+                var spiders = spiderList.Where(item => string.Equals(item.ChannelId, channelId, StringComparison.Ordinal)).ToList();
+                if (spiders.Count == 0)
+                    continue;
 
-            try
-            {
-                int deleted = await db.TwitcastingSpider.Where(item => item.ChannelId == channelId).ExecuteDeleteAsync();
-                if (deleted > 0)
-                    Log.Warn($"TwitCasting 直播頻道已不存在，已移除 {deleted} 筆爬蟲：{spider.ScreenId} ({spider.ChannelId})");
-            }
-            catch (Exception ex)
-            {
-                // 不中斷這一輪其他頻道的處理；下一輪會重試，通知由 PublishOnce 去重。
-                Log.Error(ex.Demystify(), $"移除 TwitCasting 爬蟲失敗，下一輪重試: {spider.ChannelId}");
+                var spider = spiders[0];
+                if (!await PublishSpiderRemovedAsync(spider, spiders))
+                    continue;
+
+                try
+                {
+                    // 只刪快照裡的列，避免刪掉快照後才新增、卻沒列進 DM 的擁有者。
+                    var ids = spiders.Select(item => item.Id).ToList();
+                    int deleted = await db.TwitcastingSpider.Where(item => ids.Contains(item.Id)).ExecuteDeleteAsync();
+                    if (deleted > 0)
+                        Log.Warn($"TwitCasting Webhook 註冊回 404，已移除 {deleted} 筆爬蟲：{spider.ScreenId} ({spider.ChannelId})");
+                }
+                catch (Exception ex)
+                {
+                    // 不中斷這一輪其他頻道的處理；下一輪會重試，通知由 PublishOnce 去重。
+                    Log.Error(ex.Demystify(), $"移除 TwitCasting 爬蟲失敗，下一輪重試: {spider.ChannelId}");
+                }
             }
         }
 
@@ -199,7 +221,7 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Twitcasting
             {
                 await NotificationBus.PublishOnceAsync(
                     Bot.RedisDb,
-                    $"twitcasting:spider_removed:{spider.ChannelId}",
+                    $"twitcasting:spider_removed:{spider.ChannelId}:{spiders.Min(item => item.Id)}",
                     TimeSpan.FromDays(1),
                     NotifyType.TwitcastingSpiderRemoved,
                     new TwitcastingSpiderRemovedNotification

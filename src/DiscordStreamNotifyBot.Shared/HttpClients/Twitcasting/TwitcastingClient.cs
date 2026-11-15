@@ -1,5 +1,4 @@
 ﻿using DiscordStreamNotifyBot.HttpClients.Twitcasting.Model;
-using Newtonsoft.Json.Linq;
 using System.Text;
 
 #nullable enable
@@ -144,7 +143,7 @@ namespace DiscordStreamNotifyBot.HttpClients
         }
 
         /// <summary>
-        /// 確認使用者是否存在
+        /// 確認使用者是否存在（只看 HTTP 狀態碼）
         /// </summary>
         /// <param name="userIdOrScreenId">使用者 id 或 screen_id</param>
         /// <returns>存在回傳 <see langword="true"/>、不存在回傳 <see langword="false"/>；無法判定時回傳 <see langword="null"/>。</returns>
@@ -160,11 +159,7 @@ namespace DiscordStreamNotifyBot.HttpClients
             {
                 using var responseMessage = await _apiHttpClient.GetAsync($"users/{userIdOrScreenId}");
                 if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    if (await IsTwitcastingNotFoundAsync(responseMessage))
-                        return false;
-                    return null;
-                }
+                    return false;
 
                 responseMessage.EnsureSuccessStatusCode();
                 return true;
@@ -173,26 +168,6 @@ namespace DiscordStreamNotifyBot.HttpClients
             {
                 Log.Error(ex.Demystify(), "TwitCastingClient.GetUserExistsAsync");
                 return null;
-            }
-        }
-
-        /// <summary>
-        /// 404 也要是 TwitCasting 的 JSON 錯誤格式（<c>{"error":{"code":404}}</c>）才視為使用者不存在；
-        /// 避免 CDN／路由回傳的 HTML 404 被當成使用者已刪除。
-        /// </summary>
-        private static async Task<bool> IsTwitcastingNotFoundAsync(HttpResponseMessage responseMessage)
-        {
-            if (responseMessage.StatusCode != System.Net.HttpStatusCode.NotFound)
-                return false;
-
-            try
-            {
-                var json = await responseMessage.Content.ReadAsStringAsync();
-                return JObject.Parse(json)["error"]?["code"]?.Value<int>() == 404;
-            }
-            catch
-            {
-                return false;
             }
         }
 
@@ -261,9 +236,15 @@ namespace DiscordStreamNotifyBot.HttpClients
                     events = _events
                 })));
 
-                if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotFound &&
-                    await IsTwitcastingNotFoundAsync(responseMessage))
+                if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    // 404 未列在官方文件，留下 body 方便下次追查。
+                    string body = await responseMessage.Content.ReadAsStringAsync();
+                    if (body.Length > 200)
+                        body = body[..200];
+                    Log.Warn($"TwitCasting Webhook 註冊回 404：{channelId} / {body}");
                     return TwitcastingWebhookRegistrationResult.UserNotFound;
+                }
 
                 responseMessage.EnsureSuccessStatusCode();
 
