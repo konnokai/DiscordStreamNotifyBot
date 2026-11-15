@@ -214,15 +214,44 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
         internal static bool TryReadBotProfilePayload(
             JObject payload,
             out AdminSettingsProfileImage avatar,
-            out AdminSettingsProfileImage banner)
+            out AdminSettingsProfileImage banner,
+            out AdminSettingsNickname nickname)
         {
             avatar = default;
             banner = default;
+            nickname = default;
             if (!TryReadBotProfileImage(payload, "avatar", ref avatar) ||
-                !TryReadBotProfileImage(payload, "banner", ref banner))
+                !TryReadBotProfileImage(payload, "banner", ref banner) ||
+                !TryReadBotProfileNickname(payload, ref nickname))
                 return false;
 
-            return avatar.Specified || banner.Specified;
+            return avatar.Specified || banner.Specified || nickname.Specified;
+        }
+
+        private static bool TryReadBotProfileNickname(JObject payload, ref AdminSettingsNickname nickname)
+        {
+            if (!payload.TryGetValue("nick", out JToken? token))
+                return true;
+            // null 或空白代表恢復預設名稱。
+            if (token.Type == JTokenType.Null)
+            {
+                nickname = new AdminSettingsNickname(true, null);
+                return true;
+            }
+            if (token.Type != JTokenType.String)
+                return false;
+
+            string? value = token.Value<string>()?.Trim();
+            if (string.IsNullOrEmpty(value))
+            {
+                nickname = new AdminSettingsNickname(true, null);
+                return true;
+            }
+            if (value.Length > 32)
+                return false;
+
+            nickname = new AdminSettingsNickname(true, value);
+            return true;
         }
 
         private static bool TryReadBotProfileImage(
@@ -365,9 +394,12 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     return await _utilityService.SetVerificationLogChannelAsync(guild, verificationChannelId, cancellationToken);
 
                 case AdminSettingsContract.SetBotProfileAction:
-                    if (!TryReadBotProfilePayload(payload, out AdminSettingsProfileImage avatar, out AdminSettingsProfileImage banner))
+                    if (!TryReadBotProfilePayload(payload,
+                            out AdminSettingsProfileImage avatar,
+                            out AdminSettingsProfileImage banner,
+                            out AdminSettingsNickname nickname))
                         return InvalidPayload();
-                    return await _utilityService.SetBotProfileAsync(guild, actorUserId, avatar, banner, cancellationToken);
+                    return await _utilityService.SetBotProfileAsync(guild, actorUserId, avatar, banner, nickname, cancellationToken);
 
                 case AdminSettingsContract.YoutubeUpsertAction:
                     if (!ValidYoutubeUpsertPayload(payload) ||
@@ -728,7 +760,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                     GlobalNoticeChannelId = OptionalId(config?.NoticeChannelId ?? 0),
                     VerificationLogChannelId = OptionalId(config?.VerificationLogChannelId ?? 0),
                     BotAvatarUrl = botUser?.GetGuildAvatarUrl(ImageFormat.Auto, 512) ?? "",
-                    BotBannerUrl = botUser?.GetGuildBannerUrl(ImageFormat.Auto, 1024) ?? ""
+                    BotBannerUrl = botUser?.GetGuildBannerUrl(ImageFormat.Auto, 1024) ?? "",
+                    BotNickname = botUser?.Nickname ?? "",
+                    CanEditBotNickname = botUser?.GuildPermissions.ChangeNickname ?? false
                 },
                 Notifications = new AdminSettingsNotifications
                 {

@@ -18,6 +18,7 @@
   <data name="server-admin.set-global-notice-channel.channel.description" xml:space="preserve"><value>The text or announcement channel that receives announcements</value></data>
   <data name="server-admin.set-verification-log-channel.description" xml:space="preserve"><value>Set the YouTube membership and Twitch subscription verification log channel</value></data>
   <data name="server-admin.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>The text channel for membership and subscription verification logs</value></data>
+  <data name="server-admin.bot-profile.description" xml:space="preserve"><value>Change the bot's nickname, avatar, and banner in this server</value></data>
 
   <data name="help.description" xml:space="preserve"><value>Browse commands and usage information</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>Show every available command module</value></data>

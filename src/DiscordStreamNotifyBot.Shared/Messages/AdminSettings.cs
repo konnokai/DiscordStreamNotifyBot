@@ -231,6 +231,12 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("botBannerUrl")]
         public string BotBannerUrl { get; set; } = "";
+
+        [JsonProperty("botNickname")]
+        public string BotNickname { get; set; } = "";
+
+        [JsonProperty("canEditBotNickname")]
+        public bool CanEditBotNickname { get; set; }
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -510,6 +516,9 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
     /// <summary>伺服器專屬圖片更新：<c>Specified</c> 為 false 代表不改，<c>Base64</c> 為 null 代表恢復全域圖片。</summary>
     public readonly record struct AdminSettingsProfileImage(bool Specified, string? Base64);
+
+    /// <summary>伺服器專屬暱稱更新：<c>Specified</c> 為 false 代表不改，<c>Value</c> 為 null 代表恢復預設名稱。</summary>
+    public readonly record struct AdminSettingsNickname(bool Specified, string? Value);
 
     [JsonObject(MemberSerialization.OptIn)]
     public sealed class AdminYoutubeUpsertPayload

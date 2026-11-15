@@ -72,11 +72,13 @@ Frontend 只傳輸管理設定 DTO。Backend 負責使用者身分與 guild 授�
 - `twitcasting-notification.upsert`
 - `twitcasting-notification.remove`
 
-`guild.set-bot-profile` 只有兩個可選欄位：`avatar`、`banner`。
+`guild.set-bot-profile` 有三個可選欄位：`nick`、`avatar`、`banner`。
 
-- 值是 JPEG 的 base64 字串時，設定小幫手在該伺服器的專屬圖片。
-- 值是 `null` 時，恢復成全域圖片。
-- 欄位不存在代表不變更；兩個欄位都沒出現時回 `settings.invalid-payload`。
+- `nick` 是 1–32 字字串時設定小幫手在該伺服器的暱稱；`null`、空字串或全空白恢復預設名稱（頭尾空白會先去掉）。
+- `avatar`／`banner` 是 JPEG 的 base64 字串時，設定小幫手在該伺服器的專屬圖片。
+- `avatar`／`banner` 是 `null` 時，恢復成全域圖片。
+- 欄位不存在代表不變更；三個欄位都沒出現時回 `settings.invalid-payload`。
+- 改暱稱需要 `CHANGE_NICKNAME`，小幫手沒有這個權限時回 `settings.missing-permission`。
 - Notifier 解碼後上限 512 KB，而且只收 JPEG：Discord.Net 送圖時固定標示 `image/jpeg`，實際格式不符可能被 Discord 拒絕。
 - Discord 限流時回 `settings.rate-limited`；圖片本身被 Discord 拒絕時回 `settings.invalid-image`。
 
@@ -122,7 +124,7 @@ Frontend 只傳輸管理設定 DTO。Backend 負責使用者身分與 guild 授�
 
 `capabilities` 由 owning shard 回報，Frontend 只顯示已支援功能。未來只以 additive 欄位加入 `resources.roles` 與 `verification`，不更換 envelope、OAuth 或 Redis 路由。
 
-`common` 另外帶 `botAvatarUrl` 與 `botBannerUrl`（空字串代表未設定），讓網頁顯示小幫手在該伺服器目前的頭像與橫幅。前端只在 `capabilities` 含 `guild.bot-profile` 時顯示「機器人外觀」區塊。
+`common` 另外帶 `botAvatarUrl`、`botBannerUrl`（空字串代表未設定）與 `botNickname`（空字串代表使用預設名稱）、`canEditBotNickname`（小幫手是否有 `CHANGE_NICKNAME`），讓網頁顯示小幫手在該伺服器目前的暱稱與圖片。前端只在 `capabilities` 含 `guild.bot-profile` 時顯示「機器人外觀」區塊。
 
 ## 5. 授權與安全
 

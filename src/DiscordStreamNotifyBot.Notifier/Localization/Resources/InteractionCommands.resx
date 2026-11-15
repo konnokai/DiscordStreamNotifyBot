@@ -18,6 +18,7 @@
   <data name="server-admin.set-global-notice-channel.channel.description" xml:space="preserve"><value>用來接收公告的文字或公告頻道</value></data>
   <data name="server-admin.set-verification-log-channel.description" xml:space="preserve"><value>設定 YouTube 會員與 Twitch 訂閱驗證紀錄頻道</value></data>
   <data name="server-admin.set-verification-log-channel.log-channel.description" xml:space="preserve"><value>接收會員與訂閱驗證狀態紀錄的文字頻道</value></data>
+  <data name="server-admin.bot-profile.description" xml:space="preserve"><value>變更小幫手在這台伺服器的暱稱、頭像與橫幅</value></data>
 
   <data name="help.description" xml:space="preserve"><value>查詢指令與使用說明</value></data>
   <data name="help.get-all-modules.description" xml:space="preserve"><value>顯示所有可用的指令模組</value></data>

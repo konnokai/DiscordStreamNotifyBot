@@ -135,6 +135,9 @@
   <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>The reply could not be sent. Check the logs for details.</value></data>
   <data name="Utility.Contact.OwnerReplyTitle" xml:space="preserve"><value>Reply from the bot owner</value></data>
   <data name="Utility.Contact.ReplyAttachment" xml:space="preserve"><value>Attachment: {0}</value></data>
+  <data name="ServerAdmin.BotProfile.Title" xml:space="preserve"><value>Change bot appearance</value></data>
+  <data name="ServerAdmin.BotProfile.Description" xml:space="preserve"><value>Discord commands can't edit images. Change the nickname and upload or crop the avatar and banner on the settings page.&#10;Sign in with Discord, pick this server, then open "Bot appearance".</value></data>
+  <data name="ServerAdmin.BotProfile.Button" xml:space="preserve"><value>Open settings</value></data>
   <data name="Utility.Contact.ReplyModalTitle" xml:space="preserve"><value>Reply to user</value></data>
   <data name="Utility.Contact.ReplyUserIdLabel" xml:space="preserve"><value>User ID</value></data>
   <data name="Utility.Contact.ReplyMessagePlaceholder" xml:space="preserve"><value>Enter the message you want to send</value></data>

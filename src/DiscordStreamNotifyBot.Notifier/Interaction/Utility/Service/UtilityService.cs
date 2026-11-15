@@ -211,12 +211,13 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
             });
         }
 
-        /// <summary>伺服器專屬頭像與橫幅只存在 Discord 端，這裡不寫資料庫。</summary>
+        /// <summary>伺服器專屬暱稱、頭像與橫幅只存在 Discord 端，這裡不寫資料庫。</summary>
         public async Task<AdminSettingsMutationResult> SetBotProfileAsync(
             SocketGuild guild,
             ulong actorUserId,
             AdminSettingsProfileImage avatar,
             AdminSettingsProfileImage banner,
+            AdminSettingsNickname nickname,
             CancellationToken cancellationToken)
         {
             bool avatarValid = TryDecodeProfileImage(avatar, out MemoryStream avatarStream, out string avatarSummary);
@@ -226,6 +227,8 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
             {
                 if (!avatarValid || !bannerValid)
                     return AdminSettingsMutationResult.Rejected("settings.invalid-image");
+                if (nickname.Specified && guild.CurrentUser?.GuildPermissions.ChangeNickname != true)
+                    return AdminSettingsMutationResult.Rejected("settings.missing-permission");
 
                 try
                 {
@@ -235,6 +238,8 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
                             props.Avatar = avatarStream == null ? (Image?)null : new Image(avatarStream);
                         if (banner.Specified)
                             props.Banner = bannerStream == null ? (Image?)null : new Image(bannerStream);
+                        if (nickname.Specified)
+                            props.Nickname = nickname.Value ?? "";
                     }, new RequestOptions
                     {
                         CancelToken = cancellationToken,
@@ -246,16 +251,29 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
                 {
                     return AdminSettingsMutationResult.Rejected("settings.rate-limited");
                 }
+                catch (Discord.Net.HttpException httpEx) when (httpEx.HttpCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    return AdminSettingsMutationResult.Rejected("settings.missing-permission");
+                }
                 catch (Discord.Net.HttpException httpEx) when (httpEx.HttpCode == System.Net.HttpStatusCode.BadRequest)
                 {
-                    return AdminSettingsMutationResult.Rejected("settings.invalid-image");
+                    // 只改暱稱時，400 幾乎都是暱稱被 AutoMod 或格式規則擋下，說「圖片」會誤導。
+                    return AdminSettingsMutationResult.Rejected(
+                        nickname.Specified && !avatar.Specified && !banner.Specified
+                            ? "settings.invalid-nickname"
+                            : "settings.invalid-image");
                 }
 
                 // 有管理權限的人都能改這裡，留下 guild、actor、圖片雜湊與大小方便事後追查。
-                Log.Info($"機器人外觀已更新 | Guild: {guild.Id} | Actor: {actorUserId} | Avatar: {avatarSummary} | Banner: {bannerSummary}");
+                Log.Info($"機器人外觀已更新 | Guild: {guild.Id} | Actor: {actorUserId} | Nick: {NicknameSummary(nickname)} | Avatar: {avatarSummary} | Banner: {bannerSummary}");
                 return AdminSettingsMutationResult.Applied();
             }
         }
+
+        private static string NicknameSummary(AdminSettingsNickname nickname)
+            => !nickname.Specified
+                ? "未變更"
+                : string.IsNullOrEmpty(nickname.Value) ? "恢復預設" : nickname.Value;
 
         private const int MaxProfileImageBytes = 512 * 1024;
 

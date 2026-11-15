@@ -123,5 +123,30 @@ namespace DiscordStreamNotifyBot.Interaction.ServerAdministration
                 await SendLocalizedErrorAsync("Utility.GlobalNoticeChannelFailed");
             }
         }
+
+        [RequireContext(ContextType.Guild)]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [SlashCommand("bot-profile", "變更小幫手在這台伺服器的暱稱、頭像與橫幅")]
+        public async Task BotProfileAsync()
+        {
+            // 圖片裁切只能在網頁做，指令只負責把人帶到設定頁。
+            string locale = await GetLocaleAsync(true);
+            var components = new ComponentBuilder()
+                .WithButton(
+                    BotLocalizer.Get("ServerAdmin.BotProfile.Button", locale),
+                    style: ButtonStyle.Link,
+                    url: DiscordStreamNotifyBot.Utility.WebsiteSettingsUrl)
+                .Build();
+
+            await RespondAsync(
+                embed: new EmbedBuilder()
+                    .WithOkColor()
+                    .WithTitle(BotLocalizer.Get("ServerAdmin.BotProfile.Title", locale))
+                    .WithDescription(BotLocalizer.Get("ServerAdmin.BotProfile.Description", locale))
+                    .Build(),
+                components: components,
+                ephemeral: true);
+        }
     }
 }

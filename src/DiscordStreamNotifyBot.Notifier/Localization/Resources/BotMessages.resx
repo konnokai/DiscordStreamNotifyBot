@@ -135,6 +135,9 @@
   <data name="Utility.Contact.OwnerReplyFailed" xml:space="preserve"><value>無法傳送回覆，請查看 Log 取得詳細資訊。</value></data>
   <data name="Utility.Contact.OwnerReplyTitle" xml:space="preserve"><value>來自 Bot 擁有者的回覆</value></data>
   <data name="Utility.Contact.ReplyAttachment" xml:space="preserve"><value>附加檔案：{0}</value></data>
+  <data name="ServerAdmin.BotProfile.Title" xml:space="preserve"><value>變更小幫手外觀</value></data>
+  <data name="ServerAdmin.BotProfile.Description" xml:space="preserve"><value>Discord 的指令沒辦法編輯圖片，請到網頁設定改暱稱、上傳並裁切頭像與橫幅。&#10;開啟後用 Discord 登入、選好這台伺服器，再點「機器人外觀」。</value></data>
+  <data name="ServerAdmin.BotProfile.Button" xml:space="preserve"><value>開啟網頁設定</value></data>
   <data name="Utility.Contact.ReplyModalTitle" xml:space="preserve"><value>回覆訊息給使用者</value></data>
   <data name="Utility.Contact.ReplyUserIdLabel" xml:space="preserve"><value>使用者 ID</value></data>
   <data name="Utility.Contact.ReplyMessagePlaceholder" xml:space="preserve"><value>請輸入你要傳送的訊息</value></data>
