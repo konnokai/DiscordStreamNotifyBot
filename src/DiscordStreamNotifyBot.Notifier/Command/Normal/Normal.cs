@@ -30,7 +30,7 @@ namespace DiscordStreamNotifyBot.Command.Normal
             try
             {
                 await (await Context.Message.Author.CreateDMChannelAsync())
-                    .SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=2416143425&scope=bot%20applications.commands>");
+                    .SendConfirmAsync("<https://discordapp.com/api/oauth2/authorize?client_id=" + _client.CurrentUser.Id + "&permissions=11073473633&scope=bot%20applications.commands>");
             }
             catch (Exception) { await Context.Channel.SendErrorAsync("無法私訊，請確認已開啟伺服器內成員私訊許可"); }
         }

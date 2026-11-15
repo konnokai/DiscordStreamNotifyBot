@@ -1,6 +1,6 @@
 # 直播小幫手
 
-[![邀請機器人](https://img.shields.io/badge/Discord-邀請機器人-5865F2)](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
+[![邀請機器人](https://img.shields.io/badge/Discord-邀請機器人-5865F2)](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=11073473633&scope=bot%20applications.commands)
 [![網站](https://img.shields.io/website-up-down-green-red/https/stream-bot.konnokai.me.svg)](https://stream-bot.konnokai.me/)
 
 直播小幫手會偵測 YouTube、Twitch、TwitCasting 與 CHZZK 直播，並將開台、更新及關台通知送到 Discord。這個儲存庫是 Bot 本體，包含直播偵測、Discord 通知、會員／訂閱驗證與叢集協調服務。

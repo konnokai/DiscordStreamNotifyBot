@@ -38,7 +38,7 @@ namespace DiscordStreamNotifyBot.Interaction.Utility
             }
 #endif     
             await SendLocalizedConfirmAsync("Utility.Invite", false, true,
-                $"https://discordapp.com/api/oauth2/authorize?client_id={_client.CurrentUser.Id}&permissions=11006299201&scope=bot+applications.commands");
+                $"https://discordapp.com/api/oauth2/authorize?client_id={_client.CurrentUser.Id}&permissions=11073473633&scope=bot+applications.commands");
         }
 
         [SlashCommand("status", "顯示機器人目前的狀態")]

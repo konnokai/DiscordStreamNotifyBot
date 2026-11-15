@@ -17,6 +17,6 @@ __**其他特殊功能**__
 邀請 Bot 後請開一個新的文字頻道做為直播通知用，並且開放 Bot 的讀取、發送訊息權限 (最好的做法是不要變更預設權限或直接給全權)
 設定可至 [此網頁](https://konnokai.notion.site/a4fff40bd95c4bec9edca5b78cdd5d37) 查看詳細說明
 
-[點此邀請 Bot 到新伺服器](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=2416143425&scope=bot%20applications.commands)
+[點此邀請 Bot 到新伺服器](https://discordapp.com/api/oauth2/authorize?client_id=758222559392432160&permissions=11073473633&scope=bot%20applications.commands)
 
 有新功能想加入或任何建議可以到推特私訊 [孤之界(@Jun112561)](https://twitter.com/Jun112561) 或到 [GitHub](https://github.com/konnokai/Discord-Stream-Notify-Bot) 發 Issue 討論
