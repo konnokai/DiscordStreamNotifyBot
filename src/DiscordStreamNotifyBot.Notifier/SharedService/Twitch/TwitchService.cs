@@ -396,6 +396,30 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             return new NotificationVariant(embed, component);
         }
 
+        /// <summary>發送 log 的內容摘要；ChangeStreamData 沒有 StreamTitle，改印變更清單。</summary>
+        private static string DescribeLogContent(TwitchNotification dto)
+        {
+            if (dto.NoticeType != TwitchNoticeType.ChangeStreamData)
+                return LogValue(dto.StreamTitle, "（無標題）");
+
+            string summary = string.Join("；", (dto.Updates ?? new List<TwitchChannelUpdateInfo>())
+                .Select(update =>
+                {
+                    var parts = new List<string>();
+                    if (update.NewTitle != null)
+                        parts.Add($"標題變更：{LogValue(update.OldTitle, "（無標題）")} → {LogValue(update.NewTitle, "（無標題）")}");
+                    if (update.NewCategory != null)
+                        parts.Add($"分類變更：{LogValue(update.OldCategory, "（無分類）")} → {LogValue(update.NewCategory, "（無分類）")}");
+                    return string.Join("，", parts);
+                })
+                .Where(part => part.Length > 0));
+
+            return summary.Length == 0 ? "（無變更資料）" : summary;
+        }
+
+        private static string LogValue(string value, string emptyText) =>
+            string.IsNullOrWhiteSpace(value) ? emptyText : value;
+
         internal async Task SendStreamMessageAsync(Shared.Messages.TwitchNotification dto,
             DataBase.Table.TwitchSpider twitchSpider, NoticeType noticeType, long thumbnailCacheBuster,
             NotificationDeliveryProgress progress)
@@ -406,13 +430,13 @@ namespace DiscordStreamNotifyBot.SharedService.Twitch
             NotificationMetricEvent metricEvent = NotifierMetrics.ToMetricEvent(dto.NoticeType);
 
 #if DEBUG || DEBUG_DONTREGISTERCOMMAND
-            Log.New($"Twitch 通知: {dto.UserId} - {dto.StreamTitle} ({noticeType})");
+            Log.New($"Twitch 通知: {dto.UserId} - {DescribeLogContent(dto)} ({noticeType})");
 #else
             using (var db = _dbService.GetDbContext())
             {
                 // 通知設定改讀記憶體快取（§12.3）
                 var noticeGuildList = _noticeCache.Get().Where((x) => x.NoticeTwitchUserId == dto.UserId).ToList();
-                Log.New($"發送 Twitch 通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))} / {noticeType}): ({dto.UserId}) - {dto.StreamTitle}");
+                Log.New($"發送 Twitch 通知 ({noticeGuildList.Count(x => Bot.IsServerOnThisShard(x.GuildId))} / {noticeType}): ({dto.UserId}) - {DescribeLogContent(dto)}");
                 var guildsById = noticeGuildList
                     .Select(item => item.GuildId)
                     .Distinct()
