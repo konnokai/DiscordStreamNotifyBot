@@ -713,7 +713,11 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             }
 
             var botUser = guild.GetUser(_client.CurrentUser.Id);
+            // Discord.Net 3.20 的 ChannelType 只到 16；遇到更新的型別（實際案例是 type 20 的
+            // server-hub）只會建立基底 SocketGuildChannel，ChannelType 停在預設的 Text，
+            // 拿它算權限會丟「Unknown channel type」。
             var channels = guild.Channels
+                .OfType<SocketTextChannel>()
                 .Where(channel => channel.ChannelType is ChannelType.Text or ChannelType.News)
                 .OrderBy(channel => channel.Position)
                 .ThenBy(channel => channel.Name, StringComparer.OrdinalIgnoreCase)
