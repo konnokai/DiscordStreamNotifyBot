@@ -35,6 +35,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
         private static readonly string[] Capabilities =
         [
             "guild.common",
+            "guild.bot-profile",
             "youtube-notification",
             "twitch-notification",
             "twitcasting-notification",
@@ -128,6 +129,7 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 or AdminSettingsContract.SetLocaleAction
                 or AdminSettingsContract.SetGlobalNoticeChannelAction
                 or AdminSettingsContract.SetVerificationLogChannelAction
+                or AdminSettingsContract.SetBotProfileAction
                 or AdminSettingsContract.YoutubeUpsertAction
                 or AdminSettingsContract.YoutubeRemoveAction
                 or AdminSettingsContract.TwitchUpsertAction
@@ -208,6 +210,44 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
             => HasString(payload, "source") && HasString(payload, "channelId") &&
                 payload["messages"] is JObject messages &&
                 HasString(messages, "start", true) && HasString(messages, "end", true);
+
+        internal static bool TryReadBotProfilePayload(
+            JObject payload,
+            out AdminSettingsProfileImage avatar,
+            out AdminSettingsProfileImage banner)
+        {
+            avatar = default;
+            banner = default;
+            if (!TryReadBotProfileImage(payload, "avatar", ref avatar) ||
+                !TryReadBotProfileImage(payload, "banner", ref banner))
+                return false;
+
+            return avatar.Specified || banner.Specified;
+        }
+
+        private static bool TryReadBotProfileImage(
+            JObject payload,
+            string property,
+            ref AdminSettingsProfileImage image)
+        {
+            if (!payload.TryGetValue(property, out JToken? token))
+                return true;
+            // null 代表恢復全域圖片，字串代表新的 base64 圖片。
+            if (token.Type == JTokenType.Null)
+            {
+                image = new AdminSettingsProfileImage(true, null);
+                return true;
+            }
+            if (token.Type != JTokenType.String)
+                return false;
+
+            string? value = token.Value<string>();
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            image = new AdminSettingsProfileImage(true, value);
+            return true;
+        }
 
         private async Task HandleAsync(string json, bool snapshotRequest, CancellationToken cancellationToken)
         {
@@ -323,6 +363,11 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                         !TryParseChannelId(verificationPayload.ChannelId, true, out ulong verificationChannelId))
                         return InvalidPayload();
                     return await _utilityService.SetVerificationLogChannelAsync(guild, verificationChannelId, cancellationToken);
+
+                case AdminSettingsContract.SetBotProfileAction:
+                    if (!TryReadBotProfilePayload(payload, out AdminSettingsProfileImage avatar, out AdminSettingsProfileImage banner))
+                        return InvalidPayload();
+                    return await _utilityService.SetBotProfileAsync(guild, actorUserId, avatar, banner, cancellationToken);
 
                 case AdminSettingsContract.YoutubeUpsertAction:
                     if (!ValidYoutubeUpsertPayload(payload) ||
@@ -681,7 +726,9 @@ namespace DiscordStreamNotifyBot.SharedService.AdminSettings
                 {
                     Locale = await _guildLocaleService.GetAsync(guild.Id, guild, cancellationToken),
                     GlobalNoticeChannelId = OptionalId(config?.NoticeChannelId ?? 0),
-                    VerificationLogChannelId = OptionalId(config?.VerificationLogChannelId ?? 0)
+                    VerificationLogChannelId = OptionalId(config?.VerificationLogChannelId ?? 0),
+                    BotAvatarUrl = botUser?.GetGuildAvatarUrl(ImageFormat.Auto, 512) ?? "",
+                    BotBannerUrl = botUser?.GetGuildBannerUrl(ImageFormat.Auto, 1024) ?? ""
                 },
                 Notifications = new AdminSettingsNotifications
                 {

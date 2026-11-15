@@ -5,6 +5,7 @@ using DiscordStreamNotifyBot.Shared.Messages;
 using DiscordStreamNotifyBot.SharedService.AdminSettings;
 using DiscordStreamNotifyBot.SharedService.Member;
 using Newtonsoft.Json.Linq;
+using System.Security.Cryptography;
 
 namespace DiscordStreamNotifyBot.Interaction.Utility.Service
 {
@@ -208,6 +209,85 @@ namespace DiscordStreamNotifyBot.Interaction.Utility.Service
                     ? ""
                     : channelId.ToString(System.Globalization.CultureInfo.InvariantCulture)
             });
+        }
+
+        /// <summary>伺服器專屬頭像與橫幅只存在 Discord 端，這裡不寫資料庫。</summary>
+        public async Task<AdminSettingsMutationResult> SetBotProfileAsync(
+            SocketGuild guild,
+            ulong actorUserId,
+            AdminSettingsProfileImage avatar,
+            AdminSettingsProfileImage banner,
+            CancellationToken cancellationToken)
+        {
+            bool avatarValid = TryDecodeProfileImage(avatar, out MemoryStream avatarStream, out string avatarSummary);
+            bool bannerValid = TryDecodeProfileImage(banner, out MemoryStream bannerStream, out string bannerSummary);
+            using (avatarStream)
+            using (bannerStream)
+            {
+                if (!avatarValid || !bannerValid)
+                    return AdminSettingsMutationResult.Rejected("settings.invalid-image");
+
+                try
+                {
+                    await guild.ModifyCurrentUserAsync(props =>
+                    {
+                        if (avatar.Specified)
+                            props.Avatar = avatarStream == null ? (Image?)null : new Image(avatarStream);
+                        if (banner.Specified)
+                            props.Banner = bannerStream == null ? (Image?)null : new Image(bannerStream);
+                    }, new RequestOptions
+                    {
+                        CancelToken = cancellationToken,
+                        // 被限流時不要自動重送：網頁已回逾時，圖片卻會在背景被改掉。
+                        RetryMode = RetryMode.RetryTimeouts | RetryMode.Retry502
+                    });
+                }
+                catch (Discord.Net.RateLimitedException)
+                {
+                    return AdminSettingsMutationResult.Rejected("settings.rate-limited");
+                }
+                catch (Discord.Net.HttpException httpEx) when (httpEx.HttpCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    return AdminSettingsMutationResult.Rejected("settings.invalid-image");
+                }
+
+                // 有管理權限的人都能改這裡，留下 guild、actor、圖片雜湊與大小方便事後追查。
+                Log.Info($"機器人外觀已更新 | Guild: {guild.Id} | Actor: {actorUserId} | Avatar: {avatarSummary} | Banner: {bannerSummary}");
+                return AdminSettingsMutationResult.Applied();
+            }
+        }
+
+        private const int MaxProfileImageBytes = 512 * 1024;
+
+        private static bool TryDecodeProfileImage(
+            AdminSettingsProfileImage image,
+            out MemoryStream stream,
+            out string summary)
+        {
+            stream = null;
+            if (!image.Specified)
+            {
+                summary = "未變更";
+                return true;
+            }
+            if (image.Base64 == null)
+            {
+                summary = "恢復全域";
+                return true;
+            }
+
+            var buffer = new byte[MaxProfileImageBytes];
+            // Discord.Net 送圖時把 MIME 寫死成 image/jpeg，所以只收 JPEG。
+            if (!Convert.TryFromBase64String(image.Base64, buffer, out int length) || length < 3 ||
+                buffer[0] != 0xFF || buffer[1] != 0xD8 || buffer[2] != 0xFF)
+            {
+                summary = "格式不符";
+                return false;
+            }
+
+            summary = $"{Convert.ToHexString(SHA256.HashData(buffer.AsSpan(0, length)))[..16]} ({length} bytes)";
+            stream = new MemoryStream(buffer, 0, length, writable: false);
+            return true;
         }
     }
 }

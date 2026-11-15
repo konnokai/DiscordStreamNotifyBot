@@ -12,6 +12,7 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         public const string SetLocaleAction = "guild.set-locale";
         public const string SetGlobalNoticeChannelAction = "guild.set-global-notice-channel";
         public const string SetVerificationLogChannelAction = "guild.set-verification-log-channel";
+        public const string SetBotProfileAction = "guild.set-bot-profile";
         public const string YoutubeUpsertAction = "youtube-notification.upsert";
         public const string YoutubeRemoveAction = "youtube-notification.remove";
         public const string TwitchUpsertAction = "twitch-notification.upsert";
@@ -224,6 +225,12 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         [JsonProperty("verificationLogChannelId")]
         public string VerificationLogChannelId { get; set; } = "";
+
+        [JsonProperty("botAvatarUrl")]
+        public string BotAvatarUrl { get; set; } = "";
+
+        [JsonProperty("botBannerUrl")]
+        public string BotBannerUrl { get; set; } = "";
     }
 
     [JsonObject(MemberSerialization.OptIn)]
@@ -500,6 +507,9 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         [JsonProperty("channelId")]
         public string? ChannelId { get; set; }
     }
+
+    /// <summary>伺服器專屬圖片更新：<c>Specified</c> 為 false 代表不改，<c>Base64</c> 為 null 代表恢復全域圖片。</summary>
+    public readonly record struct AdminSettingsProfileImage(bool Specified, string? Base64);
 
     [JsonObject(MemberSerialization.OptIn)]
     public sealed class AdminYoutubeUpsertPayload
