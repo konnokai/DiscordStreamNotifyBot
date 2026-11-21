@@ -508,7 +508,7 @@ Backend 維持 thin transport：
 工作目錄包含三個 sibling repo：
 - Bot：DiscordStreamNotifyBot
 - Backend：DiscordStreamBotBackend
-- Frontend：auto-discord-ytmember-checker
+- Frontend：discord-stream-bot-frontend
 
 先讀各 repo 的 AGENTS.md、`WEB_ADMIN_SETTINGS_PLAN.md`、本計畫，以及目前未提交 diff。現有管理設定中心與 Frontend 兩層選單都在 dirty worktree，禁止重置、覆蓋或重做既有變更。
 

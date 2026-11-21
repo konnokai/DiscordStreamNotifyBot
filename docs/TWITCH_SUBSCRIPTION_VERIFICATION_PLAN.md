@@ -23,7 +23,7 @@ YouTube 會員驗證的指令與資料不變。Twitch 使用獨立指令、資�
 |---|---|---|
 | Bot | `DiscordStreamNotifyBot` | 管理員設定、Slash 指令、token 讀取與刷新、Helix 訂閱查詢、資料表、身分組同步 |
 | Backend | `DiscordStreamBotBackend` | Twitch OAuth 登入、token 保存與定期驗證、授權狀態通知 |
-| Frontend | `auto-discord-ytmember-checker` | Twitch OAuth 入口、帳號狀態及授權用途說明 |
+| Frontend | `discord-stream-bot-frontend` | Twitch OAuth 入口、帳號狀態及授權用途說明 |
 
 ## 3. 已確認的產品規則
 

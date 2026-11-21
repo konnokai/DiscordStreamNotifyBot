@@ -8,19 +8,13 @@
 
 ## 0. 涉及專案
 
-| 角色 | 路徑 | 職責 |
+| 角色 | 目錄 | 職責 |
 |---|---|---|
-| Bot | `W:\Discord\DiscordStreamNotifyBot` | Twitch spider、EventSub 註冊、Scraper 偵測、Discord 通知、Prometheus/Grafana |
-| Backend | `W:\Discord\DiscordStreamBotBackend` | Discord/Google/Twitch OAuth、token 保存與驗證、EventSub Webhook 接收 |
-| Frontend | `E:\repos\_konnokai\auto-discord-ytmember-checker` | Discord 登入後的 Google/Twitch 綁定介面 |
+| Bot | `DiscordStreamNotifyBot/` | Twitch spider、EventSub 註冊、Scraper 偵測、Discord 通知、Prometheus/Grafana |
+| Backend | `DiscordStreamBotBackend/` | Discord/Google/Twitch OAuth、token 保存與驗證、EventSub Webhook 接收 |
+| Frontend | `discord-stream-bot-frontend/` | Discord 登入後的 Google/Twitch 綁定介面 |
 
-實際工作樹路徑目前分別對應：
-
-```text
-\\192.168.98.22\Projects\Discord\DiscordStreamNotifyBot
-\\192.168.98.22\Projects\Discord\DiscordStreamBotBackend
-E:\repos\_konnokai\auto-discord-ytmember-checker
-```
+路徑都相對於工作區根目錄，三個目錄都是同一個 meta repo 的 submodule。
 
 ## 1. 不可偏離的決策
 
@@ -641,7 +635,7 @@ unmonitored
 
 完成定義：Discord + Google完成條件不變，Twitch可跳過，三種 callback 狀態不互相污染。
 
-> 2026-07-20 本機驗證：Frontend 已移至 `E:\repos\_konnokai\auto-discord-ytmember-checker`，使用專案指定的 pnpm 11.12.0 完成 frozen lockfile 安裝、production build、`lint:script` 與 `lint:style`，三項驗證均為 exit code 0 且 lint 無輸出。
+> 2026-07-20 本機驗證：Frontend 已移至 `../discord-stream-bot-frontend`，使用專案指定的 pnpm 11.12.0 完成 frozen lockfile 安裝、production build、`lint:script` 與 `lint:style`，三項驗證均為 exit code 0 且 lint 無輸出。
 
 ### 階段 4：Twitch add資格與授權清理
 

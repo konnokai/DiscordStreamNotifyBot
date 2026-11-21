@@ -14,7 +14,7 @@
 |---|---|---|
 | Bot | `DiscordStreamNotifyBot/` | 會員驗證、Discord role、Slash command、DB migration |
 | Backend | `../DiscordStreamBotBackend/` | Google OAuth、共享 token、account-links API、unlink intent |
-| Frontend | `../auto-discord-ytmember-checker/` | 帳號連結與待清理狀態顯示 |
+| Frontend | `../discord-stream-bot-frontend/` | 帳號連結與待清理狀態顯示 |
 
 目標是讓 YouTube member check 採用目前 Twitch member check 已驗證過的生命週期、操作協調、持久化清理與角色修復模式，同時保留 YouTube 特有的留言探測及 Scraper 影片探索流程。
 

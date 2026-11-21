@@ -244,7 +244,7 @@ streamKey = channelId + ":" + 正規化 openDate
 網站整合目錄：
 
 - `../DiscordStreamBotBackend`：沿用 Discord 身分驗證、guild 授權、Redis request/reply。Backend 不直接寫 Bot 設定表。
-- `../auto-discord-ytmember-checker`：SettingsPage 加 CHZZK 平台表單與正確的 capability/錯誤狀態，維持既有兩層導覽。
+- `../discord-stream-bot-frontend`：SettingsPage 加 CHZZK 平台表單與正確的 capability/錯誤狀態，維持既有兩層導覽。
 - action 命名與 payload 欄位先比照當前既有平台，再同步三個 repo 的型別、驗證與測試。不要只改前端。
 - 開始 UI 工作前讀適用的 FRONTEND_AGENTS.md 與設計規則。驗證桌機、手機及實際互動。
 
@@ -326,7 +326,7 @@ dotnet build DiscordStreamNotifyBot.sln -c Release
 | 指令與三語 | `Notifier/Interaction/Chzzk/Chzzk.cs`、`ChzzkSpider.cs`、`BotMessages*.resx`、`InteractionCommands*.resx`、command contract snapshot |
 | 網站契約 | `Shared/Messages/AdminSettings.cs`、`Notifier/SharedService/AdminSettings/AdminSettingsService.cs`、`CrawlerOwnerNotifier.cs`（`CrawlerPlatform.Chzzk`）、`CrawlerPolicy`（沿用） |
 | 測試 | `tests/.../ChzzkPollPolicyTests.cs`、`ChzzkClientTests.cs`、`ChzzkStreamIdentityTests.cs`、`NotificationDedupPolicyTests.cs`、`Fixtures/Chzzk/*.json` |
-| 前端 | `auto-discord-ytmember-checker/src/lib/adminSettings.ts`、`src/page/SettingsPage.vue` |
+| 前端 | `discord-stream-bot-frontend/src/lib/adminSettings.ts`、`src/page/SettingsPage.vue` |
 | 後端 | 無需修改：`AdminGuildsController` 以 pass-through 轉送 action/payload 與 snapshot JObject |
 
 streamKey 的 openDate 正規化（使用者 2026-09-15 指定）：`2026-09-15 12:41:10` → `20260915_124110`（移除冒號與減號、空格改底線）。僅影響鍵本身，`ChzzkStream.OpenDateRaw` 與通知 DTO 的 `OpenDate`／`CloseDate` 仍保留 API 原始字串供識別與診斷；功能尚未上線，沒有既有鍵需要回填。通知 DTO 另帶偵測端轉換好的 UTC `StreamStartAt`／`StreamEndAt`，Notifier 的 embed 顯示直接使用，不再自行解析原始字串。
