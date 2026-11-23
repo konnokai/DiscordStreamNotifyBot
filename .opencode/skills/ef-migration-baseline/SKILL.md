@@ -5,8 +5,7 @@ description: >
   涵蓋本專案特有的眉角：EF 工具指向 Shared 專案（已有 MainDbContextFactory 設計階段工廠，免 startup project）、
   連線字串解析順序、啟動時自動套用 migration 與上線前的 SQL 審查、以及一次性基線化腳本 _Baseline_ExistingDb.sql。
   只要使用者說「加欄位/改表」「新增 migration」「update database」「schema 變更」「資料表」「基線化」
-  「EnsureCreated 的舊庫」，就用這個 skill。注意：本專案的 dotnet-claude-kit `/migrate` 是引導式變體，
-  需要逐步審 SQL 時可改用它。
+  「EnsureCreated 的舊庫」，就用這個 skill。
 ---
 
 # EF Core 遷移與基線化（本專案版）
