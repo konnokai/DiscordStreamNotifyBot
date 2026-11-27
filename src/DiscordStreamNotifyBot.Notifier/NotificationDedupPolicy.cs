@@ -40,6 +40,7 @@ namespace DiscordStreamNotifyBot
                     NotifyType.Banner => $"notified:{shardId}:banner:{jo.Value<string>("ChannelId")}:{jo.Value<string>("VideoId")}",
                     NotifyType.YoutubeMemberVideoLog => $"notified:{shardId}:ytmv:{jo.Value<string>("CheckChannelId")}:{StableHash(json)}",
                     NotifyType.YoutubeArchiveOwner => $"notified:{shardId}:ytarchive:{jo.Value<string>("VideoId")}:{jo.Value<int?>("NoticeType")}",
+                    NotifyType.YoutubeYtDlpError => $"notified:{shardId}:ytdlperr:{jo.Value<string>("VideoId")}",
                     _ => null,
                 };
             }

@@ -497,6 +497,43 @@ namespace DiscordStreamNotifyBot.SharedService.Youtube
             }
         }
 
+        /// <summary>
+        /// yt-dlp 沒有可用格式：只在 shard 0 私訊 Bot 擁有者。
+        /// Discord 還沒 ready 時丟例外讓匯流排重試；擁有者關閉私訊則記 log 後放行。
+        /// </summary>
+        internal async Task DispatchYtDlpErrorFromBusAsync(YoutubeYtDlpErrorNotification dto)
+        {
+            if (Bot.ShardId != 0)
+                return;
+
+            if (!Bot.IsConnect || Bot.ApplicatonOwner == null)
+                throw new InvalidOperationException("Discord 尚未就緒，保留 yt-dlp 格式錯誤私訊等待重試。");
+
+            string channelTitle = Format.Sanitize(dto.ChannelTitle ?? "未知頻道");
+            string videoTitle = Format.Sanitize(dto.VideoTitle ?? dto.VideoId);
+            string errorMessage = string.IsNullOrEmpty(dto.ErrorMessage)
+                ? "未提供"
+                : dto.ErrorMessage.Length > 1000 ? dto.ErrorMessage[..1000] : dto.ErrorMessage;
+
+            Log.New($"發送 yt-dlp 格式錯誤私訊: {dto.VideoId}");
+
+            try
+            {
+                await Bot.ApplicatonOwner.SendMessageAsync(embed: new EmbedBuilder()
+                    .WithErrorColor()
+                    .WithTitle("yt-dlp 找不到可錄影的格式")
+                    .AddField("頻道", channelTitle, false)
+                    .AddField("影片", Format.Url(videoTitle, $"https://www.youtube.com/watch?v={dto.VideoId}"), false)
+                    .AddField("錯誤", errorMessage, false)
+                    .AddField("處理", "請確認 dotnet_with_yt-dlp image 是否需要更新。24 小時內同類錯誤不再重複私訊。", false)
+                    .Build()).ConfigureAwait(false);
+            }
+            catch (Discord.Net.HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+            {
+                Log.Warn($"yt-dlp 格式錯誤私訊無法送達 Bot 擁有者: {dto.VideoId}");
+            }
+        }
+
         private YoutubeNotificationVariant BuildVariantForBus(YoutubeNotification dto, TableVideo video, string locale)
         {
             Embed embed;

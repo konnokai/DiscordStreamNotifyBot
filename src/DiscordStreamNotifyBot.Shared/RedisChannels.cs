@@ -23,6 +23,8 @@ namespace DiscordStreamNotifyBot.Shared
             public const string MemberOnly = "youtube.memberonly";
             /// <summary>錄影工具每日檢查發現錄完後才轉會限；只送擁有者私訊，不發直播結束通知。</summary>
             public const string MemberOnlyLate = "youtube.memberonly.late";
+            /// <summary>錄影工具回報 yt-dlp 沒有可用的影音格式；Scraper 轉成匯流排事件，Notifier 私訊 Bot 擁有者。</summary>
+            public const string YtDlpError = "youtube.ytdlp.error";
             public const string Record = "youtube.record";
             public const string Error429 = "youtube.429error";
             public const string Test = "youtube.test";

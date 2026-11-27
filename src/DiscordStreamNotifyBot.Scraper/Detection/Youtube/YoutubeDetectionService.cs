@@ -165,6 +165,69 @@ namespace DiscordStreamNotifyBot.Scraper.Detection.Youtube
                 }
             });
 
+            Bot.RedisSub.Subscribe(new RedisChannel(RedisChannels.Youtube.YtDlpError, RedisChannel.PatternMode.Literal), async (channel, data) =>
+            {
+                Log.Info($"{channel} - {data}");
+
+                try
+                {
+                    // 錯誤行本身含 ':'，只切第一個
+                    string payload = data.ToString();
+                    int separator = payload.IndexOf(':');
+                    string videoId = separator >= 0 ? payload[..separator] : payload;
+                    string errorMessage = separator >= 0 ? payload[(separator + 1)..] : "";
+
+                    if (videoId.Length != 11)
+                    {
+                        Log.Warn($"youtube.ytdlp.error payload 格式不正確，略過：{payload}");
+                        return;
+                    }
+
+                    TableVideo streamVideo = null;
+                    YTApiVideo item = null;
+
+                    try
+                    {
+                        streamVideo = SharedExtensions.GetStreamVideoByVideoId(videoId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex.Demystify(), $"Record-YtDlpError-GetStreamVideo: {videoId}");
+                    }
+
+                    // 查不到影片也要送，不能讓 yt-dlp 失效的警示消失
+                    if (streamVideo == null)
+                    {
+                        try
+                        {
+                            item = await GetVideoAsync(videoId).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex.Demystify(), $"Record-YtDlpError-GetVideo: {videoId}");
+                        }
+                    }
+
+                    // 全域 24 小時一則：yt-dlp 全面失效時不要每場直播都私訊；publish 成功就占用額度
+                    await NotificationBus.PublishOnceAsync(
+                        Bot.RedisDb,
+                        "youtube:ytdlp_error",
+                        TimeSpan.FromDays(1),
+                        NotifyType.YoutubeYtDlpError,
+                        new YoutubeYtDlpErrorNotification
+                        {
+                            VideoId = videoId,
+                            ChannelTitle = streamVideo?.ChannelTitle ?? item?.Snippet?.ChannelTitle,
+                            VideoTitle = streamVideo?.VideoTitle ?? item?.Snippet?.Title,
+                            ErrorMessage = errorMessage,
+                        }).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Record-YtDlpError {ex}");
+                }
+            });
+
             Bot.RedisSub.Subscribe(new RedisChannel("youtube.deletestream", RedisChannel.PatternMode.Literal), async (channel, videoId) =>
             {
                 Log.Info($"{channel} - {videoId}");

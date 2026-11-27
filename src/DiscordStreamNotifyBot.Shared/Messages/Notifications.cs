@@ -29,6 +29,12 @@ namespace DiscordStreamNotifyBot.Shared.Messages
         /// 跟一般 YouTube 通知分開，因為伺服器的關台通知可能已先發過，私訊仍要送。
         /// </summary>
         public const string YoutubeArchiveOwner = "youtube_archive_owner";
+
+        /// <summary>
+        /// yt-dlp 格式失效私訊：payload 為 <see cref="YoutubeYtDlpErrorNotification"/>。
+        /// Scraper 收到錄影工具的 <c>youtube.ytdlp.error</c> 後轉發，Notifier 只在 shard 0 私訊 Bot 擁有者。
+        /// </summary>
+        public const string YoutubeYtDlpError = "youtube_ytdlp_error";
     }
 
     /// <summary>
@@ -237,5 +243,19 @@ namespace DiscordStreamNotifyBot.Shared.Messages
 
         /// <summary>非空時，Notifier shard 0 額外私訊 Bot 擁有者（ApplicatonOwner）此診斷訊息。</summary>
         public string BotOwnerMessage { get; set; }
+    }
+
+    /// <summary>
+    /// 跨層：錄影工具回報 yt-dlp 找不到可下載的影音格式，Scraper 轉發後由 Notifier 私訊 Bot 擁有者。
+    /// 全域 24 小時只送一次（Scraper publish 時就占用額度），訊息只用於維運排查。
+    /// </summary>
+    public class YoutubeYtDlpErrorNotification
+    {
+        public string VideoId { get; set; }
+        public string ChannelTitle { get; set; }
+        public string VideoTitle { get; set; }
+
+        /// <summary>yt-dlp 的原始錯誤行，最多 500 字。</summary>
+        public string ErrorMessage { get; set; }
     }
 }
