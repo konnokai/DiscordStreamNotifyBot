@@ -77,7 +77,7 @@ dotnet ef migrations add <Name> --project src/DiscordStreamNotifyBot.Shared
 
 | 分類 | Channel |
 |---|---|
-| YouTube | `youtube.startstream`、`youtube.endstream`、`youtube.addstream`、`youtube.deletestream`、`youtube.unarchived`、`youtube.memberonly`、`youtube.memberonly.late`、`youtube.record`、`youtube.429error`、`youtube.pubsub.*` |
+| YouTube | `youtube.startstream`、`youtube.endstream`、`youtube.addstream`、`youtube.deletestream`、`youtube.unarchived`、`youtube.memberonly`、`youtube.memberonly.late`、`youtube.ytdlp.error`、`youtube.record`、`youtube.429error`、`youtube.pubsub.*` |
 | Twitch | `twitch.record`、`twitch:stream_online`、`twitch:channel_update`、`twitch:stream_offline`、`twitch:authorization_changed` |
 | TwitCasting | `twitcasting.pubsub.startlive`、`twitcasting.record` |
 | 會員驗證 | `member.revokeToken` |

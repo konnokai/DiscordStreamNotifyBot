@@ -213,6 +213,12 @@ namespace DiscordStreamNotifyBot
                     await _youtubeMemberService.DispatchMemberVideoLogFromBusAsync(memberVideoLogDto);
                     return true;
 
+                case NotifyType.YoutubeYtDlpError:
+                    var ytDlpErrorDto = JsonConvert.DeserializeObject<YoutubeYtDlpErrorNotification>(json);
+                    if (ytDlpErrorDto == null) return false;
+                    await _youtubeStreamService.DispatchYtDlpErrorFromBusAsync(ytDlpErrorDto);
+                    return true;
+
                 default:
                     Log.Warn($"[NotificationBus] 尚未處理的通知類型：{type}，暫時 ACK 後略過。");
                     return false;
